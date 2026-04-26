@@ -1,0 +1,36 @@
+name: Health Check (Production)
+
+# Chạy auto mỗi 15 phút + cho phép trigger thủ công.
+# Nếu fail bất kỳ check nào → ping Discord webhook (ALERT_WEBHOOK secret).
+on:
+  schedule:
+    # Cron syntax: phút giờ ngày tháng day-of-week
+    # */15 * * * *  = mỗi 15 phút
+    # GitHub Actions cron min interval = 5 minutes, recommend 15 để tiết kiệm
+    - cron: '*/15 * * * *'
+  workflow_dispatch:  # Trigger thủ công từ Actions tab
+
+# Force Node 24 cho actions/checkout
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  health-check:
+    name: Run health-check.sh
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install jq (cho webhook payload formatting)
+        run: sudo apt-get install -y jq
+
+      - name: Make script executable
+        run: chmod +x scripts/health-check.sh
+
+      - name: Run health check
+        env:
+          ALERT_WEBHOOK: ${{ secrets.ALERT_WEBHOOK }}
+        run: bash scripts/health-check.sh
