@@ -1,0 +1,35 @@
+name: Preflight Security Check
+
+# Chạy mỗi khi push lên main HOẶC mở/update PR vào main.
+# Block merge nếu fail bất kỳ check nào trong scripts/preflight-check.sh.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Cho phép trigger thủ công từ Actions tab
+
+# Tăng tốc: hủy run cũ nếu push commit mới trên cùng PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    name: Run preflight-check.sh
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Make script executable
+        run: chmod +x scripts/preflight-check.sh
+
+      - name: Run preflight check
+        run: bash scripts/preflight-check.sh
+
+      - name: Done
+        if: success()
+        run: echo "✅ All security checks passed — safe to deploy."
