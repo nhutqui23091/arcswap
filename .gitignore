@@ -1,3 +1,8 @@
+# ─── Claude Code local state (per-developer settings + tool result cache) ───
+.claude/
+UsersPC*
+**/tool-results/
+
 # ─── Secrets ─────────────────────────────────────────────────────────────────
 .env
 .env.local
