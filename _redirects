@@ -1,13 +1,9 @@
-/trade   /trade.html   200
-/vault   /vault.html   200
-/docs    /docs.html    200
-/blog    /blog.html    200
-/pool    /pool.html    200
-/point   /point.html   200
-/token   /token.html   200
-/deploy  /deploy.html  200
+# Cloudflare Pages tự động phục vụ /vault.html ở cả /vault và /vault.html
+# (auto-redirect /vault.html → /vault để tránh duplicate). KHÔNG được thêm rule
+# rewrite kiểu "/vault /vault.html 200" — sẽ tạo infinite redirect loop.
+#
+# File này CHỈ giữ các LEGACY alias (URL cũ trỏ sang URL mới).
 
-# Legacy / aliased paths
-/swap    /trade        301
-/bridge  /trade        301
-/farm    /token.html   302
+/swap    /trade   301
+/bridge  /trade   301
+/farm    /token   302
