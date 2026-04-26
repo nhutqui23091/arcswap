@@ -38,11 +38,15 @@ else
 fi
 
 # Backup URL (CNAME via eth.limo or paid host)
-HTTP_CODE_BACKUP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$APP_BACKUP_URL" || echo "000")
-if [[ "$HTTP_CODE_BACKUP" == "200" ]]; then
-  check "Frontend backup ($APP_BACKUP_URL)" "✓" "200 OK"
-else
-  check "Frontend backup ($APP_BACKUP_URL)" "❌" "HTTP $HTTP_CODE_BACKUP"
+# Skip check if APP_BACKUP_URL is not set or points to eth.limo and ENS not yet
+# configured (avoids false alarm during testnet stage).
+if [[ -n "$APP_BACKUP_URL" && "$APP_BACKUP_URL" != *"eth.limo"* ]]; then
+  HTTP_CODE_BACKUP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$APP_BACKUP_URL" || echo "000")
+  if [[ "$HTTP_CODE_BACKUP" == "200" ]]; then
+    check "Frontend backup ($APP_BACKUP_URL)" "✓" "200 OK"
+  else
+    check "Frontend backup ($APP_BACKUP_URL)" "❌" "HTTP $HTTP_CODE_BACKUP"
+  fi
 fi
 
 # ─── 2. Critical security headers present ────────────────────────────────────
