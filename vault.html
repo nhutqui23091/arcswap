@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ArcSwap — Yield Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;--bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;--muted:#8CA0BD;
+  --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
+  --peach:#F4C89A;--sand:#ECDCC4;--legacy-purple:#6C3FFF;
+  --gold:#F4C89A;
+  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+}
+
+h1,h2,h3,h4,h5,h6{font-family:var(--font);font-weight:800;letter-spacing:-.035em;line-height:1.1}
+p,span,div,button,input,select,textarea,a{font-family:var(--font)}
+.arc-label{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;color:#FF9F4A;text-transform:uppercase;white-space:nowrap}
+.arc-label::before{content:'{\00a0';opacity:.75}
+.arc-label::after{content:'\00a0}';opacity:.75}
+.arc-divider{height:1px;background:linear-gradient(90deg,transparent 0%,rgba(0,207,255,.35) 20%,rgba(0,207,255,.35) 80%,transparent 100%);border:none;margin:18px 0}
+
+html{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh;cursor:none}
+
+.cursor-dot{position:fixed;width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9999;mix-blend-mode:difference}
+.cursor-ring{position:fixed;width:36px;height:36px;border:1.5px solid rgba(255,255,255,.4);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9998;transition:all .12s ease}
+
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");opacity:.35;pointer-events:none;z-index:9997}
+
+/* Arc.network-style horizon — navy top → teal mid → peach bottom */
+.aurora{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 140% 60% at 50% 110%, rgba(244,200,154,0.28) 0%, rgba(244,200,154,0.08) 35%, transparent 60%),
+    radial-gradient(ellipse 120% 40% at 50% 90%, rgba(77,214,219,0.22) 0%, rgba(74,123,236,0.10) 35%, transparent 65%),
+    linear-gradient(180deg, #0A1628 0%, #0E1F39 40%, #133155 75%, #1E4A6E 100%);
+}
+.orb{position:absolute;border-radius:50%;filter:blur(150px);animation:orb-drift 40s ease-in-out infinite alternate;mix-blend-mode:screen}
+.o1{width:720px;height:500px;background:var(--arc1);opacity:.06;top:-240px;left:-200px;animation-duration:40s}
+.o2{width:620px;height:520px;background:var(--arc2);opacity:.05;top:-160px;right:-220px;animation-duration:46s;animation-delay:-10s}
+.o3{display:none}
+@keyframes orb-drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,20px) scale(1.06)}}
+
+/* NAVBAR */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .3s;gap:16px}
+nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-name{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.nav-tabs{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;text-decoration:none;border:none;background:none;cursor:pointer;font-family:var(--font)}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.nav-tab.active{color:var(--text);background:rgba(255,255,255,.07)}
+.nav-tab.faucet-tab{color:var(--muted);background:none;border:none}
+.nav-tab.faucet-tab:hover{color:var(--arc2);background:rgba(0,207,255,.06)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.testnet-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
+.tnet-dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#wallet-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font)}
+#wallet-btn:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.32)}
+#wallet-btn.connected{background:rgba(77,214,219,0.10);border-color:rgba(77,214,219,0.3);color:var(--text)}
+.w-dot{width:7px;height:7px;border-radius:50%;background:var(--arc4);flex-shrink:0;box-shadow:0 0 8px var(--arc4)}
+
+/* PAGE */
+.page{position:relative;z-index:1;min-height:100vh;padding:88px 24px 60px;max-width:960px;margin:0 auto}
+
+/* HEADER */
+.page-header{margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-title{font-size:clamp(40px,5.5vw,72px);font-weight:900;letter-spacing:-.035em;line-height:1;margin-bottom:8px;text-transform:uppercase}
+.page-sub{font-size:14px;color:var(--muted);max-width:620px;line-height:1.55}
+.powered{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:100px;font-size:12px;font-weight:600;font-family:var(--mono);color:var(--gold);background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.2)}
+.powered-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold)}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:rgba(10,6,28,.85);border:1px solid var(--border);border-radius:16px;padding:18px 20px}
+.stat-val{font-size:28px;font-weight:800;letter-spacing:-.035em;line-height:1.05;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-change{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+.stat-change.neutral{color:var(--muted)}
+
+/* VAULT GRID */
+.vault-layout{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:flex-start}
+@media(max-width:900px){.vault-layout{grid-template-columns:1fr}}
+
+/* ACTION CARD */
+.action-card{background:rgba(10,6,28,.9);border:1px solid var(--border);border-radius:20px;padding:22px 24px;box-shadow:0 8px 60px rgba(0,0,0,.45)}
+.tabs{display:inline-flex;background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:20px}
+.tab{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;transition:all .15s;font-family:var(--font)}
+.tab.active{color:var(--text);background:rgba(255,255,255,.06)}
+.tab:hover:not(.active){color:var(--text)}
+
+.amt-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:.6px}
+.amt-bal{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.amt-bal a{color:var(--arc2);cursor:pointer;text-decoration:none;font-weight:600}
+.amt-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:14px;padding:14px 16px;transition:border-color .15s}
+.amt-row:focus-within{border-color:rgba(0,207,255,.4)}
+.amt-input{flex:1;background:none;border:none;outline:none;font-size:26px;font-weight:700;font-family:var(--font);color:var(--text);min-width:0}
+.amt-input::placeholder{color:rgba(255,255,255,.15)}
+.amt-tok{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.07);border-radius:10px;padding:6px 12px}
+.amt-tok-ico{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.ti-usdc{background:linear-gradient(135deg,#2775CA,#5BA4F5)}
+.ti-usyc{background:linear-gradient(135deg,#16A34A,#22C55E)}
+.amt-tok-sym{font-size:14px;font-weight:700}
+.amt-usd{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px;padding-left:2px}
+
+.arrow-split{display:flex;align-items:center;justify-content:center;margin:12px 0;font-size:18px;color:var(--muted);opacity:.6}
+
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:12.5px;border-bottom:1px dashed rgba(255,255,255,.04)}
+.info-row:last-child{border-bottom:none}
+.info-row .k{color:var(--muted)}
+.info-row .v{font-family:var(--mono);font-weight:600;text-align:right}
+.info-row .v.good{color:var(--arc4)}
+.info-row .v.warn{color:var(--gold)}
+
+.exec-btn{width:100%;margin-top:18px;padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,0.22);font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.1);color:var(--text);transition:all .2s;letter-spacing:.02em}
+.exec-btn:hover:not(:disabled){background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35);transform:translateY(-1px)}
+.exec-btn:disabled{opacity:.35;cursor:not-allowed;background:var(--surface2);color:var(--muted);border-color:var(--border)}
+
+.warn-banner{margin-top:14px;padding:12px 14px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:12px;font-size:12px;color:#FFD580;line-height:1.5;display:flex;gap:10px;align-items:flex-start}
+.warn-banner.err{background:rgba(255,85,119,.06);border-color:rgba(255,85,119,.25);color:#FF8BA3}
+.warn-banner .wb-ico{flex-shrink:0;font-size:14px;line-height:1.2}
+.warn-banner a{color:inherit;text-decoration:underline;font-weight:600}
+
+/* POSITION CARD */
+.pos-card{background:rgba(10,6,28,.9);border:1px solid var(--border);border-radius:20px;padding:22px 24px}
+.pos-title{font-size:15px;font-weight:800;margin-bottom:14px}
+.pos-balance{font-size:34px;font-weight:800;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums;color:var(--text);margin-bottom:4px}
+.pos-unit{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:14px}
+.pos-usd{font-size:14px;font-weight:700;font-family:var(--mono)}
+.pos-row{display:flex;justify-content:space-between;padding:7px 0;font-size:12.5px;border-top:1px dashed rgba(255,255,255,.05);margin-top:4px}
+.pos-row:first-of-type{border-top:none;margin-top:0}
+.pos-row .k{color:var(--muted)}
+.pos-row .v{font-family:var(--mono);font-weight:600}
+
+/* ABOUT */
+.about-card{margin-top:24px;background:rgba(10,6,28,.7);border:1px solid var(--border);border-radius:18px;padding:22px 24px}
+.about-title{font-size:16px;font-weight:800;margin-bottom:12px}
+.about-grid{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.about-item{display:flex;align-items:flex-start;gap:14px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.about-ico{font-size:20px;line-height:1;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(77,214,219,.08);border:1px solid rgba(77,214,219,.18);border-radius:9px}
+.about-text{flex:1;min-width:0}
+.about-h{font-size:13px;font-weight:700;margin-bottom:3px;letter-spacing:-.005em}
+.about-d{font-size:12.5px;color:var(--muted);line-height:1.55}
+
+.trading-window{margin-top:18px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-family:var(--mono);padding:10px 14px;background:rgba(0,207,255,.04);border:1px solid rgba(0,207,255,.15);border-radius:10px}
+.tw-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.tw-dot.open{background:var(--arc4);box-shadow:0 0 6px var(--arc4)}
+.tw-dot.closed{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(13,9,32,.97);border:1px solid var(--border2);border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:12px;z-index:9000;transition:transform .3s cubic-bezier(.34,1.56,.64,1);min-width:260px;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast-icon{font-size:20px;flex-shrink:0}
+.toast-msg{font-size:14px;font-weight:700}
+.toast-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+.skel{display:inline-block;background:linear-gradient(90deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 100%);background-size:200% 100%;animation:skel 1.4s infinite;border-radius:4px;vertical-align:middle}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:700px){
+  .stats-row{grid-template-columns:1fr}
+  .nav-tabs{display:none}
+  .testnet-pill{display:none}
+  .page-header{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+<div class="aurora"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo-wrap" onclick="window.location.href='/'">
+    <span class="logo-name" style="font-size:20px;font-weight:800;letter-spacing:-.04em">ArcSwap</span>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="/trade">Trade</a>
+    <a class="nav-tab" href="/pool">Pool</a>
+    <button class="nav-tab active">Vault</button>
+    <a class="nav-tab" href="/token">Token</a>
+    <a class="nav-tab" href="/point">Points</a>
+    <a class="nav-tab faucet-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
+  </div>
+  <div class="nav-right">
+    <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
+    <button id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</nav>
+
+<div class="page">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <div class="arc-label" style="margin-bottom:10px">Yield Vault</div>
+      <h1 class="page-title">Earn onchain yield on your USDC</h1>
+      <p class="page-sub">Deposit USDC to mint USYC, a tokenized short-term money-market fund share. Yield accrues automatically through NAV appreciation — redeem any time during trading hours.</p>
+    </div>
+    <div class="powered">
+      <div class="powered-dot"></div>Powered by Hashnote USYC
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px">Indicative APY</div>
+      <div class="stat-val" id="stat-apy">—</div>
+      <div class="stat-change" id="stat-apy-sub">Target · MMF-benchmark</div>
+    </div>
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px">NAV / share</div>
+      <div class="stat-val" id="stat-nav">—</div>
+      <div class="stat-change" id="stat-nav-sub">Live via Teller oracle</div>
+    </div>
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px">Total assets</div>
+      <div class="stat-val" id="stat-tvl">—</div>
+      <div class="stat-change" id="stat-tvl-sub">USDC under management</div>
+    </div>
+  </div>
+
+  <!-- VAULT GRID -->
+  <div class="vault-layout">
+    <!-- LEFT: ACTION -->
+    <div class="action-card">
+      <div class="tabs">
+        <button class="tab active" id="tab-deposit" onclick="setMode('deposit')">Deposit USDC</button>
+        <button class="tab" id="tab-withdraw" onclick="setMode('withdraw')">Redeem USYC</button>
+      </div>
+
+      <div class="amt-label">
+        <span id="amt-label-from">You deposit</span>
+        <span class="amt-bal">Balance: <a onclick="setMax()" id="amt-max-link">— USDC</a></span>
+      </div>
+      <div class="amt-row">
+        <input class="amt-input" id="amt-input" type="text" inputmode="decimal" placeholder="0.0" oninput="onAmountInput()"/>
+        <div class="amt-tok">
+          <div class="amt-tok-ico" id="amt-from-ico">U</div>
+          <div class="amt-tok-sym" id="amt-from-sym">USDC</div>
+        </div>
+      </div>
+      <div class="amt-usd" id="amt-from-usd">≈ $0.00</div>
+
+      <div class="arrow-split">↓</div>
+
+      <div class="amt-label">
+        <span id="amt-label-to">You receive</span>
+        <span class="amt-bal" id="amt-to-bal"></span>
+      </div>
+      <div class="amt-row">
+        <input class="amt-input" id="amt-output" type="text" placeholder="0.0" readonly/>
+        <div class="amt-tok">
+          <div class="amt-tok-ico" id="amt-to-ico">Y</div>
+          <div class="amt-tok-sym" id="amt-to-sym">USYC</div>
+        </div>
+      </div>
+      <div class="amt-usd" id="amt-to-usd">≈ $0.00</div>
+
+      <div style="margin-top:18px">
+        <div class="info-row"><span class="k">Rate</span><span class="v" id="inf-rate">—</span></div>
+        <div class="info-row"><span class="k" id="inf-fee-label">Subscription fee</span><span class="v" id="inf-fee">—</span></div>
+        <div class="info-row"><span class="k">Settlement</span><span class="v good">Instant on Arc</span></div>
+        <div class="info-row"><span class="k">Daily limit</span><span class="v" id="inf-limit">—</span></div>
+      </div>
+
+      <button class="exec-btn" id="exec-btn" onclick="executeAction()" disabled>Enter amount</button>
+
+      <div class="trading-window" id="trading-window">
+        <div class="tw-dot open" id="tw-dot"></div>
+        <span id="tw-text">Checking trading hours…</span>
+      </div>
+
+      <div class="warn-banner" id="warn-banner" style="display:none">
+        <div class="wb-ico">⚠</div>
+        <div id="warn-text"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: POSITION -->
+    <div>
+      <div class="pos-card">
+        <div class="pos-title">Your position</div>
+        <div class="pos-balance" id="pos-usyc">—</div>
+        <div class="pos-unit">USYC shares</div>
+        <div class="pos-usd" id="pos-usd">≈ $0.00</div>
+        <div style="margin-top:14px">
+          <div class="pos-row"><span class="k">USDC balance</span><span class="v" id="pos-usdc">—</span></div>
+          <div class="pos-row"><span class="k">Share price</span><span class="v" id="pos-share-price">—</span></div>
+          <div class="pos-row"><span class="k">Allowlist status</span><span class="v" id="pos-allow">—</span></div>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-title">How USYC works</div>
+        <div class="about-grid">
+          <div class="about-item">
+            <div class="about-ico">🏦</div>
+            <div class="about-text">
+              <div class="about-h">Short-term T-bills</div>
+              <div class="about-d">Backed by a regulated short-duration money-market fund managed by Hashnote.</div>
+            </div>
+          </div>
+          <div class="about-item">
+            <div class="about-ico">📈</div>
+            <div class="about-text">
+              <div class="about-h">Yield via NAV</div>
+              <div class="about-d">Each USYC share grows in USDC terms as the fund accrues interest — no rebasing.</div>
+            </div>
+          </div>
+          <div class="about-item">
+            <div class="about-ico">⏱</div>
+            <div class="about-text">
+              <div class="about-h">Trading window</div>
+              <div class="about-d">Subscribe / redeem during market hours. After-hours orders queue for next open.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <div><div class="toast-msg" id="toast-msg"></div><div class="toast-sub" id="toast-sub"></div></div>
+</div>
+
+<!-- ethers v6 -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"
+        integrity="sha384-gpR0Q6Hx/O+uevlbpbANbS0LWjbejPV1sqD/8w422l/fW8whGY0EPmKw3uG7ACYP"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+
+<script>
+/* CURSOR */
+const cdot=document.getElementById('cdot'),cring=document.getElementById('cring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cdot.style.left=mx+'px';cdot.style.top=my+'px'});
+(function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;cring.style.left=rx+'px';cring.style.top=ry+'px';requestAnimationFrame(animRing)})();
+
+window.addEventListener('scroll',()=>{
+  document.querySelector('nav').classList.toggle('scrolled',window.scrollY>20);
+});
+
+/* ============================================================
+   CONFIG
+============================================================ */
+const ARC_CHAIN={
+  chainId:'0x4cef52', chainName:'Arc Testnet',
+  nativeCurrency:{name:'USD Coin',symbol:'USDC',decimals:18},
+  rpcUrls:['https://rpc.testnet.arc.network'],
+  blockExplorerUrls:['https://testnet.arcscan.app'],
+};
+const ARC_RPC='https://rpc.testnet.arc.network';
+
+// Tokens — `USDC` = native gas wrapper (18 dec). The USYC Teller's underlying
+// `asset()` is the 6-dec canonical USDC ERC-20 — discovered at boot below into ASSET.
+const USDC = { address:'0x3600000000000000000000000000000000000000', decimals:18, symbol:'USDC' };
+const USYC = { address:'0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C', decimals:6,  symbol:'USYC' };
+
+// These get populated at boot by discoverTellerAsset() — DO NOT hardcode.
+// Defaults assume canonical 6-dec USDC; overwritten with on-chain truth.
+let ASSET = { address: USDC.address, decimals: 6, symbol: 'USDC' };
+let SHARE = { address: USYC.address, decimals: 6, symbol: 'USYC' };
+
+// Circle USYC Teller proxy (Arc testnet)
+const TELLER_ADDR = '0x9fdF14c5B14173D74C08Af27AebFf39240dC105A';
+
+// Money-market benchmark APY used as display anchor until on-chain NAV history is tracked
+const TARGET_APY = 4.85;
+
+const TELLER_ABI = [
+  'function asset() view returns (address)',
+  'function share() view returns (address)',
+  'function totalAssets() view returns (uint256)',
+  'function convertToShares(uint256 assets) view returns (uint256)',
+  'function convertToAssets(uint256 shares) view returns (uint256)',
+  'function previewDeposit(uint256 assets) view returns (uint256)',
+  'function previewRedeem(uint256 shares) view returns (uint256)',
+  'function maxDeposit(address account) view returns (uint256)',
+  'function maxRedeem(address account) view returns (uint256)',
+  'function subscriptionFeeRate(address account) view returns (uint256)',
+  'function redemptionFeeRate(address account) view returns (uint256)',
+  'function deposit(uint256 assets, address receiver) returns (uint256)',
+  'function redeem(uint256 shares, address receiver, address account) returns (uint256)',
+  'function afterHourTrading() view returns (uint256)',
+  'function isDST() view returns (bool)',
+  'function todayTimestamp() view returns (uint256)',
+];
+const ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function allowance(address,address) view returns (uint256)',
+  'function approve(address,uint256) returns (bool)',
+  'function decimals() view returns (uint8)',
+];
+
+const rpcProvider = new ethers.JsonRpcProvider(ARC_RPC, { name:'arc', chainId:5042002 }, { staticNetwork:true });
+const teller = new ethers.Contract(TELLER_ADDR, TELLER_ABI, rpcProvider);
+// Lazy contracts for the Teller's real underlying asset + share, rebuilt after discovery.
+let assetC = new ethers.Contract(ASSET.address, ERC20_ABI, rpcProvider);
+let shareC = new ethers.Contract(SHARE.address, ERC20_ABI, rpcProvider);
+
+/* ============================================================
+   DISCOVERY — resolve the Teller's true asset/share & decimals
+   (fixes the 18-vs-6 decimal mismatch between native gas USDC
+    and the 6-dec canonical USDC the vault expects)
+============================================================ */
+async function discoverTellerTokens(){
+  try{
+    const [assetAddr, shareAddr] = await Promise.all([
+      teller.asset().catch(()=>null),
+      teller.share().catch(()=>null),
+    ]);
+    if(assetAddr){
+      const c = new ethers.Contract(assetAddr, ERC20_ABI, rpcProvider);
+      const dec = await c.decimals().catch(()=>6n);
+      ASSET = { address: assetAddr, decimals: Number(dec), symbol: 'USDC' };
+      assetC = c;
+    }
+    if(shareAddr){
+      const c = new ethers.Contract(shareAddr, ERC20_ABI, rpcProvider);
+      const dec = await c.decimals().catch(()=>6n);
+      SHARE = { address: shareAddr, decimals: Number(dec), symbol: 'USYC' };
+      shareC = c;
+    }
+    console.log('[vault] Teller tokens', { ASSET, SHARE });
+  }catch(e){ console.error('[vault] discover failed', e); }
+}
+
+/* ============================================================
+   STATE
+============================================================ */
+let walletAddr = null;
+let walletProv = null;
+let walletSigner = null;
+let mode = 'deposit';        // 'deposit' | 'withdraw'
+let inputRaw = '';
+let quote = { out: 0n, feeRate: 0n, maxAmt: 0n, navPerShare: 0n };
+let balances = { usdc: 0n, usyc: 0n, usdcNative: 0n };
+let tradingOpen = true;
+
+/* ============================================================
+   HELPERS
+============================================================ */
+function shortAddr(a){return a.slice(0,6)+'...'+a.slice(-4)}
+function bigToFloat(raw, decimals){
+  if(raw==null) return 0;
+  const d = 10n ** BigInt(decimals);
+  const q = raw / d;
+  const r = raw % d;
+  return Number(q) + Number(r)/Number(d);
+}
+function fmtMoney(n, digits=2){
+  if(n==null||isNaN(n)) return '—';
+  return Number(n).toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits});
+}
+function fmtBig(raw, decimals, digits=4){
+  return fmtMoney(bigToFloat(raw, decimals), digits);
+}
+/* ============================================================
+   USYC Teller custom error decoder
+   Maps 4-byte selectors to friendly names. Add more as we learn them from
+   on-chain reverts. Calculated via keccak256("Name(type,type)")[0..4].
+============================================================ */
+const USYC_ERRORS = {
+  '0x3d693ada': 'Not allowlisted',               // NotAllowed()
+  '0xf4d678b8': 'Insufficient balance',
+  '0x13be252b': 'Insufficient allowance',
+  '0xe4fe1d94': 'Trading window closed',
+  '0xd93c0665': 'After-hours trading only',
+  '0x8c5be1e5': 'Minimum amount not met',         // MinimumAmount()
+  '0xd0e30db0': 'Deposits paused',
+  '0x4cd88b76': 'Redemptions paused',
+  '0x356680b7': 'Oracle price stale',
+  '0x40d8c23d': 'Entity not entitled',
+};
+function decodeRevert(err){
+  // ethers v6 surfaces call exception with err.data / err.info.error.data
+  const candidates = [
+    err?.data,
+    err?.info?.error?.data,
+    err?.error?.data,
+    err?.revert?.data,
+    err?.transaction?.data && err.transaction.data.length === 10 ? err.transaction.data : null,
+  ].filter(Boolean);
+  for(const d of candidates){
+    if(typeof d === 'string' && d.length >= 10){
+      const sel = d.slice(0,10).toLowerCase();
+      if(USYC_ERRORS[sel]) return USYC_ERRORS[sel];
+      // Try to parse standard Error(string)
+      if(sel === '0x08c379a0'){
+        try { return ethers.AbiCoder.defaultAbiCoder().decode(['string'], '0x' + d.slice(10))[0]; } catch{}
+      }
+      return `Custom error ${sel}`;
+    }
+  }
+  return err?.shortMessage || err?.reason || err?.message || 'Unknown error';
+}
+
+// Fee rates returned by the Teller are WAD (1e18 = 100%). Fall back gracefully
+// for small/zero values or unexpected scales (1e8 / bps).
+function formatFeeRate(raw){
+  if(raw == null || raw === 0n) return '0%';
+  const n = Number(raw);
+  if(!isFinite(n)) return '—';
+  const candidates = [
+    n / 1e16,   // WAD (1e18 = 100% → /1e16 = percent)
+    n / 1e6,    // 1e8 = 100%
+    n / 1e2,    // bps (1e4 = 100%)
+    n,          // already-percent
+  ];
+  const pct = candidates.find(v => v > 0 && v < 100);
+  return pct == null ? '—' : (pct < 0.0001 ? '<0.0001%' : pct.toFixed(4) + '%');
+}
+function parseInput(str, decimals){
+  if(!str) return 0n;
+  const s = String(str).trim().replace(',','.');
+  if(!s || s==='.') return 0n;
+  try { return ethers.parseUnits(s, decimals); } catch { return 0n; }
+}
+
+function showToast(icon,msg,sub){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-icon').textContent=icon;
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-sub').textContent=sub||'';
+  t.classList.add('show');
+  clearTimeout(showToast._t); showToast._t=setTimeout(()=>t.classList.remove('show'), 3600);
+}
+
+/* ============================================================
+   WALLET
+============================================================ */
+async function connectWallet(){
+  if(walletAddr){
+    walletAddr=null; walletSigner=null; walletProv=null;
+    const btn=document.getElementById('wallet-btn');
+    btn.textContent='Connect Wallet'; btn.className='';
+    refreshAll();
+    return;
+  }
+  if(!window.ethereum){ showToast('✗','No wallet','Install MetaMask first.'); return; }
+  try{
+    const accs = await window.ethereum.request({method:'eth_requestAccounts'});
+    if(!accs.length) return;
+    const chainId = await window.ethereum.request({method:'eth_chainId'});
+    if(chainId !== ARC_CHAIN.chainId){
+      try{ await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:ARC_CHAIN.chainId}]}); }
+      catch(e){
+        if(e.code===4902||e.code===-32603)
+          await window.ethereum.request({method:'wallet_addEthereumChain',params:[ARC_CHAIN]});
+      }
+    }
+    walletProv = new ethers.BrowserProvider(window.ethereum, 'any');
+    walletSigner = await walletProv.getSigner();
+    walletAddr = accs[0];
+    const btn=document.getElementById('wallet-btn');
+    btn.innerHTML = `<div class="w-dot"></div>${shortAddr(walletAddr)}`;
+    btn.className='connected';
+    showToast('✓','Wallet connected', shortAddr(walletAddr));
+    window.ethereum.on('accountsChanged', a=>{
+      if(!a.length){ walletAddr=null; walletSigner=null; btn.textContent='Connect Wallet'; btn.className=''; }
+      else{ walletAddr=a[0]; btn.innerHTML=`<div class="w-dot"></div>${shortAddr(walletAddr)}`; }
+      refreshAll();
+    });
+    window.ethereum.on('chainChanged', ()=>window.location.reload());
+    refreshAll();
+  }catch(e){ showToast('✗','Rejected','Connection cancelled.'); }
+}
+
+/* ============================================================
+   TAB / MODE
+============================================================ */
+function setMode(m){
+  mode = m;
+  document.getElementById('tab-deposit').classList.toggle('active', m==='deposit');
+  document.getElementById('tab-withdraw').classList.toggle('active', m==='withdraw');
+  const fromSym = m==='deposit' ? 'USDC' : 'USYC';
+  const toSym   = m==='deposit' ? 'USYC' : 'USDC';
+  const fromIco = m==='deposit' ? 'U' : 'Y';
+  const toIco   = m==='deposit' ? 'Y' : 'U';
+  const fromClass = m==='deposit' ? 'amt-tok-ico ti-usdc' : 'amt-tok-ico ti-usyc';
+  const toClass   = m==='deposit' ? 'amt-tok-ico ti-usyc' : 'amt-tok-ico ti-usdc';
+  document.getElementById('amt-label-from').textContent = m==='deposit' ? 'You deposit' : 'You redeem';
+  document.getElementById('amt-label-to').textContent   = 'You receive';
+  document.getElementById('amt-from-sym').textContent = fromSym;
+  document.getElementById('amt-to-sym').textContent   = toSym;
+  document.getElementById('amt-from-ico').textContent = fromIco;
+  document.getElementById('amt-to-ico').textContent   = toIco;
+  document.getElementById('amt-from-ico').className = fromClass;
+  document.getElementById('amt-to-ico').className   = toClass;
+  document.getElementById('inf-fee-label').textContent = m==='deposit' ? 'Subscription fee' : 'Redemption fee';
+  document.getElementById('amt-input').value = '';
+  document.getElementById('amt-output').value = '';
+  inputRaw = '';
+  refreshQuote();
+  updateMaxLink();
+}
+
+function setMax(){
+  const d = mode==='deposit' ? ASSET.decimals : SHARE.decimals;
+  const bal = mode==='deposit' ? balances.usdc : balances.usyc;
+  const f = bigToFloat(bal, d);
+  document.getElementById('amt-input').value = f.toFixed(Math.min(d,6));
+  onAmountInput();
+}
+
+function updateMaxLink(){
+  const link = document.getElementById('amt-max-link');
+  const d = mode==='deposit' ? ASSET.decimals : SHARE.decimals;
+  const bal = mode==='deposit' ? balances.usdc : balances.usyc;
+  const sym = mode==='deposit' ? 'USDC' : 'USYC';
+  link.textContent = `${fmtBig(bal, d, 4)} ${sym}`;
+}
+
+function onAmountInput(){
+  inputRaw = document.getElementById('amt-input').value;
+  refreshQuote();
+}
+
+/* ============================================================
+   DATA LOAD
+============================================================ */
+async function refreshAll(){
+  await Promise.all([loadVaultStats(), loadBalances(), loadTradingWindow()]);
+  refreshQuote();
+}
+
+async function loadVaultStats(){
+  try{
+    const shareUnit = 10n ** BigInt(SHARE.decimals);  // 1 USYC share (raw)
+    const [totalAssets, nav1] = await Promise.all([
+      teller.totalAssets().catch(()=>0n),
+      teller.convertToAssets(shareUnit).catch(()=>0n),
+    ]);
+    const tvlUsd = bigToFloat(totalAssets, ASSET.decimals);
+    const navUsd = bigToFloat(nav1, ASSET.decimals);
+    quote.navPerShare = nav1;
+
+    document.getElementById('stat-tvl').textContent = '$' + fmtMoney(tvlUsd, 0);
+    document.getElementById('stat-nav').textContent = '$' + fmtMoney(navUsd, 4);
+    document.getElementById('stat-apy').textContent = TARGET_APY.toFixed(2) + '%';
+    document.getElementById('pos-share-price').textContent = '$' + fmtMoney(navUsd, 4);
+  }catch(e){
+    console.error('vault stats', e);
+  }
+}
+
+async function loadBalances(){
+  if(!walletAddr){
+    balances = { usdc: 0n, usyc: 0n, usdcNative: 0n };
+    document.getElementById('pos-usyc').textContent = '—';
+    document.getElementById('pos-usd').textContent = '≈ $0.00';
+    document.getElementById('pos-usdc').textContent = '—';
+    document.getElementById('pos-allow').textContent = 'Connect wallet';
+    updateMaxLink();
+    return;
+  }
+  try{
+    const [natUsdc, assetBal, shareBal, maxDep, maxRed] = await Promise.all([
+      rpcProvider.getBalance(walletAddr).catch(()=>0n),
+      assetC.balanceOf(walletAddr).catch(()=>0n),   // Teller's underlying (canonical USDC)
+      shareC.balanceOf(walletAddr).catch(()=>0n),   // USYC share
+      teller.maxDeposit(walletAddr).catch(()=>0n),
+      teller.maxRedeem(walletAddr).catch(()=>0n),
+    ]);
+    // Two distinct USDC on Arc: native gas wrapper (18 dec) vs Teller asset (6 dec).
+    // For deposit flows we MUST use the Teller's asset. Balance shown is the asset balance.
+    balances.usdcNative = natUsdc;
+    balances.usdc = assetBal;
+    balances.usyc = shareBal;
+
+    const shareFloat = bigToFloat(shareBal, SHARE.decimals);
+    document.getElementById('pos-usyc').textContent = fmtMoney(shareFloat, 4);
+
+    if(quote.navPerShare > 0n){
+      // shareBal(SHARE.decimals) * navPerShare(ASSET.decimals per 1 share unit) / 1 share_unit
+      const shareUnit = 10n ** BigInt(SHARE.decimals);
+      const usdVal = (shareBal * quote.navPerShare) / shareUnit;
+      document.getElementById('pos-usd').textContent = '≈ $' + fmtBig(usdVal, ASSET.decimals, 2);
+    }
+
+    document.getElementById('pos-usdc').textContent = fmtBig(balances.usdc, ASSET.decimals, 4) + ' USDC';
+
+    const allowed = maxDep > 0n || maxRed > 0n;
+    quote.maxAmt = mode==='deposit' ? maxDep : maxRed;
+    document.getElementById('pos-allow').innerHTML = allowed
+      ? '<span style="color:var(--arc4)">● Allowlisted</span>'
+      : '<span style="color:var(--gold)">○ Entitlement required</span>';
+
+    updateMaxLink();
+  }catch(e){ console.error('balances', e); }
+}
+
+/* Compute next US weekday market open as local-time string.
+   USYC follows US Treasury market hours: Mon–Fri, ~09:30 ET open.
+   We approximate open = 13:30 UTC (DST) or 14:30 UTC (standard). */
+function nextMarketOpenLocal(dst){
+  const now = new Date();
+  const openUtcHour = dst ? 13 : 14; // 09:30 ET
+  const openUtcMin = 30;
+  // Start from tomorrow, then skip weekends
+  const cand = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), openUtcHour, openUtcMin, 0));
+  // If still today and today is a weekday and time < open, keep today
+  if(cand.getTime() > now.getTime()){
+    const wd = cand.getUTCDay();
+    if(wd >= 1 && wd <= 5) return cand;
+  }
+  // Otherwise advance to next weekday
+  for(let i=1;i<=4;i++){
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()+i, openUtcHour, openUtcMin, 0));
+    const wd = next.getUTCDay();
+    if(wd >= 1 && wd <= 5) return next;
+  }
+  return null;
+}
+
+async function loadTradingWindow(){
+  try{
+    const [afterHour, dst] = await Promise.all([
+      teller.afterHourTrading().catch(()=>null),
+      teller.isDST().catch(()=>false),
+    ]);
+    // afterHourTrading is encoded as HHMM (e.g., 2200 = 22:00 cutoff)
+    const now = new Date();
+    const utcHM = now.getUTCHours()*100 + now.getUTCMinutes();
+    const cutoff = Number(afterHour || 2200n);
+    const isWeekend = now.getUTCDay() === 0 || now.getUTCDay() === 6;
+    tradingOpen = !isWeekend && utcHM < cutoff;
+    const dot = document.getElementById('tw-dot');
+    const txt = document.getElementById('tw-text');
+    dot.className = 'tw-dot ' + (tradingOpen ? 'open' : 'closed');
+    const hh = String(Math.floor(cutoff/100)).padStart(2,'0');
+    const mm = String(cutoff%100).padStart(2,'0');
+    if(tradingOpen){
+      txt.textContent = `Trading open · closes ${hh}:${mm} UTC${dst?' (DST)':''}`;
+    } else {
+      const nextOpen = nextMarketOpenLocal(dst);
+      if(nextOpen){
+        const opts = { weekday:'short', hour:'2-digit', minute:'2-digit' };
+        const local = nextOpen.toLocaleString(undefined, opts);
+        txt.textContent = `Market closed · reopens ${local} (your time)`;
+      } else {
+        txt.textContent = `Market closed · reopens next US weekday${dst?' (DST)':''}`;
+      }
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   QUOTE
+============================================================ */
+async function refreshQuote(){
+  const btn = document.getElementById('exec-btn');
+  const warn = document.getElementById('warn-banner');
+  warn.style.display = 'none';
+
+  const fromDecimals = mode==='deposit' ? ASSET.decimals : SHARE.decimals;
+  const toDecimals   = mode==='deposit' ? SHARE.decimals : ASSET.decimals;
+
+  const raw = parseInput(inputRaw, fromDecimals);
+  if(raw === 0n){
+    document.getElementById('amt-output').value = '';
+    document.getElementById('amt-from-usd').textContent = '≈ $0.00';
+    document.getElementById('amt-to-usd').textContent = '≈ $0.00';
+    document.getElementById('inf-rate').textContent = '—';
+    document.getElementById('inf-fee').textContent = '—';
+    document.getElementById('inf-limit').textContent = '—';
+    btn.textContent = 'Enter amount';
+    btn.disabled = true;
+    return;
+  }
+
+  try{
+    const feeRate = await (mode==='deposit'
+      ? teller.subscriptionFeeRate(walletAddr || ethers.ZeroAddress).catch(()=>0n)
+      : teller.redemptionFeeRate (walletAddr || ethers.ZeroAddress).catch(()=>0n));
+    const out = await (mode==='deposit'
+      ? teller.previewDeposit(raw).catch(()=>0n)
+      : teller.previewRedeem (raw).catch(()=>0n));
+
+    quote.out = out;
+    quote.feeRate = feeRate;
+
+    const outFloat = bigToFloat(out, toDecimals);
+    document.getElementById('amt-output').value = outFloat.toFixed(Math.min(toDecimals,6));
+
+    // USD estimates (USDC ≈ $1, USYC ≈ nav)
+    const navFloat = quote.navPerShare > 0n ? bigToFloat(quote.navPerShare, ASSET.decimals) : 1;
+    const fromUsd = mode==='deposit'
+      ? bigToFloat(raw, fromDecimals) * 1
+      : bigToFloat(raw, fromDecimals) * navFloat;
+    const toUsd   = mode==='deposit'
+      ? bigToFloat(out, toDecimals) * navFloat
+      : bigToFloat(out, toDecimals) * 1;
+    document.getElementById('amt-from-usd').textContent = '≈ $' + fmtMoney(fromUsd, 2);
+    document.getElementById('amt-to-usd').textContent = '≈ $' + fmtMoney(toUsd, 2);
+
+    // Rate + fee
+    const rate = mode==='deposit'
+      ? (out > 0n ? bigToFloat(out, toDecimals) / bigToFloat(raw, fromDecimals) : 0)
+      : (out > 0n ? bigToFloat(out, toDecimals) / bigToFloat(raw, fromDecimals) : 0);
+    document.getElementById('inf-rate').textContent = rate
+      ? `1 ${mode==='deposit'?'USDC':'USYC'} ≈ ${rate.toFixed(4)} ${mode==='deposit'?'USYC':'USDC'}`
+      : '—';
+    // Hashnote USYC fee rates are WAD-scaled (1e18 = 100%). Defensive: if
+    // the on-chain value is tiny (< 1e6) treat as already-percent; else divide.
+    document.getElementById('inf-fee').textContent = formatFeeRate(feeRate);
+
+    // Max (maxDeposit returns in ASSET.decimals; maxRedeem in SHARE.decimals)
+    const maxAmt = quote.maxAmt;
+    const maxFloat = bigToFloat(maxAmt, fromDecimals);
+    // Hashnote Teller often returns MAX_UINT256 for unlimited → don't display that
+    const MAX_UINT = (1n << 256n) - 1n;
+    const isUnlimited = maxAmt >= MAX_UINT / 2n;
+    document.getElementById('inf-limit').textContent = !walletAddr
+      ? 'Connect wallet'
+      : maxAmt === 0n
+        ? 'Not allowlisted'
+        : isUnlimited
+          ? 'No limit'
+          : fmtMoney(maxFloat, 2) + ' ' + (mode==='deposit' ? 'USDC' : 'USYC');
+
+    // Button state
+    const bal = mode==='deposit' ? balances.usdc : balances.usyc;
+    if(!walletAddr){
+      btn.textContent = 'Connect wallet';
+      btn.disabled = false;
+    } else if(!tradingOpen){
+      btn.textContent = 'Market closed';
+      btn.disabled = true;
+      warn.classList.remove('err');
+      warn.style.display = 'flex';
+      document.getElementById('warn-text').innerHTML =
+        `USYC follows US Treasury market hours (Mon–Fri, 09:30–16:00 ET). Outside these hours the Teller rejects subscriptions. Trading auto-resumes at next session — see header for exact time.`;
+    } else if(maxAmt === 0n){
+      btn.textContent = 'Entitlement required';
+      btn.disabled = true;
+      warn.classList.remove('err');
+      warn.style.display = 'flex';
+      document.getElementById('warn-text').innerHTML =
+        `This address isn't on the USYC allowlist for ${mode==='deposit'?'subscription':'redemption'}. On testnet, use the existing <a href="/pool">USDC/USYC liquidity pool</a> to swap — the vault's Teller is gated by Circle Entitlements.`;
+    } else if(raw > bal){
+      btn.textContent = 'Insufficient balance';
+      btn.disabled = true;
+    } else if(!isUnlimited && raw > maxAmt){
+      btn.textContent = 'Exceeds daily limit';
+      btn.disabled = true;
+    } else {
+      btn.textContent = mode==='deposit' ? 'Deposit USDC' : 'Redeem USYC';
+      btn.disabled = false;
+    }
+  }catch(e){
+    console.error('quote', e);
+    document.getElementById('amt-output').value = '';
+    btn.textContent = 'Quote failed';
+    btn.disabled = true;
+  }
+}
+
+/* ============================================================
+   EXECUTE
+============================================================ */
+async function executeAction(){
+  if(!walletAddr){ return connectWallet(); }
+  const btn = document.getElementById('exec-btn');
+  const fromDecimals = mode==='deposit' ? ASSET.decimals : SHARE.decimals;
+  const raw = parseInput(inputRaw, fromDecimals);
+  if(raw === 0n){ return; }
+
+  try{
+    btn.disabled = true;
+    if(mode==='deposit'){
+      // 1. Ensure allowance on the Teller's underlying asset (canonical 6-dec USDC)
+      btn.textContent = 'Checking allowance…';
+      const assetSigner = new ethers.Contract(ASSET.address, ERC20_ABI, walletSigner);
+      const allowance = await assetC.allowance(walletAddr, TELLER_ADDR).catch(()=>0n);
+      if(allowance < raw){
+        btn.textContent = 'Approving USDC…';
+        const txA = await assetSigner.approve(TELLER_ADDR, raw);
+        showToast('⏳','Approval sent', shortAddr(txA.hash));
+        await txA.wait();
+        showToast('✓','USDC approved', 'Now depositing…');
+      }
+      btn.textContent = 'Simulating…';
+      const tellerSigner = new ethers.Contract(TELLER_ADDR, TELLER_ABI, walletSigner);
+      // Preflight: simulate first so we catch custom reverts BEFORE the user signs.
+      try {
+        await tellerSigner.deposit.staticCall(raw, walletAddr);
+      } catch (simErr) {
+        console.error('deposit staticCall revert', simErr);
+        throw new Error(decodeRevert(simErr));
+      }
+      btn.textContent = 'Depositing…';
+      const tx = await tellerSigner.deposit(raw, walletAddr);
+      showToast('⏳','Deposit sent', shortAddr(tx.hash));
+      await tx.wait();
+      showToast('✓','Deposit complete','USYC shares minted');
+    } else {
+      // Redeem flow — approve share token for self-redeem safety
+      btn.textContent = 'Checking allowance…';
+      const shareSigner = new ethers.Contract(SHARE.address, ERC20_ABI, walletSigner);
+      const allowance = await shareC.allowance(walletAddr, TELLER_ADDR).catch(()=>0n);
+      if(allowance < raw){
+        btn.textContent = 'Approving USYC…';
+        const txA = await shareSigner.approve(TELLER_ADDR, raw);
+        showToast('⏳','Approval sent', shortAddr(txA.hash));
+        await txA.wait();
+      }
+      btn.textContent = 'Simulating…';
+      const tellerSigner = new ethers.Contract(TELLER_ADDR, TELLER_ABI, walletSigner);
+      try {
+        await tellerSigner.redeem.staticCall(raw, walletAddr, walletAddr);
+      } catch (simErr) {
+        console.error('redeem staticCall revert', simErr);
+        throw new Error(decodeRevert(simErr));
+      }
+      btn.textContent = 'Redeeming…';
+      const tx = await tellerSigner.redeem(raw, walletAddr, walletAddr);
+      showToast('⏳','Redeem sent', shortAddr(tx.hash));
+      await tx.wait();
+      showToast('✓','Redeem complete','USDC received');
+    }
+    document.getElementById('amt-input').value = '';
+    inputRaw = '';
+    await refreshAll();
+  }catch(e){
+    console.error(e);
+    // e.message already carries decodeRevert() output if preflight failed
+    const msg = e?.message && e.message.length < 200
+      ? e.message
+      : decodeRevert(e);
+    showToast('✗','Transaction failed', msg.slice(0,160));
+    const warn = document.getElementById('warn-banner');
+    warn.classList.add('err');
+    warn.style.display = 'flex';
+    document.getElementById('warn-text').textContent = msg;
+    btn.disabled = false;
+    refreshQuote();
+  }
+}
+
+/* ============================================================
+   BOOT
+============================================================ */
+setMode('deposit');
+(async () => {
+  await discoverTellerTokens();   // CRITICAL: resolves true asset/share decimals
+  await refreshAll();
+  setInterval(refreshAll, 30000);
+})();
+</script>
+</body>
+</html>

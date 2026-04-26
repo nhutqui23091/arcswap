@@ -1,0 +1,27 @@
+# Cloudflare Pages / Netlify _headers file
+# These are HTTP response headers — they apply on top of the CSP meta tag in each page.
+# Headers below CANNOT be set via <meta> and MUST come from the host.
+
+/*
+  # Defense-in-depth CSP (matches the meta tag, plus frame-ancestors which meta cannot set)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'
+
+  # Block iframe embedding (clickjacking defense). Also covered by frame-ancestors above.
+  X-Frame-Options: DENY
+
+  # Force HTTPS for 1 year, include subdomains, signal preload-list eligibility.
+  # NOTE: only enable preload after you confirm the domain serves HTTPS on every subdomain.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+  # Stop browsers from MIME-sniffing responses
+  X-Content-Type-Options: nosniff
+
+  # Don't leak full URL to third-party origins
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Disable browser features we never use (camera/mic/geo/etc)
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()
+
+  # Cross-origin isolation (lets future SharedArrayBuffer / WASM features work safely)
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-site

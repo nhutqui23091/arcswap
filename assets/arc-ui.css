@@ -1,0 +1,157 @@
+/* ArcSwap shared UI — navbar, cursor, aurora, toast, glass primitives */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Arc.network-inspired palette — deep navy base, teal/cyan accent, peach horizon.
+     Retains legacy purple as tertiary only. */
+  --bg:#0A1628; --bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035); --surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09); --border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB; --muted:#8CA0BD;
+
+  /* Primary accents — arc.network horizon */
+  --arc1:#4DD6DB;        /* teal (was purple) — primary */
+  --arc2:#4A7BEC;        /* blue (was cyan) */
+  --arc3:#F4C89A;        /* peach horizon (was pink) */
+  --arc4:#7BE495;        /* mint (was neon green) */
+
+  /* Extended */
+  --peach:#F4C89A; --sand:#ECDCC4; --deep:#0A1628;
+  --legacy-purple:#6C3FFF;    /* kept for ramp-downs / gradients only */
+  --green:#7BE495; --red:#FF6B8A; --yellow:#FFCC77; --gold:#FFB347;
+
+  --radius:16px;
+  --font:'Inter',system-ui,sans-serif; --mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}
+body.cursor-none{cursor:none}
+h1,h2,h3,h4,h5,h6{font-family:var(--font);font-weight:800;letter-spacing:-.035em;line-height:1.1}
+.label-caps{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--mono)}
+
+/* Arc.Network-inspired typography utilities */
+.arc-label{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;color:#FF9F4A;text-transform:uppercase;white-space:nowrap}
+.arc-label::before{content:'{\00a0';opacity:.75}
+.arc-label::after{content:'\00a0}';opacity:.75}
+.arc-divider{height:1px;background:linear-gradient(90deg,transparent 0%,rgba(77,214,219,.35) 20%,rgba(77,214,219,.35) 80%,transparent 100%);border:none;margin:18px 0}
+.arc-num{font-weight:800;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.arc-display{font-family:var(--font);font-weight:800;letter-spacing:-.04em;line-height:1.05}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--font);cursor:pointer}
+input,select,textarea{font-family:var(--font)}
+
+/* Cursor */
+.cursor-dot{position:fixed;width:8px;height:8px;background:#fff;border-radius:50%;pointer-events:none;z-index:9999;mix-blend-mode:difference;transform:translate(-50%,-50%);transition:transform .1s}
+.cursor-ring{position:fixed;width:36px;height:36px;border:1.5px solid rgba(255,255,255,.5);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .15s ease}
+
+/* Arc.network-style horizon background — deep navy at top, teal mid, peach/cream
+   glow at the bottom edge. Orbs are subtle secondary decoration. */
+.aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 140% 60% at 50% 110%, rgba(244,200,154,0.28) 0%, rgba(244,200,154,0.08) 35%, transparent 60%),
+    radial-gradient(ellipse 120% 40% at 50% 90%, rgba(77,214,219,0.22) 0%, rgba(74,123,236,0.10) 35%, transparent 65%),
+    linear-gradient(180deg, #0A1628 0%, #0E1F39 40%, #133155 75%, #1E4A6E 100%);
+}
+/* Optional faint orbs for extra depth — used sparingly */
+.orb{position:absolute;border-radius:50%;filter:blur(150px);opacity:.06;animation:orb-drift 40s ease-in-out infinite alternate;mix-blend-mode:screen}
+.orb1{width:720px;height:500px;background:var(--arc1);top:-240px;left:-200px;animation-duration:40s}
+.orb2{width:620px;height:520px;background:var(--arc2);top:-160px;right:-220px;animation-duration:46s;animation-delay:-10s}
+.orb3{display:none}   /* retired — was the loud pink orb */
+.orb4{display:none}   /* retired — mint orb was too colorful */
+@keyframes orb-drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,20px) scale(1.06)}}
+
+/* Noise */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");opacity:.4;pointer-events:none;z-index:9997}
+
+/* Glass primitive */
+.glass{background:rgba(255,255,255,.025);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);position:relative;overflow:hidden}
+.glass::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(255,255,255,.2) 0%,rgba(255,255,255,.04) 30%,rgba(255,255,255,0) 60%,rgba(255,255,255,.08) 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+
+/* Navbar */
+nav.arc-nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .3s;gap:16px}
+nav.arc-nav.scrolled{background:rgba(3,1,10,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--arc1),var(--arc2));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 18px rgba(77,214,219,.28);color:#fff;font-weight:900}
+.logo-name{font-size:20px;font-weight:900;letter-spacing:-.04em;color:var(--text)}
+.logo-badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;background:rgba(77,214,219,.15);border:1px solid rgba(77,214,219,.35);border-radius:20px;color:var(--arc2);font-family:var(--mono)}
+.nav-tabs{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s}
+.nav-tab:hover{color:var(--text);background:var(--surface)}
+.nav-tab.active{color:var(--text);background:var(--surface2)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
+.nav-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+@media(max-width:820px){.nav-tabs{display:none}}
+
+/* Buttons */
+.btn-ghost{padding:9px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:1px solid var(--border);transition:all .2s;white-space:nowrap}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-primary{padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:-.01em;color:var(--text);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);transition:all .2s;white-space:nowrap}
+.btn-primary:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.35);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-lg{padding:14px 24px;font-size:15px;border-radius:14px}
+.btn-block{width:100%;display:block}
+
+/* Wallet button */
+.wallet-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:13px;transition:all .2s}
+.wallet-btn:hover{border-color:var(--border2);background:rgba(255,255,255,.08)}
+.wallet-btn .dot{width:7px;height:7px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4)}
+.wallet-btn.disconnected{background:rgba(255,255,255,.08);color:var(--text);border-color:rgba(255,255,255,.2)}
+.wallet-btn.disconnected:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.32)}
+
+/* Toast */
+.toast-stack{position:fixed;top:90px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:10000;max-width:360px}
+.toast{background:rgba(12,6,24,.94);backdrop-filter:blur(20px);border:1px solid var(--border2);border-left:3px solid var(--arc2);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.4);animation:toast-in .25s ease;display:flex;gap:10px;align-items:flex-start}
+.toast.success{border-left-color:var(--arc4)}
+.toast.error{border-left-color:var(--red)}
+.toast.warn{border-left-color:var(--yellow)}
+.toast-icon{font-size:18px;line-height:1;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:13px;margin-bottom:2px}
+.toast-sub{font-size:11.5px;color:var(--muted);line-height:1.45;word-break:break-word}
+.toast-close{background:none;border:none;color:var(--muted);font-size:18px;line-height:1;padding:0 0 0 6px;cursor:pointer}
+.toast-close:hover{color:var(--text)}
+@keyframes toast-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Skeleton */
+.skel{background:linear-gradient(90deg,var(--surface) 0%,var(--surface2) 50%,var(--surface) 100%);background-size:200% 100%;animation:shimmer 1.3s infinite;border-radius:6px;color:transparent !important}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+/* Spinner */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--text);border-radius:50%;animation:sp 0.7s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Modal */
+.arc-modal-bg{position:fixed;inset:0;background:rgba(3,1,10,.72);backdrop-filter:blur(8px);z-index:9500;display:none;align-items:center;justify-content:center;padding:20px}
+.arc-modal-bg.show{display:flex;animation:fade-in .2s ease}
+.arc-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:20px;width:100%;max-width:440px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;animation:pop .25s cubic-bezier(.2,.9,.3,1.3)}
+.arc-modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.arc-modal-title{font-weight:700;font-size:16px}
+.arc-modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;padding:4px 8px;border-radius:8px}
+.arc-modal-close:hover{color:var(--text);background:var(--surface)}
+.arc-modal-body{padding:16px 20px 20px;overflow:auto}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+@keyframes pop{0%{transform:scale(.94);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* Token selector row */
+.token-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid transparent;cursor:pointer;transition:all .15s}
+.token-row:hover{background:var(--surface);border-color:var(--border)}
+.token-row.active{background:var(--surface2);border-color:var(--border2)}
+.token-ico{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#333,#555);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;overflow:hidden}
+.token-ico img{width:100%;height:100%;object-fit:cover}
+.token-meta{flex:1;min-width:0}
+.token-sym{font-weight:700;font-size:14px}
+.token-name{font-size:11px;color:var(--muted)}
+.token-bal{font-family:var(--mono);font-size:12.5px;color:var(--muted);text-align:right}
+
+/* Chain chip */
+.chain-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--surface2);border:1px solid var(--border)}
+.chain-chip .cdot{width:6px;height:6px;border-radius:50%}
+.chain-chip.arc .cdot{background:linear-gradient(135deg,var(--arc1),var(--arc2))}
+.chain-chip.sepolia .cdot{background:#627EEA}
+
+/* Utility */
+.row{display:flex;align-items:center}
+.gap-2{gap:8px} .gap-3{gap:12px} .gap-4{gap:16px}
+.hidden{display:none !important}

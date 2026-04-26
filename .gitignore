@@ -1,0 +1,64 @@
+# ─── Secrets ─────────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.keystore
+.secret
+secrets/
+
+# ─── Build artifacts ─────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+.vite/
+.next/
+.nuxt/
+
+# ─── Dependencies ────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+package-lock.json.bak
+
+# ─── Releases ────────────────────────────────────────────────────────────────
+# Keep signed manifests, ignore drafts and local CIDs
+releases/*.draft.json
+releases/.local-cid
+
+# ─── IDE / OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+
+# ─── Coverage / test ─────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+
+# ─── Local scratch ───────────────────────────────────────────────────────────
+tmp/
+scratch/
+*.tmp
+*.bak
+*.orig
+
+# ─── Generated social previews (raster exports — keep SVG sources only) ──────
+assets/social/*.png
+assets/social/*.jpg

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'"
+        },
+        { "key": "X-Frame-Options",            "value": "DENY" },
+        { "key": "Strict-Transport-Security",  "value": "max-age=31536000; includeSubDomains" },
+        { "key": "X-Content-Type-Options",     "value": "nosniff" },
+        { "key": "Referrer-Policy",            "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy",         "value": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()" },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Resource-Policy","value": "same-site" }
+      ]
+    }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
+}

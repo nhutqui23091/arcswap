@@ -1,0 +1,13 @@
+/trade   /trade.html   200
+/vault   /vault.html   200
+/docs    /docs.html    200
+/blog    /blog.html    200
+/pool    /pool.html    200
+/point   /point.html   200
+/token   /token.html   200
+/deploy  /deploy.html  200
+
+# Legacy / aliased paths
+/swap    /trade        301
+/bridge  /trade        301
+/farm    /token.html   302

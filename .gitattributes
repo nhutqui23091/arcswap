@@ -1,0 +1,31 @@
+# Auto-detect text files and normalize line endings to LF in the repo
+* text=auto eol=lf
+
+# Shell scripts MUST be LF (otherwise bash on Linux fails with ^M errors)
+*.sh   text eol=lf
+
+# Web text files — always LF in repo
+*.html text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.svg  text eol=lf
+*.txt  text eol=lf
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+
+# Cloudflare / Netlify config files (no extension)
+_headers   text eol=lf
+_redirects text eol=lf
+
+# Binary files — never touch
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary

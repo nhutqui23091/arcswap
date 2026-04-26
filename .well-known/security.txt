@@ -1,0 +1,12 @@
+# RFC 9116 — security.txt for ArcSwap
+# https://www.rfc-editor.org/rfc/rfc9116
+
+Contact: mailto:security@arcswap.net
+Contact: https://arcswap.net/SECURITY.md
+Expires: 2027-04-25T00:00:00.000Z
+Encryption: https://arcswap.net/.well-known/pgp-key.txt
+Preferred-Languages: en, vi
+Canonical: https://arcswap.net/.well-known/security.txt
+Policy: https://arcswap.net/SECURITY.md
+Acknowledgments: https://arcswap.net/SECURITY.md#hall-of-fame
+Hiring: https://arcswap.net/careers

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 500" width="1500" height="500">
+  <!-- ArcSwap X / Twitter header — 1500x500.
+       Wordmark-only design. Centered for safe-zone tolerance on mobile. -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#0F2342"/>
+      <stop offset="50%" stop-color="#0B1A30"/>
+      <stop offset="100%" stop-color="#08111F"/>
+    </linearGradient>
+    <linearGradient id="swap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="#4DD6DB"/>
+      <stop offset="100%" stop-color="#4A7BEC"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#4DD6DB" stop-opacity="0"/>
+      <stop offset="50%"  stop-color="#4DD6DB" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#4A7BEC" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="orbA" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#4DD6DB" stop-opacity=".42"/>
+      <stop offset="65%" stop-color="#4DD6DB" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbB" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#4A7BEC" stop-opacity=".40"/>
+      <stop offset="65%" stop-color="#4A7BEC" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbC" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#F4C89A" stop-opacity=".18"/>
+      <stop offset="65%" stop-color="#F4C89A" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#FFFFFF" stroke-opacity=".028" stroke-width="1"/>
+    </pattern>
+    <filter id="softShadow" x="-10%" y="-30%" width="120%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dy="2"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.45"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background layers -->
+  <rect width="1500" height="500" fill="url(#bg)"/>
+  <rect width="1500" height="500" fill="url(#grid)"/>
+
+  <!-- Aurora orbs (off-center, larger) -->
+  <circle cx="220"  cy="120" r="430" fill="url(#orbA)"/>
+  <circle cx="1300" cy="380" r="460" fill="url(#orbB)"/>
+  <circle cx="780"  cy="540" r="380" fill="url(#orbC)"/>
+
+  <!-- Centered content stack — sits inside mobile safe zone (y 90 → 410) -->
+
+  <!-- LIVE pill — small, refined, sitting above the wordmark (top of safe zone) -->
+  <g transform="translate(660 105)" font-family="'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace">
+    <rect x="0" y="0" width="180" height="32" rx="16"
+          fill="#7BE495" fill-opacity="0.10"
+          stroke="#7BE495" stroke-opacity="0.36" stroke-width="1"/>
+    <circle cx="18" cy="16" r="4.5" fill="#7BE495"/>
+    <text x="32" y="21" fill="#7BE495"
+          font-size="11.5" font-weight="600" letter-spacing="1.4">LIVE · ARC TESTNET</text>
+  </g>
+
+  <!-- Big wordmark — "Arc" white + "Swap" gradient -->
+  <g filter="url(#softShadow)" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+     font-weight="900" letter-spacing="-5"
+     text-anchor="middle">
+    <text x="750" y="278" font-size="128">
+      <tspan fill="#F5F7FB">Arc</tspan><tspan fill="url(#swap)">Swap</tspan>
+    </text>
+  </g>
+
+  <!-- Tagline -->
+  <g text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+    <text x="750" y="335" font-size="28" font-weight="700" letter-spacing="-.5" fill="#F5F7FB">
+      The Yield Terminal for <tspan fill="url(#swap)">Stablecoins</tspan>
+    </text>
+    <text x="750" y="372" font-size="16" font-weight="500" letter-spacing="0" fill="#8CA0BD">
+      USYC Vault &#8226; Swap &#8226; Bridge &#8226; Pools &#8202;—&#8202; built on Arc
+    </text>
+  </g>
+
+  <!-- Decorative center accent line -->
+  <rect x="615" y="395" width="270" height="2" fill="url(#accent)"/>
+
+  <!-- Bottom accent strip -->
+  <rect x="0" y="498" width="1500" height="2" fill="url(#accent)" opacity="0.7"/>
+</svg>

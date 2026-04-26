@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="ArcSwap Documentation — guides, concepts and reference for the Yield Terminal for Stablecoins on Arc."/>
+<title>Documentation — ArcSwap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;
+  --bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);
+  --surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);
+  --border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;
+  --muted:#8CA0BD;
+  --arc1:#4DD6DB;
+  --arc2:#4A7BEC;
+  --arc3:#F4C89A;
+  --arc4:#7BE495;
+  --peach:#F4C89A;
+  --green:#7BE495;
+  --warn:#FFB454;
+  --danger:#FF7A7A;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
+
+/* Aurora */
+.aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 100% 40% at 50% 0%, rgba(74,123,236,0.10) 0%, transparent 60%),
+    linear-gradient(180deg, #0A1628 0%, #0E1F39 60%, #0A1628 100%);
+}
+
+/* ===== NAV ===== */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-name{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.logo-tag{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;border-left:1px solid var(--border);padding-left:10px;margin-left:4px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none;background:none;border:none;font-family:var(--font)}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--text);background:var(--surface)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-ghost{padding:9px 18px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);font-family:var(--font);transition:all .2s;text-decoration:none}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-primary{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);font-family:var(--font);transition:all .2s;text-decoration:none}
+.btn-primary:hover{background:rgba(255,255,255,0.14)}
+
+/* ===== DOCS LAYOUT ===== */
+.docs-wrap{
+  position:relative;z-index:1;
+  max-width:1320px;margin:0 auto;padding:100px 24px 80px;
+  display:grid;grid-template-columns:240px minmax(0,1fr) 200px;gap:48px;
+}
+
+/* --- LEFT SIDEBAR --- */
+.docs-side{
+  position:sticky;top:90px;align-self:start;
+  max-height:calc(100vh - 110px);overflow-y:auto;
+  padding-right:8px;
+}
+.docs-side::-webkit-scrollbar{width:4px}
+.docs-side::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.side-section{margin-bottom:24px}
+.side-title{
+  font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--arc1);margin-bottom:10px;font-family:var(--mono);
+}
+.side-title::before{content:'// ';color:rgba(140,160,189,.55);font-weight:400}
+.side-link{
+  display:block;padding:6px 10px;font-size:14px;font-weight:500;
+  color:var(--muted);text-decoration:none;border-radius:6px;margin-bottom:2px;
+  transition:all .15s;border-left:2px solid transparent;
+}
+.side-link:hover{color:var(--text);background:var(--surface)}
+.side-link.active{color:var(--arc1);border-left-color:var(--arc1);background:rgba(77,214,219,0.06)}
+
+/* --- CONTENT --- */
+.docs-main{min-width:0;padding-bottom:120px}
+.docs-breadcrumb{
+  font-size:12px;font-family:var(--mono);color:var(--muted);
+  letter-spacing:.05em;margin-bottom:16px;text-transform:uppercase;
+}
+.docs-breadcrumb a{color:var(--muted);text-decoration:none}
+.docs-breadcrumb a:hover{color:var(--text)}
+.docs-h1{font-size:42px;font-weight:800;letter-spacing:-.025em;line-height:1.1;margin-bottom:14px}
+.docs-lead{font-size:18px;color:var(--muted);line-height:1.6;margin-bottom:48px;max-width:720px}
+.docs-h2{
+  font-size:28px;font-weight:700;letter-spacing:-.02em;margin:64px 0 16px;
+  padding-top:24px;border-top:1px solid var(--border);
+}
+.docs-h2:first-of-type{border-top:none;padding-top:0;margin-top:0}
+.docs-h3{font-size:20px;font-weight:600;margin:36px 0 12px;letter-spacing:-.01em}
+.docs-h4{font-size:16px;font-weight:600;margin:24px 0 8px;color:var(--arc1);font-family:var(--mono);letter-spacing:.02em}
+.docs-p{font-size:15px;color:#C8D1E0;line-height:1.75;margin-bottom:16px}
+.docs-p strong{color:var(--text);font-weight:600}
+.docs-p a{color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.3);transition:border-color .2s}
+.docs-p a:hover{border-bottom-color:var(--arc1)}
+.docs-ul,.docs-ol{padding-left:22px;margin-bottom:18px}
+.docs-ul li,.docs-ol li{font-size:15px;color:#C8D1E0;line-height:1.75;margin-bottom:6px}
+.docs-ul li::marker{color:var(--arc1)}
+
+/* Code */
+code{
+  font-family:var(--mono);font-size:13px;
+  background:rgba(77,214,219,0.08);border:1px solid rgba(77,214,219,0.16);
+  padding:1px 6px;border-radius:5px;color:var(--arc1);
+}
+pre{
+  background:#0A1322;border:1px solid var(--border);
+  border-radius:10px;padding:16px 18px;overflow-x:auto;margin:16px 0 24px;
+  font-family:var(--mono);font-size:13px;line-height:1.7;
+}
+pre code{background:none;border:none;padding:0;color:#C8D1E0}
+
+/* Callout */
+.callout{
+  border-left:3px solid var(--arc1);background:rgba(77,214,219,0.05);
+  padding:14px 18px;border-radius:0 10px 10px 0;margin:20px 0;
+}
+.callout.warn{border-left-color:var(--warn);background:rgba(255,180,84,0.06)}
+.callout.danger{border-left-color:var(--danger);background:rgba(255,122,122,0.06)}
+.callout-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;font-family:var(--mono);color:var(--arc1)}
+.callout.warn .callout-title{color:var(--warn)}
+.callout.danger .callout-title{color:var(--danger)}
+.callout-body{font-size:14px;color:#C8D1E0;line-height:1.65}
+.callout-body code{font-size:12px}
+
+/* Tables */
+.docs-table{width:100%;border-collapse:collapse;margin:16px 0 24px;font-size:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.docs-table th,.docs-table td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.docs-table th{background:rgba(255,255,255,0.04);font-weight:600;color:var(--text);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono)}
+.docs-table td{color:#C8D1E0}
+.docs-table tr:last-child td{border-bottom:none}
+.docs-table code{font-size:12px}
+
+/* Cards grid (for quick links) */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:24px 0}
+.qcard{
+  display:block;padding:18px;border:1px solid var(--border);border-radius:12px;
+  background:var(--surface);text-decoration:none;transition:all .2s;
+}
+.qcard:hover{border-color:var(--arc1);background:rgba(77,214,219,0.04);transform:translateY(-2px)}
+.qcard-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+.qcard-desc{font-size:13px;color:var(--muted);line-height:1.5}
+
+/* Step list */
+.steps{counter-reset:step;list-style:none;padding:0;margin:18px 0}
+.steps li{
+  position:relative;padding:14px 18px 14px 56px;border:1px solid var(--border);
+  border-radius:10px;margin-bottom:10px;background:var(--surface);
+  font-size:15px;color:#C8D1E0;line-height:1.65;
+}
+.steps li::before{
+  counter-increment:step;content:counter(step);
+  position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;
+  background:linear-gradient(135deg,var(--arc1),var(--arc2));color:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;font-family:var(--mono);
+}
+
+/* --- RIGHT TOC --- */
+.docs-toc{
+  position:sticky;top:90px;align-self:start;
+  max-height:calc(100vh - 110px);overflow-y:auto;
+  padding-left:18px;border-left:1px solid var(--border);
+}
+.toc-title{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-family:var(--mono)}
+.toc-link{
+  display:block;font-size:13px;color:var(--muted);text-decoration:none;
+  padding:5px 0;border-left:2px solid transparent;padding-left:10px;margin-left:-2px;
+  transition:all .15s;
+}
+.toc-link:hover{color:var(--text)}
+.toc-link.active{color:var(--arc1);border-left-color:var(--arc1)}
+.toc-link.h3{padding-left:22px;font-size:12px}
+
+/* Footer mini */
+.docs-foot{
+  margin-top:80px;padding-top:32px;border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;font-size:13px;color:var(--muted);
+  flex-wrap:wrap;gap:12px;
+}
+.docs-foot a{color:var(--muted);text-decoration:none}
+.docs-foot a:hover{color:var(--arc1)}
+
+/* Responsive */
+@media (max-width:1024px){
+  .docs-wrap{grid-template-columns:220px minmax(0,1fr);gap:32px}
+  .docs-toc{display:none}
+}
+@media (max-width:768px){
+  .docs-wrap{grid-template-columns:1fr;padding:90px 18px 60px}
+  .docs-side{position:static;max-height:none;padding-right:0;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+  .nav-links{display:none}
+  .docs-h1{font-size:32px}
+  .docs-h2{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-tag">Docs</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/vault">Vault</a>
+    <a class="nav-link" href="/trade">Trade</a>
+    <a class="nav-link" href="/pool">Pool</a>
+    <a class="nav-link active" href="/docs">Docs</a>
+    <a class="nav-link" href="/blog">Blog</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn-ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    <a class="btn-primary" href="/trade">Launch App ↗</a>
+  </div>
+</nav>
+
+<div class="docs-wrap">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="docs-side">
+    <div class="side-section">
+      <div class="side-title">Getting Started</div>
+      <a class="side-link" href="#introduction">Introduction</a>
+      <a class="side-link" href="#quick-start">Quick start</a>
+      <a class="side-link" href="#wallet-setup">Wallet setup</a>
+      <a class="side-link" href="#get-testnet-usdc">Get testnet USDC</a>
+    </div>
+    <div class="side-section">
+      <div class="side-title">Features</div>
+      <a class="side-link" href="#vault">USYC Vault</a>
+      <a class="side-link" href="#trade">Swap &amp; Bridge</a>
+      <a class="side-link" href="#pool">Liquidity Pools</a>
+      <a class="side-link" href="#points">Points</a>
+    </div>
+    <div class="side-section">
+      <div class="side-title">Concepts</div>
+      <a class="side-link" href="#arc-network">Arc Network</a>
+      <a class="side-link" href="#usyc">USYC explained</a>
+      <a class="side-link" href="#cctp">CCTP bridging</a>
+      <a class="side-link" href="#usdc-gas">USDC as gas</a>
+    </div>
+    <div class="side-section">
+      <div class="side-title">Reference</div>
+      <a class="side-link" href="#network-info">Network info</a>
+      <a class="side-link" href="#contracts">Contract addresses</a>
+      <a class="side-link" href="#wallets">Supported wallets</a>
+    </div>
+    <div class="side-section">
+      <div class="side-title">Resources</div>
+      <a class="side-link" href="#security">Security</a>
+      <a class="side-link" href="#faq">FAQ</a>
+      <a class="side-link" href="#changelog">Changelog</a>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="docs-main">
+
+    <div class="docs-breadcrumb"><a href="/">Home</a> &nbsp;/&nbsp; Documentation</div>
+    <h1 class="docs-h1">ArcSwap Documentation</h1>
+    <p class="docs-lead">
+      ArcSwap is the yield terminal for stablecoins on Arc — earn tokenized U.S. Treasury yield
+      via USYC, swap inside Arc, bridge USDC across chains with CCTP, and provide liquidity.
+      This guide will get you from zero to your first deposit in under five minutes.
+    </p>
+
+    <div class="card-grid">
+      <a class="qcard" href="#quick-start">
+        <div class="qcard-title">→ Quick start</div>
+        <div class="qcard-desc">5-minute path from wallet connect to first deposit.</div>
+      </a>
+      <a class="qcard" href="#vault">
+        <div class="qcard-title">→ USYC Vault</div>
+        <div class="qcard-desc">Earn U.S. Treasury yield on idle USDC.</div>
+      </a>
+      <a class="qcard" href="#trade">
+        <div class="qcard-title">→ Swap &amp; Bridge</div>
+        <div class="qcard-desc">Move USDC between chains with CCTP.</div>
+      </a>
+      <a class="qcard" href="#contracts">
+        <div class="qcard-title">→ Contract addresses</div>
+        <div class="qcard-desc">All addresses on Arc Testnet.</div>
+      </a>
+    </div>
+
+    <!-- ─── INTRODUCTION ─── -->
+    <h2 class="docs-h2" id="introduction">Introduction</h2>
+    <p class="docs-p">
+      ArcSwap is a non-custodial frontend that brings together four primitives on the Arc Layer 1
+      blockchain into a single interface: a tokenized Treasury vault (Hashnote USYC),
+      an automated market maker (Uniswap V2), Circle's cross-chain transfer protocol (CCTP V2),
+      and a liquidity pool dashboard.
+    </p>
+    <p class="docs-p">
+      You always retain custody. ArcSwap never holds your funds, never has a backend that can
+      pause your access, and the entire frontend is open-source and pinned to IPFS so the build
+      you load is the build that was published.
+    </p>
+    <h3 class="docs-h3" id="who-is-it-for">Who is it for?</h3>
+    <ul class="docs-ul">
+      <li><strong>Stablecoin holders</strong> who want yield on idle USDC without leaving the dollar.</li>
+      <li><strong>Arc-native traders</strong> swapping USDC ↔ EURC ↔ USYC inside the L1.</li>
+      <li><strong>Cross-chain users</strong> bridging USDC between Arc, Ethereum, Base, and other CCTP chains.</li>
+      <li><strong>Liquidity providers</strong> earning swap fees by adding to USDC/EURC and USDC/USYC pools.</li>
+    </ul>
+
+    <!-- ─── QUICK START ─── -->
+    <h2 class="docs-h2" id="quick-start">Quick start</h2>
+    <p class="docs-p">From a fresh browser to your first vault deposit in five steps.</p>
+
+    <ol class="steps">
+      <li><strong>Install a wallet.</strong> MetaMask, Rabby, or Coinbase Wallet — any EVM-compatible browser wallet works. See <a href="#wallets">Supported wallets</a>.</li>
+      <li><strong>Add Arc Testnet.</strong> Visit <a href="/trade">arcswap.net/trade</a>, click <em>Connect</em>, and approve the network add. Or add manually using the <a href="#network-info">network info</a> below.</li>
+      <li><strong>Get testnet USDC.</strong> Use the <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">Circle faucet</a> to drip USDC onto your address. Arc uses USDC as native gas, so the faucet covers both spending and gas.</li>
+      <li><strong>Open the Vault.</strong> Go to <a href="/vault">arcswap.net/vault</a>, enter an amount of USDC, and click <em>Deposit</em>. You'll receive USYC tokens accruing daily.</li>
+      <li><strong>That's it.</strong> Your USYC balance accrues yield based on the underlying U.S. Treasury bills. You can redeem any time during U.S. Treasury market hours.</li>
+    </ol>
+
+    <div class="callout">
+      <div class="callout-title">Tip</div>
+      <div class="callout-body">USYC accrues only when U.S. Treasury markets are open: Monday–Friday, 09:30–16:00 ET, excluding U.S. bank holidays. Outside those windows, your balance is stable but does not earn.</div>
+    </div>
+
+    <!-- ─── WALLET SETUP ─── -->
+    <h2 class="docs-h2" id="wallet-setup">Wallet setup</h2>
+    <p class="docs-p">
+      ArcSwap connects to your browser wallet via the standard EIP-1193 provider (i.e. <code>window.ethereum</code>).
+      No accounts, no passwords, no centralized auth.
+    </p>
+    <h3 class="docs-h3">Adding Arc Testnet manually</h3>
+    <p class="docs-p">If your wallet doesn't auto-prompt, add the network using these parameters:</p>
+    <table class="docs-table">
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Network name</td><td>Arc Testnet</td></tr>
+      <tr><td>RPC URL</td><td><code>https://rpc.testnet.arc.network</code></td></tr>
+      <tr><td>Chain ID</td><td><code>5042002</code></td></tr>
+      <tr><td>Currency symbol</td><td><code>USDC</code></td></tr>
+      <tr><td>Block explorer</td><td><a href="https://explorer.testnet.arc.network" target="_blank" rel="noopener noreferrer">explorer.testnet.arc.network</a></td></tr>
+    </table>
+
+    <!-- ─── GET TESTNET USDC ─── -->
+    <h2 class="docs-h2" id="get-testnet-usdc">Get testnet USDC</h2>
+    <p class="docs-p">
+      Arc Testnet uses <strong>USDC as the native gas token</strong>. You need USDC for both transactions
+      and for whatever you want to do (deposit, swap, bridge). One faucet call covers both.
+    </p>
+    <ol class="steps">
+      <li>Visit <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">faucet.circle.com</a>.</li>
+      <li>Select <strong>Arc Testnet</strong> from the network dropdown.</li>
+      <li>Paste your wallet address and request — typically delivers within 30 seconds.</li>
+      <li>Faucet limit is per-day per-address. Come back tomorrow if you need more.</li>
+    </ol>
+
+    <div class="callout warn">
+      <div class="callout-title">Testnet only</div>
+      <div class="callout-body">All assets here are testnet tokens with no monetary value. Do not send mainnet USDC or any real funds to a testnet address — they will be lost.</div>
+    </div>
+
+    <!-- ─── VAULT ─── -->
+    <h2 class="docs-h2" id="vault">USYC Vault</h2>
+    <p class="docs-p">
+      The USYC Vault wraps Hashnote's <strong>U.S. Yield Coin (USYC)</strong>, a tokenized money market
+      fund backed 1:1 by short-duration U.S. Treasury bills and cash. Depositing USDC mints USYC at the
+      live navigator-published NAV. Redeeming USYC burns it for USDC at the same NAV.
+    </p>
+
+    <h3 class="docs-h3">How the yield works</h3>
+    <ul class="docs-ul">
+      <li>The fund holds short-dated T-bills (typically 1-month and 3-month).</li>
+      <li>As bills mature and roll, interest accrues to the fund's NAV.</li>
+      <li>USYC's price-per-share rises by approximately the daily yield, divided across each accrual day.</li>
+      <li>Currently targeting <strong>~4.85% APY</strong> (varies with the U.S. Treasury rate environment).</li>
+    </ul>
+
+    <h3 class="docs-h3">Depositing</h3>
+    <ol class="steps">
+      <li>Connect wallet, ensure you're on Arc Testnet with USDC balance.</li>
+      <li>Open <a href="/vault">/vault</a>, enter USDC amount.</li>
+      <li>First deposit triggers an <em>approval</em> tx (one-time per token, gives the vault permission to pull USDC).</li>
+      <li>Second tx is the deposit itself — you receive USYC tokens to your wallet.</li>
+    </ol>
+
+    <h3 class="docs-h3">Redeeming</h3>
+    <p class="docs-p">
+      Redemptions are processed at the next NAV strike during U.S. Treasury market hours.
+      Outside hours, the request queues until market open.
+    </p>
+
+    <div class="callout">
+      <div class="callout-title">Smart contract</div>
+      <div class="callout-body">The Vault interacts with the Hashnote USYC Teller contract at <code>0x9fdF14c5B14173D74C08Af27AebFf39240dC105A</code>. ArcSwap is a frontend; the underlying contract is operated by Hashnote.</div>
+    </div>
+
+    <!-- ─── TRADE ─── -->
+    <h2 class="docs-h2" id="trade">Swap &amp; Bridge</h2>
+    <p class="docs-p">
+      The <code>/trade</code> page combines two flows: an in-Arc AMM swap (USDC ↔ EURC ↔ USYC) and
+      a cross-chain CCTP bridge for USDC.
+    </p>
+
+    <h3 class="docs-h3">Swap inside Arc</h3>
+    <p class="docs-p">
+      Swaps route through Uniswap V2 deployed by the Arc Foundation. The router computes the best
+      direct or 2-hop path, you approve and execute. Slippage default is 0.5% (configurable).
+    </p>
+
+    <h3 class="docs-h3">Bridge across chains (CCTP)</h3>
+    <p class="docs-p">
+      <strong>CCTP</strong> (Cross-Chain Transfer Protocol) is Circle's burn-and-mint mechanism.
+      Native USDC is destroyed on the source chain and freshly minted on the destination — no
+      wrapped tokens, no liquidity pools, no bridge custodian.
+    </p>
+    <ol class="steps">
+      <li>Choose source chain (Arc Testnet) and destination chain (Ethereum Sepolia, Base Sepolia, etc.).</li>
+      <li>Enter USDC amount and recipient address.</li>
+      <li>First transaction: <strong>burn</strong> USDC on Arc.</li>
+      <li>Wait for Circle's IRIS attestation API (~10–20 minutes on testnet).</li>
+      <li>Second transaction: <strong>mint</strong> USDC on the destination chain. ArcSwap submits this for you when ready.</li>
+    </ol>
+
+    <div class="callout warn">
+      <div class="callout-title">Don't close the tab</div>
+      <div class="callout-body">If you close the tab during the wait, you can resume the mint manually from the same address using any CCTP-aware tool (Circle's reference dashboard, or come back to <code>/trade</code>).</div>
+    </div>
+
+    <!-- ─── POOL ─── -->
+    <h2 class="docs-h2" id="pool">Liquidity Pools</h2>
+    <p class="docs-p">
+      The <code>/pool</code> page lets you provide liquidity to Uniswap V2 pairs on Arc and earn
+      swap fees (0.25% per trade in the Arc fork). Currently surfaced pairs:
+    </p>
+    <ul class="docs-ul">
+      <li><strong>USDC / EURC</strong> — stablecoin FX pair</li>
+      <li><strong>USDC / USYC</strong> — yield-bearing vs cash pair</li>
+    </ul>
+
+    <h3 class="docs-h3">Adding liquidity</h3>
+    <ol class="steps">
+      <li>Pick a pair, enter amounts (the second amount auto-fills based on current ratio).</li>
+      <li>Approve both tokens (one-time per token).</li>
+      <li>Click <em>Add Liquidity</em> — you receive LP tokens representing your share of the pool.</li>
+    </ol>
+
+    <h3 class="docs-h3">Removing liquidity</h3>
+    <p class="docs-p">
+      Burn your LP tokens to redeem the underlying USDC/EURC at the current pool ratio.
+      Accumulated fees are baked into the redeemed amounts.
+    </p>
+
+    <div class="callout warn">
+      <div class="callout-title">Impermanent loss</div>
+      <div class="callout-body">Even stablecoin pairs can drift (especially USDC/EURC across FX moves). Your withdrawn amounts may differ from what you deposited. Track total value, not token quantities.</div>
+    </div>
+
+    <!-- ─── POINTS ─── -->
+    <h2 class="docs-h2" id="points">Points</h2>
+    <p class="docs-p">
+      The <code>/point</code> page shows your activity across vault deposits, swaps, bridges, and
+      LP positions. Points are non-transferable and have no monetary value during testnet — they
+      are an indicator of engagement and may inform future incentive programs.
+    </p>
+
+    <!-- ─── ARC NETWORK ─── -->
+    <h2 class="docs-h2" id="arc-network">Arc Network</h2>
+    <p class="docs-p">
+      Arc is a purpose-built Layer 1 blockchain optimized for stablecoin-denominated finance.
+      Its three defining design choices:
+    </p>
+    <ul class="docs-ul">
+      <li><strong>Stable fees</strong> — gas paid in USDC, so transaction costs are predictable in USD terms regardless of any token's price action.</li>
+      <li><strong>Sub-second deterministic finality</strong> — no chain reorgs; once a tx is finalized it cannot revert.</li>
+      <li><strong>Opt-in privacy</strong> — confidential transfers and selective disclosure for regulated use cases.</li>
+    </ul>
+    <p class="docs-p">
+      Arc is fully EVM-compatible: existing Solidity contracts, Hardhat / Foundry / Viem tooling all
+      work without modification. Learn more at <a href="https://docs.arc.network" target="_blank" rel="noopener noreferrer">docs.arc.network</a>.
+    </p>
+
+    <!-- ─── USYC ─── -->
+    <h2 class="docs-h2" id="usyc">USYC explained</h2>
+    <p class="docs-p">
+      <strong>USYC (U.S. Yield Coin)</strong> is an ERC-20 token issued by Hashnote representing
+      shares of the <em>Hashnote International Short Duration Yield Fund SP</em>, a regulated money
+      market fund holding short-dated U.S. Treasury bills and overnight repurchase agreements.
+    </p>
+
+    <h3 class="docs-h3">Key properties</h3>
+    <table class="docs-table">
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Underlying</td><td>U.S. Treasury bills + overnight reverse repo</td></tr>
+      <tr><td>Issuer</td><td>Hashnote (regulated fund admin)</td></tr>
+      <tr><td>Token decimals</td><td>6</td></tr>
+      <tr><td>Yield model</td><td>Price-per-share (NAV) accrues; token quantity stays constant</td></tr>
+      <tr><td>Redemption</td><td>1:1 to USDC at NAV during U.S. Treasury market hours</td></tr>
+      <tr><td>Custody</td><td>Underlying T-bills held by qualified custodian</td></tr>
+    </table>
+
+    <h3 class="docs-h3">Risks</h3>
+    <ul class="docs-ul">
+      <li><strong>Issuer risk</strong> — Hashnote operates the fund. Their compliance, custody, and operational integrity matter.</li>
+      <li><strong>Smart contract risk</strong> — the USYC token contract and Teller contract have been audited but no audit eliminates risk.</li>
+      <li><strong>Market hours</strong> — redemptions queue outside market hours. In a panic, you can't exit instantly.</li>
+      <li><strong>Yield variability</strong> — the ~4.85% target tracks short-term U.S. Treasury rates and will move with the federal funds rate.</li>
+    </ul>
+
+    <!-- ─── CCTP ─── -->
+    <h2 class="docs-h2" id="cctp">CCTP bridging</h2>
+    <p class="docs-p">
+      <strong>Cross-Chain Transfer Protocol</strong> is Circle's official bridge for USDC. Unlike
+      lock-and-mint bridges (which create wrapped tokens backed by frozen liquidity), CCTP burns
+      native USDC on the source chain and mints native USDC on the destination — every USDC stays
+      "real USDC" all the way.
+    </p>
+
+    <h3 class="docs-h3">Why this matters</h3>
+    <ul class="docs-ul">
+      <li>No wrapped USDC variants (no <code>USDC.e</code>, no <code>axlUSDC</code>).</li>
+      <li>No bridge TVL to drain — there's no pool of locked tokens for an attacker to target.</li>
+      <li>Issuer-attested: only Circle's signed attestation can authorize the mint.</li>
+    </ul>
+
+    <h3 class="docs-h3">Trade-offs</h3>
+    <ul class="docs-ul">
+      <li><strong>Latency</strong> — typically 10–20 minutes on testnet, 13–19 minutes on mainnet (Circle waits for source-chain finality).</li>
+      <li><strong>Two transactions</strong> — burn + mint, both paid by the user (gas on each chain).</li>
+      <li><strong>Limited chain coverage</strong> — only chains Circle supports (Ethereum, Base, Arbitrum, OP, Polygon PoS, Avalanche C-chain, Solana, Arc, etc.).</li>
+    </ul>
+
+    <!-- ─── USDC AS GAS ─── -->
+    <h2 class="docs-h2" id="usdc-gas">USDC as gas</h2>
+    <p class="docs-p">
+      Most chains use a volatile native token for gas (ETH, MATIC, AVAX). Arc uses USDC. The practical
+      effect:
+    </p>
+    <ul class="docs-ul">
+      <li>Gas costs are predictable in USD terms — a transfer that costs $0.001 today costs $0.001 tomorrow, regardless of any token's price action.</li>
+      <li>You don't need to maintain a "gas reserve" in a separate token. The same USDC you trade with pays for the trade.</li>
+      <li>Internally, gas USDC has 18 decimals (to match standard EVM gas math), distinct from the 6-decimal ERC-20 USDC. The frontend handles the conversion.</li>
+    </ul>
+
+    <!-- ─── NETWORK INFO ─── -->
+    <h2 class="docs-h2" id="network-info">Network info</h2>
+    <table class="docs-table">
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Chain ID</td><td><code>5042002</code></td></tr>
+      <tr><td>RPC URL</td><td><code>https://rpc.testnet.arc.network</code></td></tr>
+      <tr><td>Currency</td><td><code>USDC</code> (18-dec native gas)</td></tr>
+      <tr><td>Explorer</td><td><a href="https://explorer.testnet.arc.network" target="_blank" rel="noopener noreferrer">explorer.testnet.arc.network</a></td></tr>
+      <tr><td>Faucet</td><td><a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">faucet.circle.com</a></td></tr>
+      <tr><td>Finality</td><td>Sub-second deterministic</td></tr>
+      <tr><td>Consensus</td><td>BFT (purpose-built; see Arc litepaper)</td></tr>
+    </table>
+
+    <!-- ─── CONTRACTS ─── -->
+    <h2 class="docs-h2" id="contracts">Contract addresses</h2>
+    <p class="docs-p">All contracts ArcSwap interacts with on Arc Testnet (chainId 5042002):</p>
+    <table class="docs-table">
+      <tr><th>Contract</th><th>Address</th><th>Owner</th></tr>
+      <tr><td>USYC token (ERC-20)</td><td><code>0xe9185Fb1bcEEEF1FDE04F9596c4F2E01d25adb86C</code></td><td>Hashnote</td></tr>
+      <tr><td>USYC Teller (deposit/redeem)</td><td><code>0x9fdF14c5B14173D74C08Af27AebFf39240dC105A</code></td><td>Hashnote</td></tr>
+      <tr><td>EURC token</td><td><code>0x89B5b66B1A3FbFC1c9C43Aa01c2a8c7f0C19D72a</code></td><td>Circle</td></tr>
+      <tr><td>UniswapV2 Router</td><td><code>0x48a9c3e9B27a7d5ABbE17b4Fe0fa00b2f9D0eb333fc</code></td><td>Arc Foundation</td></tr>
+      <tr><td>UniswapV2 Factory</td><td><code>0x45dd5BC18E9a37a4c0e3e90AD3ED27298Ea6ced086</code></td><td>Arc Foundation</td></tr>
+      <tr><td>CCTP TokenMessenger V2</td><td><code>0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA</code></td><td>Circle</td></tr>
+    </table>
+    <p class="docs-p" style="font-size:13px;color:var(--muted);margin-top:8px">
+      <em>ArcSwap does not own or operate any smart contracts. The frontend calls into protocols
+      operated by Hashnote, Circle, and the Arc Foundation.</em>
+    </p>
+
+    <!-- ─── WALLETS ─── -->
+    <h2 class="docs-h2" id="wallets">Supported wallets</h2>
+    <p class="docs-p">Any browser wallet that injects an EIP-1193 provider works. Tested:</p>
+    <ul class="docs-ul">
+      <li><strong>MetaMask</strong> — most common, widest compat</li>
+      <li><strong>Rabby</strong> — recommended for active DeFi users (better tx simulation, multi-chain UX)</li>
+      <li><strong>Coinbase Wallet</strong> — works via injected or extension</li>
+      <li><strong>Frame</strong> — desktop-native, supports hardware wallets</li>
+      <li><strong>Ledger / Trezor</strong> — through MetaMask, Rabby, or Frame</li>
+    </ul>
+    <p class="docs-p">
+      Mobile wallets via WalletConnect are not yet integrated. See
+      <a href="#changelog">Changelog</a> for the roadmap.
+    </p>
+
+    <!-- ─── SECURITY ─── -->
+    <h2 class="docs-h2" id="security">Security</h2>
+    <p class="docs-p">
+      ArcSwap takes a defense-in-depth approach. Highlights:
+    </p>
+    <ul class="docs-ul">
+      <li><strong>Non-custodial</strong> — no funds ever flow through ArcSwap-controlled addresses.</li>
+      <li><strong>Open source</strong> — the entire frontend is published; you can verify the code matches the served build.</li>
+      <li><strong>IPFS + ENS</strong> — production builds are content-addressed and pinned to multiple providers; ENS contenthash is updated only via multi-sig.</li>
+      <li><strong>CSP + SRI</strong> — Content-Security-Policy locks down script origins; Subresource Integrity hashes pin every CDN script.</li>
+      <li><strong>No hidden tracking</strong> — no analytics, no third-party scripts beyond what's required to render.</li>
+    </ul>
+    <p class="docs-p">
+      Found a vulnerability? Report it via <a href="/SECURITY.md">SECURITY.md</a> —
+      bug bounty rewards from $100 (low) to $50,000 (critical), depending on impact.
+    </p>
+
+    <!-- ─── FAQ ─── -->
+    <h2 class="docs-h2" id="faq">FAQ</h2>
+
+    <h3 class="docs-h3">Why does USYC sometimes show 0% accrual?</h3>
+    <p class="docs-p">
+      U.S. Treasury markets are closed on weekends and U.S. bank holidays. During those windows
+      the fund's NAV is fixed and your token quantity is unchanged, so the displayed APY rounds
+      to zero. Yield resumes on the next U.S. business day.
+    </p>
+
+    <h3 class="docs-h3">Why is my CCTP bridge taking 20 minutes?</h3>
+    <p class="docs-p">
+      Circle waits for source-chain finality before issuing the attestation that authorizes the
+      destination mint. On Arc this is sub-second; on Ethereum Sepolia it can take 13+ minutes
+      (waiting for two epochs of beacon-chain finality). The total time is dominated by the
+      slowest chain involved.
+    </p>
+
+    <h3 class="docs-h3">Can I lose money in the USYC vault?</h3>
+    <p class="docs-p">
+      In theory, yes — money market funds can technically "break the buck" if their underlying
+      assets default. In practice, U.S. Treasury bills are the lowest-default-risk asset in
+      global finance. Risks are detailed in the <a href="#usyc">USYC explained</a> section.
+    </p>
+
+    <h3 class="docs-h3">Does ArcSwap have its own token?</h3>
+    <p class="docs-p">
+      No. ArcSwap is a frontend, not a protocol. There is no ASWP token, no airdrop campaign, no
+      governance token sale. Anyone telling you otherwise is running a scam.
+    </p>
+
+    <h3 class="docs-h3">When mainnet?</h3>
+    <p class="docs-p">
+      Arc mainnet is governed by the Arc Foundation; ArcSwap will deploy on mainnet shortly after
+      Arc launches. See our <a href="/#roadmap">roadmap</a> for current milestones.
+    </p>
+
+    <!-- ─── CHANGELOG ─── -->
+    <h2 class="docs-h2" id="changelog">Changelog</h2>
+    <p class="docs-p" style="font-family:var(--mono);font-size:13px;color:var(--muted)">v0.9.x — Arc Testnet</p>
+    <ul class="docs-ul">
+      <li><strong>2026-04-25</strong> — Documentation site published.</li>
+      <li><strong>2026-04-25</strong> — Security baseline: CSP, SRI, host security headers, vulnerability disclosure policy.</li>
+      <li><strong>2026-04-22</strong> — Vault page UX refresh; "How USYC works" section restructured for narrow viewports.</li>
+      <li><strong>2026-04-20</strong> — Homepage repositioned as <em>Yield Terminal for Stablecoins</em>.</li>
+    </ul>
+    <p class="docs-p" style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:24px">Upcoming</p>
+    <ul class="docs-ul">
+      <li>WalletConnect / Reown AppKit integration for mobile wallet support.</li>
+      <li>Circle Gateway via Unified Balance Kit — deposit USYC from any supported chain.</li>
+      <li>Status page at <code>status.arcswap.net</code>.</li>
+      <li>Multi-sig governance for ENS contenthash and treasury.</li>
+    </ul>
+
+    <!-- ─── FOOTER ─── -->
+    <div class="docs-foot">
+      <span>© 2026 ArcSwap · Arc Testnet · v0.9</span>
+      <div>
+        <a href="/">Home</a> &nbsp;·&nbsp;
+        <a href="/blog">Blog</a> &nbsp;·&nbsp;
+        <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">X</a> &nbsp;·&nbsp;
+        <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT TOC -->
+  <aside class="docs-toc">
+    <div class="toc-title">On this page</div>
+    <a class="toc-link" href="#introduction">Introduction</a>
+    <a class="toc-link" href="#quick-start">Quick start</a>
+    <a class="toc-link" href="#wallet-setup">Wallet setup</a>
+    <a class="toc-link" href="#get-testnet-usdc">Testnet USDC</a>
+    <a class="toc-link" href="#vault">USYC Vault</a>
+    <a class="toc-link" href="#trade">Swap &amp; Bridge</a>
+    <a class="toc-link" href="#pool">Liquidity Pools</a>
+    <a class="toc-link" href="#points">Points</a>
+    <a class="toc-link" href="#arc-network">Arc Network</a>
+    <a class="toc-link" href="#usyc">USYC explained</a>
+    <a class="toc-link" href="#cctp">CCTP bridging</a>
+    <a class="toc-link" href="#usdc-gas">USDC as gas</a>
+    <a class="toc-link" href="#network-info">Network info</a>
+    <a class="toc-link" href="#contracts">Contracts</a>
+    <a class="toc-link" href="#wallets">Wallets</a>
+    <a class="toc-link" href="#security">Security</a>
+    <a class="toc-link" href="#faq">FAQ</a>
+    <a class="toc-link" href="#changelog">Changelog</a>
+  </aside>
+
+</div>
+
+<script>
+// Highlight current section in sidebar + TOC as you scroll
+(function(){
+  const allLinks = document.querySelectorAll('.side-link, .toc-link');
+  const headings = Array.from(document.querySelectorAll('.docs-h2[id]'));
+  function update(){
+    const y = window.scrollY + 120;
+    let current = headings[0]?.id;
+    for(const h of headings){ if(h.offsetTop <= y) current = h.id; }
+    allLinks.forEach(a=>{
+      a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+    });
+  }
+  window.addEventListener('scroll', update, {passive:true});
+  update();
+})();
+</script>
+
+</body>
+</html>

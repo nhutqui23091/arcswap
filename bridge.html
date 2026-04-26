@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta http-equiv="refresh" content="0; url=/trade"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bridge has moved — ArcSwap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.1.11"/>
+<style>
+.redirect-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;position:relative;z-index:2}
+.redirect-card{max-width:480px;text-align:center;padding:42px 36px;border-radius:22px;background:var(--surface);border:1px solid var(--border);backdrop-filter:blur(20px)}
+.redirect-card h1{font-size:28px;margin-bottom:12px;font-weight:800;letter-spacing:-.02em}
+.redirect-card p{color:var(--muted);margin-bottom:22px;line-height:1.6;font-size:14px}
+.redirect-card a.cta{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.22);color:var(--text);font-weight:700;font-size:14px;text-decoration:none;transition:all .2s}
+.redirect-card a.cta:hover{background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35)}
+.redirect-sub{margin-top:16px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="aurora-bg"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+<main class="redirect-wrap">
+  <div class="redirect-card">
+    <h1>Bridge is now inside <span style="background:linear-gradient(90deg,#00CFFF,#7B3FFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Trade</span></h1>
+    <p>Swap and Bridge have been merged into a single unified Trade interface — swap within Arc, bridge between Sepolia ⇄ Arc, or route cross-chain swaps in one step.</p>
+    <a class="cta" href="/trade">Open Trade →</a>
+    <div class="redirect-sub">Auto-redirecting…</div>
+  </div>
+</main>
+<script>setTimeout(()=>location.replace('/trade'),800)</script>
+</body>
+</html>

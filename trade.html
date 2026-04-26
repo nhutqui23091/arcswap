@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Trade · Swap & Bridge — ArcSwap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.1.11"/>
+<style>
+main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:110px 20px 80px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px}
+@media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding-top:100px}}
+
+.hero-strip{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:4px}
+.hero-strip h1{font-size:clamp(40px,5.5vw,72px);letter-spacing:-.035em;font-weight:900;line-height:1;text-transform:uppercase}
+.hero-strip p{color:var(--muted);font-size:13px;margin-top:4px}
+.hero-chip{display:inline-flex;gap:6px;align-items:center;padding:6px 12px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:22px;backdrop-filter:blur(20px);position:relative}
+.card h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px}
+
+/* leg (from/to) block */
+.leg{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:18px;padding:16px}
+.leg + .leg{margin-top:10px}
+.leg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+.leg-lbl{font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:600}
+.leg-bal{font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.leg-bal b{color:var(--text);cursor:pointer}
+.leg-bal b:hover{color:var(--arc2)}
+
+.leg-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.amt-in{font-family:var(--mono);font-size:32px;font-weight:600;background:none;border:none;outline:none;color:var(--text);width:100%;min-width:0}
+.amt-in::placeholder{color:rgba(139,126,170,.4)}
+.amt-usd{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+
+.pick-btn{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:all .2s;color:var(--text);font-weight:600;font-size:14px;min-width:fit-content}
+.pick-btn:hover{border-color:var(--border2);background:rgba(255,255,255,.08)}
+.pick-btn .token-ico{width:26px;height:26px;font-size:11px}
+.pick-btn .caret{color:var(--muted);font-size:11px;margin-left:2px}
+
+.chain-select{display:flex;gap:6px;align-items:center}
+.chain-select .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:11.5px;font-weight:600;color:var(--text);cursor:pointer;transition:all .2s}
+.chain-select .chip:hover{border-color:var(--border2)}
+.chain-select .chip.active{background:linear-gradient(135deg,rgba(77,214,219,.2),rgba(74,123,236,.15));border-color:rgba(77,214,219,.5);color:#fff}
+.chain-select .chip .cdot{width:6px;height:6px;border-radius:50%}
+
+.swap-flipbar{position:relative;height:14px;margin:4px 0}
+.swap-flip-btn{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:38px;height:38px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:2}
+.swap-flip-btn:hover{border-color:var(--arc2);color:var(--arc2);transform:translateX(-50%) rotate(180deg)}
+
+.recipient-row{margin-top:10px;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed var(--border);border-radius:12px;background:rgba(255,255,255,.015)}
+.recipient-row input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:12.5px;min-width:0}
+.recipient-toggle{font-size:11px;color:var(--arc2);cursor:pointer;font-weight:600;padding:3px 8px;border-radius:6px}
+.recipient-toggle:hover{background:var(--surface)}
+
+/* Route preview */
+.route-box{margin-top:16px;padding:14px 16px;border-radius:14px;background:rgba(77,214,219,.04);border:1px solid rgba(77,214,219,.15)}
+.route-title{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#FF9F4A;font-weight:500;margin-bottom:8px;display:inline-block}
+.route-title::before{content:'{\00a0';opacity:.7}
+.route-title::after{content:'\00a0}';opacity:.7}
+.route-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--text)}
+.route-step{padding:4px 10px;border-radius:100px;background:var(--surface2);border:1px solid var(--border)}
+.route-arrow{color:var(--muted);font-weight:700}
+
+.metric-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.04);font-size:12.5px}
+.metric-row:last-child{border-bottom:none}
+.metric-row .lbl{color:var(--muted)}
+.metric-row .val{font-family:var(--mono);color:var(--text);font-weight:600;text-align:right}
+.metric-row .val.warn{color:var(--yellow)}
+.metric-row .val.danger{color:var(--red)}
+.metric-row .val.good{color:var(--arc4)}
+
+.slippage-row{display:flex;gap:6px;align-items:center}
+.slip-btn{padding:4px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--mono)}
+.slip-btn.active{color:var(--text);border-color:var(--arc2);background:rgba(77,214,219,.1)}
+.slip-btn input{background:none;border:none;outline:none;width:42px;color:inherit;font-family:inherit;font-size:inherit}
+
+/* Execute */
+.exec-btn{width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:700;border:1px solid rgba(255,255,255,0.22);cursor:pointer;transition:all .2s;margin-top:14px;background:rgba(255,255,255,0.1);color:var(--text);letter-spacing:.02em}
+.exec-btn:hover:not(:disabled){background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35);transform:translateY(-1px)}
+.exec-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,0.04);color:var(--muted);border-color:rgba(255,255,255,0.08)}
+
+.fast-toggle{display:flex;gap:10px;margin-top:10px}
+.fast-opt{flex:1;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;text-align:left;transition:all .2s}
+.fast-opt.active{border-color:var(--arc2);background:rgba(77,214,219,.08)}
+.fast-opt .head{font-size:12px;font-weight:700;margin-bottom:3px}
+.fast-opt .sub{font-size:10.5px;color:var(--muted)}
+
+/* Right rail */
+.rail{display:flex;flex-direction:column;gap:16px}
+.rail-card{padding:16px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--border)}
+.rail-title{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#FF9F4A;font-weight:500;margin-bottom:10px;display:inline-block}
+.rail-title::before{content:'{\00a0';opacity:.7}
+.rail-title::after{content:'\00a0}';opacity:.7}
+.rail-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12px}
+.rail-row .l{color:var(--muted)} .rail-row .v{font-family:var(--mono);font-weight:600}
+.tx-item{padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.015);margin-bottom:8px;font-size:12px}
+.tx-item + .tx-item{margin-top:6px}
+.tx-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.tx-status{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.tx-status.pending{background:rgba(255,209,102,.15);color:var(--yellow)}
+.tx-status.done{background:rgba(0,255,178,.12);color:var(--arc4)}
+.tx-status.failed{background:rgba(255,85,119,.15);color:var(--red)}
+.tx-sub{font-size:10.5px;color:var(--muted);font-family:var(--mono)}
+.tx-link{color:var(--arc2);font-size:11px;margin-top:4px;display:inline-block}
+
+/* Token picker modal */
+.picker-search{width:100%;padding:10px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13px;outline:none;margin-bottom:10px}
+.picker-search:focus{border-color:var(--arc2)}
+.picker-list{display:flex;flex-direction:column;gap:2px;max-height:420px;overflow:auto}
+
+/* Progress modal */
+.progress-steps{display:flex;flex-direction:column;gap:12px;margin:12px 0}
+.pstep{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+.pstep.active{border-color:var(--arc2);background:rgba(77,214,219,.06)}
+.pstep.done{border-color:rgba(0,255,178,.3);background:rgba(0,255,178,.04)}
+.pstep.fail{border-color:rgba(255,85,119,.4);background:rgba(255,85,119,.05)}
+.pstep-ic{width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:var(--muted)}
+.pstep.active .pstep-ic{background:var(--arc2);color:#000}
+.pstep.done .pstep-ic{background:var(--arc4);color:#000}
+.pstep.fail .pstep-ic{background:var(--red);color:#fff}
+.pstep-body{flex:1;min-width:0}
+.pstep-title{font-weight:600;font-size:13px}
+.pstep-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono);word-break:break-all}
+</style>
+</head>
+<body>
+<main class="trade-wrap">
+  <div class="hero-strip">
+    <div>
+      <h1>Trade</h1>
+      <p>Swap within Arc · Bridge USDC across chains · All-in-one</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="hero-chip" id="gas-pill">⛽ Arc base ≈ — Gwei</span>
+      <span class="hero-chip" id="block-pill">⏱ block —</span>
+    </div>
+  </div>
+
+  <!-- LEFT: main trade form -->
+  <div>
+    <div class="card">
+      <!-- FROM leg -->
+      <div class="leg" id="from-leg">
+        <div class="leg-head">
+          <span class="leg-lbl">You pay · From</span>
+          <span class="leg-bal" id="from-bal">Balance: —</span>
+        </div>
+        <div class="chain-select" id="from-chains"></div>
+        <div style="height:10px"></div>
+        <div class="leg-row">
+          <div style="min-width:0">
+            <input id="amount-in" class="amt-in" placeholder="0.0" inputmode="decimal" autocomplete="off"/>
+            <div class="amt-usd" id="from-usd">≈ $0.00</div>
+          </div>
+          <button class="pick-btn" id="from-pick">
+            <div class="token-ico" id="from-ico">?</div>
+            <span id="from-sym">Select</span>
+            <span class="caret">▾</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="swap-flipbar">
+        <button class="swap-flip-btn" id="flip-btn" title="Flip" aria-label="flip">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v14m0 0l-4-4m4 4l4-4M16 21V7m0 0l-4 4m4-4l4 4"/></svg>
+        </button>
+      </div>
+
+      <!-- TO leg -->
+      <div class="leg" id="to-leg">
+        <div class="leg-head">
+          <span class="leg-lbl">You receive · To</span>
+          <span class="leg-bal" id="to-bal">Balance: —</span>
+        </div>
+        <div class="chain-select" id="to-chains"></div>
+        <div style="height:10px"></div>
+        <div class="leg-row">
+          <div style="min-width:0">
+            <input id="amount-out" class="amt-in" placeholder="0.0" inputmode="decimal" autocomplete="off" readonly/>
+            <div class="amt-usd" id="to-usd">≈ $0.00</div>
+          </div>
+          <button class="pick-btn" id="to-pick">
+            <div class="token-ico" id="to-ico">?</div>
+            <span id="to-sym">Select</span>
+            <span class="caret">▾</span>
+          </button>
+        </div>
+
+        <div class="recipient-row" id="recipient-row">
+          <span style="font-size:12px;color:var(--muted)">To address:</span>
+          <input id="recipient-input" placeholder="0x… (same as sender)" spellcheck="false"/>
+          <span class="recipient-toggle" id="use-self">Use mine</span>
+        </div>
+      </div>
+
+      <!-- Route -->
+      <div class="route-box" id="route-box" style="display:none">
+        <div class="route-title">Route</div>
+        <div class="route-steps" id="route-steps"></div>
+      </div>
+
+      <!-- CCTP Fast/Standard toggle (bridge only) -->
+      <div class="fast-toggle" id="fast-toggle" style="display:none">
+        <button class="fast-opt active" data-mode="fast">
+          <div class="head">⚡ Fast</div>
+          <div class="sub">~20 s · small Circle fee</div>
+        </button>
+        <button class="fast-opt" data-mode="standard">
+          <div class="head">🐢 Standard</div>
+          <div class="sub">13–19 min · 0 fee</div>
+        </button>
+      </div>
+
+      <!-- Metrics -->
+      <div style="margin-top:14px;padding:10px 2px">
+        <div class="metric-row"><span class="lbl">Rate</span><span class="val" id="m-rate">—</span></div>
+        <div class="metric-row"><span class="lbl">Price impact</span><span class="val" id="m-impact">—</span></div>
+        <div class="metric-row"><span class="lbl">Network fee</span><span class="val" id="m-netfee">—</span></div>
+        <div class="metric-row"><span class="lbl">Min received</span><span class="val" id="m-min">—</span></div>
+        <div class="metric-row"><span class="lbl">Slippage</span>
+          <span class="val slippage-row">
+            <button class="slip-btn" data-s="0.1">0.1%</button>
+            <button class="slip-btn active" data-s="0.5">0.5%</button>
+            <button class="slip-btn" data-s="1">1%</button>
+            <button class="slip-btn" data-s="custom"><input id="slip-custom" type="number" step="0.1" min="0.05" max="50" placeholder="…"/>%</button>
+          </span>
+        </div>
+        <div class="metric-row"><span class="lbl">Estimated time</span><span class="val" id="m-time">—</span></div>
+      </div>
+
+      <button class="exec-btn" id="exec-btn" disabled>Enter amount</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: rail -->
+  <aside class="rail">
+    <div class="rail-card">
+      <div class="rail-title">Network</div>
+      <div class="rail-row"><span class="l">RPC</span><a class="v" href="https://rpc.testnet.arc.network" target="_blank" rel="noopener" style="color:var(--arc2)">rpc.testnet.arc.network</a></div>
+      <div class="rail-row"><span class="l">Chain ID</span><span class="v">5042002</span></div>
+      <div class="rail-row"><span class="l">Gas Token</span><span class="v">USDC (native)</span></div>
+      <div class="rail-row"><span class="l">Explorer</span><a class="v" href="https://testnet.arcscan.app" target="_blank" rel="noopener" style="color:var(--arc2)">testnet.arcscan.app</a></div>
+    </div>
+
+    <div class="rail-card">
+      <div class="rail-title">Activity</div>
+      <div id="tx-list"><div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">No trades yet</div></div>
+    </div>
+
+    <div class="rail-card">
+      <div class="rail-title">Liquidity (Arc)</div>
+      <div id="pool-stats"><div style="font-size:12px;color:var(--muted)">Loading…</div></div>
+    </div>
+  </aside>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
+        integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+<script src="/assets/arc-core.js?v=9.1.11"></script>
+<script src="/assets/arc-ui.js?v=9.1.11"></script>
+<script>
+(async () => {
+  const { CHAINS, TOKENS, ABIS, rpcProvider, wallet, formatAmt, parseAmt, shortAddr, addrToBytes32, ensureAllowance, tokenBalance, sendAndWait, explainError } = ARC;
+  const { Contract, Interface, getAddress, isAddress, ZeroAddress } = ethers;
+
+  await ArcUI.boot('trade');
+
+  // ── STATE ────────────────────────────────────────────
+  const state = {
+    fromChain: 'arc',
+    toChain: 'arc',
+    fromToken: TOKENS.arc.USDC,
+    toToken:   TOKENS.arc.EURC,
+    amountIn: '',
+    amountOut: '0',
+    recipient: '',
+    useSelfRecipient: true,
+    slippageBps: 50, // 0.5%
+    cctpMode: 'fast',
+    quote: null, // { type, amountOut, minOut, priceImpact, fee, path, steps, time, rate, ... }
+    quoting: false,
+  };
+
+  // ── CHAIN CHIPS ──────────────────────────────────────
+  function renderChainChips(containerId, side) {
+    const el = document.getElementById(containerId);
+    const chains = ['arc', 'sepolia'];
+    el.innerHTML = chains.map(k => {
+      const c = CHAINS[k];
+      const active = state[side + 'Chain'] === k;
+      return `<span class="chip ${active ? 'active' : ''}" data-k="${k}"><span class="cdot" style="background:${c.iconGrad}"></span>${c.short}</span>`;
+    }).join('');
+    el.querySelectorAll('.chip').forEach(ch => ch.onclick = () => setChain(side, ch.dataset.k));
+  }
+  renderChainChips('from-chains', 'from');
+  renderChainChips('to-chains', 'to');
+
+  function setChain(side, key) {
+    state[side + 'Chain'] = key;
+    const tokens = TOKENS[key];
+    const currentSym = state[side + 'Token']?.symbol;
+    state[side + 'Token'] = tokens[currentSym] || Object.values(tokens)[0];
+    renderChainChips('from-chains', 'from');
+    renderChainChips('to-chains', 'to');
+    renderPickBtn('from'); renderPickBtn('to');
+    updateBalances(); triggerQuote();
+  }
+
+  function renderPickBtn(side) {
+    const t = state[side + 'Token'];
+    document.getElementById(side + '-sym').textContent = t ? t.symbol : 'Select';
+    const ico = document.getElementById(side + '-ico');
+    ico.innerHTML = '';
+    if (t) {
+      if (t.icon) {
+        const img = new Image(); img.src = t.icon; img.onerror = () => { ico.textContent = t.symbol[0]; };
+        ico.appendChild(img);
+      } else ico.textContent = t.symbol[0];
+    }
+  }
+  renderPickBtn('from'); renderPickBtn('to');
+
+  // ── TOKEN PICKER ─────────────────────────────────────
+  document.getElementById('from-pick').onclick = () => openTokenPicker('from');
+  document.getElementById('to-pick').onclick = () => openTokenPicker('to');
+
+  function openTokenPicker(side) {
+    const chainKey = state[side + 'Chain'];
+    const tokens = Object.values(TOKENS[chainKey]);
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <input class="picker-search" id="pick-search" placeholder="Search token or paste address"/>
+      <div class="picker-list" id="pick-list"></div>`;
+    ArcUI.openModal({
+      title: `Select token (${CHAINS[chainKey].short})`, body,
+      onOpen: () => {
+        const list = document.getElementById('pick-list');
+        async function render(q = '') {
+          const filtered = tokens.filter(t => !q || t.symbol.toLowerCase().includes(q.toLowerCase()) || t.name.toLowerCase().includes(q.toLowerCase()) || t.address.toLowerCase() === q.toLowerCase());
+          list.innerHTML = filtered.map(t => `
+            <div class="token-row" data-addr="${t.address}">
+              <div class="token-ico">${t.icon ? `<img src="${t.icon}" onerror="this.replaceWith(document.createTextNode('${t.symbol[0]}'))"/>` : t.symbol[0]}</div>
+              <div class="token-meta"><div class="token-sym">${t.symbol}</div><div class="token-name">${t.name}</div></div>
+              <div class="token-bal" data-bal="${t.address}">—</div>
+            </div>`).join('');
+          list.querySelectorAll('.token-row').forEach(r => r.onclick = () => {
+            const tok = filtered.find(x => x.address === r.dataset.addr);
+            state[side + 'Token'] = tok;
+            renderPickBtn(side);
+            ArcUI.closeModal();
+            updateBalances(); triggerQuote();
+          });
+          if (wallet.address) {
+            filtered.forEach(async (t) => {
+              try {
+                const bal = await tokenBalance(chainKey, t, wallet.address);
+                const cell = list.querySelector(`[data-bal="${t.address}"]`);
+                if (cell) cell.textContent = formatAmt(bal, t.decimals);
+              } catch {}
+            });
+          }
+        }
+        render();
+        document.getElementById('pick-search').oninput = (e) => render(e.target.value);
+      }
+    });
+  }
+
+  // ── BALANCES ─────────────────────────────────────────
+  async function updateBalances() {
+    const addr = wallet.address;
+    const fromBal = document.getElementById('from-bal');
+    const toBal = document.getElementById('to-bal');
+    if (!addr) { fromBal.textContent = 'Connect wallet'; toBal.textContent = ''; return; }
+    fromBal.innerHTML = `Balance: <span class="skel">—</span>`;
+    toBal.innerHTML = `Balance: <span class="skel">—</span>`;
+    try {
+      const [fb, tb] = await Promise.all([
+        tokenBalance(state.fromChain, state.fromToken, addr),
+        tokenBalance(state.toChain, state.toToken, addr),
+      ]);
+      fromBal.innerHTML = `Balance: <b id="from-bal-b">${formatAmt(fb, state.fromToken.decimals)}</b> ${state.fromToken.symbol}`;
+      toBal.innerHTML = `Balance: <b>${formatAmt(tb, state.toToken.decimals)}</b> ${state.toToken.symbol}`;
+      document.getElementById('from-bal-b').onclick = () => {
+        const max = formatAmt(fb, state.fromToken.decimals, state.fromToken.decimals);
+        document.getElementById('amount-in').value = max;
+        state.amountIn = max; triggerQuote();
+      };
+    } catch (e) {
+      fromBal.textContent = 'Balance: error';
+      toBal.textContent = 'Balance: error';
+    }
+  }
+
+  // ── SLIPPAGE ─────────────────────────────────────────
+  document.querySelectorAll('.slip-btn').forEach(b => b.onclick = (e) => {
+    if (b.dataset.s === 'custom') return;
+    document.querySelectorAll('.slip-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.slippageBps = Math.round(parseFloat(b.dataset.s) * 100);
+    triggerQuote();
+  });
+  document.getElementById('slip-custom').oninput = (e) => {
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v) && v > 0 && v <= 50) {
+      document.querySelectorAll('.slip-btn').forEach(x => x.classList.remove('active'));
+      e.target.closest('.slip-btn').classList.add('active');
+      state.slippageBps = Math.round(v * 100);
+      triggerQuote();
+    }
+  };
+
+  // ── CCTP MODE ────────────────────────────────────────
+  document.querySelectorAll('#fast-toggle .fast-opt').forEach(b => b.onclick = () => {
+    document.querySelectorAll('#fast-toggle .fast-opt').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.cctpMode = b.dataset.mode;
+    triggerQuote();
+  });
+
+  // ── RECIPIENT ────────────────────────────────────────
+  const recInput = document.getElementById('recipient-input');
+  recInput.oninput = () => {
+    state.recipient = recInput.value.trim();
+    state.useSelfRecipient = !state.recipient;
+    refreshExec();
+  };
+  document.getElementById('use-self').onclick = () => {
+    state.recipient = ''; recInput.value = ''; state.useSelfRecipient = true; refreshExec();
+  };
+
+  // ── FLIP ─────────────────────────────────────────────
+  document.getElementById('flip-btn').onclick = () => {
+    [state.fromChain, state.toChain] = [state.toChain, state.fromChain];
+    [state.fromToken, state.toToken] = [state.toToken, state.fromToken];
+    renderChainChips('from-chains', 'from'); renderChainChips('to-chains', 'to');
+    renderPickBtn('from'); renderPickBtn('to');
+    updateBalances(); triggerQuote();
+  };
+
+  // ── AMOUNT INPUT ─────────────────────────────────────
+  const amtIn = document.getElementById('amount-in');
+  amtIn.oninput = () => {
+    const clean = amtIn.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\./g, '$1');
+    if (amtIn.value !== clean) amtIn.value = clean;
+    state.amountIn = clean;
+    triggerQuote();
+  };
+
+  // ── ROUTE PLANNER ────────────────────────────────────
+  function planRoute() {
+    const sameChain = state.fromChain === state.toChain;
+    const sameToken = state.fromToken.address.toLowerCase() === state.toToken.address.toLowerCase();
+    if (sameChain && sameToken) return { type: 'transfer' };
+    if (sameChain) return { type: 'swap', chain: state.fromChain };
+    // cross-chain
+    const srcIsUSDC = state.fromToken.symbol === 'USDC';
+    const dstIsUSDC = state.toToken.symbol === 'USDC';
+    if (srcIsUSDC && dstIsUSDC) return { type: 'bridge' };
+    if (srcIsUSDC && !dstIsUSDC) return { type: 'bridge+swap', hopChain: state.toChain };
+    if (!srcIsUSDC && dstIsUSDC) return { type: 'swap+bridge', hopChain: state.fromChain };
+    return { type: 'swap+bridge+swap' };
+  }
+
+  function showRoute(plan) {
+    const box = document.getElementById('route-box');
+    const steps = document.getElementById('route-steps');
+    const ft = state.fromToken.symbol, tt = state.toToken.symbol;
+    const fc = CHAINS[state.fromChain].short, tc = CHAINS[state.toChain].short;
+    let nodes = [];
+    switch (plan.type) {
+      case 'transfer':
+        nodes = [`Transfer ${ft}`, `on ${fc}`]; break;
+      case 'swap':
+        nodes = [`${ft} (${fc})`, '→', `Swap on Arc`, '→', `${tt} (${tc})`]; break;
+      case 'bridge':
+        nodes = [`USDC (${fc})`, '→', `CCTP burn`, '→', `CCTP mint`, '→', `USDC (${tc})`]; break;
+      case 'bridge+swap':
+        nodes = [`USDC (${fc})`, '→', `CCTP bridge`, '→', `USDC (${tc})`, '→', `Swap`, '→', `${tt}`]; break;
+      case 'swap+bridge':
+        nodes = [`${ft} (${fc})`, '→', `Swap to USDC`, '→', `CCTP bridge`, '→', `USDC (${tc})`]; break;
+      default:
+        nodes = ['Unsupported route']; break;
+    }
+    steps.innerHTML = nodes.map(n => n === '→' ? `<span class="route-arrow">→</span>` : `<span class="route-step">${n}</span>`).join('');
+    box.style.display = 'block';
+    document.getElementById('fast-toggle').style.display = (plan.type === 'bridge' || plan.type.includes('bridge')) ? 'flex' : 'none';
+  }
+
+  // ── QUOTE ENGINE ─────────────────────────────────────
+  let quoteSeq = 0;
+  let quoteTimer = null;
+  function triggerQuote() { clearTimeout(quoteTimer); quoteTimer = setTimeout(quote, 250); }
+
+  async function quote() {
+    const seq = ++quoteSeq;
+    const plan = planRoute();
+    showRoute(plan);
+    const amt = parseAmt(state.amountIn, state.fromToken.decimals);
+    if (amt === 0n) {
+      setMetrics({ rate: '—', impact: '—', fee: '—', min: '—', time: '—' });
+      document.getElementById('amount-out').value = '';
+      document.getElementById('to-usd').textContent = '≈ $0.00';
+      state.quote = null; refreshExec(); return;
+    }
+    setMetrics({ rate: '<span class="skel">—</span>', impact: '<span class="skel">—</span>', fee: '<span class="skel">—</span>', min: '<span class="skel">—</span>', time: '<span class="skel">—</span>' });
+    try {
+      let q;
+      if (plan.type === 'transfer') q = await quoteTransfer(amt);
+      else if (plan.type === 'swap') q = await quoteSwap(plan.chain, state.fromToken, state.toToken, amt);
+      else if (plan.type === 'bridge') q = await quoteBridge(amt);
+      else if (plan.type === 'bridge+swap') q = await quoteBridgeSwap(amt);
+      else if (plan.type === 'swap+bridge') q = await quoteSwapBridge(amt);
+      else throw new Error('Route not supported on testnet');
+      if (seq !== quoteSeq) return;
+      state.quote = { ...q, plan };
+      document.getElementById('amount-out').value = formatAmt(q.amountOut, state.toToken.decimals);
+      document.getElementById('to-usd').textContent = '≈ $' + estimateUSD(q.amountOut, state.toToken);
+      document.getElementById('from-usd').textContent = '≈ $' + estimateUSD(amt, state.fromToken);
+      setMetrics({
+        rate: q.rate || '—',
+        impact: q.impact ? q.impact + ' %' : '—',
+        fee: q.feeLabel || '—',
+        min: formatAmt(q.minOut, state.toToken.decimals) + ' ' + state.toToken.symbol,
+        time: q.time || '—',
+      }, q.impactBad ? 'danger' : (q.impactWarn ? 'warn' : ''));
+    } catch (e) {
+      if (seq !== quoteSeq) return;
+      setMetrics({ rate: 'No route', impact: '—', fee: '—', min: '—', time: '—' }, 'danger');
+      state.quote = null;
+      document.getElementById('amount-out').value = '';
+    }
+    refreshExec();
+  }
+
+  function setMetrics(m, impactCls = '') {
+    document.getElementById('m-rate').innerHTML = m.rate;
+    const im = document.getElementById('m-impact');
+    im.innerHTML = m.impact; im.className = 'val ' + (impactCls || '');
+    document.getElementById('m-netfee').innerHTML = m.fee;
+    document.getElementById('m-min').innerHTML = m.min;
+    document.getElementById('m-time').innerHTML = m.time;
+  }
+
+  function estimateUSD(amount, token) {
+    // Stablecoin assumption for USDC/EURC/USYC; ETH rough $2400 on Sepolia (display only)
+    const s = parseFloat(formatAmt(amount, token.decimals));
+    if (['USDC', 'USYC'].includes(token.symbol)) return s.toFixed(2);
+    if (token.symbol === 'EURC') return (s * 1.08).toFixed(2);
+    if (token.symbol === 'ETH') return (s * 2400).toFixed(2);
+    return s.toFixed(2);
+  }
+
+  // ── QUOTE HELPERS ────────────────────────────────────
+  async function quoteTransfer(amt) {
+    return {
+      amountOut: amt, minOut: amt, rate: '1 : 1',
+      feeLabel: 'Only network gas', time: '< 1 s', impact: '0.00',
+    };
+  }
+
+  async function quoteSwap(chainKey, tIn, tOut, amtIn) {
+    const provider = rpcProvider(chainKey);
+    const router = new Contract(CHAINS[chainKey].contracts.router, ABIS.router, provider);
+    // Try direct pair
+    let path = [tIn.address, tOut.address];
+    let amounts;
+    try {
+      amounts = await router.getAmountsOut(amtIn, path);
+    } catch {
+      // Try hop through USDC
+      const usdc = TOKENS[chainKey].USDC.address;
+      if (tIn.address.toLowerCase() !== usdc.toLowerCase() && tOut.address.toLowerCase() !== usdc.toLowerCase()) {
+        path = [tIn.address, usdc, tOut.address];
+        amounts = await router.getAmountsOut(amtIn, path);
+      } else { throw new Error('No route'); }
+    }
+    const out = amounts[amounts.length - 1];
+    // Price impact: derive pool rate from reserves for first pair
+    let impact = 0, reserveRate = null;
+    try {
+      const factory = new Contract(CHAINS[chainKey].contracts.factory, ABIS.factory, provider);
+      const pairAddr = await factory.getPair(path[0], path[1]);
+      if (pairAddr && pairAddr !== ZeroAddress) {
+        const pair = new Contract(pairAddr, ABIS.pair, provider);
+        const [t0, r] = await Promise.all([pair.token0(), pair.getReserves()]);
+        const [r0, r1] = [r[0], r[1]];
+        const isZeroIn = t0.toLowerCase() === path[0].toLowerCase();
+        const reserveIn = isZeroIn ? r0 : r1;
+        const reserveOut = isZeroIn ? r1 : r0;
+        // mid price (no fee): convert reserves to decimal floats first to avoid Number precision loss on 18-decimal raw BigInts
+        const inFloat  = parseFloat(formatAmt(reserveIn,  tIn.decimals));
+        const outFloat = parseFloat(formatAmt(reserveOut, tOut.decimals));
+        const midOutPer1 = inFloat > 0 ? outFloat / inFloat : 0;
+        const execRate = parseFloat(formatAmt(out, tOut.decimals)) / parseFloat(formatAmt(amtIn, tIn.decimals));
+        if (midOutPer1 > 0) impact = Math.max(0, (1 - execRate / midOutPer1) * 100);
+        reserveRate = midOutPer1;
+      }
+    } catch {}
+    const slip = BigInt(state.slippageBps);
+    const minOut = out - (out * slip) / 10000n;
+    const rateNum = Number(formatAmt(out, tOut.decimals)) / Number(formatAmt(amtIn, tIn.decimals));
+    return {
+      amountOut: out, minOut, path,
+      rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
+      impact: impact.toFixed(2),
+      impactWarn: impact > 1, impactBad: impact > 5,
+      feeLabel: '~0.30 % pool + gas',
+      time: '~1 s',
+    };
+  }
+
+  async function quoteBridge(amt) {
+    // CCTP 1:1. Fast mode takes a small fee via maxFee param.
+    let feeBps = 0n, feeLabel = '0 USDC', time = '13–19 min';
+    if (state.cctpMode === 'fast') {
+      feeBps = 1n; // 0.01% default; real value fetched when executing
+      feeLabel = '≈ ' + formatAmt((amt * feeBps) / 10000n, state.fromToken.decimals) + ' USDC';
+      time = '~20 s';
+    }
+    const fee = (amt * feeBps) / 10000n;
+    const out = amt - fee;
+    const slip = BigInt(state.slippageBps);
+    const minOut = out - (out * slip) / 10000n;
+    return {
+      amountOut: out, minOut,
+      rate: '1 : 1', impact: '0.00',
+      feeLabel, time,
+    };
+  }
+
+  async function quoteBridgeSwap(amt) {
+    // USDC bridge to Arc (or Sepolia) then swap to another token on dest. Only Arc dest is swappable.
+    if (state.toChain !== 'arc') throw new Error('Unsupported');
+    const br = await quoteBridge(amt);
+    const sw = await quoteSwap('arc', TOKENS.arc.USDC, state.toToken, br.amountOut);
+    const slip = BigInt(state.slippageBps);
+    const min = sw.amountOut - (sw.amountOut * slip) / 10000n;
+    return {
+      amountOut: sw.amountOut, minOut: min,
+      rate: sw.rate, impact: sw.impact,
+      impactWarn: sw.impactWarn, impactBad: sw.impactBad,
+      feeLabel: `${br.feeLabel} + pool`,
+      time: (state.cctpMode === 'fast' ? '~30 s' : '~14 min'),
+    };
+  }
+
+  async function quoteSwapBridge(amt) {
+    if (state.fromChain !== 'arc') throw new Error('Unsupported');
+    const sw = await quoteSwap('arc', state.fromToken, TOKENS.arc.USDC, amt);
+    const br = await quoteBridge(sw.amountOut);
+    const slip = BigInt(state.slippageBps);
+    const min = br.amountOut - (br.amountOut * slip) / 10000n;
+    return {
+      amountOut: br.amountOut, minOut: min,
+      rate: sw.rate, impact: sw.impact,
+      impactWarn: sw.impactWarn, impactBad: sw.impactBad,
+      feeLabel: `pool + ${br.feeLabel}`,
+      time: (state.cctpMode === 'fast' ? '~30 s' : '~14 min'),
+    };
+  }
+
+  // ── EXEC BUTTON STATE ────────────────────────────────
+  function refreshExec() {
+    const btn = document.getElementById('exec-btn');
+    const addr = wallet.address;
+    if (!addr) { btn.disabled = false; btn.textContent = 'Connect wallet'; btn.onclick = () => wallet.connect().catch(e => ArcUI.toast('error','Connect failed',explainError(e))); return; }
+    const plan = planRoute();
+    if (state.recipient && !isAddress(state.recipient)) { btn.disabled = true; btn.textContent = 'Invalid recipient'; return; }
+    if (!state.amountIn || parseAmt(state.amountIn, state.fromToken.decimals) === 0n) { btn.disabled = true; btn.textContent = 'Enter amount'; return; }
+    if (!state.quote) { btn.disabled = true; btn.textContent = 'No route'; return; }
+    if (wallet.chainKey !== state.fromChain) {
+      btn.disabled = false; btn.textContent = `Switch to ${CHAINS[state.fromChain].short}`;
+      btn.onclick = () => wallet.ensureChain(state.fromChain).catch(e => ArcUI.toast('error','Switch failed',explainError(e)));
+      return;
+    }
+    const label = {
+      transfer: `Transfer ${state.fromToken.symbol}`,
+      swap: `Swap ${state.fromToken.symbol} → ${state.toToken.symbol}`,
+      bridge: `Bridge USDC to ${CHAINS[state.toChain].short}`,
+      'bridge+swap': `Bridge + Swap → ${state.toToken.symbol}`,
+      'swap+bridge': `Swap + Bridge → ${CHAINS[state.toChain].short}`,
+    }[plan.type] || 'Execute';
+    btn.disabled = false; btn.textContent = label; btn.onclick = execute;
+  }
+
+  // ── EXECUTE ──────────────────────────────────────────
+  async function execute() {
+    const plan = state.quote.plan;
+    const recipient = state.recipient && isAddress(state.recipient) ? getAddress(state.recipient) : wallet.address;
+    const amt = parseAmt(state.amountIn, state.fromToken.decimals);
+    try {
+      await wallet.ensureChain(state.fromChain);
+      if (plan.type === 'transfer') await execTransfer(amt, recipient);
+      else if (plan.type === 'swap') await execSwap(amt, recipient, state.quote);
+      else if (plan.type === 'bridge') await execBridge(amt, recipient);
+      else if (plan.type === 'bridge+swap') await execBridgeThenSwap(amt, recipient);
+      else if (plan.type === 'swap+bridge') await execSwapThenBridge(amt, recipient);
+      else throw new Error('Not supported');
+      updateBalances();
+    } catch (e) {
+      console.error(e);
+      ArcUI.toast('error', 'Failed', explainError(e));
+    }
+  }
+
+  async function execTransfer(amt, to) {
+    const t = state.fromToken;
+    const signer = wallet.signer;
+    let txHash;
+    if (t.isGas) {
+      // Pure native (e.g. Sepolia ETH) — value transfer
+      const tx = await signer.sendTransaction({ to, value: amt });
+      txHash = tx.hash;
+      pushActivity({ kind: 'transfer', chain: state.fromChain, hash: txHash, status: 'pending', text: `${formatAmt(amt, t.decimals)} ${t.symbol} → ${shortAddr(to)}` });
+      ArcUI.toast('', 'Sending…', shortAddr(txHash));
+      await tx.wait();
+    } else {
+      // Standard ERC-20 transfer (also covers USDC on Arc which doubles as gas)
+      const c = new Contract(t.address, ABIS.erc20, signer);
+      const tx = await c.transfer(to, amt);
+      txHash = tx.hash;
+      pushActivity({ kind: 'transfer', chain: state.fromChain, hash: txHash, status: 'pending', text: `${formatAmt(amt, t.decimals)} ${t.symbol} → ${shortAddr(to)}` });
+      await tx.wait();
+    }
+    updateActivity(txHash, 'done');
+    ArcUI.toast('success', 'Transferred', `<a href="${CHAINS[state.fromChain].explorerTx(txHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">View ↗</a>`);
+  }
+
+  async function execSwap(amt, to, q) {
+    const signer = wallet.signer;
+    const router = CHAINS[state.fromChain].contracts.router;
+    await ensureAllowance(state.fromChain, state.fromToken, router, amt, s => ArcUI.toast('', 'Approval', s));
+    const r = new Contract(router, ABIS.router, signer);
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+    const tx = await r.swapExactTokensForTokens(amt, q.minOut, q.path, to, deadline);
+    pushActivity({ kind: 'swap', chain: state.fromChain, hash: tx.hash, status: 'pending', text: `${formatAmt(amt, state.fromToken.decimals)} ${state.fromToken.symbol} → ${state.toToken.symbol}` });
+    ArcUI.toast('', 'Swapping…', `<a href="${CHAINS[state.fromChain].explorerTx(tx.hash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">${shortAddr(tx.hash)} ↗</a>`);
+    await tx.wait();
+    updateActivity(tx.hash, 'done');
+    ArcUI.toast('success', 'Swap complete', `Received ≈ ${formatAmt(q.amountOut, state.toToken.decimals)} ${state.toToken.symbol}`);
+  }
+
+  // ── CCTP BRIDGE ──────────────────────────────────────
+  async function execBridge(amt, recipient) {
+    const signer = wallet.signer;
+    const src = CHAINS[state.fromChain];
+    const dst = CHAINS[state.toChain];
+    const srcUSDC = TOKENS[state.fromChain].USDC;
+
+    // Approve USDC spend (in ERC-20 decimals native to the source chain)
+    await ensureAllowance(state.fromChain, srcUSDC, src.contracts.tokenMessengerV2, amt, s => ArcUI.toast('', 'Approval', s));
+
+    const tm = new Contract(src.contracts.tokenMessengerV2, ABIS.tokenMessengerV2, signer);
+    const mintRecipient32 = addrToBytes32(recipient);
+    const destCaller32 = '0x' + '00'.repeat(32);
+    // CCTP amounts are canonical 6-decimal. Arc's USDC is 18d native, so scale it.
+    const cctpAmt = ARC.toCctpAmount(amt, srcUSDC);
+    const maxFee = state.cctpMode === 'fast' ? (cctpAmt / 10000n) + 1n : 0n; // 0.01% cap
+    const minFinality = state.cctpMode === 'fast' ? 1000 : 2000; // <2000 = fast
+
+    // Progress modal
+    const steps = [
+      { id: 'burn',    title: 'Burn USDC on ' + src.short },
+      { id: 'attest',  title: 'Circle attestation' },
+      { id: 'mint',    title: 'Mint USDC on ' + dst.short },
+    ];
+    const modal = openProgress('Bridge USDC', steps);
+    modal.set('burn', 'active', 'Signing burn tx…');
+
+    const burnTx = await tm.depositForBurn(cctpAmt, dst.cctpDomain, mintRecipient32, srcUSDC.address, destCaller32, maxFee, minFinality);
+    modal.set('burn', 'active', `Tx ${shortAddr(burnTx.hash)} — waiting receipt…`);
+    pushActivity({ kind: 'bridge', chain: state.fromChain, hash: burnTx.hash, status: 'pending', text: `Bridge ${formatAmt(amt, srcUSDC.decimals)} USDC → ${dst.short}` });
+    await burnTx.wait();
+    modal.set('burn', 'done', `<a href="${src.explorerTx(burnTx.hash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">${shortAddr(burnTx.hash)} ↗</a>`);
+
+    modal.set('attest', 'active', 'Polling Circle IRIS…');
+    const att = await pollAttestation(src.cctpDomain, burnTx.hash, (tries, total) => {
+      modal.set('attest', 'active', `Polling Circle IRIS… (${tries}/${total})`);
+    });
+    modal.set('attest', 'done', 'Attestation received');
+
+    // Switch to destination chain
+    modal.set('mint', 'active', `Switch wallet to ${dst.short}…`);
+    await wallet.ensureChain(state.toChain);
+    const mt = new Contract(dst.contracts.messageTransmitterV2, ABIS.messageTransmitterV2, wallet.signer);
+    modal.set('mint', 'active', 'Signing mint tx…');
+    const mintTx = await mt.receiveMessage(att.message, att.attestation);
+    modal.set('mint', 'active', `Tx ${shortAddr(mintTx.hash)} — waiting…`);
+    await mintTx.wait();
+    modal.set('mint', 'done', `<a href="${dst.explorerTx(mintTx.hash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">${shortAddr(mintTx.hash)} ↗</a>`);
+    updateActivity(burnTx.hash, 'done');
+    ArcUI.toast('success', 'Bridge complete', `USDC landed on ${dst.short}`);
+    modal.finish();
+    // Return to source chain for subsequent quotes
+    await wallet.ensureChain(state.fromChain).catch(() => null);
+  }
+
+  async function pollAttestation(srcDomain, txHash, onTick) {
+    const maxTries = 160; // ~8 minutes at 3s interval (good cap for both modes)
+    for (let i = 0; i < maxTries; i++) {
+      try {
+        const data = await ARC.irisMessages(srcDomain, txHash);
+        const msg = (data.messages || [])[0];
+        if (msg && msg.status === 'complete' && msg.attestation && msg.attestation !== 'PENDING') {
+          return { message: msg.message, attestation: msg.attestation };
+        }
+      } catch {}
+      onTick?.(i + 1, maxTries);
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    throw new Error('Attestation timed out. It may still complete — retry "receive" from history.');
+  }
+
+  async function execBridgeThenSwap(amt, recipient) {
+    // Strategy: bridge USDC from source → USDC on Arc owned by wallet, then swap on Arc to recipient
+    if (state.toChain !== 'arc') throw new Error('Only Arc as swap destination supported on testnet');
+    await execBridge(amt, wallet.address); // bridge to self on Arc
+    // After bridge, rely on updated balance; swap from USDC to target token on Arc
+    const usdcBal = await tokenBalance('arc', TOKENS.arc.USDC, wallet.address);
+    if (usdcBal === 0n) throw new Error('USDC not yet visible on Arc. Retry swap shortly.');
+    const q = await quoteSwap('arc', TOKENS.arc.USDC, state.toToken, usdcBal);
+    await execSwap(usdcBal, recipient, { minOut: q.minOut, path: q.path, amountOut: q.amountOut });
+  }
+
+  async function execSwapThenBridge(amt, recipient) {
+    if (state.fromChain !== 'arc') throw new Error('Only Arc as swap source supported on testnet');
+    // 1) swap to USDC on Arc held by wallet
+    const q = await quoteSwap('arc', state.fromToken, TOKENS.arc.USDC, amt);
+    await execSwap(amt, wallet.address, { minOut: q.minOut, path: q.path, amountOut: q.amountOut });
+    // 2) bridge USDC to destination
+    const usdcBal = await tokenBalance('arc', TOKENS.arc.USDC, wallet.address);
+    await execBridge(usdcBal, recipient);
+  }
+
+  // ── PROGRESS MODAL ───────────────────────────────────
+  function openProgress(title, steps) {
+    const body = document.createElement('div');
+    body.innerHTML = `<div class="progress-steps">${steps.map(s => `
+      <div class="pstep" data-id="${s.id}">
+        <div class="pstep-ic">${steps.indexOf(s) + 1}</div>
+        <div class="pstep-body"><div class="pstep-title">${s.title}</div><div class="pstep-sub"></div></div>
+      </div>`).join('')}</div>
+      <button class="btn-ghost btn-block" id="progress-close" style="display:none">Close</button>`;
+    ArcUI.openModal({ title, body, onOpen: () => {
+      document.getElementById('progress-close').onclick = ArcUI.closeModal;
+    }});
+    return {
+      set(id, status, sub) {
+        const el = document.querySelector(`.pstep[data-id="${id}"]`); if (!el) return;
+        el.classList.remove('active', 'done', 'fail');
+        if (status) el.classList.add(status);
+        if (status === 'done') el.querySelector('.pstep-ic').textContent = '✓';
+        if (status === 'fail') el.querySelector('.pstep-ic').textContent = '✕';
+        if (status === 'active') el.querySelector('.pstep-ic').innerHTML = '<span class="spin"></span>';
+        el.querySelector('.pstep-sub').innerHTML = sub || '';
+      },
+      finish() { document.getElementById('progress-close').style.display = 'block'; },
+      fail(id, err) { this.set(id, 'fail', err); document.getElementById('progress-close').style.display = 'block'; }
+    };
+  }
+
+  // ── ACTIVITY (localStorage) ──────────────────────────
+  const ACT_KEY = 'arc.trade.activity.v1';
+  function readAct() { try { return JSON.parse(localStorage.getItem(ACT_KEY) || '[]'); } catch { return []; } }
+  function writeAct(xs) { try { localStorage.setItem(ACT_KEY, JSON.stringify(xs.slice(0, 30))); } catch {} }
+  function pushActivity(item) {
+    const xs = readAct(); xs.unshift({ ...item, at: Date.now() }); writeAct(xs); renderActivity();
+  }
+  function updateActivity(hash, status) {
+    const xs = readAct(); const i = xs.findIndex(x => x.hash === hash);
+    if (i >= 0) { xs[i].status = status; writeAct(xs); renderActivity(); }
+  }
+  function renderActivity() {
+    const list = document.getElementById('tx-list');
+    const addr = wallet.address;
+    const xs = readAct().filter(x => !addr || true);
+    if (!xs.length) { list.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">No trades yet</div>`; return; }
+    list.innerHTML = xs.slice(0, 6).map(x => `
+      <div class="tx-item">
+        <div class="tx-head"><span style="font-weight:600">${x.kind.toUpperCase()}</span>
+          <span class="tx-status ${x.status}">${x.status}</span></div>
+        <div class="tx-sub">${x.text || ''}</div>
+        <a class="tx-link" target="_blank" rel="noopener noreferrer" href="${CHAINS[x.chain].explorerTx(x.hash)}">${shortAddr(x.hash)} ↗</a>
+      </div>`).join('');
+  }
+  renderActivity();
+
+  // ── Pool stats (real on-chain) ───────────────────────
+  async function loadPoolStats() {
+    const box = document.getElementById('pool-stats');
+    const provider = rpcProvider('arc');
+    const factory = new Contract(CHAINS.arc.contracts.factory, ABIS.factory, provider);
+    const pairs = [
+      { a: TOKENS.arc.USDC, b: TOKENS.arc.EURC },
+      { a: TOKENS.arc.USDC, b: TOKENS.arc.USYC },
+      { a: TOKENS.arc.EURC, b: TOKENS.arc.USYC },
+    ];
+    const rows = [];
+    for (const p of pairs) {
+      try {
+        const addr = await factory.getPair(p.a.address, p.b.address);
+        if (!addr || addr === ZeroAddress) { rows.push({ sym: `${p.a.symbol}/${p.b.symbol}`, tvl: 'No pool' }); continue; }
+        const pair = new Contract(addr, ABIS.pair, provider);
+        const [t0, r] = await Promise.all([pair.token0(), pair.getReserves()]);
+        const isZeroA = t0.toLowerCase() === p.a.address.toLowerCase();
+        const ra = isZeroA ? r[0] : r[1];
+        const rb = isZeroA ? r[1] : r[0];
+        const vA = parseFloat(formatAmt(ra, p.a.decimals));
+        const vB = parseFloat(formatAmt(rb, p.b.decimals));
+        // Both are stablecoin-ish; approximate TVL in USD
+        const price = { USDC: 1, USYC: 1.08, EURC: 1.08 };
+        const tvl = vA * (price[p.a.symbol] || 1) + vB * (price[p.b.symbol] || 1);
+        rows.push({ sym: `${p.a.symbol}/${p.b.symbol}`, tvl: '$' + tvl.toLocaleString(undefined, { maximumFractionDigits: 0 }) });
+      } catch {
+        rows.push({ sym: `${p.a.symbol}/${p.b.symbol}`, tvl: '—' });
+      }
+    }
+    box.innerHTML = rows.map(r => `<div class="rail-row"><span class="l">${r.sym}</span><span class="v">${r.tvl}</span></div>`).join('');
+  }
+  loadPoolStats();
+
+  // ── Gas / block tickers ──────────────────────────────
+  async function tick() {
+    try {
+      const p = rpcProvider('arc');
+      const [feeData, bn] = await Promise.all([p.getFeeData(), p.getBlockNumber()]);
+      const gp = feeData.gasPrice ? Number(feeData.gasPrice) / 1e9 : null;
+      document.getElementById('gas-pill').textContent = gp ? `⛽ Arc base ≈ ${gp.toFixed(1)} Gwei` : '⛽ Arc —';
+      document.getElementById('block-pill').textContent = `⏱ block #${bn}`;
+    } catch {}
+  }
+  tick(); setInterval(tick, 8000);
+
+  // ── Wallet reactivity ────────────────────────────────
+  ARC.wallet.on(() => { updateBalances(); refreshExec(); renderActivity(); });
+  updateBalances(); refreshExec();
+})();
+</script>
+</body>
+</html>

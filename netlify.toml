@@ -1,0 +1,54 @@
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/trade"
+  to = "/trade.html"
+  status = 200
+
+[[redirects]]
+  from = "/swap"
+  to = "/trade"
+  status = 301
+
+[[redirects]]
+  from = "/bridge"
+  to = "/trade"
+  status = 301
+
+[[redirects]]
+  from = "/pool"
+  to = "/pool.html"
+  status = 200
+
+[[redirects]]
+  from = "/point"
+  to = "/point.html"
+  status = 200
+
+[[redirects]]
+  from = "/token"
+  to = "/token.html"
+  status = 200
+
+[[redirects]]
+  from = "/deploy"
+  to = "/deploy.html"
+  status = 200
+
+[[redirects]]
+  from = "/farm"
+  to = "/token.html"
+  status = 302
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

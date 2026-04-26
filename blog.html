@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="ArcSwap Blog — product updates, deep-dives on stablecoin yield, CCTP, and the Arc ecosystem."/>
+<title>Blog — ArcSwap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;
+  --bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);
+  --surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);
+  --border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;
+  --muted:#8CA0BD;
+  --arc1:#4DD6DB;
+  --arc2:#4A7BEC;
+  --peach:#F4C89A;
+  --green:#7BE495;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
+
+.aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 100% 50% at 50% 0%, rgba(74,123,236,0.10) 0%, transparent 60%),
+    linear-gradient(180deg, #0A1628 0%, #0E1F39 60%, #0A1628 100%);
+}
+
+/* NAV — same as docs */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-name{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.logo-tag{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;border-left:1px solid var(--border);padding-left:10px;margin-left:4px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--text);background:var(--surface)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-ghost{padding:9px 18px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);transition:all .2s;text-decoration:none}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-primary{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);transition:all .2s;text-decoration:none}
+.btn-primary:hover{background:rgba(255,255,255,0.14)}
+
+/* HERO */
+.blog-wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:120px 24px 80px}
+.blog-eyebrow{font-size:12px;font-family:var(--mono);color:var(--arc1);letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}
+.blog-eyebrow::before{content:'// ';color:rgba(140,160,189,.55);font-weight:400}
+.blog-title{font-size:clamp(40px,6vw,64px);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:18px}
+.blog-title .grad{background:linear-gradient(90deg,var(--arc1),var(--arc2),var(--peach));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.blog-lead{font-size:18px;color:var(--muted);line-height:1.7;max-width:640px;margin-bottom:64px}
+
+/* COMING SOON */
+.coming{
+  border:1px solid var(--border);border-radius:18px;padding:48px 40px;
+  background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));
+  text-align:center;margin-bottom:64px;position:relative;overflow:hidden;
+}
+.coming::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 0%,rgba(77,214,219,0.08),transparent 60%);
+  pointer-events:none;
+}
+.coming-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:rgba(77,214,219,0.10);border:1px solid rgba(77,214,219,0.28);font-size:11.5px;font-weight:500;color:var(--arc1);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:18px;position:relative}
+.coming-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--arc1);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.coming h2{font-size:32px;font-weight:700;letter-spacing:-.02em;margin-bottom:12px;position:relative}
+.coming p{font-size:15px;color:var(--muted);max-width:520px;margin:0 auto 24px;line-height:1.7;position:relative}
+.coming-cta{display:inline-flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative}
+.coming-btn{padding:12px 22px;border-radius:10px;font-size:14px;font-weight:500;text-decoration:none;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.coming-btn.primary{background:rgba(77,214,219,0.12);border:1px solid rgba(77,214,219,0.3);color:var(--arc1)}
+.coming-btn.primary:hover{background:rgba(77,214,219,0.2);border-color:var(--arc1)}
+.coming-btn.ghost{border:1px solid var(--border);color:var(--text)}
+.coming-btn.ghost:hover{border-color:var(--border2);background:var(--surface)}
+
+/* PLANNED POSTS */
+.section-title{font-size:13px;font-family:var(--mono);color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-bottom:24px}
+.section-title::before{content:'// ';color:rgba(140,160,189,.55);font-weight:400}
+
+.post-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:64px}
+.post-card{
+  border:1px solid var(--border);border-radius:14px;padding:24px;
+  background:var(--surface);transition:all .25s;
+  display:flex;flex-direction:column;gap:12px;
+  cursor:not-allowed;opacity:.85;position:relative;overflow:hidden;
+}
+.post-card::after{
+  content:'COMING SOON';position:absolute;top:14px;right:14px;
+  font-size:9px;font-weight:700;letter-spacing:.12em;
+  padding:3px 8px;border-radius:5px;font-family:var(--mono);
+  background:rgba(140,160,189,.10);color:var(--muted);border:1px solid var(--border);
+}
+.post-card:hover{border-color:var(--border2)}
+.post-tag{font-size:11px;font-family:var(--mono);color:var(--arc1);letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+.post-title{font-size:18px;font-weight:600;color:var(--text);line-height:1.35;letter-spacing:-.01em}
+.post-excerpt{font-size:14px;color:var(--muted);line-height:1.6;flex:1}
+.post-meta{font-size:12px;color:var(--muted);font-family:var(--mono);letter-spacing:.05em;display:flex;gap:8px;align-items:center}
+
+/* SUBSCRIBE STRIP */
+.subscribe{
+  border:1px solid var(--border);border-radius:14px;padding:32px;
+  background:var(--surface);margin-bottom:64px;
+  display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;
+}
+.sub-text h3{font-size:18px;font-weight:600;margin-bottom:6px}
+.sub-text p{font-size:14px;color:var(--muted);line-height:1.6;max-width:480px}
+.sub-btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* FOOTER */
+.blog-foot{
+  padding-top:32px;border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;font-size:13px;color:var(--muted);
+  flex-wrap:wrap;gap:12px;
+}
+.blog-foot a{color:var(--muted);text-decoration:none}
+.blog-foot a:hover{color:var(--arc1)}
+
+@media (max-width:768px){
+  .nav-links{display:none}
+  .blog-wrap{padding:100px 18px 60px}
+  .coming{padding:32px 22px}
+  .subscribe{padding:24px;flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-tag">Blog</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/vault">Vault</a>
+    <a class="nav-link" href="/trade">Trade</a>
+    <a class="nav-link" href="/pool">Pool</a>
+    <a class="nav-link" href="/docs">Docs</a>
+    <a class="nav-link active" href="/blog">Blog</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn-ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    <a class="btn-primary" href="/trade">Launch App ↗</a>
+  </div>
+</nav>
+
+<div class="blog-wrap">
+
+  <div class="blog-eyebrow">Blog</div>
+  <h1 class="blog-title">Notes from the <span class="grad">Yield Terminal</span></h1>
+  <p class="blog-lead">
+    Product updates, post-mortems, deep-dives on stablecoin yield, CCTP, and the Arc ecosystem.
+    No fluff — only what we'd want to read ourselves.
+  </p>
+
+  <!-- COMING SOON -->
+  <div class="coming">
+    <div class="coming-badge"><span class="dot"></span>First post incoming</div>
+    <h2>The blog is being set up.</h2>
+    <p>We're drafting the first articles right now. In the meantime, follow us on X or join Discord — that's where we ship updates first.</p>
+    <div class="coming-cta">
+      <a class="coming-btn primary" href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">Follow on X →</a>
+      <a class="coming-btn ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Join Discord</a>
+    </div>
+  </div>
+
+  <!-- PLANNED POSTS -->
+  <div class="section-title">In the Pipeline</div>
+  <div class="post-grid">
+
+    <article class="post-card">
+      <span class="post-tag">Product</span>
+      <h3 class="post-title">Why we built ArcSwap as a yield terminal, not a DEX</h3>
+      <p class="post-excerpt">DeFi has plenty of swap UIs. What's missing is a single venue where idle stablecoins earn Treasury yield while staying instantly tradable. Here's the design thesis.</p>
+      <div class="post-meta">Founder note · ~6 min read</div>
+    </article>
+
+    <article class="post-card">
+      <span class="post-tag">Deep dive</span>
+      <h3 class="post-title">USYC, explained for stablecoin holders</h3>
+      <p class="post-excerpt">A no-jargon walk-through of how Hashnote's tokenized money market fund actually works — what backs it, how yield accrues, and what the real risks look like.</p>
+      <div class="post-meta">Education · ~8 min read</div>
+    </article>
+
+    <article class="post-card">
+      <span class="post-tag">Engineering</span>
+      <h3 class="post-title">Pinning a frontend to IPFS, the right way</h3>
+      <p class="post-excerpt">How we ship immutable builds: deterministic bundles, two pinning providers, ENS contenthash via multi-sig, and a verification flow anyone can audit.</p>
+      <div class="post-meta">Technical · ~10 min read</div>
+    </article>
+
+    <article class="post-card">
+      <span class="post-tag">Concepts</span>
+      <h3 class="post-title">CCTP vs lock-and-mint bridges</h3>
+      <p class="post-excerpt">Native USDC bridges burn-and-mint instead of locking liquidity. Walking through what that means for users, attackers, and the broader stablecoin economy.</p>
+      <div class="post-meta">Education · ~7 min read</div>
+    </article>
+
+    <article class="post-card">
+      <span class="post-tag">Roadmap</span>
+      <h3 class="post-title">Circle Gateway and the multichain USDC future</h3>
+      <p class="post-excerpt">Why Circle's Unified Balance Kit changes the UX of cross-chain stablecoin flows — and how we're planning to integrate it without bloating the bundle.</p>
+      <div class="post-meta">Strategy · ~5 min read</div>
+    </article>
+
+    <article class="post-card">
+      <span class="post-tag">Security</span>
+      <h3 class="post-title">Our security stack, in one page</h3>
+      <p class="post-excerpt">CSP, SRI, multi-sig, IPFS, vulnerability disclosure, incident response. The whole defense-in-depth story, written so you can verify each layer yourself.</p>
+      <div class="post-meta">Trust · ~9 min read</div>
+    </article>
+
+  </div>
+
+  <!-- SUBSCRIBE -->
+  <div class="subscribe">
+    <div class="sub-text">
+      <h3>Get notified when posts go live</h3>
+      <p>We don't have an email list yet. Best places to catch new posts: X for headlines, Discord for discussion, RSS coming with the first article.</p>
+    </div>
+    <div class="sub-btns">
+      <a class="coming-btn primary" href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">Follow X</a>
+      <a class="coming-btn ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Join Discord</a>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="blog-foot">
+    <span>© 2026 ArcSwap · Arc Testnet · v0.9</span>
+    <div>
+      <a href="/">Home</a> &nbsp;·&nbsp;
+      <a href="/docs">Docs</a> &nbsp;·&nbsp;
+      <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">X</a> &nbsp;·&nbsp;
+      <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

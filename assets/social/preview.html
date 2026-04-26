@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>ArcSwap — X Social Assets</title>
+<style>
+  body{margin:0;padding:40px 20px;background:#0A1628;color:#F5F7FB;font-family:Inter,system-ui,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:28px;font-weight:900;letter-spacing:-.03em;margin:0 0 8px}
+  p.lead{color:#8CA0BD;font-size:14px;margin:0 0 28px;line-height:1.6}
+  section{background:#0F1E36;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:22px;margin-bottom:24px}
+  h2{font-size:16px;font-weight:800;margin:0 0 4px}
+  .meta{font-size:12px;color:#8CA0BD;margin-bottom:16px;font-family:'DM Mono',ui-monospace,monospace}
+  .preview{background:#06101F;border-radius:12px;padding:18px;display:flex;justify-content:center;align-items:center;overflow:auto}
+  .preview img{max-width:100%;display:block;border-radius:6px}
+  .row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  button,a.btn{padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:#F5F7FB;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  button:hover,a.btn:hover{background:rgba(255,255,255,.16)}
+  .pill{font-size:11px;padding:3px 8px;border-radius:20px;background:rgba(123,228,149,.12);border:1px solid rgba(123,228,149,.4);color:#7BE495;font-family:'DM Mono',monospace}
+  .avatar-preview{width:200px;height:200px;border-radius:50%;overflow:hidden}
+  .avatar-preview img{width:100%;height:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ArcSwap — X / Twitter assets</h1>
+  <p class="lead">Right-click → <em>Save image as…</em> to grab the SVGs directly, or click <strong>Download PNG</strong> below each preview to get the format X requires.</p>
+
+  <section>
+    <h2>Avatar <span class="pill">400 × 400</span></h2>
+    <div class="meta">Square source. X displays it as a circle. File: <code>arcswap-x-avatar.svg</code></div>
+    <div class="preview" style="gap:32px">
+      <img id="avatar-src" src="arcswap-x-avatar.svg" width="400" height="400" alt="ArcSwap avatar"/>
+      <div>
+        <div style="font-size:12px;color:#8CA0BD;margin-bottom:8px;font-family:'DM Mono',monospace">CIRCULAR PREVIEW</div>
+        <div class="avatar-preview"><img src="arcswap-x-avatar.svg" alt="circular preview"/></div>
+      </div>
+    </div>
+    <div class="row">
+      <button onclick="downloadPng('avatar-src','arcswap-x-avatar.png',400,400)">⬇ Download PNG (400×400)</button>
+      <button onclick="downloadPng('avatar-src','arcswap-x-avatar@2x.png',800,800)">⬇ Download PNG (800×800)</button>
+      <a class="btn" href="arcswap-x-avatar.svg" download>⬇ Download SVG</a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Header / Cover <span class="pill">1500 × 500</span></h2>
+    <div class="meta">X crops top &amp; bottom on mobile — key content sits in the central safe zone. File: <code>arcswap-x-cover.svg</code></div>
+    <div class="preview">
+      <img id="cover-src" src="arcswap-x-cover.svg" width="1500" height="500" alt="ArcSwap cover"/>
+    </div>
+    <div class="row">
+      <button onclick="downloadPng('cover-src','arcswap-x-cover.png',1500,500)">⬇ Download PNG (1500×500)</button>
+      <button onclick="downloadPng('cover-src','arcswap-x-cover@2x.png',3000,1000)">⬇ Download PNG (3000×1000)</button>
+      <a class="btn" href="arcswap-x-cover.svg" download>⬇ Download SVG</a>
+    </div>
+  </section>
+
+  <section style="background:rgba(77,214,219,.04);border-color:rgba(77,214,219,.18)">
+    <h2 style="color:#4DD6DB">📋 Suggested X bio</h2>
+    <pre style="white-space:pre-wrap;font-family:Inter,system-ui,sans-serif;font-size:14px;color:#F5F7FB;background:#06101F;padding:16px;border-radius:10px;line-height:1.6;margin:0">The yield terminal for stablecoins on @arc_network 🌐
+
+USYC Vault · Swap · Bridge · Pools — one venue, one balance.
+Built on Arc Testnet · USDC native · CCTP V2.
+
+🔗 arcswap.net</pre>
+    <div class="meta" style="margin-top:10px">Tip: replace the @ handle and link with your actuals.</div>
+  </section>
+</div>
+
+<script>
+async function downloadPng(srcId, filename, w, h){
+  const img = document.getElementById(srcId);
+  // Re-fetch SVG as text so we can rasterize at arbitrary sizes
+  const svgText = await fetch(img.getAttribute('src')).then(r=>r.text());
+  const blob = new Blob([svgText],{type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const tmp = new Image();
+  tmp.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(tmp, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    c.toBlob(b => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = filename;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+    }, 'image/png');
+  };
+  tmp.onerror = () => alert('Could not rasterize SVG.');
+  tmp.src = url;
+}
+</script>
+</body>
+</html>

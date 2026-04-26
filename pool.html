@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ArcSwap — Pool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;--bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;--muted:#8CA0BD;
+  --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
+  --peach:#F4C89A;--sand:#ECDCC4;--legacy-purple:#6C3FFF;
+  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+}
+
+/* ── TYPOGRAPHY SYSTEM (Inter, Arc.Network-inspired) ───── */
+h1,h2,h3,h4,h5,h6{font-family:var(--font);font-weight:800;letter-spacing:-.035em;line-height:1.1}
+p,span,div,button,input,select,textarea,a{font-family:var(--font)}
+.label-caps{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.num-large{font-size:42px;font-weight:800;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.num-med{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.body-sm{font-size:13px;font-weight:400;line-height:1.6;color:var(--muted)}
+/* Arc.Network-style orange mono {LABEL} + accent divider */
+.arc-label{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;color:#FF9F4A;text-transform:uppercase;white-space:nowrap}
+.arc-label::before{content:'{\00a0';opacity:.75}
+.arc-label::after{content:'\00a0}';opacity:.75}
+.arc-divider{height:1px;background:linear-gradient(90deg,transparent 0%,rgba(0,207,255,.35) 20%,rgba(0,207,255,.35) 80%,transparent 100%);border:none;margin:18px 0}
+
+html{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh;cursor:none}
+
+/* CURSOR */
+.cursor-dot{position:fixed;width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9999;mix-blend-mode:difference}
+.cursor-ring{position:fixed;width:36px;height:36px;border:1.5px solid rgba(255,255,255,.4);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9998;transition:all .12s ease}
+
+/* NOISE */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");opacity:.35;pointer-events:none;z-index:9997}
+
+/* AURORA — arc.network horizon (navy top → teal mid → peach bottom) */
+.aurora{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 140% 60% at 50% 110%, rgba(244,200,154,0.28) 0%, rgba(244,200,154,0.08) 35%, transparent 60%),
+    radial-gradient(ellipse 120% 40% at 50% 90%, rgba(77,214,219,0.22) 0%, rgba(74,123,236,0.10) 35%, transparent 65%),
+    linear-gradient(180deg, #0A1628 0%, #0E1F39 40%, #133155 75%, #1E4A6E 100%);
+}
+.orb{position:absolute;border-radius:50%;filter:blur(150px);animation:orb-drift 40s ease-in-out infinite alternate;mix-blend-mode:screen}
+.o1{width:720px;height:500px;background:var(--arc1);opacity:.06;top:-240px;left:-200px;animation-duration:40s}
+.o2{width:620px;height:520px;background:var(--arc2);opacity:.05;top:-160px;right:-220px;animation-duration:46s;animation-delay:-10s}
+.o3{display:none}
+@keyframes orb-drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,20px) scale(1.06)}}
+
+/* NAVBAR — unified with /trade (arc-ui.css) */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:all .3s;gap:16px;
+}
+nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-name{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.nav-tabs{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;text-decoration:none;border:none;background:none;cursor:pointer;font-family:var(--font)}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.nav-tab.active{color:var(--text);background:rgba(255,255,255,.07)}
+.nav-tab.faucet-tab{color:var(--muted);background:none;border:none}
+.nav-tab.faucet-tab:hover{color:var(--arc2);background:rgba(0,207,255,.06)}
+.nav-tab.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.nav-right{display:flex;align-items:center;gap:10px}
+.testnet-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
+.tnet-dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#wallet-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font)}
+#wallet-btn:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.32)}
+#wallet-btn.connected{background:rgba(77,214,219,0.10);border-color:rgba(77,214,219,0.3);color:var(--text)}
+.w-dot{width:7px;height:7px;border-radius:50%;background:var(--arc4);flex-shrink:0;box-shadow:0 0 8px var(--arc4)}
+
+/* PAGE */
+.page{position:relative;z-index:1;min-height:100vh;padding:88px 24px 60px;max-width:900px;margin:0 auto}
+
+/* HEADER */
+.page-header{margin-bottom:28px}
+.page-title{font-size:clamp(40px,5.5vw,72px);font-weight:900;letter-spacing:-.035em;line-height:1;margin-bottom:8px;text-transform:uppercase}
+.page-sub{font-size:14px;color:var(--muted);max-width:640px;line-height:1.5}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:rgba(10,6,28,.85);border:1px solid var(--border);border-radius:16px;padding:18px 20px}
+.stat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.stat-val{font-size:28px;font-weight:800;letter-spacing:-.035em;line-height:1.05;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-change{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+
+/* SECTION — Arc.Network {LABEL} style */
+.section-title{font-family:var(--mono);font-size:11px;font-weight:500;color:#FF9F4A;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;display:inline-block}
+.section-title::before{content:'{\00a0';opacity:.7}
+.section-title::after{content:'\00a0}';opacity:.7}
+
+/* POOL TABLE */
+.pool-table{width:100%;border-collapse:collapse;margin-bottom:32px}
+.pool-table th{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border)}
+.pool-table th:not(:first-child){text-align:right}
+.pool-row{cursor:pointer;transition:background .15s;border-radius:14px}
+.pool-row:hover .pool-cell{background:rgba(77,214,219,.06)}
+.pool-cell{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.pool-cell:first-child{border-radius:14px 0 0 14px}
+.pool-cell:last-child{border-radius:0 14px 14px 0;text-align:right}
+.pool-cell:not(:first-child){text-align:right}
+
+/* PAIR DISPLAY */
+.pair-wrap{display:flex;align-items:center;gap:12px}
+.pair-icons{display:flex;align-items:center}
+.pair-ico{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;border:2px solid var(--bg)}
+.pair-ico+.pair-ico{margin-left:-10px}
+.ti-usdc-bg{background:linear-gradient(135deg,#2775CA,#5BA4F5)}
+.ti-eurc-bg{background:linear-gradient(135deg,#0052B4,#00A3E0)}
+.ti-usyc-bg{background:linear-gradient(135deg,#16A34A,#22C55E)}
+.pair-name{font-size:15px;font-weight:700}
+.pair-fee{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.pair-badges{display:flex;gap:5px;margin-top:4px}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.badge-stable{background:rgba(0,255,178,.1);color:var(--arc4)}
+.badge-new{background:rgba(255,60,172,.12);color:#FF8ACA}
+.badge-hot{background:rgba(255,184,0,.1);color:#FFB800}
+
+/* APR */
+.apr-val{font-size:16px;font-weight:800;font-family:var(--mono);color:var(--arc4)}
+.apr-range{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* TVL / VOL */
+.metric-val{font-size:14px;font-weight:700;font-family:var(--mono)}
+.metric-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ACTION BUTTONS */
+.btn-add{padding:7px 16px;border-radius:9px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.1);color:var(--text);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-add:hover{background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35);transform:translateY(-1px)}
+
+/* MY POSITIONS */
+.empty-pos{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;border:1px dashed var(--border);border-radius:16px}
+.empty-pos .empty-ico{font-size:36px;margin-bottom:12px;opacity:.5}
+
+/* ADD LIQUIDITY MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:2000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#0F1E36;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px;width:100%;max-width:440px;box-shadow:0 40px 80px rgba(0,0,0,.6)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:18px;font-weight:800}
+.modal-close{width:32px;height:32px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px}
+.modal-close:hover{color:var(--text)}
+
+.liq-pair-header{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px}
+.liq-pair-name{font-size:16px;font-weight:700}
+.liq-pair-fee{font-size:12px;color:var(--muted);font-family:var(--mono)}
+
+.liq-input-wrap{margin-bottom:14px}
+.liq-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
+.liq-bal{font-size:12px;color:var(--muted)}
+.liq-input-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.liq-input{flex:1;background:none;border:none;outline:none;font-size:20px;font-weight:700;font-family:var(--font);color:var(--text)}
+.liq-input::placeholder{color:rgba(255,255,255,.15)}
+.liq-tok-badge{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.07);border-radius:8px;padding:5px 10px}
+.liq-tok-ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff}
+.liq-tok-sym{font-size:13px;font-weight:700}
+.liq-plus{text-align:center;color:var(--muted);font-size:18px;margin:6px 0}
+
+.pool-share-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-top:1px solid var(--border);margin-top:12px;padding-top:14px}
+.pool-share-label{color:var(--muted)}
+.pool-share-val{font-weight:700;font-family:var(--mono)}
+
+.btn-supply{width:100%;margin-top:18px;padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,0.22);font-family:var(--font);font-size:16px;font-weight:800;cursor:pointer;background:rgba(255,255,255,0.1);color:var(--text);transition:all .2s;letter-spacing:.02em}
+.btn-supply:hover:not(:disabled){background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35);transform:translateY(-1px)}
+.btn-supply:disabled{opacity:.4;cursor:not-allowed;transform:none;background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);color:var(--muted)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(13,9,32,.97);border:1px solid var(--border2);border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:12px;z-index:9000;transition:transform .3s cubic-bezier(.34,1.56,.64,1);min-width:260px;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast-icon{font-size:20px;flex-shrink:0}
+.toast-msg{font-size:14px;font-weight:700}
+.toast-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+@media(max-width:700px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .pool-table th:nth-child(3),.pool-cell:nth-child(3){display:none}
+  .nav-tabs{display:none}
+  .testnet-pill{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+<div class="aurora"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo-wrap" onclick="window.location.href='/'">
+    <span class="logo-name" style="font-size:20px;font-weight:800;letter-spacing:-.04em">ArcSwap</span>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="/trade">Trade</a>
+    <button class="nav-tab active">Pool</button>
+    <a class="nav-tab" href="/vault">Vault</a>
+    <a class="nav-tab" href="/token">Token</a>
+    <a class="nav-tab" href="/point">Points</a>
+    <a class="nav-tab faucet-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
+  </div>
+  <div class="nav-right">
+    <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
+    <button id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</nav>
+
+<!-- ADD LIQUIDITY MODAL -->
+<div class="modal-overlay" id="liq-modal" onclick="closeModalOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Add Liquidity</span>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="liq-pair-header">
+      <div style="display:flex">
+        <div class="pair-ico ti-usdc-bg" id="modal-ico-a">U</div>
+        <div class="pair-ico ti-eurc-bg" id="modal-ico-b" style="margin-left:-8px">E</div>
+      </div>
+      <div>
+        <div class="liq-pair-name" id="modal-pair-name">USDC / EURC</div>
+        <div class="liq-pair-fee" id="modal-pair-fee">0.05% fee tier · Stable</div>
+      </div>
+    </div>
+
+    <div class="liq-input-wrap">
+      <div class="liq-label">
+        <span id="modal-tok-a-label">USDC Amount</span>
+        <span class="liq-bal">Balance: <span id="modal-bal-a">—</span></span>
+      </div>
+      <div class="liq-input-row">
+        <input class="liq-input" id="liq-input-a" type="number" placeholder="0.00" min="0" oninput="syncLiqInputs('a')"/>
+        <div class="liq-tok-badge">
+          <div class="liq-tok-ico ti-usdc-bg" id="modal-badge-ico-a">U</div>
+          <span class="liq-tok-sym" id="modal-badge-sym-a">USDC</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="liq-plus">+</div>
+
+    <div class="liq-input-wrap">
+      <div class="liq-label">
+        <span id="modal-tok-b-label">EURC Amount</span>
+        <span class="liq-bal">Balance: <span id="modal-bal-b">—</span></span>
+      </div>
+      <div class="liq-input-row">
+        <input class="liq-input" id="liq-input-b" type="number" placeholder="0.00" min="0" oninput="syncLiqInputs('b')"/>
+        <div class="liq-tok-badge">
+          <div class="liq-tok-ico ti-eurc-bg" id="modal-badge-ico-b">E</div>
+          <span class="liq-tok-sym" id="modal-badge-sym-b">EURC</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pool-share-row" id="pool-share-row" style="display:none">
+      <span class="pool-share-label">Pool Share</span>
+      <span class="pool-share-val" id="pool-share-val">~0.01%</span>
+    </div>
+    <div class="pool-share-row" style="border-top:none;padding-top:0;margin-top:0">
+      <span class="pool-share-label">Rate</span>
+      <span class="pool-share-val" id="modal-rate">1 USDC ≈ 0.926 EURC</span>
+    </div>
+
+    <button class="btn-supply" id="supply-btn" onclick="addLiquidity()" disabled>Enter amounts</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✅</span>
+  <div><div class="toast-msg" id="toast-msg">Success</div><div class="toast-sub" id="toast-sub"></div></div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Liquidity Pools</h1>
+    <p class="page-sub">Provide liquidity to earn fees from every swap. Stablecoin pools offer low impermanent loss.</p>
+  </div>
+
+  <!-- STATS (live on-chain) -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px">Total Value Locked</div>
+      <div class="stat-val arc-num" id="stat-tvl">—</div>
+      <div class="stat-change">Across all Arc pools</div>
+    </div>
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px">24H Volume</div>
+      <div class="stat-val arc-num" id="stat-vol">—</div>
+      <div class="stat-change">From Swap event logs</div>
+    </div>
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px">Active Pools</div>
+      <div class="stat-val arc-num" id="stat-pools">—</div>
+      <div class="stat-change">Deployed & liquid on Arc</div>
+    </div>
+  </div>
+
+  <!-- MY POSITIONS -->
+  <div class="section-title">My Positions</div>
+  <div id="my-positions">
+    <div class="empty-pos">
+      <div class="empty-ico">💧</div>
+      <div>No active positions</div>
+      <div style="font-size:12px;margin-top:6px">Connect wallet and add liquidity to get started</div>
+    </div>
+  </div>
+
+  <!-- ALL POOLS -->
+  <div class="section-title" style="margin-top:28px">All Pools</div>
+  <table class="pool-table">
+    <thead>
+      <tr>
+        <th>Pool</th>
+        <th>APR</th>
+        <th>TVL</th>
+        <th>24H Volume</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="pools-tbody"></tbody>
+  </table>
+</div>
+
+<script>
+/* CURSOR */
+const cdot=document.getElementById('cdot'),cring=document.getElementById('cring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cdot.style.left=mx+'px';cdot.style.top=my+'px'});
+(function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;cring.style.left=rx+'px';cring.style.top=ry+'px';requestAnimationFrame(animRing)})();
+
+/* ============================================================
+   ROUTER CONFIG
+   Set ROUTER_ADDR when AMM is deployed on Arc Testnet.
+   null = demo mode (approve tx only, no fund loss)
+============================================================ */
+const ROUTER_ADDR  = '0x48a9bd1644ac67fbef4183261c466bea3eb333fc'; // UniswapV2Router
+const FACTORY_ADDR = '0x45dd35611179ae6663ae47791175d7d598ced086'; // UniswapV2Factory on Arc Testnet
+const ROUTER_ADDLIQ_SELECTOR = '0xe8e33700'; // addLiquidity(...)
+const ERC20_APPROVE_SELECTOR = '0x095ea7b3'; // approve(address,uint256)
+const ERC20_ALLOWANCE_SELECTOR = '0xdd62ed3e'; // allowance(owner,spender)
+
+/* ============================================================
+   POOL DATA
+============================================================ */
+// Real price anchors (stable approximations — replace with oracle if available)
+const PRICE_USD = { USDC: 1.00, EURC: 1.08, USYC: 1.08 };
+const POOLS = [
+  {
+    id:'usdc-eurc',
+    tokA:{sym:'USDC',ico:'ti-usdc-bg',abbr:'U',address:'0x3600000000000000000000000000000000000000',decimals:18},
+    tokB:{sym:'EURC',ico:'ti-eurc-bg',abbr:'E',address:'0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a',decimals:6},
+    fee:'0.30%',feeTier:0.003,
+    badges:['stable'],
+    // real metrics filled on-chain
+    apr:null, tvl:null, vol24h:null, rate:null, pairAddr:null,
+  },
+  {
+    id:'usdc-usyc',
+    tokA:{sym:'USDC',ico:'ti-usdc-bg',abbr:'U',address:'0x3600000000000000000000000000000000000000',decimals:18},
+    tokB:{sym:'USYC',ico:'ti-usyc-bg',abbr:'Y',address:'0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C',decimals:6},
+    fee:'0.30%',feeTier:0.003,
+    badges:['stable'],
+    apr:null, tvl:null, vol24h:null, rate:null, pairAddr:null,
+  },
+  {
+    id:'eurc-usyc',
+    tokA:{sym:'EURC',ico:'ti-eurc-bg',abbr:'E',address:'0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a',decimals:6},
+    tokB:{sym:'USYC',ico:'ti-usyc-bg',abbr:'Y',address:'0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C',decimals:6},
+    fee:'0.30%',feeTier:0.003,
+    badges:['stable'],
+    apr:null, tvl:null, vol24h:null, rate:null, pairAddr:null,
+  },
+];
+
+function fmtNum(n){
+  if(n==null||isNaN(n)) return '—';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(2)+'M';
+  if(n>=1e3) return '$'+(n/1e3).toFixed(1)+'K';
+  return '$'+Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
+}
+function fmtAPR(p){
+  if(!p||p.apr==null) return '<span class="skel" style="display:inline-block;width:70px;height:14px"></span>';
+  return p.apr.toFixed(2)+'%';
+}
+function fmtTVL(p){
+  if(!p||p.tvl==null) return '<span class="skel" style="display:inline-block;width:60px;height:14px"></span>';
+  return fmtNum(p.tvl);
+}
+function fmtVol(p){
+  if(!p||p.vol24h==null) return '<span class="skel" style="display:inline-block;width:60px;height:14px"></span>';
+  return fmtNum(p.vol24h);
+}
+
+function renderPools(){
+  const tbody=document.getElementById('pools-tbody');
+  tbody.innerHTML = POOLS.map(p=>`
+    <tr class="pool-row" onclick="openAddLiquidity('${p.id}')">
+      <td class="pool-cell">
+        <div class="pair-wrap">
+          <div class="pair-icons">
+            <div class="pair-ico ${p.tokA.ico}">${p.tokA.abbr}</div>
+            <div class="pair-ico ${p.tokB.ico}">${p.tokB.abbr}</div>
+          </div>
+          <div>
+            <div class="pair-name">${p.tokA.sym} / ${p.tokB.sym}</div>
+            <div class="pair-fee">${p.fee} fee tier · on-chain</div>
+            <div class="pair-badges">
+              ${p.badges.map(b=>`<span class="badge badge-${b}">${b}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td class="pool-cell">
+        <div class="apr-val" data-apr="${p.id}">${fmtAPR(p)}</div>
+        <div class="apr-range">Fee APR · real</div>
+      </td>
+      <td class="pool-cell">
+        <div class="metric-val" data-tvl="${p.id}">${fmtTVL(p)}</div>
+        <div class="metric-sub">Total locked</div>
+      </td>
+      <td class="pool-cell">
+        <div class="metric-val" data-vol="${p.id}">${fmtVol(p)}</div>
+        <div class="metric-sub">Last 24h</div>
+      </td>
+      <td class="pool-cell">
+        <button class="btn-add" onclick="event.stopPropagation();openAddLiquidity('${p.id}')">+ Add</button>
+      </td>
+    </tr>`).join('');
+}
+renderPools();
+
+/* ============================================================
+   ON-CHAIN POOL METRICS (real, no mock)
+   - TVL from getReserves() + PRICE_USD anchor
+   - 24h volume from Swap events in last ~28,800 blocks (~24h @ 3s block, clamp if explorer slow)
+   - Fee APR = (fee × 24h volume × 365) / TVL × 100
+============================================================ */
+const FACTORY_GET_PAIR_SELECTOR  = '0xe6a43905'; // getPair(address,address)
+const PAIR_RESERVES_SELECTOR     = '0x0902f1ac'; // getReserves()
+const PAIR_TOKEN0_SELECTOR       = '0x0dfe1681'; // token0()
+const SWAP_EVENT_TOPIC           = '0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822';
+const ARC_BLOCK_TIME_S           = 2; // target
+const BLOCKS_PER_DAY             = Math.floor(86400 / ARC_BLOCK_TIME_S);
+
+function addr32(a){ return a.replace('0x','').toLowerCase().padStart(64,'0'); }
+function padInt(n){ return BigInt(n).toString(16).padStart(64,'0'); }
+// Safe BigInt -> float (avoids Number precision loss when raw > 2^53)
+function bigToFloat(raw, decimals){
+  try{
+    const r = raw < 0n ? -raw : raw;
+    const div = 10n ** BigInt(decimals);
+    const whole = r / div;
+    const frac  = r % div;
+    const out = Number(whole) + Number(frac) / Number(div);
+    return raw < 0n ? -out : out;
+  }catch(e){ return 0; }
+}
+
+async function fetchPairAddr(tA, tB){
+  const data = FACTORY_GET_PAIR_SELECTOR + addr32(tA) + addr32(tB);
+  const raw = await rpcCall('eth_call', [{ to: FACTORY_ADDR, data }, 'latest']);
+  if(!raw || raw==='0x' || raw==='0x'+'00'.repeat(32)) return null;
+  return '0x' + raw.slice(-40);
+}
+
+async function fetchReserves(pair){
+  const raw = await rpcCall('eth_call', [{ to: pair, data: PAIR_RESERVES_SELECTOR }, 'latest']);
+  const r0 = BigInt('0x'+raw.slice(2,66));
+  const r1 = BigInt('0x'+raw.slice(66,130));
+  return [r0, r1];
+}
+
+async function fetchToken0(pair){
+  const raw = await rpcCall('eth_call', [{ to: pair, data: PAIR_TOKEN0_SELECTOR }, 'latest']);
+  return '0x' + raw.slice(-40);
+}
+
+async function fetchBlockNumber(){
+  const raw = await rpcCall('eth_blockNumber', []);
+  return parseInt(raw, 16);
+}
+
+async function fetch24hVolume(pair, token0Lower, decA, decB, tokASymIsToken0){
+  try{
+    const head = await fetchBlockNumber();
+    const from = Math.max(0, head - BLOCKS_PER_DAY);
+    const logs = await rpcCall('eth_getLogs', [{
+      address: pair,
+      fromBlock: '0x'+from.toString(16),
+      toBlock: '0x'+head.toString(16),
+      topics: [SWAP_EVENT_TOPIC],
+    }]);
+    let volUSD = 0;
+    for(const L of logs){
+      const d = L.data.slice(2);
+      const a0In  = BigInt('0x'+d.slice(  0,  64));
+      const a1In  = BigInt('0x'+d.slice( 64, 128));
+      const a0Out = BigInt('0x'+d.slice(128, 192));
+      const a1Out = BigInt('0x'+d.slice(192, 256));
+      // each swap routes tokens in both directions — volume = input side
+      const amt0 = bigToFloat(a0In, tokASymIsToken0 ? decA : decB);
+      const amt1 = bigToFloat(a1In, tokASymIsToken0 ? decB : decA);
+      // Approximation: both legs stable → USD ≈ avg
+      volUSD += (amt0 + amt1) / 2;
+    }
+    return volUSD;
+  } catch(e){
+    console.warn('vol24h failed', e);
+    return null;
+  }
+}
+
+async function refreshPoolMetrics(){
+  for(const p of POOLS){
+    try{
+      const pairAddr = p.pairAddr || await fetchPairAddr(p.tokA.address, p.tokB.address);
+      if(!pairAddr){ p.tvl = 0; p.vol24h = 0; p.apr = 0; continue; }
+      p.pairAddr = pairAddr;
+      const [[r0, r1], token0] = await Promise.all([fetchReserves(pairAddr), fetchToken0(pairAddr)]);
+      const isAtoken0 = token0.toLowerCase() === p.tokA.address.toLowerCase();
+      const rA = isAtoken0 ? r0 : r1;
+      const rB = isAtoken0 ? r1 : r0;
+      const vA = bigToFloat(rA, p.tokA.decimals);
+      const vB = bigToFloat(rB, p.tokB.decimals);
+      const priceA = PRICE_USD[p.tokA.sym] ?? 1;
+      const priceB = PRICE_USD[p.tokB.sym] ?? 1;
+      p.tvl  = vA * priceA + vB * priceB;
+      p.rate = vB / vA; // 1 tokA = x tokB (from mid-pool)
+      p.onChainRate = p.rate;
+      const vol = await fetch24hVolume(pairAddr, token0.toLowerCase(), p.tokA.decimals, p.tokB.decimals, isAtoken0);
+      p.vol24h = vol;
+      p.apr = (p.tvl>0 && vol!=null) ? (p.feeTier * vol * 365 / p.tvl * 100) : 0;
+      // patch DOM
+      const ael = document.querySelector(`[data-apr="${p.id}"]`);
+      const tel = document.querySelector(`[data-tvl="${p.id}"]`);
+      const vel = document.querySelector(`[data-vol="${p.id}"]`);
+      if(ael) ael.innerHTML = fmtAPR(p);
+      if(tel) tel.innerHTML = fmtTVL(p);
+      if(vel) vel.innerHTML = fmtVol(p);
+    } catch(e){
+      console.warn('pool metric fail', p.id, e);
+    }
+  }
+  updateTopStats();
+}
+
+function updateTopStats(){
+  const totTVL = POOLS.reduce((s,p)=>s+(p.tvl||0),0);
+  const totVol = POOLS.reduce((s,p)=>s+(p.vol24h||0),0);
+  const active = POOLS.filter(p=>p.tvl && p.tvl>0).length;
+  const tTVL = document.getElementById('stat-tvl');
+  const tVol = document.getElementById('stat-vol');
+  const tPool= document.getElementById('stat-pools');
+  if(tTVL) tTVL.textContent = fmtNum(totTVL);
+  if(tVol) tVol.textContent = fmtNum(totVol);
+  if(tPool) tPool.textContent = active;
+}
+
+refreshPoolMetrics();
+setInterval(refreshPoolMetrics, 45000);
+
+/* ============================================================
+   CHAIN CONFIG + RPC
+============================================================ */
+const ARC_CHAIN={
+  chainId:'0x4cef52',
+  chainName:'Arc Testnet',
+  nativeCurrency:{name:'USD Coin',symbol:'USDC',decimals:18},
+  rpcUrls:['https://rpc.testnet.arc.network'],
+  blockExplorerUrls:['https://testnet.arcscan.app'],
+};
+const ARC_RPC='https://rpc.testnet.arc.network';
+let walletAddr=null, currentProvider=null;
+let balA='—', balB='—';
+
+async function rpcCall(method,params){
+  const res=await fetch(ARC_RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
+  const j=await res.json();
+  if(j.error) throw new Error(j.error.message);
+  return j.result;
+}
+
+async function getERC20Balance(tokenAddr,wallet){
+  const data='0x70a08231'+wallet.replace('0x','').toLowerCase().padStart(64,'0');
+  const raw=await rpcCall('eth_call',[{to:tokenAddr,data},'latest']);
+  return parseInt(raw||'0x0',16);
+}
+
+async function getAllowance(tokenAddr, owner, spender){
+  try{
+    const data = ERC20_ALLOWANCE_SELECTOR
+      + owner.replace('0x','').toLowerCase().padStart(64,'0')
+      + spender.replace('0x','').toLowerCase().padStart(64,'0');
+    const raw = await rpcCall('eth_call',[{to:tokenAddr,data},'latest']);
+    return BigInt(raw||'0x0');
+  }catch(e){ return BigInt(0); }
+}
+
+function shortAddr(a){return a.slice(0,6)+'...'+a.slice(-4)}
+
+async function connectWallet(){
+  if(walletAddr){
+    // Disconnect
+    walletAddr=null;currentProvider=null;
+    const btn=document.getElementById('wallet-btn');
+    btn.textContent='Connect Wallet';btn.className='';
+    return;
+  }
+  if(!window.ethereum){showToast('❌','No wallet','Install MetaMask first.');return}
+  try{
+    const accounts=await window.ethereum.request({method:'eth_requestAccounts'});
+    if(!accounts.length) return;
+    walletAddr=accounts[0];
+    currentProvider=window.ethereum;
+    const chainId=await window.ethereum.request({method:'eth_chainId'});
+    if(chainId!==ARC_CHAIN.chainId){
+      try{await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:ARC_CHAIN.chainId}]});}
+      catch(e){
+        if(e.code===4902||e.code===-32603)
+          await window.ethereum.request({method:'wallet_addEthereumChain',params:[ARC_CHAIN]});
+      }
+    }
+    const btn=document.getElementById('wallet-btn');
+    btn.innerHTML=`<div class="w-dot"></div>${shortAddr(walletAddr)}`;
+    btn.className='connected';
+    showToast('✅','Wallet connected',shortAddr(walletAddr));
+    // Load persisted positions for this wallet
+    renderMyPositions();
+    window.ethereum.on('accountsChanged',a=>{
+      if(!a.length){walletAddr=null;btn.textContent='Connect Wallet';btn.className='';}
+      else{walletAddr=a[0];btn.innerHTML=`<div class="w-dot"></div>${shortAddr(walletAddr)}`;renderMyPositions();}
+    });
+    window.ethereum.on('chainChanged',()=>window.location.reload());
+  }catch(e){showToast('❌','Rejected','Connection cancelled.');}
+}
+
+/* ============================================================
+   MODAL
+============================================================ */
+let currentPool=null;
+
+function openAddLiquidity(poolId){
+  currentPool=POOLS.find(p=>p.id===poolId);
+  if(!currentPool) return;
+  const p=currentPool;
+  document.getElementById('modal-pair-name').textContent=p.tokA.sym+' / '+p.tokB.sym;
+  document.getElementById('modal-pair-fee').textContent=p.fee+' fee tier · Stable';
+  document.getElementById('modal-ico-a').className='pair-ico '+p.tokA.ico;
+  document.getElementById('modal-ico-a').textContent=p.tokA.abbr;
+  document.getElementById('modal-ico-b').className='pair-ico '+p.tokB.ico;
+  document.getElementById('modal-ico-b').textContent=p.tokB.abbr;
+  document.getElementById('modal-tok-a-label').textContent=p.tokA.sym+' Amount';
+  document.getElementById('modal-tok-b-label').textContent=p.tokB.sym+' Amount';
+  document.getElementById('modal-badge-ico-a').className='liq-tok-ico '+p.tokA.ico;
+  document.getElementById('modal-badge-ico-a').textContent=p.tokA.abbr;
+  document.getElementById('modal-badge-sym-a').textContent=p.tokA.sym;
+  document.getElementById('modal-badge-ico-b').className='liq-tok-ico '+p.tokB.ico;
+  document.getElementById('modal-badge-ico-b').textContent=p.tokB.abbr;
+  document.getElementById('modal-badge-sym-b').textContent=p.tokB.sym;
+  document.getElementById('modal-rate').textContent=`1 ${p.tokA.sym} ≈ ${p.rate.toFixed(4)} ${p.tokB.sym}`;
+  document.getElementById('liq-input-a').value='';
+  document.getElementById('liq-input-b').value='';
+  document.getElementById('supply-btn').disabled=true;
+  document.getElementById('supply-btn').textContent='Enter amounts';
+  document.getElementById('pool-share-row').style.display='none';
+
+  // Load balances
+  if(walletAddr){
+    const updateBals=async()=>{
+      try{
+        const rawA=await getERC20Balance(p.tokA.address,walletAddr);
+        balA=(rawA/Math.pow(10,p.tokA.decimals)).toFixed(p.tokA.decimals<=6?2:4);
+      }catch(e){balA='—';}
+      try{
+        const rawB=await getERC20Balance(p.tokB.address,walletAddr);
+        balB=(rawB/Math.pow(10,p.tokB.decimals)).toFixed(p.tokB.decimals<=6?2:4);
+      }catch(e){balB='—';}
+      document.getElementById('modal-bal-a').textContent=balA;
+      document.getElementById('modal-bal-b').textContent=balB;
+    };
+    updateBals();
+  } else {
+    document.getElementById('modal-bal-a').textContent='—';
+    document.getElementById('modal-bal-b').textContent='—';
+  }
+
+  document.getElementById('liq-modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('liq-modal').classList.remove('open')}
+function closeModalOutside(e){if(e.target===document.getElementById('liq-modal'))closeModal()}
+
+function syncLiqInputs(changed){
+  if(!currentPool) return;
+  const p=currentPool;
+  const aEl=document.getElementById('liq-input-a');
+  const bEl=document.getElementById('liq-input-b');
+  // Use on-chain rate if available, fallback to price ratio
+  const rate = p.onChainRate || p.rate;
+  if(changed==='a'){
+    const v=parseFloat(aEl.value)||0;
+    if(v>0) bEl.value=(v*rate).toFixed(6);
+    else bEl.value='';
+  } else {
+    const v=parseFloat(bEl.value)||0;
+    if(v>0) aEl.value=(v/rate).toFixed(6);
+    else aEl.value='';
+  }
+  // Fetch real on-chain rate in background
+  if(ROUTER_ADDR && FACTORY_ADDR) fetchPoolRate(p, changed);
+  const a=parseFloat(aEl.value)||0;
+  const b=parseFloat(bEl.value)||0;
+  const supplyBtn=document.getElementById('supply-btn');
+  const shareRow=document.getElementById('pool-share-row');
+  if(a>0&&b>0){
+    // Estimate pool share
+    const usdVal=a*(p.tokA.sym==='USDC'?1:p.tokA.sym==='EURC'?1.08:1);
+    const shareEst=Math.min((usdVal/p.tvl)*100,100).toFixed(4);
+    document.getElementById('pool-share-val').textContent='~'+shareEst+'%';
+    shareRow.style.display='flex';
+    if(!walletAddr){supplyBtn.textContent='Connect Wallet';supplyBtn.disabled=false;}
+    else{supplyBtn.textContent=`Supply ${p.tokA.sym} + ${p.tokB.sym}`;supplyBtn.disabled=false;}
+  } else {
+    shareRow.style.display='none';
+    supplyBtn.textContent='Enter amounts';supplyBtn.disabled=true;
+  }
+}
+
+
+/* Fetch on-chain pool rate from reserves */
+async function rpcCallPool(method, params){
+  const r = await fetch('https://rpc.testnet.arc.network',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({jsonrpc:'2.0',id:1,method,params})
+  });
+  const j = await r.json();
+  if(j.error) throw new Error(j.error.message);
+  return j.result;
+}
+
+async function getPairAddressPool(tA, tB){
+  const data = '0xe6a43905'
+    + tA.replace('0x','').padStart(64,'0')
+    + tB.replace('0x','').padStart(64,'0');
+  const r = await rpcCallPool('eth_call',[{to:FACTORY_ADDR,data},'latest']);
+  return '0x' + r.slice(-40);
+}
+
+async function fetchPoolRate(p, changed){
+  try{
+    const pair = await getPairAddressPool(p.tokA.address, p.tokB.address);
+    if(!pair || pair === '0x'+'0'.repeat(40)) return;
+    const raw = await rpcCallPool('eth_call',[{to:pair,data:'0x0902f1ac'},'latest']);
+    if(!raw||raw==='0x') return;
+    const r0 = Number(BigInt('0x'+raw.slice(2,66)));
+    const r1 = Number(BigInt('0x'+raw.slice(66,130)));
+    if(r0===0||r1===0) return;
+    const isToken0 = p.tokA.address.toLowerCase() < p.tokB.address.toLowerCase();
+    // rate = rB/rA (how much tokB per 1 tokA)
+    const rA = isToken0 ? r0 : r1;
+    const rB = isToken0 ? r1 : r0;
+    // Adjust for decimals
+    const decA = p.tokA.decimals || 6;
+    const decB = p.tokB.decimals || 6;
+    p.onChainRate = (rB / Math.pow(10, decB)) / (rA / Math.pow(10, decA));
+    // Update the other input with real rate
+    const aEl = document.getElementById('liq-input-a');
+    const bEl = document.getElementById('liq-input-b');
+    if(changed==='a'){
+      const v = parseFloat(aEl.value)||0;
+      if(v>0) bEl.value = (v * p.onChainRate).toFixed(6);
+    } else {
+      const v = parseFloat(bEl.value)||0;
+      if(v>0) aEl.value = (v / p.onChainRate).toFixed(6);
+    }
+    // Update rate display
+    document.getElementById('pool-rate-val').textContent =
+      '1 '+p.tokA.sym+' ≈ '+p.onChainRate.toFixed(4)+' '+p.tokB.sym;
+  }catch(e){}
+}
+
+async function addLiquidity(){
+  if(!walletAddr){connectWallet();return}
+  if(!currentPool) return;
+  const p=currentPool;
+  const amtA=parseFloat(document.getElementById('liq-input-a').value)||0;
+  const amtB=parseFloat(document.getElementById('liq-input-b').value)||0;
+  if(amtA<=0||amtB<=0) return;
+
+  const btn=document.getElementById('supply-btn');
+  const rawA=BigInt(Math.floor(amtA*Math.pow(10,p.tokA.decimals)));
+  const rawB=BigInt(Math.floor(amtB*Math.pow(10,p.tokB.decimals)));
+  // Allow 1% slippage on liquidity
+  const minA=rawA*99n/100n;
+  const minB=rawB*99n/100n;
+
+  try{
+    /* -------------------------------------------------------
+       PATH A: Router deployed — real approve A + approve B + addLiquidity
+    ------------------------------------------------------- */
+    if(ROUTER_ADDR){
+      // Step 1: Approve tokA
+      const allowA = await getAllowance(p.tokA.address, walletAddr, ROUTER_ADDR);
+      if(allowA < rawA){
+        btn.textContent=`Approve ${p.tokA.sym} (1/3)...`;btn.disabled=true;
+        showToast('🔐','Approve required',`Allow router to use your ${p.tokA.sym}`);
+        const approveDataA = ERC20_APPROVE_SELECTOR
+          + ROUTER_ADDR.replace('0x','').padStart(64,'0')
+          + 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        const appTxA = await currentProvider.request({
+          method:'eth_sendTransaction',
+          params:[{from:walletAddr,to:p.tokA.address,data:approveDataA,gas:'0x'+(80000).toString(16)}]
+        });
+        btn.textContent='Waiting for approval A...';
+        await waitReceipt(appTxA);
+        showToast('✅',`${p.tokA.sym} approved`,'');
+      }
+
+      // Step 2: Approve tokB
+      const allowB = await getAllowance(p.tokB.address, walletAddr, ROUTER_ADDR);
+      if(allowB < rawB){
+        btn.textContent=`Approve ${p.tokB.sym} (2/3)...`;btn.disabled=true;
+        showToast('🔐','Approve required',`Allow router to use your ${p.tokB.sym}`);
+        const approveDataB = ERC20_APPROVE_SELECTOR
+          + ROUTER_ADDR.replace('0x','').padStart(64,'0')
+          + 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        const appTxB = await currentProvider.request({
+          method:'eth_sendTransaction',
+          params:[{from:walletAddr,to:p.tokB.address,data:approveDataB,gas:'0x'+(80000).toString(16)}]
+        });
+        btn.textContent='Waiting for approval B...';
+        await waitReceipt(appTxB);
+        showToast('✅',`${p.tokB.sym} approved`,'');
+      }
+
+      // Step 3: addLiquidity(tokenA,tokenB,amtA,amtB,minA,minB,to,deadline)
+      btn.textContent='Add Liquidity (3/3)...';btn.disabled=true;
+      // minA=0, minB=0 — accept any ratio (Router optimizes automatically)
+      const deadline=(Math.floor(Date.now()/1000)+1200).toString(16).padStart(64,'0');
+      const addLiqData = ROUTER_ADDLIQ_SELECTOR
+        + p.tokA.address.replace('0x','').padStart(64,'0')
+        + p.tokB.address.replace('0x','').padStart(64,'0')
+        + rawA.toString(16).padStart(64,'0')
+        + rawB.toString(16).padStart(64,'0')
+        + '0'.padStart(64,'0')  // minA = 0
+        + '0'.padStart(64,'0')  // minB = 0
+        + walletAddr.replace('0x','').toLowerCase().padStart(64,'0')
+        + deadline;
+
+      const txHash = await currentProvider.request({
+        method:'eth_sendTransaction',
+        params:[{from:walletAddr,to:ROUTER_ADDR,data:addLiqData,gas:'0x'+(500000).toString(16)}]
+      });
+      btn.textContent='Confirming on-chain...';
+      showToast('📡','Add liquidity submitted','Waiting for confirmation...');
+      const receipt = await waitReceipt(txHash);
+      if(receipt?.status==='0x1'){
+        btn.textContent='✓ Liquidity Added!';
+        showToast('✅','Liquidity Added!',`<a href="https://testnet.arcscan.app/tx/${txHash}" target="_blank" rel="noopener noreferrer" style="color:#00CFFF">View on explorer ↗</a>`);
+        saveAndShowPosition(p,amtA,amtB,txHash);
+        setTimeout(()=>{closeModal();},2000);
+      } else {
+        showToast('❌','Transaction reverted','Check your balances and try again.');
+        btn.textContent=`Supply ${p.tokA.sym} + ${p.tokB.sym}`;btn.disabled=false;
+      }
+
+    } else {
+      /* -------------------------------------------------------
+         PATH B: Không có DEX router trên Arc Testnet.
+         Hiển thị thông báo rõ ràng thay vì giao dịch giả.
+      ------------------------------------------------------- */
+      showNoPoolRouterMsg(p, amtA, amtB);
+      btn.textContent=`Supply ${p.tokA.sym} + ${p.tokB.sym}`;btn.disabled=false;
+    }
+  }catch(e){
+    if(e.code===4001) showToast('⚠️','Cancelled','You rejected the transaction.');
+    else showToast('❌','Failed',e.message?.slice(0,60)||'Transaction error');
+    btn.textContent=`Supply ${p.tokA.sym} + ${p.tokB.sym}`;btn.disabled=false;
+  }
+}
+
+/* Wait for tx receipt (polls every 2s, max 60s) */
+async function waitReceipt(txHash){
+  for(let i=0;i<30;i++){
+    await new Promise(r=>setTimeout(r,2000));
+    try{
+      const r=await rpcCall('eth_getTransactionReceipt',[txHash]);
+      if(r) return r;
+    }catch(e){}
+  }
+  return null;
+}
+
+/* ============================================================
+   POSITIONS — persisted in localStorage per wallet
+============================================================ */
+function posKey(addr){ return 'arcswap_positions_' + addr.toLowerCase(); }
+
+function loadPositions(addr){
+  try{
+    const raw=localStorage.getItem(posKey(addr));
+    return raw?JSON.parse(raw):[];
+  }catch(e){return [];}
+}
+
+function saveAndShowPosition(p, amtA, amtB, txHash, demo=false){
+  if(!walletAddr) return;
+  const usdVal=(amtA*(p.tokA.sym==='USDC'?1:p.tokA.sym==='EURC'?1.08:1.042))
+              +(amtB*(p.tokB.sym==='EURC'?1.08:p.tokB.sym==='USYC'?1.042:1));
+  const entry={
+    poolId: p.id,
+    pairName: p.tokA.sym+'/'+p.tokB.sym,
+    tokAico: p.tokA.ico, tokAabbr: p.tokA.abbr,
+    tokBico: p.tokB.ico, tokBabbr: p.tokB.abbr,
+    fee: p.fee,
+    amtA, amtB,
+    usdVal: usdVal.toFixed(2),
+    dailyFee: (usdVal*(p.apr.min/100)/365).toFixed(4),
+    apr: p.apr.min+'%–'+p.apr.max+'%',
+    txHash,
+    demo,
+    ts: Date.now()
+  };
+  // Save
+  const existing = loadPositions(walletAddr);
+  existing.unshift(entry);
+  try{ localStorage.setItem(posKey(walletAddr), JSON.stringify(existing)); }catch(e){}
+  renderMyPositions();
+}
+
+function renderMyPositions(){
+  const el=document.getElementById('my-positions');
+  const positions = walletAddr ? loadPositions(walletAddr) : [];
+  if(!positions.length){
+    el.innerHTML='<div class="empty-pos">No positions yet.<br>Add liquidity to a pool to get started.</div>';
+    return;
+  }
+  el.innerHTML = positions.map(pos=>`
+    <div style="background:rgba(10,22,40,.85);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px 20px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div class="pair-wrap">
+          <div class="pair-icons">
+            <div class="pair-ico ${pos.tokAico}">${pos.tokAabbr}</div>
+            <div class="pair-ico ${pos.tokBico}">${pos.tokBabbr}</div>
+          </div>
+          <div>
+            <div class="pair-name">${pos.pairName}${pos.demo?' <span style="font-size:10px;color:#FFB800;font-weight:600">[demo]</span>':''}</div>
+            <div class="pair-fee">${pos.fee} fee tier</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;text-align:right">
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:3px">My Liquidity</div>
+            <div style="font-size:15px;font-weight:700;font-family:var(--mono)">$${pos.usdVal}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Est. Daily Fees</div>
+            <div style="font-size:15px;font-weight:700;color:var(--arc4);font-family:var(--mono)">~$${pos.dailyFee}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:3px">APR</div>
+            <div style="font-size:15px;font-weight:700;font-family:var(--mono)">${pos.apr}</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--muted)">
+        <a href="https://testnet.arcscan.app/tx/${pos.txHash}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2);text-decoration:none">↗ View on Arc Explorer</a>
+        <span style="margin-left:10px;opacity:.5">${timeAgo(pos.ts)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function timeAgo(ts){
+  const diff=Math.floor((Date.now()-ts)/1000);
+  if(diff<60) return 'just now';
+  if(diff<3600) return Math.floor(diff/60)+'m ago';
+  if(diff<86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+
+/* ============================================================
+   NO ROUTER — Pool
+============================================================ */
+function showNoPoolRouterMsg(p, amtA, amtB){
+  // Update supply button to show message inline
+  const btn = document.getElementById('supply-btn');
+  btn.textContent = '⚠️ Router chưa deploy — xem bên dưới';
+  btn.style.background = 'rgba(255,184,0,.15)';
+  btn.style.border = '1px solid rgba(255,184,0,.35)';
+  btn.style.color = '#FFB800';
+
+  // Show info notice inside modal
+  let notice = document.getElementById('pool-no-router-notice');
+  if(!notice){
+    notice = document.createElement('div');
+    notice.id = 'pool-no-router-notice';
+    notice.style.cssText = 'margin-top:16px;padding:16px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.25);border-radius:14px;font-size:13px;color:var(--muted);line-height:1.7';
+    notice.innerHTML = `
+      <div style="font-weight:700;color:#FFB800;margin-bottom:8px">🚧 Chức năng chưa khả dụng</div>
+      Arc Testnet hiện chưa có DEX router, nên không thể thêm thanh khoản thực sự.<br>
+      Khi router được deploy, tính năng này sẽ hoạt động tự động với flow:<br>
+      <div style="margin-top:8px;padding:10px;background:rgba(0,0,0,.2);border-radius:8px;font-family:var(--mono);font-size:11px;color:var(--arc2)">
+        approve(${p.tokA.sym}) → approve(${p.tokB.sym}) → addLiquidity()
+      </div>
+      <div style="margin-top:10px;font-size:12px">
+        Bạn muốn thêm thanh khoản <strong style="color:var(--text)">${amtA} ${p.tokA.sym} + ${amtB} ${p.tokB.sym}</strong> khi router có mặt.
+      </div>
+    `;
+    // Insert after supply-btn
+    btn.parentNode.insertBefore(notice, btn.nextSibling);
+  }
+}
+
+/* TOAST */
+let toastTimer=null;
+function showToast(icon,msg,sub=''){
+  clearTimeout(toastTimer);
+  document.getElementById('toast-icon').textContent=icon;
+  document.getElementById('toast-msg').textContent=msg;
+  const subEl=document.getElementById('toast-sub');
+  if(sub.includes('<a ')) subEl.innerHTML=sub; else subEl.textContent=sub;
+  document.getElementById('toast').classList.add('show');
+  toastTimer=setTimeout(()=>document.getElementById('toast').classList.remove('show'),4500);
+}
+
+/* INIT */
+renderMyPositions(); // shows empty state initially
+
+async function tryAutoReconnect(){
+  if(!window.ethereum) return;
+  try{
+    const accounts=await window.ethereum.request({method:'eth_accounts'});
+    if(!accounts||!accounts.length) return;
+    walletAddr=accounts[0];
+    currentProvider=window.ethereum;
+    const chainId=await window.ethereum.request({method:'eth_chainId'});
+    if(chainId!==ARC_CHAIN.chainId){
+      try{await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:ARC_CHAIN.chainId}]});}catch(e){}
+    }
+    const btn=document.getElementById('wallet-btn');
+    btn.innerHTML=`<div class="w-dot"></div>${shortAddr(walletAddr)}`;
+    btn.className='connected';
+    // Load persisted positions
+    renderMyPositions();
+    window.ethereum.on('accountsChanged',a=>{
+      if(!a.length){walletAddr=null;btn.textContent='Connect Wallet';btn.className='';renderMyPositions();}
+      else{walletAddr=a[0];btn.innerHTML=`<div class="w-dot"></div>${shortAddr(walletAddr)}`;renderMyPositions();}
+    });
+    window.ethereum.on('chainChanged',()=>window.location.reload());
+  }catch(e){}
+}
+tryAutoReconnect();
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- ArcSwap X / Twitter avatar — wordmark only, matches /pool /vault flat logo style -->
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="78%">
+      <stop offset="0%"  stop-color="#15315A"/>
+      <stop offset="55%" stop-color="#0F1E36"/>
+      <stop offset="100%" stop-color="#08111F"/>
+    </radialGradient>
+    <linearGradient id="swap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="#4DD6DB"/>
+      <stop offset="100%" stop-color="#4A7BEC"/>
+    </linearGradient>
+    <radialGradient id="orb1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#4DD6DB" stop-opacity=".55"/>
+      <stop offset="65%" stop-color="#4DD6DB" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#4A7BEC" stop-opacity=".50"/>
+      <stop offset="65%" stop-color="#4A7BEC" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#F4C89A" stop-opacity=".18"/>
+      <stop offset="65%" stop-color="#F4C89A" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="200" cy="200" r="200" fill="url(#bgGrad)"/>
+  <!-- Aurora orbs -->
+  <circle cx="120" cy="100" r="200" fill="url(#orb1)"/>
+  <circle cx="320" cy="320" r="220" fill="url(#orb2)"/>
+  <circle cx="220" cy="240" r="170" fill="url(#orb3)"/>
+
+  <!-- Wordmark — "Arc" white + "Swap" teal→blue gradient.
+       This mirrors the /pool /vault flat ArcSwap logo. -->
+  <g font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+     font-weight="900"
+     font-size="86"
+     letter-spacing="-3.6"
+     text-anchor="middle"
+     dominant-baseline="middle">
+    <text x="200" y="208" fill="#F5F7FB"><tspan fill="#F5F7FB">Arc</tspan><tspan fill="url(#swap)">Swap</tspan></text>
+  </g>
+
+  <!-- Tiny accent line under wordmark -->
+  <rect x="160" y="252" width="80" height="3" rx="1.5" fill="url(#swap)" opacity="0.85"/>
+
+  <!-- Optional subtle outer ring (X crops circular anyway) -->
+  <circle cx="200" cy="200" r="198" fill="none" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+</svg>

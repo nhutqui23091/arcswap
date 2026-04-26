@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ArcSwap — Points</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;--bg2:#0F1E36;--surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;--muted:#8CA0BD;
+  --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
+  --peach:#F4C89A;--sand:#ECDCC4;--legacy-purple:#6C3FFF;
+  --gold:#F4C89A;--gold2:#ECDCC4;
+  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+}
+html,body{min-height:100vh}
+
+/* ── TYPOGRAPHY SYSTEM (Inter, Arc.Network-inspired) ───── */
+h1,h2,h3,h4,h5,h6{font-family:var(--font);font-weight:800;letter-spacing:-.035em;line-height:1.1}
+p,span,div,button,input,select,textarea,a{font-family:var(--font)}
+.label-caps{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.num-large{font-size:42px;font-weight:800;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.num-med{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.body-sm{font-size:13px;font-weight:400;line-height:1.6;color:var(--muted)}
+/* Arc.Network-style orange mono {LABEL} + accent divider */
+.arc-label{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;color:#FF9F4A;text-transform:uppercase;white-space:nowrap}
+.arc-label::before{content:'{\00a0';opacity:.75}
+.arc-label::after{content:'\00a0}';opacity:.75}
+.arc-divider{height:1px;background:linear-gradient(90deg,transparent 0%,rgba(77,214,219,.35) 20%,rgba(77,214,219,.35) 80%,transparent 100%);border:none;margin:18px 0}
+
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;cursor:none}
+
+/* CURSOR */
+.cursor-dot{position:fixed;width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9999;mix-blend-mode:difference}
+.cursor-ring{position:fixed;width:36px;height:36px;border:1.5px solid rgba(255,255,255,.4);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9998;transition:all .12s ease}
+
+/* NOISE */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");opacity:.35;pointer-events:none;z-index:9997}
+
+/* AURORA — arc.network horizon */
+.aurora{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 140% 60% at 50% 110%, rgba(244,200,154,0.28) 0%, rgba(244,200,154,0.08) 35%, transparent 60%),
+    radial-gradient(ellipse 120% 40% at 50% 90%, rgba(77,214,219,0.22) 0%, rgba(74,123,236,0.10) 35%, transparent 65%),
+    linear-gradient(180deg, #0A1628 0%, #0E1F39 40%, #133155 75%, #1E4A6E 100%);
+}
+.orb{position:absolute;border-radius:50%;filter:blur(150px);animation:orb-drift 40s ease-in-out infinite alternate;mix-blend-mode:screen}
+.o1{width:620px;height:500px;background:var(--arc1);opacity:.06;top:-220px;left:-120px;animation-duration:40s}
+.o2{width:500px;height:420px;background:var(--arc2);opacity:.05;top:180px;right:-120px;animation-duration:48s;animation-delay:-8s}
+.o3{display:none}
+@keyframes orb-drift{0%{transform:translate(0,0)}100%{transform:translate(30px,20px)}}
+
+/* NAV — unified with /trade (arc-ui.css) */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .3s;gap:16px}
+nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
+.logo-name{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.nav-tabs{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;text-decoration:none;border:none;background:none;cursor:pointer;font-family:var(--font)}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.nav-tab.active{color:var(--text);background:rgba(255,255,255,.07)}
+.nav-tab.faucet-tab{color:var(--muted);background:none;border:none}
+.nav-tab.faucet-tab:hover{color:var(--arc2);background:rgba(77,214,219,.06)}
+.nav-tab.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.nav-right{display:flex;align-items:center;gap:10px}
+.testnet-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
+.tnet-dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#wallet-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font)}
+#wallet-btn:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.32)}
+#wallet-btn.connected{background:rgba(77,214,219,0.10);border-color:rgba(77,214,219,0.3);color:var(--text)}
+.w-dot{width:7px;height:7px;border-radius:50%;background:var(--arc4);flex-shrink:0;box-shadow:0 0 8px var(--arc4)}
+
+/* PAGE */
+.page{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:88px 24px 80px}
+
+/* HERO POINTS DISPLAY */
+.points-hero{
+  text-align:center;padding:40px 20px 32px;
+  background:linear-gradient(135deg,rgba(255,184,0,.06),rgba(77,214,219,.06));
+  border:1px solid rgba(255,184,0,.18);
+  border-radius:24px;margin-bottom:28px;
+  position:relative;overflow:hidden;
+}
+.points-hero::before{
+  content:'✦';position:absolute;font-size:180px;opacity:.03;
+  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+}
+.pts-label{font-family:var(--mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:#FF9F4A;margin-bottom:10px;display:inline-block}
+.pts-label::before{content:'{\00a0';opacity:.7}
+.pts-label::after{content:'\00a0}';opacity:.7}
+.pts-value{font-size:72px;font-weight:800;letter-spacing:-.045em;font-family:var(--font);font-variant-numeric:tabular-nums;
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 50%,#fff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.pts-sub{font-size:14px;color:var(--muted);margin-top:10px}
+.pts-rank{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:5px 14px;border-radius:20px;background:rgba(255,184,0,.1);border:1px solid rgba(255,184,0,.2);font-size:13px;font-weight:700;color:var(--gold)}
+
+/* CONNECT PROMPT */
+.connect-prompt{text-align:center;padding:28px;color:var(--muted);font-size:14px}
+.connect-prompt button{margin-top:12px;padding:10px 24px;border-radius:10px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.1);color:var(--text);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.connect-prompt button:hover{background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35)}
+
+/* SECTION */
+.sec-title{font-family:var(--mono);font-size:11px;font-weight:500;color:#FF9F4A;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;display:inline-block}
+.sec-title::before{content:'{\00a0';opacity:.7}
+.sec-title::after{content:'\00a0}';opacity:.7}
+
+/* CHECKIN CARD */
+.checkin-card{
+  background:rgba(10,6,28,.9);border:1px solid var(--border);border-radius:20px;
+  padding:24px;margin-bottom:28px;
+}
+
+/* 7-DAY STREAK GRID */
+.streak-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.day-cell{
+  flex:1;min-width:52px;max-width:80px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:12px 6px 10px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:14px;transition:all .25s;position:relative;overflow:hidden;
+}
+.day-cell.done{background:rgba(0,255,178,.07);border-color:rgba(0,255,178,.35)}
+.day-cell.done::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,255,178,.06),transparent)}
+.day-cell.today{border-color:rgba(255,184,0,.5);background:rgba(255,184,0,.06);box-shadow:0 0 18px rgba(255,184,0,.1)}
+.day-cell.today .day-num{color:var(--gold)}
+.day-cell.missed{opacity:.4}
+.day-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.day-num{font-size:11px;font-weight:700;font-family:var(--mono);color:var(--muted)}
+.day-icon{font-size:20px;line-height:1}
+.day-pts{font-size:10px;font-weight:700;color:var(--arc4);font-family:var(--mono)}
+
+/* STREAK INFO */
+.streak-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.streak-badge{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:12px;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.2)}
+.streak-badge .fire{font-size:20px}
+.streak-info{display:flex;flex-direction:column}
+.streak-num{font-size:18px;font-weight:800;color:var(--gold);font-family:var(--mono);line-height:1}
+.streak-lbl{font-size:11px;color:var(--muted)}
+.next-reward{font-size:12px;color:var(--muted);text-align:right}
+.next-reward strong{color:var(--gold)}
+
+/* CHECKIN BUTTON */
+.checkin-btn{
+  width:100%;padding:18px;border-radius:16px;border:none;
+  font-family:var(--font);font-size:16px;font-weight:800;cursor:pointer;
+  background:linear-gradient(135deg,var(--gold),var(--arc2));
+  color:#000;position:relative;overflow:hidden;transition:all .25s;
+}
+.checkin-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,184,0,.3)}
+.checkin-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.checkin-btn.done-today{background:linear-gradient(135deg,rgba(0,255,178,.2),rgba(0,255,178,.1));color:var(--arc4);border:1px solid rgba(0,255,178,.3)}
+.checkin-btn .spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ONCHAIN NOTE */
+.onchain-note{display:flex;align-items:flex-start;gap:10px;margin-top:14px;padding:12px 14px;background:rgba(77,214,219,.05);border:1px solid rgba(77,214,219,.12);border-radius:12px;font-size:12px;color:var(--muted);line-height:1.6}
+.onchain-note a{color:var(--arc2);text-decoration:none}
+.onchain-note a:hover{text-decoration:underline}
+
+/* HISTORY */
+.history-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.hist-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.025);border-radius:10px;font-size:13px}
+.hist-date{color:var(--muted);font-family:var(--mono);font-size:11px}
+.hist-pts{font-weight:700;color:var(--arc4);font-family:var(--mono)}
+.hist-tx{font-size:11px}
+.hist-tx a{color:var(--arc2);text-decoration:none}
+
+/* TASKS SECTION */
+.tasks-card{background:rgba(10,6,28,.9);border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:28px;position:relative;overflow:hidden}
+.tasks-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(77,214,219,.04),transparent);pointer-events:none}
+.coming-soon-overlay{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(3,1,10,.75);backdrop-filter:blur(4px);
+  border-radius:20px;z-index:2;
+}
+.cs-badge{
+  padding:8px 20px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(77,214,219,.3),rgba(77,214,219,.2));
+  border:1px solid rgba(77,214,219,.4);
+  font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--arc1);
+  margin-bottom:10px;
+}
+.cs-label{font-size:14px;color:var(--muted)}
+.task-skeleton{display:flex;flex-direction:column;gap:12px;filter:blur(3px);pointer-events:none}
+.task-row{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px}
+.task-ico{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.06);flex-shrink:0}
+.task-body{flex:1}
+.task-bar{height:10px;border-radius:4px;background:rgba(255,255,255,.06);margin-bottom:6px}
+.task-bar.short{width:55%}
+.task-bar.long{width:85%}
+/* REAL TASKS */
+.task-item{display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;transition:all .2s}
+.task-item:last-child{margin-bottom:0}
+.task-item.done{border-color:rgba(0,255,178,.2);background:rgba(0,255,178,.03)}
+.task-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:rgba(77,214,219,.12)}
+.task-item.done .task-icon{background:rgba(0,255,178,.1)}
+.task-info{flex:1}
+.task-name{font-size:14px;font-weight:600;letter-spacing:-.01em;margin-bottom:3px}
+.task-desc{font-size:12px;color:var(--muted);line-height:1.4}
+.task-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.task-pts{font-size:13px;font-weight:800;color:var(--arc4);font-family:var(--mono)}
+.task-btn{padding:7px 16px;border-radius:10px;border:none;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,var(--arc2),var(--arc1));color:#000}
+.task-btn:disabled,.task-btn.done-btn{background:rgba(0,255,178,.1);border:1px solid rgba(0,255,178,.25);color:var(--arc4);cursor:default}
+.task-btn.pending{background:rgba(255,184,0,.1);border:1px solid rgba(255,184,0,.25);color:#FFB800;cursor:default}
+/* MILESTONES */
+.milestone-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;margin-bottom:8px;background:rgba(255,255,255,.02);border:1px solid var(--border)}
+.milestone-item:last-child{margin-bottom:0}
+.milestone-item.reached{border-color:rgba(255,184,0,.3);background:rgba(255,184,0,.05)}
+.milestone-item.locked{opacity:.5}
+.milestone-ico{font-size:22px;width:42px;text-align:center;flex-shrink:0}
+.milestone-info{flex:1}
+.milestone-name{font-size:14px;font-weight:700}
+.milestone-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.milestone-pts{font-size:14px;font-weight:800;color:#FFB800;font-family:var(--mono)}
+.milestone-check{font-size:18px;color:var(--arc4)}
+.task-pts-bar{width:60px;height:24px;border-radius:8px;background:rgba(0,255,178,.08)}
+
+/* LEADERBOARD PREVIEW */
+.lb-card{background:rgba(10,6,28,.9);border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:28px}
+.lb-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{width:28px;font-size:13px;font-weight:800;font-family:var(--mono);text-align:center;flex-shrink:0}
+.lb-rank.gold{color:var(--gold)}
+.lb-rank.silver{color:#C0C0C0}
+.lb-rank.bronze{color:#CD7F32}
+.lb-addr{flex:1;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.lb-pts{font-size:14px;font-weight:800;font-family:var(--mono);color:var(--arc4)}
+.lb-streak{font-size:11px;color:var(--gold);margin-left:6px}
+.lb-you{background:rgba(255,184,0,.06);border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--gold);border:1px solid rgba(255,184,0,.2)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(13,9,32,.97);border:1px solid var(--border2);border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:12px;z-index:9000;transition:transform .3s cubic-bezier(.34,1.56,.64,1);min-width:260px;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast-icon{font-size:20px;flex-shrink:0}
+.toast-msg{font-size:14px;font-weight:700}
+.toast-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.toast-sub a{color:var(--arc2);text-decoration:none}
+
+/* POINTS BURST ANIMATION */
+@keyframes pts-float{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(1.4)}}
+.pts-burst{position:fixed;pointer-events:none;font-size:22px;font-weight:900;font-family:var(--mono);color:var(--gold);animation:pts-float .9s ease-out forwards;z-index:9999;text-shadow:0 0 20px rgba(255,184,0,.6)}
+
+@media(max-width:640px){
+  .streak-row{gap:4px}
+  .day-cell{min-width:40px;padding:10px 4px 8px}
+  .nav-tabs{display:none}
+  .testnet-pill{display:none}
+  .pts-value{font-size:48px}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+<div class="aurora"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo-wrap" onclick="window.location.href='/'">
+    <span class="logo-name" style="font-size:20px;font-weight:800;letter-spacing:-.04em">ArcSwap</span>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="/trade">Trade</a>
+    <a class="nav-tab" href="/pool">Pool</a>
+    <a class="nav-tab" href="/vault">Vault</a>
+    <a class="nav-tab" href="/token">Token</a>
+    <button class="nav-tab active">Points</button>
+    <a class="nav-tab faucet-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
+  </div>
+  <div class="nav-right">
+    <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
+    <button id="wallet-btn" onclick="handleWalletBtn()">Connect Wallet</button>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✅</span>
+  <div><div class="toast-msg" id="toast-msg"></div><div class="toast-sub" id="toast-sub"></div></div>
+</div>
+
+<div class="page">
+
+  <!-- POINTS HERO -->
+  <div class="points-hero" id="points-hero">
+    <div id="hero-content">
+      <div class="pts-label">Your ArcSwap Points</div>
+      <div class="pts-value" id="pts-display">—</div>
+      <div class="pts-sub" id="pts-sub">Connect wallet to view your points</div>
+      <div id="pts-rank-wrap" style="display:none">
+        <span class="pts-rank">🏆 <span id="pts-rank-text">Rank #—</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAILY CHECK-IN -->
+  <div class="sec-title">Daily Check-In</div>
+  <div class="checkin-card">
+
+    <!-- 7-day streak grid -->
+    <div class="streak-row" id="streak-grid"></div>
+
+    <!-- streak meta -->
+    <div class="streak-meta">
+      <div class="streak-badge">
+        <span class="fire">🔥</span>
+        <div class="streak-info">
+          <span class="streak-num" id="streak-count">0</span>
+          <span class="streak-lbl">Day Streak</span>
+        </div>
+      </div>
+      <div class="next-reward" id="next-reward-info">
+        Next milestone: <strong>7-day streak</strong> = <strong>+50 bonus pts</strong>
+      </div>
+    </div>
+
+    <!-- check-in button -->
+    <button class="checkin-btn" id="checkin-btn" onclick="doCheckIn()">
+      Connect Wallet to Check In
+    </button>
+
+    <!-- onchain note -->
+    <div class="onchain-note">
+      <span style="font-size:16px;flex-shrink:0">⛓️</span>
+      <span>Every check-in is recorded <strong style="color:var(--arc2)">onchain on Arc Testnet</strong> — building your verifiable history as an early builder on Arc Network.</span>
+    </div>
+
+    <!-- history -->
+    <div id="checkin-history" style="display:none">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:20px;margin-bottom:10px">Recent Check-ins</div>
+      <div class="history-list" id="history-items"></div>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="sec-title">Tasks & Missions</div>
+  <div class="tasks-card" id="tasks-card">
+    <div id="tasks-list"></div>
+  </div>
+
+  <!-- STREAK MILESTONES -->
+  <div class="sec-title">Streak Milestones</div>
+  <div class="tasks-card">
+    <div id="milestones-list"></div>
+  </div>
+
+  <!-- LEADERBOARD (hidden until mainnet) -->
+  <div class="sec-title" style="display:none">Leaderboard</div>
+  <div class="lb-card" id="lb-card" style="display:none">
+    <div class="lb-row">
+      <span class="lb-rank gold">1</span>
+      <span class="lb-addr">0x3a4f...c829</span>
+      <span><span class="lb-pts">8,240</span><span class="lb-streak">🔥 14d</span></span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank silver">2</span>
+      <span class="lb-addr">0xb71e...9f03</span>
+      <span><span class="lb-pts">6,100</span><span class="lb-streak">🔥 9d</span></span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank bronze">3</span>
+      <span class="lb-addr">0x09ca...44dd</span>
+      <span><span class="lb-pts">5,580</span><span class="lb-streak">🔥 7d</span></span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">4</span>
+      <span class="lb-addr">0xfe22...1a9b</span>
+      <span><span class="lb-pts">4,900</span><span class="lb-streak">🔥 5d</span></span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">5</span>
+      <span class="lb-addr">0x8810...cc12</span>
+      <span><span class="lb-pts">3,750</span><span class="lb-streak">🔥 3d</span></span>
+    </div>
+    <div class="lb-row" id="my-lb-row" style="display:none">
+      <span class="lb-rank" id="my-lb-rank">—</span>
+      <span class="lb-addr" id="my-lb-addr">You</span>
+      <span><span class="lb-pts" id="my-lb-pts">0</span> <span class="lb-you">YOU</span></span>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/* ============================================================
+   CURSOR
+============================================================ */
+const cdot=document.getElementById('cdot'),cring=document.getElementById('cring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cdot.style.left=mx+'px';cdot.style.top=my+'px'});
+(function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;cring.style.left=rx+'px';cring.style.top=ry+'px';requestAnimationFrame(loop)})();
+
+/* ============================================================
+   CONFIG
+============================================================ */
+const ARC_RPC   = 'https://rpc.testnet.arc.network';
+const ARC_CHAIN = {
+  chainId:'0x4cef52',
+  chainName:'Arc Testnet',
+  nativeCurrency:{name:'USD Coin',symbol:'USDC',decimals:18},
+  rpcUrls:['https://rpc.testnet.arc.network'],
+  blockExplorerUrls:['https://testnet.arcscan.app'],
+};
+// USDC contract — used for onchain check-in (self-transfer of 0 amount)
+const USDC_ADDR = '0x3600000000000000000000000000000000000000';
+
+// Points per day (with streak multiplier)
+const DAY_PTS     = 10; // 10 pts per check-in (flat)
+const STREAK_BONUS = {7:50, 30:300};   // 7-day=+50, 30-day=+300
+
+/* ============================================================
+   STATE — persisted in localStorage (per wallet address)
+============================================================ */
+let walletAddr   = null;
+let provider     = null;
+let state        = null; // loaded per wallet
+
+function stateKey(addr){ return 'arcswap_pts_'+addr.toLowerCase(); }
+
+const STATE_VERSION = 2; // bump this to force reset old data
+
+function loadState(addr){
+  try{
+    const raw = localStorage.getItem(stateKey(addr));
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // Reset if old version (no version field = v1 with inflated points)
+      if(!parsed.v || parsed.v < STATE_VERSION){
+        console.log('ArcSwap: Resetting old point data (version upgrade)');
+        return {v:STATE_VERSION, points:0, streak:0, lastCheckIn:null, history:[], totalCheckIns:0, missions:{}, milestonesClaimed:{}};
+      }
+      return parsed;
+    }
+  }catch(e){}
+  return {v:STATE_VERSION, points:0, streak:0, lastCheckIn:null, history:[], totalCheckIns:0, missions:{}, milestonesClaimed:{}};
+}
+
+function saveState(){
+  if(!walletAddr||!state) return;
+  state.v = STATE_VERSION;
+  localStorage.setItem(stateKey(walletAddr), JSON.stringify(state));
+}
+
+/* ============================================================
+   WALLET
+============================================================ */
+async function handleWalletBtn(){
+  if(walletAddr){ disconnect(); return; }
+  await connectWallet();
+}
+
+async function connectWallet(){
+  // Support MetaMask, OKX, and other injected providers
+  const prov = window.okexchain || window.ethereum;
+  if(!prov){ showToast('❌','No wallet','Install MetaMask or OKX Wallet first.'); return; }
+  try{
+    const accounts = await prov.request({method:'eth_requestAccounts'});
+    if(!accounts.length) return;
+    walletAddr = accounts[0];
+    provider   = prov;
+
+    // Ensure correct chain
+    const chainId = await provider.request({method:'eth_chainId'});
+    if(chainId !== ARC_CHAIN.chainId){
+      try{
+        await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:ARC_CHAIN.chainId}]});
+      }catch(e){
+        if(e.code===4902||e.code===-32603)
+          await provider.request({method:'wallet_addEthereumChain',params:[ARC_CHAIN]});
+      }
+    }
+
+    // Update button
+    const btn = document.getElementById('wallet-btn');
+    btn.innerHTML = `<div class="w-dot"></div>${shortAddr(walletAddr)}`;
+    btn.className = 'connected';
+
+    // Load state & render
+    state = loadState(walletAddr);
+    renderAll();
+    showToast('✅','Connected',shortAddr(walletAddr));
+
+    provider.on('accountsChanged', a=>{ if(!a.length) disconnect(); else{ walletAddr=a[0]; state=loadState(walletAddr); renderAll(); }});
+    provider.on('chainChanged', ()=>window.location.reload());
+  }catch(e){
+    showToast('❌','Rejected','Connection cancelled.');
+  }
+}
+
+function disconnect(){
+  walletAddr=null; provider=null; state=null;
+  const btn=document.getElementById('wallet-btn');
+  btn.textContent='Connect Wallet'; btn.className='';
+  renderAll();
+}
+
+function shortAddr(a){ return a.slice(0,6)+'...'+a.slice(-4); }
+
+/* ============================================================
+   RPC
+============================================================ */
+async function rpcCall(method,params){
+  const res = await fetch(ARC_RPC,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})
+  });
+  const j = await res.json();
+  if(j.error) throw new Error(j.error.message);
+  return j.result;
+}
+
+/* ============================================================
+   CHECK-IN LOGIC
+============================================================ */
+function todayStr(){ return new Date().toISOString().slice(0,10); } // YYYY-MM-DD
+
+function alreadyCheckedInToday(){
+  if(!state||!state.lastCheckIn) return false;
+  return state.lastCheckIn === todayStr();
+}
+
+function isStreakBroken(){
+  if(!state||!state.lastCheckIn) return false;
+  const last = new Date(state.lastCheckIn+'T00:00:00');
+  const today= new Date(todayStr()+'T00:00:00');
+  const diff = (today - last) / 86400000;
+  return diff > 1; // missed a day
+}
+
+function currentDayPts(){
+  return DAY_PTS; // flat 10 pts per day
+}
+
+async function doCheckIn(){
+  if(!walletAddr){ connectWallet(); return; }
+  if(alreadyCheckedInToday()){
+    showToast('ℹ️','Already checked in','Come back tomorrow!');
+    return;
+  }
+
+  const btn = document.getElementById('checkin-btn');
+  btn.innerHTML = '<span class="spinner"></span> Sending on-chain...';
+  btn.disabled = true;
+
+  try{
+    // === ONCHAIN: USDC self-transfer (0 amount) — creates real tx on Arc ===
+    // transfer(to=self, amount=0) — valid ERC-20 call, costs only gas (USDC)
+    const recipient = walletAddr.replace('0x','').toLowerCase().padStart(64,'0');
+    const amount    = '0'.padStart(64,'0'); // 0 USDC — just the activity proof
+    const data      = '0xa9059cbb' + recipient + amount;
+
+    const txHash = await provider.request({
+      method:'eth_sendTransaction',
+      params:[{
+        from: walletAddr,
+        to:   USDC_ADDR,
+        data: data,
+        gas:  '0x'+( 50000).toString(16),
+      }]
+    });
+
+    btn.innerHTML = '<span class="spinner"></span> Confirming...';
+    showToast('📡','Check-in tx sent','Waiting for confirmation...');
+
+    // Poll for receipt
+    let receipt = null;
+    for(let i=0; i<25; i++){
+      await new Promise(r=>setTimeout(r,2000));
+      try{
+        receipt = await rpcCall('eth_getTransactionReceipt',[txHash]);
+        if(receipt) break;
+      }catch(e){}
+    }
+
+    if(!receipt){ throw new Error('Timeout — check explorer for tx status'); }
+    if(receipt.status === '0x0'){ throw new Error('Transaction reverted on-chain'); }
+
+    // === SUCCESS — update state ===
+    const today = todayStr();
+    const wasStreakBroken = isStreakBroken();
+
+    if(wasStreakBroken) state.streak = 1; // reset
+    else state.streak = Math.min((state.streak||0)+1, 99);
+
+    const ptsEarned = currentDayPts();
+    const bonusKey  = Object.keys(STREAK_BONUS).find(k=>parseInt(k)===state.streak);
+    const bonusPts  = bonusKey ? STREAK_BONUS[bonusKey] : 0;
+    const totalEarned = ptsEarned + bonusPts;
+
+    state.points         = (state.points||0) + totalEarned;
+    state.lastCheckIn    = today;
+    state.totalCheckIns  = (state.totalCheckIns||0) + 1;
+    state.history        = [{date:today,pts:totalEarned,tx:txHash,streak:state.streak},...(state.history||[])].slice(0,30);
+    saveState();
+
+    // Burst animation
+    showPtsBurst(totalEarned);
+
+    if(bonusPts>0){
+      showToast('🔥',`${state.streak}-Day Streak! +${totalEarned} pts`,
+        `+${ptsEarned} daily +${bonusPts} streak bonus`);
+    } else {
+      showToast('✅',`+${ptsEarned} pts earned`,
+        `<a href="https://testnet.arcscan.app/tx/${txHash}" target="_blank" rel="noopener noreferrer">View on explorer ↗</a>`);
+    }
+
+    renderAll();
+
+  }catch(e){
+    btn.disabled = false;
+    updateCheckinBtn();
+    if(e.code===4001) showToast('⚠️','Cancelled','You rejected the transaction.');
+    else showToast('❌','Check-in failed', e.message?.slice(0,70)||'Unknown error');
+  }
+}
+
+/* ============================================================
+   RENDER
+============================================================ */
+
+/* ============================================================
+   MISSIONS
+============================================================ */
+const MISSIONS = [
+  {
+    id: 'follow_x',
+    icon: '𝕏',
+    name: 'Follow ArcSwap on X',
+    desc: 'Follow @arc_swap to stay updated on Arc Network DEX news',
+    pts: 50,
+    action: 'follow',
+    url: 'https://twitter.com/intent/user?screen_name=arc_swap',
+  },
+];
+
+const STREAK_MILESTONES = [
+  { days: 7,  pts: 50,  label: '7-Day Streak',  icon: '🔥', desc: 'Check in 7 days in a row' },
+  { days: 30, pts: 300, label: '30-Day Streak', icon: '💎', desc: 'Check in 30 days in a row' },
+];
+
+/* Claim a mission */
+async function claimMission(id){
+  if(!walletAddr){ alert('Connect wallet first'); return; }
+  const m = MISSIONS.find(x=>x.id===id);
+  if(!m || state.missions[id]) return;
+
+  if(m.action==='follow'){
+    // Open Twitter follow intent in new tab
+    window.open(m.url, '_blank');
+    // Mark as pending — user confirms manually after following
+    // We use a "Verify" button approach: show pending, then after 10s allow claim
+    state.missions[id] = 'pending';
+    saveState();
+    renderMissions();
+    // After 5s show a Claim button
+    setTimeout(()=>{
+      if(state.missions[id]==='pending'){
+        state.missions[id] = 'claimable';
+        saveState();
+        renderMissions();
+      }
+    }, 5000);
+    return;
+  }
+}
+
+async function verifyMission(id){
+  if(!walletAddr || !state) return;
+  const m = MISSIONS.find(x=>x.id===id);
+  if(!m) return;
+  // Award points
+  const before = state.points;
+  state.missions[id] = 'done';
+  state.points += m.pts;
+  saveState();
+  renderAll();
+  showFloatingPts('+'+m.pts+' pts');
+  showToast('🎉', 'Mission complete!', m.name + ' — +'+ m.pts +' pts earned');
+}
+
+function renderMissions(){
+  const el = document.getElementById('tasks-list');
+  if(!el) return;
+  if(!walletAddr){
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Connect wallet to see missions</div>';
+    return;
+  }
+  el.innerHTML = MISSIONS.map(m=>{
+    const status = state.missions[m.id];
+    const done = status==='done';
+    const pending = status==='pending';
+    const claimable = status==='claimable';
+
+    let btn = '';
+    if(done){
+      btn = '<button class="task-btn done-btn" disabled>✓ Done</button>';
+    } else if(claimable){
+      btn = `<button class="task-btn" onclick="verifyMission('${m.id}')">✅ Claim +${m.pts} pts</button>`;
+    } else if(pending){
+      btn = '<button class="task-btn pending" disabled>Followed? Wait...</button>';
+    } else {
+      btn = `<button class="task-btn" onclick="claimMission('${m.id}')">Go →</button>`;
+    }
+
+    return `<div class="task-item ${done?'done':''}">
+      <div class="task-icon">${m.icon}</div>
+      <div class="task-info">
+        <div class="task-name">${m.name}</div>
+        <div class="task-desc">${m.desc}</div>
+      </div>
+      <div class="task-right">
+        <span class="task-pts">+${m.pts} pts</span>
+        ${btn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMilestones(){
+  const el = document.getElementById('milestones-list');
+  if(!el) return;
+  const streak = state ? state.streak : 0;
+  const claimed = state ? (state.milestonesClaimed||{}) : {};
+
+  el.innerHTML = STREAK_MILESTONES.map(m=>{
+    const reached = streak >= m.days;
+    const done = claimed[m.days];
+    const cls = done ? 'reached' : reached ? 'reached' : 'locked';
+    const ptsEl = done
+      ? '<span class="milestone-check">✓ claimed</span>'
+      : reached
+        ? `<button class="task-btn" onclick="claimMilestone(${m.days},${m.pts})" style="font-size:11px;padding:6px 12px">Claim +${m.pts}</button>`
+        : `<span class="milestone-pts">+${m.pts} pts</span>`;
+    const prog = Math.min(streak, m.days);
+    const pct = Math.round(prog/m.days*100);
+    return `<div class="milestone-item ${cls}">
+      <div class="milestone-ico">${m.icon}</div>
+      <div class="milestone-info">
+        <div class="milestone-name">${m.label}</div>
+        <div class="milestone-sub">${m.desc} — ${prog}/${m.days} days
+          <div style="margin-top:6px;height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--arc2),var(--arc1));border-radius:4px;transition:width .5s"></div>
+          </div>
+        </div>
+      </div>
+      <div>${ptsEl}</div>
+    </div>`;
+  }).join('');
+}
+
+function claimMilestone(days, pts){
+  if(!state) return;
+  if(!state.milestonesClaimed) state.milestonesClaimed={};
+  if(state.milestonesClaimed[days]) return;
+  if(state.streak < days){ showToast('⚠️','Not yet','Keep your streak going!',''); return; }
+  state.milestonesClaimed[days] = true;
+  state.points += pts;
+  saveState();
+  renderAll();
+  showFloatingPts('+'+pts+' pts');
+  showToast('🏆','Milestone claimed!', days+'-day streak bonus: +'+pts+' pts');
+}
+
+function showFloatingPts(text){
+  const el=document.createElement('div');
+  el.textContent=text;
+  el.style.cssText='position:fixed;top:40%;left:50%;transform:translateX(-50%);font-size:28px;font-weight:900;color:#00FFB2;z-index:9999;pointer-events:none;animation:floatUp 1.5s forwards';
+  document.body.appendChild(el);
+  if(!document.getElementById('floatUp-style')){
+    const s=document.createElement('style');
+    s.id='floatUp-style';
+    s.textContent='@keyframes floatUp{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-80px)}}';
+    document.head.appendChild(s);
+  }
+  setTimeout(()=>el.remove(),1500);
+}
+
+function renderAll(){
+  if(!state) return;
+  renderHero();
+  renderStreakGrid();
+  renderCheckinBtn();
+  renderHistory();
+  renderMissions();
+  renderMilestones();
+}
+
+function renderHero(){
+  const ptsEl = document.getElementById('pts-display');
+  const subEl  = document.getElementById('pts-sub');
+  const rankWrap = document.getElementById('pts-rank-wrap');
+
+  if(!walletAddr||!state){
+    ptsEl.textContent='—';
+    subEl.textContent='Connect wallet to view your points';
+    rankWrap.style.display='none';
+    return;
+  }
+
+  // Animate counter
+  const target = state.points||0;
+  const cur    = parseInt(ptsEl.textContent.replace(/,/g,''))||0;
+  if(cur!==target) animateCount(ptsEl, cur, target, 800);
+  else ptsEl.textContent = target.toLocaleString();
+
+  subEl.textContent = state.totalCheckIns
+    ? `${state.totalCheckIns} check-in${state.totalCheckIns!==1?'s':''} · ${state.streak}🔥 streak`
+    : 'Start checking in to earn points';
+
+  // Fake rank based on points
+  const rank = state.points>5000?3:state.points>2000?8:state.points>500?20:state.points>0?42:99;
+  document.getElementById('pts-rank-text').textContent='Rank #'+rank;
+  document.getElementById('my-lb-pts').textContent=(state.points||0).toLocaleString();
+  rankWrap.style.display='';
+}
+
+function animateCount(el, from, to, duration){
+  const start=performance.now();
+  (function step(now){
+    const t=Math.min((now-start)/duration,1);
+    const ease=1-Math.pow(1-t,3);
+    el.textContent=Math.round(from+(to-from)*ease).toLocaleString();
+    if(t<1) requestAnimationFrame(step);
+  })(start);
+}
+
+function renderStreakGrid(){
+  const grid = document.getElementById('streak-grid');
+  const today = new Date();
+  const days  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const cells = [];
+
+  for(let i=6; i>=0; i--){
+    const d = new Date(today);
+    d.setDate(today.getDate()-i);
+    const dateStr   = d.toISOString().slice(0,10);
+    const dayLabel  = days[d.getDay()];
+    const dayNum    = d.getDate();
+    const isToday   = i===0;
+    const checkedIn = state?.history?.some(h=>h.date===dateStr);
+    const missedDay = !checkedIn && !isToday && state?.lastCheckIn &&
+      new Date(dateStr) <= new Date(state.lastCheckIn);
+
+    let cls='day-cell';
+    if(checkedIn) cls+=' done';
+    else if(isToday) cls+=' today';
+    else if(missedDay) cls+=' missed';
+
+    const icon = checkedIn?'✅':isToday?'⭐':'○';
+    const ptsLabel = checkedIn
+      ? (state.history.find(h=>h.date===dateStr)?.pts||'?')+' pts'
+      : isToday ? DAY_PTS+' pts' : '';
+
+    cells.push(`<div class="${cls}">
+      <div class="day-label">${dayLabel}</div>
+      <div class="day-icon">${icon}</div>
+      <div class="day-num">${dayNum}</div>
+      ${ptsLabel?`<div class="day-pts">${ptsLabel}</div>`:''}
+    </div>`);
+  }
+  grid.innerHTML = cells.join('');
+
+  // Streak count
+  document.getElementById('streak-count').textContent = state?.streak||0;
+
+  // Next milestone
+  const streak = state?.streak||0;
+  const nextMile = streak<7?7:streak<14?14:30;
+  const bonusAmt = STREAK_BONUS[nextMile]||300;
+  document.getElementById('next-reward-info').innerHTML =
+    `Next milestone: <strong>${nextMile}-day streak</strong> = <strong>+${bonusAmt} bonus pts</strong>`;
+}
+
+function renderCheckinBtn(){
+  updateCheckinBtn();
+}
+function updateCheckinBtn(){
+  const btn = document.getElementById('checkin-btn');
+  if(!walletAddr){
+    btn.textContent='Connect Wallet to Check In'; btn.disabled=false; return;
+  }
+  if(alreadyCheckedInToday()){
+    btn.className='checkin-btn done-today';
+    btn.innerHTML='✅ Checked in today — come back tomorrow!';
+    btn.disabled=true; return;
+  }
+  btn.className='checkin-btn';
+  const pts = currentDayPts();
+  const streak = state?.streak||0;
+  btn.textContent=`Check In Now — Earn +${pts} pts (Day ${streak+1})`;
+  btn.disabled=false;
+}
+
+function renderHistory(){
+  const wrap  = document.getElementById('checkin-history');
+  const items = document.getElementById('history-items');
+  if(!state||!state.history||state.history.length===0){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  items.innerHTML = state.history.slice(0,5).map(h=>`
+    <div class="hist-item">
+      <span class="hist-date">${h.date}</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="hist-pts">+${h.pts} pts</span>
+        <span class="hist-tx"><a href="https://testnet.arcscan.app/tx/${h.tx}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2);text-decoration:none">↗ tx</a></span>
+      </span>
+    </div>`).join('');
+}
+
+function renderLeaderboard(){
+  if(!walletAddr||!state) return;
+  const myRow = document.getElementById('my-lb-row');
+  document.getElementById('my-lb-addr').textContent = shortAddr(walletAddr);
+  document.getElementById('my-lb-pts').textContent  = (state.points||0).toLocaleString();
+  const rank = state.points>5000?3:state.points>2000?8:state.points>500?20:state.points>0?42:99;
+  document.getElementById('my-lb-rank').textContent = rank;
+  myRow.style.display='flex';
+}
+
+/* ============================================================
+   POINTS BURST
+============================================================ */
+function showPtsBurst(pts){
+  const el = document.createElement('div');
+  el.className='pts-burst';
+  el.textContent='+'+pts;
+  el.style.left = (Math.random()*40+30)+'%';
+  el.style.top  = (Math.random()*20+40)+'%';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1000);
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+let toastTimer=null;
+function showToast(icon,msg,sub=''){
+  clearTimeout(toastTimer);
+  document.getElementById('toast-icon').textContent=icon;
+  document.getElementById('toast-msg').textContent=msg;
+  const subEl=document.getElementById('toast-sub');
+  if(sub.includes('<a ')) subEl.innerHTML=sub; else subEl.textContent=sub;
+  document.getElementById('toast').classList.add('show');
+  toastTimer=setTimeout(()=>document.getElementById('toast').classList.remove('show'),4500);
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+renderAll();
+
+// AUTO-RECONNECT on page load
+async function tryAutoReconnect(){
+  if(!window.ethereum) return;
+  try{
+    const accounts = await window.ethereum.request({method:'eth_accounts'});
+    if(!accounts||!accounts.length) return;
+    walletAddr = accounts[0];
+    provider   = window.ethereum;
+    const chainId = await window.ethereum.request({method:'eth_chainId'});
+    if(chainId !== ARC_CHAIN.chainId){
+      try{await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:ARC_CHAIN.chainId}]});}catch(e){}
+    }
+    state = loadState(walletAddr);
+    const btn=document.getElementById('wallet-btn');
+    btn.innerHTML=`<div class="w-dot"></div>${shortAddr(walletAddr)}`;
+    btn.className='connected';
+    renderAll();
+    window.ethereum.on('accountsChanged',a=>{if(!a.length) disconnect();});
+  }catch(e){}
+}
+tryAutoReconnect();
+
+</script>
+</body>
+</html>
