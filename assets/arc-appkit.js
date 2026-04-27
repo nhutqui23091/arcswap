@@ -1,16 +1,43 @@
 // arc-appkit.js — Wrapper around Circle's App Kit for browser-side swap.
 //
 // Usage (from trade.html):
-//   import { initAppKit, appKitSwap, estimateAppKitSwap } from '/assets/arc-appkit.js';
-//   await initAppKit();   // once on page load (after wallet connect)
-//   const { estimatedOutput } = await estimateAppKitSwap('USDC', 'EURC', '1.00');
-//   const result = await appKitSwap('USDC', 'EURC', '1.00');
+//   const m = await import('/assets/arc-appkit.js');
+//   if (m.isAppKitReady()) await m.initAppKit();
+//   const { estimatedOutput } = await m.estimateAppKitSwap('USDC', 'EURC', '1.00');
+//   const result = await m.appKitSwap('USDC', 'EURC', '1.00');
 //
 // Requires: window.ARC_APPKIT_CONFIG (loaded from arc-appkit-config.js before this).
 
-// Load App Kit + adapter via esm.sh ESM CDN. No build step required.
-import { AppKit } from 'https://esm.sh/@circle-fin/app-kit@latest';
-import { createEthersAdapterFromProvider } from 'https://esm.sh/@circle-fin/adapter-ethers-v6@latest';
+// Lazy-load App Kit + adapter from CDN to avoid module-init failures crashing
+// the page. Pin to specific versions to avoid silent breakage on `@latest`.
+const APPKIT_VERSION = '1.4.1';
+const APPKIT_URL = `https://esm.sh/@circle-fin/app-kit@${APPKIT_VERSION}`;
+const ADAPTER_URL = `https://esm.sh/@circle-fin/adapter-ethers-v6@${APPKIT_VERSION}`;
+
+let _sdkPromise = null;
+async function loadSdk() {
+  if (_sdkPromise) return _sdkPromise;
+  _sdkPromise = (async () => {
+    try {
+      const [appKitMod, adapterMod] = await Promise.all([
+        import(APPKIT_URL),
+        import(ADAPTER_URL),
+      ]);
+      const AppKit = appKitMod.AppKit || appKitMod.default;
+      const createEthersAdapterFromProvider =
+        adapterMod.createEthersAdapterFromProvider || adapterMod.default;
+      if (!AppKit) throw new Error('AppKit class not found in @circle-fin/app-kit export');
+      if (!createEthersAdapterFromProvider) throw new Error('createEthersAdapterFromProvider not found');
+      console.info('[arc-appkit] SDK loaded:', { v: APPKIT_VERSION });
+      return { AppKit, createEthersAdapterFromProvider };
+    } catch (e) {
+      console.error('[arc-appkit] SDK load failed:', e);
+      _sdkPromise = null;  // allow retry
+      throw e;
+    }
+  })();
+  return _sdkPromise;
+}
 
 let kit = null;
 let adapter = null;
@@ -29,6 +56,9 @@ export async function initAppKit() {
   if (!window.ethereum) {
     throw new Error('No wallet provider found (window.ethereum). Connect MetaMask/Rabby first.');
   }
+
+  // Lazy-load SDK (with detailed error if CDN fails)
+  const { AppKit, createEthersAdapterFromProvider } = await loadSdk();
 
   adapter = await createEthersAdapterFromProvider({ provider: window.ethereum });
   kit = new AppKit();
