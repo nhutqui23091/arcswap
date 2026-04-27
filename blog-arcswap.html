@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="What is ArcSwap? Why we built a yield terminal for stablecoins on Arc — the design thesis behind one venue, one balance."/>
+<meta property="og:title" content="What is ArcSwap?"/>
+<meta property="og:description" content="A yield terminal for stablecoins on Arc — USYC vault, swap, CCTP bridge, pools in one venue. The design thesis."/>
+<meta property="og:image" content="https://arcswap.net/assets/social/blog-arcswap-banner.svg"/>
+<meta property="og:type" content="article"/>
+<title>What is ArcSwap? — ArcSwap Blog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;--bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;--muted:#8CA0BD;
+  --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
+  --warn:#FFB454;--danger:#FF7A7A;
+  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.7}
+.aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(74,123,236,0.10) 0%,transparent 60%),
+  linear-gradient(180deg,#0A1628 0%,#0E1F39 60%,#0A1628 100%)}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-name{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.logo-tag{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;border-left:1px solid var(--border);padding-left:10px;margin-left:4px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--text);background:var(--surface)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-ghost{padding:9px 18px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);transition:all .2s;text-decoration:none}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-primary{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);transition:all .2s;text-decoration:none}
+.btn-primary:hover{background:rgba(255,255,255,0.14)}
+
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:120px 24px 80px}
+.crumb{font-size:12px;font-family:var(--mono);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px}
+.crumb a{color:var(--muted);text-decoration:none}
+.crumb a:hover{color:var(--text)}
+.eyebrow{font-size:12px;font-family:var(--mono);color:var(--arc1);letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px}
+.eyebrow::before{content:'// ';color:rgba(140,160,189,.55)}
+h1.title{font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-.025em;line-height:1.08;margin-bottom:18px}
+h1.title .grad{background:linear-gradient(90deg,var(--arc1),var(--arc2),var(--arc3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lead{font-size:19px;color:#C8D1E0;line-height:1.6;margin-bottom:28px;font-weight:400}
+.byline{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--muted);margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.byline-author{font-weight:600;color:var(--text)}
+.byline-sep{color:var(--border2)}
+.banner{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--border);margin-bottom:48px;background:#0A1628}
+
+article{font-size:16.5px;line-height:1.78}
+article p{color:#C8D1E0;margin-bottom:20px}
+article p strong{color:var(--text);font-weight:600}
+article p em{color:var(--text);font-style:italic;background:rgba(74,123,236,0.06);padding:1px 4px;border-radius:3px}
+article p a{color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.3);transition:border-color .2s}
+article p a:hover{border-bottom-color:var(--arc1)}
+article h2{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:56px 0 18px;padding-top:28px;border-top:1px solid var(--border);line-height:1.2}
+article h2:first-of-type{border-top:none;padding-top:0}
+article h3{font-size:22px;font-weight:600;margin:36px 0 14px;letter-spacing:-.01em}
+article ul,article ol{padding-left:24px;margin-bottom:24px}
+article li{color:#C8D1E0;margin-bottom:8px}
+article li::marker{color:var(--arc1)}
+
+code{font-family:var(--mono);font-size:14px;background:rgba(77,214,219,0.08);border:1px solid rgba(77,214,219,0.16);padding:1px 6px;border-radius:5px;color:var(--arc1)}
+
+.callout{border-left:3px solid var(--arc1);background:rgba(77,214,219,0.05);padding:16px 20px;border-radius:0 10px 10px 0;margin:28px 0}
+.callout-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:var(--mono);color:var(--arc1)}
+.callout-body{font-size:15px;color:#C8D1E0;line-height:1.65}
+
+table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.t th,.t td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.t th{background:rgba(255,255,255,0.04);font-weight:600;color:var(--text);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono)}
+.t td{color:#C8D1E0}
+.t tr:last-child td{border-bottom:none}
+
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:28px 0}
+.fcard{padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.fcard-tag{font-size:11px;font-family:var(--mono);font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;display:block}
+.fcard-tag.c1{color:var(--arc1)}
+.fcard-tag.c2{color:var(--arc2)}
+.fcard-tag.c3{color:var(--arc3)}
+.fcard-tag.c4{color:var(--arc4)}
+.fcard-name{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
+.fcard-desc{font-size:13.5px;color:var(--muted);line-height:1.5}
+
+.cta-card{border:1px solid var(--border);background:linear-gradient(180deg,rgba(74,123,236,0.06),rgba(255,255,255,0.02));border-radius:14px;padding:28px;margin:48px 0;text-align:center}
+.cta-card h3{font-size:22px;font-weight:700;margin-bottom:8px}
+.cta-card p{color:var(--muted);font-size:14.5px;margin-bottom:18px}
+.cta-card a{display:inline-block;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;background:rgba(77,214,219,0.14);border:1px solid rgba(77,214,219,0.4);color:var(--arc1);transition:all .2s;margin:0 4px}
+.cta-card a:hover{background:rgba(77,214,219,0.2);border-color:var(--arc1)}
+
+.foot{margin-top:60px;padding-top:28px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;color:var(--muted);flex-wrap:wrap;gap:12px}
+.foot a{color:var(--muted);text-decoration:none}
+.foot a:hover{color:var(--arc1)}
+
+@media(max-width:768px){.wrap{padding:100px 18px 60px}.nav-links{display:none}h1.title{font-size:32px}article h2{font-size:24px}}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-tag">Blog</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/vault">Vault</a>
+    <a class="nav-link" href="/trade">Trade</a>
+    <a class="nav-link" href="/pool">Pool</a>
+    <a class="nav-link" href="/docs">Docs</a>
+    <a class="nav-link active" href="/blog">Blog</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn-ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    <a class="btn-primary" href="/trade">Launch App ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="crumb"><a href="/">Home</a> &nbsp;/&nbsp; <a href="/blog">Blog</a> &nbsp;/&nbsp; What is ArcSwap?</div>
+  <div class="eyebrow">Product Note</div>
+  <h1 class="title">What is <span class="grad">ArcSwap</span>?</h1>
+  <p class="lead">A yield terminal for stablecoins on Arc — USYC vault, native swap, CCTP bridge and liquidity pools, in one venue. Here's why we built it that way.</p>
+
+  <div class="byline">
+    <span class="byline-author">ArcSwap Team</span>
+    <span class="byline-sep">·</span>
+    <span>Apr 27, 2026</span>
+    <span class="byline-sep">·</span>
+    <span>6 min read</span>
+  </div>
+
+  <img class="banner" src="/assets/social/blog-arcswap-banner.svg" alt="What is ArcSwap"/>
+
+  <article>
+
+    <p>ArcSwap is a <strong>non-custodial DeFi frontend</strong> on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc</a> Layer 1 blockchain. The pitch in one sentence: <em>everything you want to do with stablecoins, in one tab.</em></p>
+
+    <p>That's vague. Let me be specific.</p>
+
+    <h2>The problem we noticed</h2>
+
+    <p>If you hold $10,000 USDC today and want to be productive with it, your day looks like this:</p>
+    <ul>
+      <li>Open <strong>Aave</strong> to lend USDC for ~3% APY.</li>
+      <li>Open <strong>Uniswap</strong> to swap into EURC for an FX trade.</li>
+      <li>Open <strong>Stargate / Across</strong> to bridge to another chain.</li>
+      <li>Open <strong>USDM / sFRAX / sUSDe</strong> for yield-bearing stablecoin variants.</li>
+      <li>Open <strong>Etherscan</strong> three times to track approvals.</li>
+    </ul>
+
+    <p>Five tabs, five wallet popups, five fee experiences, five mental models. And after all that, your USDC is fragmented across three protocols, two chains, and four token wrappers.</p>
+
+    <p>This is fine for crypto-native users who enjoy the friction. <strong>It's terrible for capital efficiency</strong> and even worse for new users.</p>
+
+    <h2>The thesis: a yield terminal</h2>
+
+    <p>What if your USDC just <em>worked</em>? Sitting in your wallet, earning U.S. Treasury yield by default, instantly swappable into other stablecoins, instantly bridgeable across chains, instantly LP-able into pools — all from a single interface, with one balance, one approval pattern, one mental model.</p>
+
+    <p>That's ArcSwap. Four products tightly integrated:</p>
+
+    <div class="feature-grid">
+      <div class="fcard">
+        <span class="fcard-tag c1">VAULT</span>
+        <div class="fcard-name">USYC Yield</div>
+        <div class="fcard-desc">Earn ~4.85% APY on idle USDC via tokenized U.S. T-bills (Hashnote).</div>
+      </div>
+      <div class="fcard">
+        <span class="fcard-tag c2">SWAP</span>
+        <div class="fcard-name">In-Arc AMM</div>
+        <div class="fcard-desc">Convert USDC ↔ EURC ↔ USYC instantly via Uniswap V2.</div>
+      </div>
+      <div class="fcard">
+        <span class="fcard-tag c3">BRIDGE</span>
+        <div class="fcard-name">CCTP V2</div>
+        <div class="fcard-desc">Native USDC across chains. Burn-and-mint, no wrapped tokens.</div>
+      </div>
+      <div class="fcard">
+        <span class="fcard-tag c4">POOLS</span>
+        <div class="fcard-name">Liquidity Provision</div>
+        <div class="fcard-desc">Earn 0.25% per trade by providing USDC/EURC or USDC/USYC liquidity.</div>
+      </div>
+    </div>
+
+    <h2>Why <em>Arc</em>, specifically</h2>
+
+    <p>We picked Arc as the home chain because of three structural decisions Circle made when designing it:</p>
+
+    <ol>
+      <li><strong>USDC as native gas.</strong> No more "I need to bridge in some ETH first to pay gas". Your USDC is the spending money <em>and</em> the gas. Predictable USD-denominated transaction costs.</li>
+      <li><strong>Sub-second deterministic finality.</strong> No reorgs, no "wait 12 blocks". Tx confirmed = tx done. Critical for cross-chain UX where the bridge waits for source-chain finality.</li>
+      <li><strong>EVM compatible.</strong> Solidity, Hardhat, Foundry, Viem all work. Hashnote already deployed USYC. Circle already deployed CCTP V2. Uniswap V2 router was deployed by the foundation. The infra was waiting.</li>
+    </ol>
+
+    <p>We didn't have to build any of the protocols ArcSwap surfaces. They all exist on Arc. <strong>ArcSwap is a UX layer, not a protocol</strong> — and that's deliberate.</p>
+
+    <h2>What we are NOT</h2>
+
+    <p>To set expectations clearly:</p>
+
+    <ul>
+      <li><strong>We don't custody funds.</strong> Your wallet is your wallet. ArcSwap can't pause, freeze, or move anything you own.</li>
+      <li><strong>We don't have our own token.</strong> No ASWP. No airdrop campaign. No governance vote. Anyone telling you otherwise is running a scam.</li>
+      <li><strong>We don't have our own smart contracts.</strong> We call into Hashnote (USYC), Circle (CCTP), and the Arc Foundation's Uniswap deployment. They run the infra; we run the UI.</li>
+      <li><strong>We don't take fees</strong> on yield, swaps, or bridges (current testnet stage). The fees you see come from the underlying protocols (Hashnote subscription fee, Uniswap LP fee, etc.).</li>
+    </ul>
+
+    <h2>Why this design choice</h2>
+
+    <p>"Non-custodial frontend that doesn't run its own contracts" sounds boring. It is. <strong>Boring is a feature</strong> when real money is involved.</p>
+
+    <p>Look at the largest DeFi exploits of the last three years. The vast majority were not "the smart contract had a bug". They were:</p>
+    <ul>
+      <li><strong>Frontend supply-chain compromise</strong> (malicious JS pushed to a CDN)</li>
+      <li><strong>Multi-sig key compromise</strong> (admin was a single hot wallet)</li>
+      <li><strong>Bridge hack</strong> (custom messaging protocol with 1-of-N validators)</li>
+    </ul>
+
+    <p>By <em>not</em> running our own contracts, we eliminate an entire class of risk — the kind that comes from rolling our own AMM math or our own bridge messaging. By being non-custodial, we eliminate the "founder runs off with the funds" risk. By using IPFS-pinnable static HTML, we minimize the supply-chain attack surface.</p>
+
+    <p>The cost: we're <em>opinionated</em> about what we surface. We pick USYC over a dozen alternatives. We pick CCTP over LayerZero. These choices simplify the UX but constrain it.</p>
+
+    <p>That's the trade we're making. <strong>Less optionality, less risk, less complexity.</strong> For users who want every yield-bearing stablecoin and every bridge in one place, there are aggregators. We're not that.</p>
+
+    <h2>What's coming</h2>
+
+    <p>The roadmap, in plain language:</p>
+
+    <table class="t">
+      <tr><th>When</th><th>What</th></tr>
+      <tr><td>Q2 2026</td><td>USYC vault polish — entitlements UX, position history, redemption queue</td></tr>
+      <tr><td>Q3 2026</td><td>Circle Gateway integration — deposit USDC from any supported chain, settle on Arc</td></tr>
+      <tr><td>Q4 2026</td><td>StableFX — RFQ-driven USDC ⇄ EURC PvP settlement via Arc FxEscrow</td></tr>
+      <tr><td>2027</td><td>Multi-vault yield products + B2B Memo references + <strong>mainnet</strong></td></tr>
+    </table>
+
+    <p>If even half of this ships, ArcSwap becomes the default place to hold productive USDC on Arc. That's the bet.</p>
+
+    <h2>Try it</h2>
+
+    <p>It's testnet. Nothing is real money. Get USDC from <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">Circle's faucet</a>, connect your wallet to <a href="https://arcswap.net">arcswap.net</a>, and play with the four primitives. Tell us what breaks.</p>
+
+    <div class="cta-card">
+      <h3>One venue. One balance. Four primitives.</h3>
+      <p>Open the app on Arc Testnet — free testnet USDC from faucet.circle.com.</p>
+      <a href="/vault">Open Vault</a>
+      <a href="/trade">Trade &amp; Bridge</a>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>ArcSwap is a non-custodial frontend currently on Arc Testnet. Yield figures are indicative — not financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
+
+  </article>
+
+  <div class="foot">
+    <span>© 2026 ArcSwap · Built on Arc Testnet</span>
+    <div>
+      <a href="/blog">← Back to blog</a> &nbsp;·&nbsp;
+      <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">X</a> &nbsp;·&nbsp;
+      <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

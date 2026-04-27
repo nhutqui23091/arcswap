@@ -672,7 +672,11 @@ function openAddLiquidity(poolId){
   document.getElementById('modal-badge-ico-b').className='liq-tok-ico '+p.tokB.ico;
   document.getElementById('modal-badge-ico-b').textContent=p.tokB.abbr;
   document.getElementById('modal-badge-sym-b').textContent=p.tokB.sym;
-  document.getElementById('modal-rate').textContent=`1 ${p.tokA.sym} ≈ ${p.rate.toFixed(4)} ${p.tokB.sym}`;
+  // Guard against null/undefined rate (live data may not have loaded yet)
+  const rateText = (p.rate != null && Number.isFinite(p.rate))
+    ? `1 ${p.tokA.sym} ≈ ${p.rate.toFixed(4)} ${p.tokB.sym}`
+    : `Rate loading…`;
+  document.getElementById('modal-rate').textContent = rateText;
   document.getElementById('liq-input-a').value='';
   document.getElementById('liq-input-b').value='';
   document.getElementById('supply-btn').disabled=true;

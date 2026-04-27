@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="A no-jargon walkthrough of how Hashnote's USYC tokenized money market fund actually works — yield, NAV, market hours, and risks."/>
+<meta property="og:title" content="USYC, explained for stablecoin holders"/>
+<meta property="og:description" content="How Hashnote's USYC actually works — yield via NAV, market hours, risks, and why it matters."/>
+<meta property="og:image" content="https://arcswap.net/assets/social/blog-usyc-banner.svg"/>
+<meta property="og:type" content="article"/>
+<title>USYC, explained — ArcSwap Blog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;--bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;--muted:#8CA0BD;
+  --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
+  --warn:#FFB454;--danger:#FF7A7A;
+  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.7}
+.aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(123,228,149,0.08) 0%,transparent 60%),
+  linear-gradient(180deg,#0A1628 0%,#0E1F39 60%,#0A1628 100%)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-name{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.logo-tag{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;border-left:1px solid var(--border);padding-left:10px;margin-left:4px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--text);background:var(--surface)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-ghost{padding:9px 18px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);transition:all .2s;text-decoration:none}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-primary{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);transition:all .2s;text-decoration:none}
+.btn-primary:hover{background:rgba(255,255,255,0.14)}
+
+/* ARTICLE */
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:120px 24px 80px}
+.crumb{font-size:12px;font-family:var(--mono);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px}
+.crumb a{color:var(--muted);text-decoration:none}
+.crumb a:hover{color:var(--text)}
+.eyebrow{font-size:12px;font-family:var(--mono);color:var(--arc4);letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px}
+.eyebrow::before{content:'// ';color:rgba(140,160,189,.55)}
+h1.title{font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-.025em;line-height:1.08;margin-bottom:18px}
+.lead{font-size:19px;color:#C8D1E0;line-height:1.6;margin-bottom:28px;font-weight:400}
+.byline{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--muted);margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.byline-author{font-weight:600;color:var(--text)}
+.byline-sep{color:var(--border2)}
+.banner{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--border);margin-bottom:48px;background:#0A1628}
+
+article{font-size:16.5px;line-height:1.78}
+article p{color:#C8D1E0;margin-bottom:20px}
+article p strong{color:var(--text);font-weight:600}
+article p em{color:var(--text);font-style:italic;background:rgba(77,214,219,0.06);padding:1px 4px;border-radius:3px}
+article p a{color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.3);transition:border-color .2s}
+article p a:hover{border-bottom-color:var(--arc1)}
+article h2{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:56px 0 18px;padding-top:28px;border-top:1px solid var(--border);line-height:1.2}
+article h2:first-of-type{border-top:none;padding-top:0}
+article h3{font-size:22px;font-weight:600;margin:36px 0 14px;letter-spacing:-.01em}
+article ul,article ol{padding-left:24px;margin-bottom:24px}
+article li{color:#C8D1E0;margin-bottom:8px}
+article li::marker{color:var(--arc4)}
+
+code{font-family:var(--mono);font-size:14px;background:rgba(123,228,149,0.08);border:1px solid rgba(123,228,149,0.16);padding:1px 6px;border-radius:5px;color:var(--arc4)}
+pre{background:#0A1322;border:1px solid var(--border);border-radius:10px;padding:18px;overflow-x:auto;margin:24px 0;font-family:var(--mono);font-size:13px;line-height:1.7}
+pre code{background:none;border:none;padding:0;color:#C8D1E0}
+
+.callout{border-left:3px solid var(--arc1);background:rgba(77,214,219,0.05);padding:16px 20px;border-radius:0 10px 10px 0;margin:28px 0}
+.callout.warn{border-left-color:var(--warn);background:rgba(255,180,84,0.06)}
+.callout-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:var(--mono);color:var(--arc1)}
+.callout.warn .callout-title{color:var(--warn)}
+.callout-body{font-size:15px;color:#C8D1E0;line-height:1.65}
+
+table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.t th,.t td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.t th{background:rgba(255,255,255,0.04);font-weight:600;color:var(--text);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono)}
+.t td{color:#C8D1E0}
+.t tr:last-child td{border-bottom:none}
+
+.cta-card{border:1px solid var(--border);background:linear-gradient(180deg,rgba(77,214,219,0.06),rgba(255,255,255,0.02));border-radius:14px;padding:28px;margin:48px 0;text-align:center}
+.cta-card h3{font-size:22px;font-weight:700;margin-bottom:8px}
+.cta-card p{color:var(--muted);font-size:14.5px;margin-bottom:18px}
+.cta-card a{display:inline-block;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;background:rgba(77,214,219,0.14);border:1px solid rgba(77,214,219,0.4);color:var(--arc1);transition:all .2s}
+.cta-card a:hover{background:rgba(77,214,219,0.2);border-color:var(--arc1)}
+
+.foot{margin-top:60px;padding-top:28px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;color:var(--muted);flex-wrap:wrap;gap:12px}
+.foot a{color:var(--muted);text-decoration:none}
+.foot a:hover{color:var(--arc1)}
+
+@media(max-width:768px){.wrap{padding:100px 18px 60px}.nav-links{display:none}h1.title{font-size:32px}article h2{font-size:24px}}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-tag">Blog</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/vault">Vault</a>
+    <a class="nav-link" href="/trade">Trade</a>
+    <a class="nav-link" href="/pool">Pool</a>
+    <a class="nav-link" href="/docs">Docs</a>
+    <a class="nav-link active" href="/blog">Blog</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn-ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    <a class="btn-primary" href="/trade">Launch App ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="crumb"><a href="/">Home</a> &nbsp;/&nbsp; <a href="/blog">Blog</a> &nbsp;/&nbsp; USYC explained</div>
+  <div class="eyebrow">Explainer</div>
+  <h1 class="title">USYC, explained for stablecoin holders</h1>
+  <p class="lead">A no-jargon walkthrough of how Hashnote's tokenized money market fund actually works — what backs it, how yield accrues, and what the real risks look like.</p>
+
+  <div class="byline">
+    <span class="byline-author">ArcSwap Team</span>
+    <span class="byline-sep">·</span>
+    <span>Apr 27, 2026</span>
+    <span class="byline-sep">·</span>
+    <span>8 min read</span>
+  </div>
+
+  <img class="banner" src="/assets/social/blog-usyc-banner.svg" alt="USYC explained — tokenized U.S. Treasury yield"/>
+
+  <article>
+
+    <p>If you hold USDC and you're not earning yield on it, you're effectively giving Circle (the issuer) a free interest-rate loan. They invest your dollars in U.S. Treasury bills and pocket ~5%. <strong>USYC is the answer to that</strong>: a tokenized share of a regulated money market fund that passes the yield through to you, on-chain.</p>
+
+    <p>This post is the no-jargon version. By the end you should understand what USYC <em>actually is</em>, where the yield comes from, and what risks you take by holding it.</p>
+
+    <h2>The 60-second version</h2>
+    <ul>
+      <li><strong>USYC = U.S. Yield Coin</strong>, an ERC-20 token issued by <a href="https://www.hashnote.com" target="_blank" rel="noopener noreferrer">Hashnote</a>.</li>
+      <li>Each USYC represents <strong>one share</strong> of a regulated money market fund holding short-dated U.S. Treasury bills + overnight reverse repo agreements.</li>
+      <li>Yield ≈ <strong>~4.85% APY</strong> (varies with the U.S. Federal Funds rate).</li>
+      <li>You don't get more tokens — instead the <strong>price per share (NAV) ticks up daily</strong>.</li>
+      <li>Redeem USYC for USDC any time during U.S. Treasury market hours.</li>
+    </ul>
+
+    <h2>Where the yield comes from</h2>
+
+    <p>USYC's underlying portfolio is boring. That's the point.</p>
+
+    <p>Imagine the U.S. Treasury department needs to borrow money for 4-13 weeks. They issue a "T-bill" — a short-term IOU. You buy it at a small discount, and at maturity the Treasury pays you back the full face value. The difference is your yield.</p>
+
+    <p>Hashnote's fund holds a basket of these T-bills, plus some overnight repo (where the cash sits earning interest while waiting for the next bill purchase). As bills mature and roll, the interest accrues into the fund's <strong>Net Asset Value (NAV)</strong>.</p>
+
+    <p>The NAV is just <em>fund's total assets ÷ shares outstanding</em>. Each USYC token is one share. As the underlying T-bills earn interest, NAV ticks up — that's your yield, mechanically.</p>
+
+    <div class="callout">
+      <div class="callout-title">In numbers</div>
+      <div class="callout-body">If you bought 1 USYC today at $1.1163 and the fund earns 4.85% over a year, in 12 months your 1 USYC is worth ~$1.1704. You still hold 1 token — the token <em>price</em> grew, not the count.</div>
+    </div>
+
+    <h2>"Why don't I just buy T-bills directly?"</h2>
+
+    <p>You can. But:</p>
+    <ul>
+      <li>You need a U.S. brokerage account, KYC, ACH transfers, and a tax form.</li>
+      <li>Minimum is usually $100 per bill, $1,000 to be efficient.</li>
+      <li>You can't use it as collateral in DeFi.</li>
+      <li>You can't move it to another chain in 15 minutes.</li>
+    </ul>
+
+    <p>USYC wraps all of that into a token that lives on-chain. Trade-off: you trust Hashnote (the fund manager) and the smart contracts. You're not buying T-bills <em>directly</em>; you're buying a tokenized claim on a fund that holds T-bills.</p>
+
+    <h2>The "price per share, not rebase" detail</h2>
+
+    <p>Two ways to deliver yield to a token holder:</p>
+    <ol>
+      <li><strong>Rebase</strong>: token count goes up daily (like aUSDC, stETH). Your wallet shows more tokens, price per token stays at $1.</li>
+      <li><strong>Price-per-share</strong>: token count is constant, price per token grows. (USYC chose this.)</li>
+    </ol>
+
+    <p>Why does USYC use price-per-share? Three reasons:</p>
+    <ul>
+      <li><strong>Composability</strong>: rebasing tokens break Uniswap and most DeFi integrations. Price-per-share works everywhere.</li>
+      <li><strong>Tax accounting</strong>: easier to track cost basis when count is constant.</li>
+      <li><strong>Industry norm</strong>: ERC-4626 vault standard uses price-per-share.</li>
+    </ul>
+
+    <h2>Trading hours matter</h2>
+
+    <p>Crypto runs 24/7. U.S. Treasuries don't. The fund's NAV only updates during U.S. Treasury market hours: <strong>Monday–Friday, 09:30–16:00 ET</strong>, excluding U.S. bank holidays.</p>
+
+    <p>What this means in practice:</p>
+    <ul>
+      <li>Outside those hours, your USYC balance is stable. The token still exists, you can still hold or transfer it.</li>
+      <li>Deposits and redemptions <em>queue</em> outside market hours and execute at the next NAV strike.</li>
+      <li>If you need instant exit at 3am Sunday, USYC isn't your tool — but USDC pools on Uniswap (which ArcSwap surfaces) are.</li>
+    </ul>
+
+    <h2>The risks, honestly</h2>
+
+    <p>U.S. T-bills are the lowest-default-risk asset in global finance — but "lowest" isn't "zero". The actual risks layered onto USYC:</p>
+
+    <table class="t">
+      <tr><th>Risk</th><th>What it means</th><th>How likely</th></tr>
+      <tr><td>Issuer (Hashnote)</td><td>Operational failure, fraud, custody compromise</td><td>Low — regulated MMF</td></tr>
+      <tr><td>Smart contract</td><td>Bug in Teller / Token / Entitlements contracts</td><td>Low — audited</td></tr>
+      <tr><td>U.S. Treasury default</td><td>U.S. fails to pay back T-bills</td><td>Extremely low (would imply global financial reset)</td></tr>
+      <tr><td>Yield variability</td><td>Fed cuts rates → APY drops</td><td>High — yield will move with Fed rates</td></tr>
+      <tr><td>Liquidity</td><td>Cannot redeem outside trading hours</td><td>Certain (by design)</td></tr>
+    </table>
+
+    <p>Read this not to scare you off, but so you know what you're holding. USYC is one of the safest yield-bearing assets in crypto. It's not <em>safer than cash</em>. There's no such thing.</p>
+
+    <h2>How to get USYC</h2>
+
+    <p>Right now you can deposit USDC into the USYC vault on ArcSwap (Arc Testnet only — mainnet coming). The flow:</p>
+    <ol>
+      <li>Connect wallet to <a href="/vault">arcswap.net/vault</a></li>
+      <li>Enter USDC amount</li>
+      <li>Approve USDC for the Teller contract (one-time)</li>
+      <li>Deposit — receive USYC tokens</li>
+    </ol>
+
+    <div class="callout warn">
+      <div class="callout-title">Testnet permissions</div>
+      <div class="callout-body">USYC on Arc Testnet requires an allowlisted wallet (KYC role + Subscriber role). If you hit <code>NotPermissioned()</code>, request access via Arc Network Discord or contact Circle support. We're working with the Hashnote team to streamline this.</div>
+    </div>
+
+    <h2>What's next</h2>
+
+    <p>USYC is the first product on ArcSwap, but the real magic comes when you combine it: deposit USDC, earn yield, instantly swap into EURC for FX exposure, bridge to another chain via CCTP, all from one balance. That's the <em>yield terminal</em> thesis. More on that in <a href="/blog/what-is-arcswap">the next post</a>.</p>
+
+    <div class="cta-card">
+      <h3>Try the USYC vault</h3>
+      <p>Live on Arc Testnet. Get testnet USDC from Circle's faucet, then deposit.</p>
+      <a href="/vault">Open Vault →</a>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>This post is informational, not financial advice. USYC is issued by Hashnote and operated independently of ArcSwap. ArcSwap provides a non-custodial frontend; we don't hold your funds and don't receive any fees from USYC subscriptions.</em></p>
+
+  </article>
+
+  <div class="foot">
+    <span>© 2026 ArcSwap · Built on Arc Testnet</span>
+    <div>
+      <a href="/blog">← Back to blog</a> &nbsp;·&nbsp;
+      <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">X</a> &nbsp;·&nbsp;
+      <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

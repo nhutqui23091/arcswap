@@ -97,14 +97,18 @@ nav{
   border:1px solid var(--border);border-radius:14px;padding:24px;
   background:var(--surface);transition:all .25s;
   display:flex;flex-direction:column;gap:12px;
-  cursor:not-allowed;opacity:.85;position:relative;overflow:hidden;
+  position:relative;overflow:hidden;
+  text-decoration:none;color:inherit;
 }
-.post-card::after{
+.post-card.upcoming{cursor:not-allowed;opacity:.85}
+.post-card.upcoming::after{
   content:'COMING SOON';position:absolute;top:14px;right:14px;
   font-size:9px;font-weight:700;letter-spacing:.12em;
   padding:3px 8px;border-radius:5px;font-family:var(--mono);
   background:rgba(140,160,189,.10);color:var(--muted);border:1px solid var(--border);
 }
+.post-card.published{cursor:pointer}
+.post-card.published:hover{border-color:var(--arc1);background:rgba(77,214,219,0.04);transform:translateY(-2px)}
 .post-card:hover{border-color:var(--border2)}
 .post-tag{font-size:11px;font-family:var(--mono);color:var(--arc1);letter-spacing:.1em;text-transform:uppercase;font-weight:500}
 .post-title{font-size:18px;font-weight:600;color:var(--text);line-height:1.35;letter-spacing:-.01em}
@@ -171,57 +175,52 @@ nav{
     No fluff — only what we'd want to read ourselves.
   </p>
 
-  <!-- COMING SOON -->
-  <div class="coming">
-    <div class="coming-badge"><span class="dot"></span>First post incoming</div>
-    <h2>The blog is being set up.</h2>
-    <p>We're drafting the first articles right now. In the meantime, follow us on X or join Discord — that's where we ship updates first.</p>
-    <div class="coming-cta">
-      <a class="coming-btn primary" href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">Follow on X →</a>
-      <a class="coming-btn ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Join Discord</a>
-    </div>
+  <!-- LATEST POSTS -->
+  <div class="section-title">Latest</div>
+  <div class="post-grid">
+
+    <a class="post-card published" href="/blog/what-is-arcswap">
+      <span class="post-tag">Product Note</span>
+      <h3 class="post-title">What is ArcSwap?</h3>
+      <p class="post-excerpt">A yield terminal for stablecoins on Arc — USYC vault, swap, CCTP bridge, pools in one venue. The design thesis.</p>
+      <div class="post-meta">Apr 27, 2026 · 6 min read</div>
+    </a>
+
+    <a class="post-card published" href="/blog/usyc-explained">
+      <span class="post-tag">Explainer</span>
+      <h3 class="post-title">USYC, explained for stablecoin holders</h3>
+      <p class="post-excerpt">A no-jargon walkthrough of how Hashnote's tokenized money market fund actually works — yield, NAV, market hours, and risks.</p>
+      <div class="post-meta">Apr 27, 2026 · 8 min read</div>
+    </a>
+
   </div>
 
   <!-- PLANNED POSTS -->
-  <div class="section-title">In the Pipeline</div>
+  <div class="section-title" style="margin-top:48px">In the Pipeline</div>
   <div class="post-grid">
 
-    <article class="post-card">
-      <span class="post-tag">Product</span>
-      <h3 class="post-title">Why we built ArcSwap as a yield terminal, not a DEX</h3>
-      <p class="post-excerpt">DeFi has plenty of swap UIs. What's missing is a single venue where idle stablecoins earn Treasury yield while staying instantly tradable. Here's the design thesis.</p>
-      <div class="post-meta">Founder note · ~6 min read</div>
-    </article>
-
-    <article class="post-card">
-      <span class="post-tag">Deep dive</span>
-      <h3 class="post-title">USYC, explained for stablecoin holders</h3>
-      <p class="post-excerpt">A no-jargon walk-through of how Hashnote's tokenized money market fund actually works — what backs it, how yield accrues, and what the real risks look like.</p>
-      <div class="post-meta">Education · ~8 min read</div>
-    </article>
-
-    <article class="post-card">
+    <article class="post-card upcoming">
       <span class="post-tag">Engineering</span>
       <h3 class="post-title">Pinning a frontend to IPFS, the right way</h3>
       <p class="post-excerpt">How we ship immutable builds: deterministic bundles, two pinning providers, ENS contenthash via multi-sig, and a verification flow anyone can audit.</p>
       <div class="post-meta">Technical · ~10 min read</div>
     </article>
 
-    <article class="post-card">
+    <article class="post-card upcoming">
       <span class="post-tag">Concepts</span>
       <h3 class="post-title">CCTP vs lock-and-mint bridges</h3>
       <p class="post-excerpt">Native USDC bridges burn-and-mint instead of locking liquidity. Walking through what that means for users, attackers, and the broader stablecoin economy.</p>
       <div class="post-meta">Education · ~7 min read</div>
     </article>
 
-    <article class="post-card">
+    <article class="post-card upcoming">
       <span class="post-tag">Roadmap</span>
       <h3 class="post-title">Circle Gateway and the multichain USDC future</h3>
       <p class="post-excerpt">Why Circle's Unified Balance Kit changes the UX of cross-chain stablecoin flows — and how we're planning to integrate it without bloating the bundle.</p>
       <div class="post-meta">Strategy · ~5 min read</div>
     </article>
 
-    <article class="post-card">
+    <article class="post-card upcoming">
       <span class="post-tag">Security</span>
       <h3 class="post-title">Our security stack, in one page</h3>
       <p class="post-excerpt">CSP, SRI, multi-sig, IPFS, vulnerability disclosure, incident response. The whole defense-in-depth story, written so you can verify each layer yourself.</p>

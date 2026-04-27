@@ -2,8 +2,15 @@
 # (auto-redirect /vault.html → /vault để tránh duplicate). KHÔNG được thêm rule
 # rewrite kiểu "/vault /vault.html 200" — sẽ tạo infinite redirect loop.
 #
-# File này CHỈ giữ các LEGACY alias (URL cũ trỏ sang URL mới).
+# File này giữ:
+# 1. LEGACY alias (URL cũ trỏ sang URL mới)
+# 2. PRETTY URL cho blog post (vd /blog/usyc-explained → /blog-usyc.html)
 
+# Legacy aliases
 /swap    /trade   301
 /bridge  /trade   301
 /farm    /token   302
+
+# Blog post pretty URLs (rewrite, không redirect — URL hiện vẫn là /blog/...)
+/blog/usyc-explained    /blog-usyc.html       200
+/blog/what-is-arcswap   /blog-arcswap.html    200
