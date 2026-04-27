@@ -294,7 +294,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     }
   }
   try {
-    APPKIT = await import('/assets/arc-appkit.js?v=9.1.16');
+    APPKIT = await import('/assets/arc-appkit.js?v=9.1.17');
     if (!APPKIT.isAppKitReady()) {
       console.warn('[arcswap] App Kit config missing or placeholder — same-chain swaps will fall back to Uniswap (likely empty pools).');
       APPKIT = null;
@@ -625,17 +625,32 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         const outFloat = parseFloat(outStr || '0');
         if (outFloat <= 0) throw new Error('App Kit returned zero output');
         const out = parseAmt(outFloat.toFixed(tOut.decimals), tOut.decimals);
-        const slip = BigInt(state.slippageBps);
-        const minOut = out - (out * slip) / 10000n;
+        // Use App Kit's stopLimit if provided (Circle-side slippage); else apply our slippage
+        const stopStr = APPKIT.extractStopLimit(est);
+        let minOut;
+        if (stopStr) {
+          const stopFloat = parseFloat(stopStr);
+          minOut = parseAmt(stopFloat.toFixed(tOut.decimals), tOut.decimals);
+        } else {
+          const slip = BigInt(state.slippageBps);
+          minOut = out - (out * slip) / 10000n;
+        }
         const inFloat = parseFloat(amountInStr);
         const rateNum = inFloat > 0 ? outFloat / inFloat : 0;
+        // Build fee label from actual fee array
+        const fees = APPKIT.extractFees(est);
+        const providerFee = fees.find(f => f.type === 'provider');
+        const gasFee = fees.find(f => f.type === 'gas');
+        const feeLabel = (providerFee && gasFee)
+          ? `${providerFee.amount} ${providerFee.token} provider + ${parseFloat(gasFee.amount).toFixed(4)} ${gasFee.token} gas`
+          : 'Circle App Kit · 0.02% provider fee';
         return {
           amountOut: out, minOut,
           path: [tIn.address, tOut.address],
           provider: 'appkit',
           rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
           impact: '0.00', impactWarn: false, impactBad: false,
-          feeLabel: 'Circle App Kit · 0.02% provider fee',
+          feeLabel,
           time: '~5 s',
         };
       } catch (e) {

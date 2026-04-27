@@ -136,11 +136,23 @@ export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn) {
   return res;
 }
 
+// Helper: normalize a value that might be a string, number, or {amount, token}
+// object (Circle's "Money" shape) into a plain decimal string.
+function _toAmountStr(v) {
+  if (v === undefined || v === null) return null;
+  if (typeof v === 'number') return String(v);
+  if (typeof v === 'string') return /^[0-9]/.test(v) ? v : null;
+  if (typeof v === 'object' && v.amount !== undefined && v.amount !== null) {
+    return _toAmountStr(v.amount);  // unwrap {amount, token}
+  }
+  return null;
+}
+
 // Helper: extract amount-out from the various possible response shapes
 export function extractEstimatedOutput(estResponse) {
   if (!estResponse || typeof estResponse !== 'object') return '0';
   const candidates = [
-    estResponse.estimatedOutput,
+    estResponse.estimatedOutput,            // Circle App Kit shape: {amount, token}
     estResponse.amountOut,
     estResponse.output,
     estResponse.estimate?.output,
@@ -155,12 +167,27 @@ export function extractEstimatedOutput(estResponse) {
     estResponse.quote?.amountOut,
   ];
   for (const v of candidates) {
-    if (v !== undefined && v !== null && String(v).match(/^[0-9]/)) {
-      return String(v);
-    }
+    const s = _toAmountStr(v);
+    if (s !== null) return s;
   }
   console.warn('[arc-appkit] Could not find output field in response:', Object.keys(estResponse));
   return '0';
+}
+
+// Helper: extract minimum-output (stop-limit / slippage floor) from response
+export function extractStopLimit(estResponse) {
+  if (!estResponse || typeof estResponse !== 'object') return null;
+  return _toAmountStr(estResponse.stopLimit) || _toAmountStr(estResponse.minOutput) || null;
+}
+
+// Helper: extract fee breakdown ([{token, amount, type}, ...]) → human-readable summary
+export function extractFees(estResponse) {
+  if (!estResponse || !Array.isArray(estResponse.fees)) return [];
+  return estResponse.fees.map(f => ({
+    type: f.type || 'fee',
+    amount: _toAmountStr(f.amount) || '0',
+    token: f.token || '',
+  }));
 }
 
 /**
