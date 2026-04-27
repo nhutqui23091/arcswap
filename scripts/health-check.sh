@@ -15,6 +15,13 @@ USYC_TELLER="${USYC_TELLER:-0x9fdF14c5B14173D74C08Af27AebFf39240dC105A}"
 # Webhook for Discord/Slack alerting (optional — set in env)
 ALERT_WEBHOOK="${ALERT_WEBHOOK:-}"
 
+# User-Agent cho curl — giống browser thật để bypass Cloudflare Bot Fight Mode
+# khi chạy từ datacenter IP (vd GitHub Actions runner).
+UA="Mozilla/5.0 (compatible; ArcSwap-HealthCheck/1.0; +https://arcswap.net)"
+
+# Helper: curl với UA + timeout chuẩn
+cf_curl() { curl -sA "$UA" --max-time 10 "$@"; }
+
 FAILED=0
 CHECKS=()
 
@@ -30,7 +37,7 @@ check() {
 }
 
 # ─── 1. Frontend reachable ───────────────────────────────────────────────────
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$APP_URL" || echo "000")
+HTTP_CODE=$(cf_curl -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
 if [[ "$HTTP_CODE" == "200" ]]; then
   check "Frontend ($APP_URL)" "✓" "200 OK"
 else
@@ -41,7 +48,7 @@ fi
 # Skip check if APP_BACKUP_URL is not set or points to eth.limo and ENS not yet
 # configured (avoids false alarm during testnet stage).
 if [[ -n "$APP_BACKUP_URL" && "$APP_BACKUP_URL" != *"eth.limo"* ]]; then
-  HTTP_CODE_BACKUP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$APP_BACKUP_URL" || echo "000")
+  HTTP_CODE_BACKUP=$(cf_curl -o /dev/null -w "%{http_code}" "$APP_BACKUP_URL" || echo "000")
   if [[ "$HTTP_CODE_BACKUP" == "200" ]]; then
     check "Frontend backup ($APP_BACKUP_URL)" "✓" "200 OK"
   else
@@ -50,7 +57,7 @@ if [[ -n "$APP_BACKUP_URL" && "$APP_BACKUP_URL" != *"eth.limo"* ]]; then
 fi
 
 # ─── 2. Critical security headers present ────────────────────────────────────
-HEADERS=$(curl -sI --max-time 10 "$APP_URL" 2>/dev/null || echo "")
+HEADERS=$(cf_curl -I "$APP_URL" 2>/dev/null || echo "")
 if echo "$HEADERS" | grep -qi "content-security-policy"; then
   check "CSP header" "✓"
 else
