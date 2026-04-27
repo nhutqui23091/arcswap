@@ -1,0 +1,20 @@
+// Local dev template for App Kit config.
+//
+// SETUP (one-time):
+//   1. Copy this file to arc-appkit-config.js (in the same folder)
+//   2. Replace the placeholder kitKey with your real key from Circle Console:
+//      https://console.circle.com/keys → Kit Keys - Network agnostic → Create
+//   3. The real arc-appkit-config.js is gitignored — never commits.
+//
+// PRODUCTION:
+//   Cloudflare Pages runs scripts/build-config.sh which generates this file
+//   from the KIT_KEY environment variable (Secret). Don't edit there.
+//
+// SECURITY:
+//   Kit keys are scoped to specific origins (set when creating the key). Even
+//   if exposed in client JS, the key only works from your whitelisted domains.
+
+window.ARC_APPKIT_CONFIG = Object.freeze({
+  kitKey: "kit_test_PASTE_YOUR_KEY_HERE",
+  network: "Arc_Testnet"
+});
