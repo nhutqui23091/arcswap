@@ -596,9 +596,27 @@ async function rpcCall(method,params){
 }
 
 async function getERC20Balance(tokenAddr,wallet){
+  // Special-case Arc native USDC precompile (0x3600...0000) — it's the gas token,
+  // balance lives in the native ledger and matches eth_getBalance. The ERC-20
+  // balanceOf may return 0 even when the wallet has USDC, so prefer native.
+  const NATIVE_USDC = '0x3600000000000000000000000000000000000000';
+  if (tokenAddr.toLowerCase() === NATIVE_USDC) {
+    try {
+      const nat = await rpcCall('eth_getBalance', [wallet, 'latest']);
+      const natBig = BigInt(nat || '0x0');
+      if (natBig > 0n) return Number(natBig);
+      // Fallback to ERC-20 if native is 0
+    } catch {}
+  }
   const data='0x70a08231'+wallet.replace('0x','').toLowerCase().padStart(64,'0');
   const raw=await rpcCall('eth_call',[{to:tokenAddr,data},'latest']);
-  return parseInt(raw||'0x0',16);
+  // Use BigInt to avoid parseInt precision loss for 18-decimal tokens
+  // (Number → string for large values; pool UI does /10^decimals which still fits).
+  try {
+    return Number(BigInt(raw || '0x0'));
+  } catch {
+    return parseInt(raw || '0x0', 16);
+  }
 }
 
 async function getAllowance(tokenAddr, owner, spender){
