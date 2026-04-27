@@ -16,11 +16,40 @@ const ADAPTER_VERSION = '1.6.5';
 const APPKIT_URL = `https://esm.sh/@circle-fin/app-kit@${APPKIT_VERSION}`;
 const ADAPTER_URL = `https://esm.sh/@circle-fin/adapter-ethers-v6@${ADAPTER_VERSION}`;
 
+// ── CORS workaround ─────────────────────────────────────────────────────────
+// Circle's App Kit SDK adds an `x-user-agent` request header for telemetry,
+// but Circle's API server's CORS Access-Control-Allow-Headers does NOT include
+// it. Browser blocks the preflight → SDK fails. Patch global fetch to strip
+// these telemetry headers before they trigger the CORS check.
+let _fetchPatched = false;
+function patchFetchForCircle() {
+  if (_fetchPatched) return;
+  _fetchPatched = true;
+  const origFetch = window.fetch.bind(window);
+  window.fetch = function patchedFetch(input, init) {
+    try {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (url.includes('api.circle.com') && init && init.headers) {
+        // Strip telemetry headers blocked by Circle's CORS allow-list
+        const TELEMETRY_HEADERS = ['x-user-agent', 'X-User-Agent', 'x-sdk-version', 'X-SDK-Version'];
+        if (init.headers instanceof Headers) {
+          TELEMETRY_HEADERS.forEach(h => init.headers.delete(h));
+        } else if (typeof init.headers === 'object') {
+          TELEMETRY_HEADERS.forEach(h => { delete init.headers[h]; });
+        }
+      }
+    } catch {}
+    return origFetch(input, init);
+  };
+  console.info('[arc-appkit] fetch() patched to strip CORS-blocked telemetry headers for api.circle.com');
+}
+
 let _sdkPromise = null;
 async function loadSdk() {
   if (_sdkPromise) return _sdkPromise;
   _sdkPromise = (async () => {
     try {
+      patchFetchForCircle();   // Apply CORS workaround before SDK initializes
       const [appKitMod, adapterMod] = await Promise.all([
         import(APPKIT_URL),
         import(ADAPTER_URL),

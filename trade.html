@@ -294,7 +294,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     }
   }
   try {
-    APPKIT = await import('/assets/arc-appkit.js?v=9.1.13');
+    APPKIT = await import('/assets/arc-appkit.js?v=9.1.14');
     if (!APPKIT.isAppKitReady()) {
       console.warn('[arcswap] App Kit config missing or placeholder — same-chain swaps will fall back to Uniswap (likely empty pools).');
       APPKIT = null;
