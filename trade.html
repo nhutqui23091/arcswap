@@ -139,6 +139,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     </div>
   </div>
 
+  <!-- App Kit Swap status pill (set by JS once module loads) -->
+  <div id="appkit-status" style="display:none;margin:0 0 14px;padding:10px 14px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"></div>
+
   <!-- LEFT: main trade form -->
   <div>
     <div class="card">
@@ -273,6 +276,48 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   const { Contract, Interface, getAddress, isAddress, ZeroAddress } = ethers;
 
   await ArcUI.boot('trade');
+
+  // ── App Kit Swap (Circle) — dynamic import so trade page still loads if SDK fails
+  let APPKIT = null;
+  const appkitPill = document.getElementById('appkit-status');
+  function setAppkitPill(state) {
+    if (!appkitPill) return;
+    if (state === 'ready') {
+      appkitPill.style.cssText = 'margin:0 0 14px;padding:10px 14px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(77,214,219,0.06);border:1px solid rgba(77,214,219,0.2);color:var(--text)';
+      appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--arc1)">// APP KIT</span>'
+        + '<span style="font-size:13px">Same-chain swaps (USDC ↔ EURC on Arc) routed through <strong>Circle App Kit</strong> — '
+        + '<a href="https://docs.arc.network/app-kit/swap" target="_blank" rel="noopener noreferrer" style="color:var(--arc1);text-decoration:underline">official liquidity</a>.</span>';
+    } else if (state === 'fallback') {
+      appkitPill.style.cssText = 'margin:0 0 14px;padding:10px 14px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(255,180,84,0.06);border:1px solid rgba(255,180,84,0.22);color:var(--text)';
+      appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#FFB454">// LIMITED</span>'
+        + '<span style="font-size:13px">App Kit unavailable — using Uniswap V2 fallback (testnet pools may be thin).</span>';
+    }
+  }
+  try {
+    APPKIT = await import('/assets/arc-appkit.js?v=9.1.12');
+    if (!APPKIT.isAppKitReady()) {
+      console.warn('[arcswap] App Kit config missing or placeholder — same-chain swaps will fall back to Uniswap (likely empty pools).');
+      APPKIT = null;
+      setAppkitPill('fallback');
+    } else {
+      console.info('[arcswap] App Kit Swap ready — USDC/EURC swaps on Arc will route through Circle.');
+      setAppkitPill('ready');
+    }
+  } catch (e) {
+    console.warn('[arcswap] App Kit module failed to load — falling back to Uniswap:', e?.message || e);
+    setAppkitPill('fallback');
+  }
+  // Helper: check if a swap pair is supported by App Kit (Arc Testnet: USDC/EURC only)
+  const APPKIT_TOKENS = new Set(['USDC', 'EURC']);
+  function appKitSupports(chain, tIn, tOut) {
+    return Boolean(
+      APPKIT &&
+      chain === 'arc' &&
+      APPKIT_TOKENS.has(tIn.symbol) &&
+      APPKIT_TOKENS.has(tOut.symbol) &&
+      tIn.symbol !== tOut.symbol
+    );
+  }
 
   // ── STATE ────────────────────────────────────────────
   const state = {
@@ -569,6 +614,34 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   }
 
   async function quoteSwap(chainKey, tIn, tOut, amtIn) {
+    // ── App Kit Swap path (Circle's official liquidity on Arc Testnet) ─────
+    // Use App Kit for USDC/EURC pairs on Arc — Uniswap V2 pools on Arc Testnet
+    // are empty/stub, App Kit routes through Circle's third-party providers.
+    if (appKitSupports(chainKey, tIn, tOut)) {
+      const amountInStr = formatAmt(amtIn, tIn.decimals);
+      try {
+        const est = await APPKIT.estimateAppKitSwap(tIn.symbol, tOut.symbol, amountInStr);
+        const outFloat = parseFloat(est.estimatedOutput || '0');
+        const out = parseAmt(outFloat.toFixed(tOut.decimals), tOut.decimals);
+        const slip = BigInt(state.slippageBps);
+        const minOut = out - (out * slip) / 10000n;
+        const inFloat = parseFloat(amountInStr);
+        const rateNum = inFloat > 0 ? outFloat / inFloat : 0;
+        return {
+          amountOut: out, minOut,
+          path: [tIn.address, tOut.address],
+          provider: 'appkit',
+          rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
+          impact: '0.00', impactWarn: false, impactBad: false,
+          feeLabel: 'Circle App Kit · 0.02% provider fee',
+          time: '~5 s',
+        };
+      } catch (e) {
+        console.warn('[arcswap] App Kit estimate failed, falling back to Uniswap:', e?.message || e);
+        // Fall through to Uniswap path below
+      }
+    }
+    // ── Uniswap V2 fallback (legacy — pools may be thin on Arc Testnet) ────
     const provider = rpcProvider(chainKey);
     const router = new Contract(CHAINS[chainKey].contracts.router, ABIS.router, provider);
     // Try direct pair
@@ -737,6 +810,28 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   }
 
   async function execSwap(amt, to, q) {
+    // ── App Kit Swap path ─────────────────────────────────────────────────
+    // If the quote came from App Kit, use kit.swap() — handles approval +
+    // routing internally. The kit signs via the browser wallet (window.ethereum).
+    if (q && q.provider === 'appkit') {
+      const amountInStr = formatAmt(amt, state.fromToken.decimals);
+      pushActivity({ kind: 'swap', chain: state.fromChain, hash: '', status: 'pending', text: `${amountInStr} ${state.fromToken.symbol} → ${state.toToken.symbol} (App Kit)` });
+      ArcUI.toast('', 'Swapping via Circle App Kit…', 'Sign the transaction in your wallet');
+      try {
+        const result = await APPKIT.appKitSwap(state.fromToken.symbol, state.toToken.symbol, amountInStr);
+        const txHash = result?.txHash || result?.transactionHash || result?.hash || '';
+        if (txHash) updateActivity(txHash, 'done');
+        const outDisplay = result?.amountOut || formatAmt(q.amountOut, state.toToken.decimals);
+        ArcUI.toast('success', 'Swap complete', txHash
+          ? `Received ≈ ${outDisplay} ${state.toToken.symbol} · <a href="${CHAINS[state.fromChain].explorerTx(txHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">${shortAddr(txHash)} ↗</a>`
+          : `Received ≈ ${outDisplay} ${state.toToken.symbol}`);
+        return;
+      } catch (e) {
+        console.error('[arcswap] App Kit swap error:', e);
+        throw e;  // bubble up to executeAction toast
+      }
+    }
+    // ── Uniswap V2 fallback ───────────────────────────────────────────────
     const signer = wallet.signer;
     const router = CHAINS[state.fromChain].contracts.router;
     await ensureAllowance(state.fromChain, state.fromToken, router, amt, s => ArcUI.toast('', 'Approval', s));
