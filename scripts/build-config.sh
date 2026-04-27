@@ -17,8 +17,14 @@ KIT_KEY="${KIT_KEY:-}"
 NETWORK="${APPKIT_NETWORK:-Arc_Testnet}"
 
 if [[ -z "$KIT_KEY" ]]; then
-  echo "⚠️  KIT_KEY env var not set — generating placeholder config."
-  echo "    The Trade page will show 'Configure App Kit' until KIT_KEY is set."
+  # Local dev safety: don't overwrite an existing config file (which may have
+  # the real kit key the developer manually pasted from .example).
+  if [[ -f "$CONFIG_FILE" ]]; then
+    echo "ℹ️  KIT_KEY env not set; existing $CONFIG_FILE preserved (local dev mode)."
+    exit 0
+  fi
+  echo "⚠️  KIT_KEY env var not set — writing placeholder. Set the env in Cloudflare"
+  echo "    Pages → Settings → Environment variables (as Secret), then redeploy."
 fi
 
 mkdir -p assets
