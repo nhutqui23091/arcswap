@@ -30,13 +30,16 @@ function patchFetchForCircle() {
     try {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       if (url.includes('api.circle.com') && init && init.headers) {
-        // Strip telemetry headers blocked by Circle's CORS allow-list
-        const TELEMETRY_HEADERS = ['x-user-agent', 'X-User-Agent', 'x-sdk-version', 'X-SDK-Version'];
+        // Strip ONLY the telemetry header that Circle's CORS doesn't allow.
+        // Keep x-sdk-version etc. — those might be functional.
+        const BLOCKED_BY_CORS = ['x-user-agent', 'X-User-Agent'];
         if (init.headers instanceof Headers) {
-          TELEMETRY_HEADERS.forEach(h => init.headers.delete(h));
+          BLOCKED_BY_CORS.forEach(h => init.headers.delete(h));
         } else if (typeof init.headers === 'object') {
-          TELEMETRY_HEADERS.forEach(h => { delete init.headers[h]; });
+          BLOCKED_BY_CORS.forEach(h => { delete init.headers[h]; });
         }
+        // Diagnostic: log the actual request shape so we can debug
+        console.debug('[arc-appkit] → Circle API call:', { url, method: init.method, headers: init.headers });
       }
     } catch {}
     return origFetch(input, init);
@@ -106,15 +109,30 @@ export async function initAppKit() {
  */
 export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn) {
   await initAppKit();
-  const res = await kit.estimateSwap({
+  const params = {
     from: { adapter, chain: window.ARC_APPKIT_CONFIG.network },
     tokenIn,
     tokenOut,
     amountIn,
     config: { kitKey: window.ARC_APPKIT_CONFIG.kitKey }
-  });
-  // Diagnostic: log the raw response shape so we know which field has the output
-  console.log('[arc-appkit] estimateSwap raw response:', res);
+  };
+  console.log('[arc-appkit] estimateSwap params:', { ...params, config: { kitKey: '***' } });
+  let res;
+  try {
+    res = await kit.estimateSwap(params);
+  } catch (err) {
+    console.error('[arc-appkit] estimateSwap THREW:', err);
+    throw err;
+  }
+  // Diagnostic: log multiple ways so something is always visible (object refs need expanding in console)
+  console.log('[arc-appkit] estimateSwap raw response (object):', res);
+  console.log('[arc-appkit] estimateSwap raw response (typeof):', typeof res, '· isNull:', res === null);
+  try {
+    console.log('[arc-appkit] estimateSwap raw response (JSON):', JSON.stringify(res));
+    console.log('[arc-appkit] estimateSwap raw response (keys):', res && typeof res === 'object' ? Object.keys(res) : '(not object)');
+  } catch (e) {
+    console.log('[arc-appkit] estimateSwap stringify failed:', e?.message);
+  }
   return res;
 }
 
