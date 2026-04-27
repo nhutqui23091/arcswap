@@ -10,9 +10,11 @@
 
 // Lazy-load App Kit + adapter from CDN to avoid module-init failures crashing
 // the page. Pin to specific versions to avoid silent breakage on `@latest`.
+// Note: app-kit and adapter packages have INDEPENDENT versioning — don't share!
 const APPKIT_VERSION = '1.4.1';
+const ADAPTER_VERSION = '1.6.5';
 const APPKIT_URL = `https://esm.sh/@circle-fin/app-kit@${APPKIT_VERSION}`;
-const ADAPTER_URL = `https://esm.sh/@circle-fin/adapter-ethers-v6@${APPKIT_VERSION}`;
+const ADAPTER_URL = `https://esm.sh/@circle-fin/adapter-ethers-v6@${ADAPTER_VERSION}`;
 
 let _sdkPromise = null;
 async function loadSdk() {
@@ -28,7 +30,7 @@ async function loadSdk() {
         adapterMod.createEthersAdapterFromProvider || adapterMod.default;
       if (!AppKit) throw new Error('AppKit class not found in @circle-fin/app-kit export');
       if (!createEthersAdapterFromProvider) throw new Error('createEthersAdapterFromProvider not found');
-      console.info('[arc-appkit] SDK loaded:', { v: APPKIT_VERSION });
+      console.info('[arc-appkit] SDK loaded:', { appKit: APPKIT_VERSION, adapter: ADAPTER_VERSION });
       return { AppKit, createEthersAdapterFromProvider };
     } catch (e) {
       console.error('[arc-appkit] SDK load failed:', e);
