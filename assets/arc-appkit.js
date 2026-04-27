@@ -106,13 +106,43 @@ export async function initAppKit() {
  */
 export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn) {
   await initAppKit();
-  return kit.estimateSwap({
+  const res = await kit.estimateSwap({
     from: { adapter, chain: window.ARC_APPKIT_CONFIG.network },
     tokenIn,
     tokenOut,
     amountIn,
     config: { kitKey: window.ARC_APPKIT_CONFIG.kitKey }
   });
+  // Diagnostic: log the raw response shape so we know which field has the output
+  console.log('[arc-appkit] estimateSwap raw response:', res);
+  return res;
+}
+
+// Helper: extract amount-out from the various possible response shapes
+export function extractEstimatedOutput(estResponse) {
+  if (!estResponse || typeof estResponse !== 'object') return '0';
+  const candidates = [
+    estResponse.estimatedOutput,
+    estResponse.amountOut,
+    estResponse.output,
+    estResponse.estimate?.output,
+    estResponse.estimate?.estimatedOutput,
+    estResponse.data?.estimatedOutput,
+    estResponse.data?.amountOut,
+    estResponse.result?.estimatedOutput,
+    estResponse.result?.amountOut,
+    estResponse.tokenOut?.amount,
+    estResponse.to?.amount,
+    estResponse.quote?.estimatedOutput,
+    estResponse.quote?.amountOut,
+  ];
+  for (const v of candidates) {
+    if (v !== undefined && v !== null && String(v).match(/^[0-9]/)) {
+      return String(v);
+    }
+  }
+  console.warn('[arc-appkit] Could not find output field in response:', Object.keys(estResponse));
+  return '0';
 }
 
 /**

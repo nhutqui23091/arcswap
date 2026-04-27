@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Trade · Swap & Bridge — ArcSwap</title>
@@ -294,7 +294,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     }
   }
   try {
-    APPKIT = await import('/assets/arc-appkit.js?v=9.1.14');
+    APPKIT = await import('/assets/arc-appkit.js?v=9.1.15');
     if (!APPKIT.isAppKitReady()) {
       console.warn('[arcswap] App Kit config missing or placeholder — same-chain swaps will fall back to Uniswap (likely empty pools).');
       APPKIT = null;
@@ -621,7 +621,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
       const amountInStr = formatAmt(amtIn, tIn.decimals);
       try {
         const est = await APPKIT.estimateAppKitSwap(tIn.symbol, tOut.symbol, amountInStr);
-        const outFloat = parseFloat(est.estimatedOutput || '0');
+        const outStr = APPKIT.extractEstimatedOutput(est);
+        const outFloat = parseFloat(outStr || '0');
+        if (outFloat <= 0) throw new Error('App Kit returned zero output');
         const out = parseAmt(outFloat.toFixed(tOut.decimals), tOut.decimals);
         const slip = BigInt(state.slippageBps);
         const minOut = out - (out * slip) / 10000n;
