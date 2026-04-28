@@ -291,6 +291,17 @@ nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bot
     <p class="page-sub">Provide liquidity to earn fees from every swap. Stablecoin pools offer low impermanent loss.</p>
   </div>
 
+  <!-- COMING SOON BANNER (Uniswap V2 pools on Arc Testnet have negligible liquidity — LP unusable) -->
+  <div style="margin:18px 0 28px;padding:18px 22px;border:1px solid rgba(255,180,84,0.3);border-radius:14px;background:linear-gradient(180deg,rgba(255,180,84,0.08),rgba(255,180,84,0.02));display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+    <div style="font-size:32px;line-height:1">🛠</div>
+    <div style="flex:1;min-width:240px">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#FFB454;margin-bottom:6px">// LP · Coming Soon</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">Liquidity provision temporarily unavailable on Arc Testnet</div>
+      <div style="font-size:13.5px;color:var(--muted);line-height:1.55">Uniswap V2 pools on Arc Testnet have near-zero on-chain liquidity (USDC/EURC pool has only 1.2e-10 USDC reserve), making LP economically broken. Use the <a href="/trade" style="color:var(--arc1);text-decoration:underline">Trade page</a> for swaps via Circle App Kit (official liquidity routing). LP will re-enable when Arc launches mainnet pools or a real LP venue arrives.</div>
+    </div>
+    <a href="/trade" style="padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;background:rgba(77,214,219,0.14);border:1px solid rgba(77,214,219,0.4);color:var(--arc1);white-space:nowrap;transition:all .2s">Trade instead →</a>
+  </div>
+
   <!-- STATS (live on-chain) -->
   <div class="stats-row">
     <div class="stat-card">
@@ -820,7 +831,17 @@ async function fetchPoolRate(p, changed){
   }catch(e){}
 }
 
+// Pool LP is force-disabled on Arc Testnet — Uniswap V2 reserves are near-zero
+// (verified: USDC/EURC pool has 1.2e-10 USDC reserve), making LP unusable.
+// Set POOL_LP_DISABLED = false to re-enable when real liquidity exists.
+const POOL_LP_DISABLED = true;
+
 async function addLiquidity(){
+  if(POOL_LP_DISABLED){
+    showToast('🛠','Liquidity provision unavailable',
+      'On-chain pools have insufficient reserves. Use <a href="/trade" style="color:#4DD6DB">/trade</a> for swap.');
+    return;
+  }
   if(!walletAddr){connectWallet();return}
   if(!currentPool) return;
   const p=currentPool;

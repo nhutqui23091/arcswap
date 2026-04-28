@@ -41,8 +41,11 @@ mkdir -p assets
   printf '// SECURITY: The kitKey value below is a PLACEHOLDER, not a real key.\n'
   printf '// Real KIT_KEY lives in Cloudflare env var (Secret) and is added\n'
   printf '// server-side by the proxy at /api/circle-proxy. Browser never sees it.\n'
+  # Placeholder must match Circle SDK's client-side regex `KIT_KEY:<id>:<secret>`.
+  # Real key is added server-side by the Pages Function proxy. The values below
+  # are obvious dummies so anyone reading source knows it's not the real key.
   printf 'window.ARC_APPKIT_CONFIG = Object.freeze({\n'
-  printf '  kitKey: "PROXIED_VIA_CLOUDFLARE_FUNCTION",\n'
+  printf '  kitKey: "KIT_KEY:proxied_in_cloudflare_function:not_a_real_key",\n'
   printf '  network: "%s",\n' "$NETWORK"
   printf '  proxyHealthy: %s\n' "$([[ -n "$KIT_KEY" ]] && echo "true" || echo "false")"
   printf '});\n'

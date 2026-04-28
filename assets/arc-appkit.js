@@ -247,7 +247,9 @@ export function isAppKitReady() {
   // Accept these too, but the proxy is preferred.
   const k = window.ARC_APPKIT_CONFIG.kitKey;
   return Boolean(
-    k && !k.includes('PASTE_YOUR_KEY') && !k.includes('PROXIED_VIA_')
+    k && !k.includes('PASTE_YOUR_KEY') &&
+    !k.includes('PROXIED_VIA_') &&
+    !k.includes('proxied_in_cloudflare_function')
   );
 }
 
