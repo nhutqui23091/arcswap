@@ -106,6 +106,27 @@ audit-trail when handling real money or when users start asking for verifiable h
 
 ---
 
+### 2C. Circle App Kit Key — server-side proxy (mainnet)
+
+**Issue verified 2026-04-28**: Circle's origin whitelist on Kit Keys only enforces
+CORS for browser requests. Direct API calls (curl, server) with the key bypass
+the origin check entirely. The key IS visible in client JS at `window.ARC_APPKIT_CONFIG.kitKey`.
+
+| Risk | Severity | Now (testnet) | Mainnet |
+|---|---|---|---|
+| Key extraction from view-source | Low | Accept (testnet quota) | ❌ Block |
+| Rate-limit abuse via stolen key | Medium | Rotate if detected | Pages Functions proxy |
+| Funds at risk (no — user signs tx) | Low | N/A | N/A |
+
+| Step | Status | Action |
+|---|---|---|
+| **Pages Functions proxy for Circle API** | 🔴 Mainnet | Build `functions/api/circle-proxy/[[path]].js` — adds KIT_KEY from env Secret server-side, forwards to api.circle.com. Browser never sees key. |
+| **Per-IP rate limit on proxy** | 🔴 Mainnet | Use Cloudflare WAF rate limit rule — 10 req/min per IP. |
+| **Key rotation runbook** | 🔴 Mainnet | Document in `INCIDENT_RESPONSE.md`. New key in <5 min via Circle Console + Cloudflare env update. |
+| **Monitor Circle's rate-limit headers** | 🔴 Mainnet | Log `x-ratelimit-remaining` from responses, alert when < 20% capacity. |
+
+---
+
 ### 2D. Monitoring + incident response
 
 | Step | Status | Action |
