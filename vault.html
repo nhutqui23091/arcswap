@@ -865,7 +865,7 @@ async function refreshQuote(){
       warn.classList.remove('err');
       warn.style.display = 'flex';
       document.getElementById('warn-text').innerHTML =
-        `This address isn't on the USYC allowlist for ${mode==='deposit'?'subscription':'redemption'}. On testnet, use the existing <a href="/pool">USDC/USYC liquidity pool</a> to swap — the vault's Teller is gated by Circle Entitlements.`;
+        `This address isn't on the USYC allowlist for ${mode==='deposit'?'subscription':'redemption'}. USYC is a regulated tokenized money market fund — every wallet needs individual KYC + allowlist from Hashnote/Circle. <br><br>To request access on Arc Testnet, ping Circle Customer Care via <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer" style="color:var(--arc1)">our Discord</a> with your wallet address (0x...). Approval typically arrives within 24 hours.`;
     } else if(raw > bal){
       btn.textContent = 'Insufficient balance';
       btn.disabled = true;
