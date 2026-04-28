@@ -16,11 +16,17 @@ const ADAPTER_VERSION = '1.6.5';
 const APPKIT_URL = `https://esm.sh/@circle-fin/app-kit@${APPKIT_VERSION}`;
 const ADAPTER_URL = `https://esm.sh/@circle-fin/adapter-ethers-v6@${ADAPTER_VERSION}`;
 
-// ── CORS workaround ─────────────────────────────────────────────────────────
-// Circle's App Kit SDK adds an `x-user-agent` request header for telemetry,
-// but Circle's API server's CORS Access-Control-Allow-Headers does NOT include
-// it. Browser blocks the preflight → SDK fails. Patch global fetch to strip
-// these telemetry headers before they trigger the CORS check.
+// ── Server-side proxy reroute ───────────────────────────────────────────────
+// Browser-side kit key is risky (visible in view-source, attacker can use from
+// curl/Postman to drain rate limit). Solution: route ALL Circle API calls
+// through our Cloudflare Pages Function at /api/circle-proxy/*, which adds the
+// real KIT_KEY server-side from an encrypted env var. Browser never sees key.
+//
+// Bonus: this also fixes the x-user-agent CORS issue automatically — proxy is
+// same-origin so no CORS preflight needed at all.
+const CIRCLE_API_HOST = 'https://api.circle.com';
+const PROXY_PREFIX = '/api/circle-proxy';
+
 let _fetchPatched = false;
 function patchFetchForCircle() {
   if (_fetchPatched) return;
@@ -28,23 +34,38 @@ function patchFetchForCircle() {
   const origFetch = window.fetch.bind(window);
   window.fetch = function patchedFetch(input, init) {
     try {
-      const url = typeof input === 'string' ? input : (input && input.url) || '';
-      if (url.includes('api.circle.com') && init && init.headers) {
-        // Strip ONLY the telemetry header that Circle's CORS doesn't allow.
-        // Keep x-sdk-version etc. — those might be functional.
-        const BLOCKED_BY_CORS = ['x-user-agent', 'X-User-Agent'];
-        if (init.headers instanceof Headers) {
-          BLOCKED_BY_CORS.forEach(h => init.headers.delete(h));
-        } else if (typeof init.headers === 'object') {
-          BLOCKED_BY_CORS.forEach(h => { delete init.headers[h]; });
+      let url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (url.startsWith(CIRCLE_API_HOST)) {
+        // Reroute Circle API calls through our same-origin proxy.
+        const proxiedUrl = url.replace(CIRCLE_API_HOST, PROXY_PREFIX);
+        // Strip Authorization — proxy adds the real KIT_KEY server-side.
+        if (init && init.headers) {
+          if (init.headers instanceof Headers) {
+            init.headers.delete('Authorization');
+            init.headers.delete('authorization');
+            init.headers.delete('x-user-agent');
+            init.headers.delete('X-User-Agent');
+          } else if (typeof init.headers === 'object') {
+            delete init.headers.Authorization;
+            delete init.headers.authorization;
+            delete init.headers['x-user-agent'];
+            delete init.headers['X-User-Agent'];
+          }
         }
-        // Diagnostic: log the actual request shape so we can debug
-        console.debug('[arc-appkit] → Circle API call:', { url, method: init.method, headers: init.headers });
+        console.debug('[arc-appkit] → proxy:', { from: url, to: proxiedUrl, method: init?.method });
+        // If input was a Request object, rebuild with new URL
+        if (typeof input === 'string') {
+          return origFetch(proxiedUrl, init);
+        } else if (input && input.url) {
+          return origFetch(new Request(proxiedUrl, input), init);
+        }
       }
-    } catch {}
+    } catch (e) {
+      console.warn('[arc-appkit] fetch patch error:', e?.message);
+    }
     return origFetch(input, init);
   };
-  console.info('[arc-appkit] fetch() patched to strip CORS-blocked telemetry headers for api.circle.com');
+  console.info('[arc-appkit] fetch() patched: api.circle.com → /api/circle-proxy (server-side KIT_KEY)');
 }
 
 let _sdkPromise = null;
@@ -216,10 +237,17 @@ export async function appKitSwap(tokenIn, tokenOut, amountIn, options = {}) {
  * Useful for showing UI feedback like "App Kit connected" / "Configure key".
  */
 export function isAppKitReady() {
+  if (!window.ARC_APPKIT_CONFIG) return false;
+  // New flow: proxy is the source of truth. Real KIT_KEY lives in Cloudflare
+  // env (server-side) and is injected by /api/circle-proxy at request time.
+  // The client just needs `proxyHealthy: true` (set by build-config.sh when
+  // KIT_KEY env var is present in Cloudflare).
+  if (window.ARC_APPKIT_CONFIG.proxyHealthy === true) return true;
+  // Backward-compat: legacy local-dev configs may still have a real kitKey.
+  // Accept these too, but the proxy is preferred.
+  const k = window.ARC_APPKIT_CONFIG.kitKey;
   return Boolean(
-    window.ARC_APPKIT_CONFIG &&
-    window.ARC_APPKIT_CONFIG.kitKey &&
-    !window.ARC_APPKIT_CONFIG.kitKey.includes('PASTE_YOUR_KEY')
+    k && !k.includes('PASTE_YOUR_KEY') && !k.includes('PROXIED_VIA_')
   );
 }
 
