@@ -211,15 +211,13 @@ nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bot
     </div>
   </div>
 
-  <!-- COMING SOON BANNER (Vault gated until SUBSCRIBER role granted on Arc Testnet) -->
-  <div style="margin:18px 0 28px;padding:18px 22px;border:1px solid rgba(255,180,84,0.3);border-radius:14px;background:linear-gradient(180deg,rgba(255,180,84,0.08),rgba(255,180,84,0.02));display:flex;align-items:center;gap:18px;flex-wrap:wrap">
-    <div style="font-size:32px;line-height:1">🛠</div>
+  <!-- LIVE BANNER (Vault unlocked — Circle granted SUBSCRIBER role 2026-04-28) -->
+  <div style="margin:18px 0 28px;padding:14px 20px;border:1px solid rgba(123,228,149,0.28);border-radius:14px;background:linear-gradient(180deg,rgba(123,228,149,0.07),rgba(123,228,149,0.02));display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="font-size:24px;line-height:1">✅</div>
     <div style="flex:1;min-width:240px">
-      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#FFB454;margin-bottom:6px">// Private Beta · Coming Soon</div>
-      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">Vault deposits temporarily unavailable</div>
-      <div style="font-size:13.5px;color:var(--muted);line-height:1.55">USYC is gated by Hashnote's allowlist on Arc Testnet. We're working with the Hashnote / Circle team to get our subscriber role provisioned. Browse stats below — deposit will open as soon as access is granted. Want to be notified? Join Discord.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#7BE495;margin-bottom:4px">// LIVE · Arc Testnet</div>
+      <div style="font-size:14px;color:var(--muted);line-height:1.5">USYC vault is open for deposit/redeem. Powered by <strong style="color:var(--text)">Hashnote USYC Teller</strong>. Trades during U.S. Treasury market hours.</div>
     </div>
-    <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer" style="padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;background:rgba(255,180,84,0.15);border:1px solid rgba(255,180,84,0.4);color:#FFB454;white-space:nowrap;transition:all .2s" onmouseover="this.style.background='rgba(255,180,84,0.22)'" onmouseout="this.style.background='rgba(255,180,84,0.15)'">Get notified →</a>
   </div>
 
   <!-- STATS -->
@@ -845,9 +843,9 @@ async function refreshQuote(){
 
     // Button state
     const bal = mode==='deposit' ? balances.usdc : balances.usyc;
-    // Force-disable: Vault is in Private Beta until Hashnote SUBSCRIBER role is granted.
-    // Remove this block when allowlist access is provisioned for production wallets.
-    const VAULT_PRIVATE_BETA = true;
+    // Vault unlocked: Circle granted SUBSCRIBER role on Arc Testnet (2026-04-28).
+    // To re-disable temporarily, set VAULT_PRIVATE_BETA = true.
+    const VAULT_PRIVATE_BETA = false;
     if(VAULT_PRIVATE_BETA){
       btn.textContent = 'Coming soon — Private Beta';
       btn.disabled = true;

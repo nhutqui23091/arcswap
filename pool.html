@@ -789,17 +789,21 @@ async function fetchPoolRate(p, changed){
     if(!pair || pair === '0x'+'0'.repeat(40)) return;
     const raw = await rpcCallPool('eth_call',[{to:pair,data:'0x0902f1ac'},'latest']);
     if(!raw||raw==='0x') return;
-    const r0 = Number(BigInt('0x'+raw.slice(2,66)));
-    const r1 = Number(BigInt('0x'+raw.slice(66,130)));
-    if(r0===0||r1===0) return;
+    // Keep reserves as BigInt — direct Number() conversion loses precision for
+    // 18-decimal Arc USDC (raw values > 2^53). Use bigToFloat() helper which
+    // does the math in BigInt domain first.
+    const reserveBig0 = BigInt('0x'+raw.slice(2,66));
+    const reserveBig1 = BigInt('0x'+raw.slice(66,130));
+    if(reserveBig0===0n||reserveBig1===0n) return;
     const isToken0 = p.tokA.address.toLowerCase() < p.tokB.address.toLowerCase();
-    // rate = rB/rA (how much tokB per 1 tokA)
-    const rA = isToken0 ? r0 : r1;
-    const rB = isToken0 ? r1 : r0;
-    // Adjust for decimals
+    const reserveBigA = isToken0 ? reserveBig0 : reserveBig1;
+    const reserveBigB = isToken0 ? reserveBig1 : reserveBig0;
     const decA = p.tokA.decimals || 6;
     const decB = p.tokB.decimals || 6;
-    p.onChainRate = (rB / Math.pow(10, decB)) / (rA / Math.pow(10, decA));
+    const rA = bigToFloat(reserveBigA, decA);
+    const rB = bigToFloat(reserveBigB, decB);
+    if(rA<=0 || rB<=0) return;
+    p.onChainRate = rB / rA;
     // Update the other input with real rate
     const aEl = document.getElementById('liq-input-a');
     const bEl = document.getElementById('liq-input-b');
