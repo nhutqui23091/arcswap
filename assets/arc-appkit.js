@@ -211,6 +211,87 @@ export function extractFees(estResponse) {
   }));
 }
 
+// ─── BRIDGE (App Kit Bridge wrapping CCTP V2) ─────────────────────────────
+/**
+ * Bridge USDC across chains via App Kit (handles burn + attestation + mint).
+ * @param {string} fromChain - e.g. 'Arc_Testnet'
+ * @param {string} toChain   - e.g. 'Ethereum_Sepolia'
+ * @param {string} amount    - human-readable decimal e.g. '1.00'
+ * @param {string} [recipient] - destination address (defaults to same wallet)
+ */
+export async function appKitBridge(fromChain, toChain, amount, recipient) {
+  await initAppKit();
+  const params = {
+    from: { adapter, chain: fromChain },
+    to: { adapter, chain: toChain, recipientAddress: recipient || undefined },
+    amount,
+    config: { kitKey: window.ARC_APPKIT_CONFIG.kitKey }
+  };
+  console.log('[arc-appkit] bridge params:', { ...params, config: { kitKey: '***' } });
+  return kit.bridge(params);
+}
+
+export async function estimateAppKitBridge(fromChain, toChain, amount) {
+  await initAppKit();
+  // App Kit bridge typically auto-estimates; expose for UI preview if SDK supports
+  if (typeof kit.estimateBridge !== 'function') {
+    return { estimatedOutput: { amount, token: 'USDC' }, fees: [] };
+  }
+  return kit.estimateBridge({
+    from: { adapter, chain: fromChain },
+    to: { adapter, chain: toChain },
+    amount,
+    config: { kitKey: window.ARC_APPKIT_CONFIG.kitKey }
+  });
+}
+
+// ─── UNIFIED BALANCE (Circle Gateway) ─────────────────────────────────────
+/**
+ * Deposit USDC from a source chain into the user's chain-agnostic Unified Balance.
+ * @param {string} fromChain - e.g. 'Base_Sepolia', 'Arbitrum_Sepolia'
+ * @param {string} amount    - decimal string e.g. '1.00'
+ */
+export async function ubDeposit(fromChain, amount) {
+  await initAppKit();
+  if (!kit.unifiedBalance) throw new Error('Unified Balance not available in this SDK version');
+  return kit.unifiedBalance.deposit({
+    from: { adapter, chain: fromChain },
+    amount,
+    token: 'USDC',
+    config: { kitKey: window.ARC_APPKIT_CONFIG.kitKey }
+  });
+}
+
+/**
+ * Spend from Unified Balance to a recipient on a destination chain.
+ * @param {string} amount       - decimal string
+ * @param {string} toChain      - e.g. 'Arc_Testnet'
+ * @param {string} recipient    - destination address (0x...)
+ */
+export async function ubSpend(amount, toChain, recipient) {
+  await initAppKit();
+  if (!kit.unifiedBalance) throw new Error('Unified Balance not available in this SDK version');
+  return kit.unifiedBalance.spend({
+    amount,
+    from: { adapter },
+    to: { adapter, chain: toChain, recipientAddress: recipient },
+    token: 'USDC',
+    config: { kitKey: window.ARC_APPKIT_CONFIG.kitKey }
+  });
+}
+
+/**
+ * Get current Unified Balance across all chains.
+ */
+export async function ubGetBalance() {
+  await initAppKit();
+  if (!kit.unifiedBalance) throw new Error('Unified Balance not available in this SDK version');
+  return kit.unifiedBalance.getBalance({
+    from: { adapter },
+    config: { kitKey: window.ARC_APPKIT_CONFIG.kitKey }
+  });
+}
+
 /**
  * Execute a token-to-token swap on the same chain.
  * Triggers wallet popup for user to sign the swap transaction.
@@ -255,5 +336,10 @@ export function isAppKitReady() {
 
 // Expose globally for debugging in console (NOT for production logic — use imports above)
 if (typeof window !== 'undefined') {
-  window.ARC_APPKIT = { initAppKit, estimateAppKitSwap, appKitSwap, isAppKitReady };
+  window.ARC_APPKIT = {
+    initAppKit, isAppKitReady,
+    estimateAppKitSwap, appKitSwap,
+    appKitBridge, estimateAppKitBridge,
+    ubDeposit, ubSpend, ubGetBalance,
+  };
 }

@@ -296,7 +296,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     }
   }
   try {
-    APPKIT = await import('/assets/arc-appkit.js?v=9.1.19');
+    APPKIT = await import('/assets/arc-appkit.js?v=9.1.20');
     if (!APPKIT.isAppKitReady()) {
       console.warn('[arcswap] App Kit config missing or placeholder — same-chain swaps will fall back to Uniswap (likely empty pools).');
       APPKIT = null;
@@ -865,11 +865,49 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   }
 
   // ── CCTP BRIDGE ──────────────────────────────────────
+  // Map our internal chain keys to App Kit chain identifiers
+  const APPKIT_CHAINS = { arc: 'Arc_Testnet', sepolia: 'Ethereum_Sepolia' };
+
   async function execBridge(amt, recipient) {
-    const signer = wallet.signer;
     const src = CHAINS[state.fromChain];
     const dst = CHAINS[state.toChain];
     const srcUSDC = TOKENS[state.fromChain].USDC;
+
+    // ── App Kit Bridge path (preferred — wraps CCTP, handles attestation + mint) ──
+    if (APPKIT && APPKIT_CHAINS[state.fromChain] && APPKIT_CHAINS[state.toChain]) {
+      const amountStr = formatAmt(amt, srcUSDC.decimals);
+      const steps = [
+        { id: 'bridge', title: `Bridge ${amountStr} USDC: ${src.short} → ${dst.short}` },
+      ];
+      const modal = openProgress('Bridge USDC (App Kit)', steps);
+      modal.set('bridge', 'active', 'Sign in wallet…');
+      try {
+        const result = await APPKIT.appKitBridge(
+          APPKIT_CHAINS[state.fromChain],
+          APPKIT_CHAINS[state.toChain],
+          amountStr,
+          recipient
+        );
+        const burnHash = result?.burnTxHash || result?.sourceTxHash || result?.txHash || '';
+        const mintHash = result?.mintTxHash || result?.destinationTxHash || '';
+        pushActivity({ kind: 'bridge', chain: state.fromChain, hash: burnHash, status: 'done', text: `Bridge ${amountStr} USDC → ${dst.short}` });
+        const links = [
+          burnHash ? `<a href="${src.explorerTx(burnHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">burn ↗</a>` : '',
+          mintHash ? `<a href="${dst.explorerTx(mintHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">mint ↗</a>` : '',
+        ].filter(Boolean).join(' · ');
+        modal.set('bridge', 'done', links || 'Complete');
+        ArcUI.toast('success', 'Bridge complete', `USDC landed on ${dst.short}`);
+        modal.finish();
+        return;
+      } catch (e) {
+        console.warn('[arcswap] App Kit bridge failed, falling back to CCTP raw:', e?.message || e);
+        modal.finish();
+        // Fall through to CCTP raw path
+      }
+    }
+
+    // ── Fallback: CCTP raw (legacy — manual burn + attestation + mint) ──
+    const signer = wallet.signer;
 
     // Approve USDC spend (in ERC-20 decimals native to the source chain)
     await ensureAllowance(state.fromChain, srcUSDC, src.contracts.tokenMessengerV2, amt, s => ArcUI.toast('', 'Approval', s));
