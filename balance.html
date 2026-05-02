@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<link rel="apple-touch-icon" href="/favicon.svg"/>
+<meta name="description" content="ArcSwap Unified Balance — deposit USDC from any chain, spend on Arc instantly. Powered by Circle Gateway."/>
+<title>Unified Balance — ArcSwap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;--bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;--muted:#8CA0BD;
+  --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
+  --warn:#FFB454;--danger:#FF7A7A;
+  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
+
+.aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 100% 50% at 50% 0%,rgba(244,200,154,0.12) 0%,transparent 60%),
+    radial-gradient(ellipse 100% 50% at 50% 100%,rgba(74,123,236,0.10) 0%,transparent 60%),
+    linear-gradient(180deg,#0A1628 0%,#0E1F39 50%,#0A1628 100%);
+}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-name{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.logo-tag{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;border-left:1px solid var(--border);padding-left:10px;margin-left:4px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--text);background:var(--surface)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-ghost{padding:9px 18px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);transition:all .2s;text-decoration:none}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-primary{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);transition:all .2s;text-decoration:none}
+.btn-primary:hover{background:rgba(255,255,255,0.14)}
+
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:110px 24px 80px}
+
+.hero-strip{margin-bottom:24px}
+.hero-strip h1{font-size:clamp(40px,5.5vw,72px);letter-spacing:-.035em;font-weight:900;line-height:1;text-transform:uppercase}
+.hero-strip p{color:var(--muted);font-size:14px;margin-top:6px;max-width:620px;line-height:1.55}
+
+.eyebrow{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--arc3);margin-bottom:14px}
+.eyebrow::before{content:'// ';color:rgba(140,160,189,.55)}
+
+/* BALANCE CARD */
+.balance-card{margin-top:18px;padding:32px;border-radius:20px;background:linear-gradient(135deg,rgba(244,200,154,0.10),rgba(77,214,219,0.06),rgba(74,123,236,0.08));border:1px solid var(--border);position:relative;overflow:hidden}
+.balance-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(244,200,154,0.10),transparent 50%);pointer-events:none}
+.balance-label{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;position:relative}
+.balance-amount{font-size:64px;font-weight:900;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;color:var(--text);position:relative}
+.balance-token{font-size:24px;font-weight:600;color:var(--muted);margin-left:8px;letter-spacing:-.02em}
+.balance-sub{font-size:13px;color:var(--muted);margin-top:8px;font-family:var(--mono);position:relative}
+.balance-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;position:relative}
+.act-btn{padding:11px 22px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.act-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3);transform:translateY(-1px)}
+.act-btn.primary{background:linear-gradient(135deg,var(--arc1),var(--arc2));border-color:transparent;color:var(--bg);font-weight:700}
+.act-btn.primary:hover{box-shadow:0 4px 20px rgba(77,214,219,0.3)}
+
+/* TABS for Deposit / Spend */
+.tabs{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin:32px 0 18px}
+.tab{padding:8px 18px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;font-family:var(--font);transition:all .2s}
+.tab.active{background:rgba(255,255,255,0.08);color:var(--text)}
+
+.action-card{background:rgba(10,6,28,.85);border:1px solid var(--border);border-radius:18px;padding:24px}
+
+/* Chain selector */
+.chain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.chain-card{padding:14px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;text-align:center}
+.chain-card:hover{border-color:var(--border2)}
+.chain-card.active{border-color:var(--arc1);background:rgba(77,214,219,0.08)}
+.chain-card-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.chain-card-balance{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+.amount-row{display:flex;align-items:center;gap:12px;padding:18px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:14px}
+.amount-input{flex:1;font-family:var(--mono);font-size:32px;font-weight:600;background:none;border:none;outline:none;color:var(--text);min-width:0}
+.amount-input::placeholder{color:rgba(139,126,170,.4)}
+.amount-token{padding:8px 14px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)}
+
+.recipient-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px dashed var(--border);border-radius:12px;background:rgba(255,255,255,.015);margin-bottom:14px}
+.recipient-row input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:12.5px;min-width:0}
+.recipient-toggle{font-size:11px;color:var(--arc1);cursor:pointer;font-weight:600;padding:4px 8px;border-radius:6px}
+
+.exec-btn{width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:700;border:1px solid rgba(255,255,255,0.22);cursor:pointer;transition:all .2s;background:rgba(255,255,255,0.1);color:var(--text);letter-spacing:.02em}
+.exec-btn:hover:not(:disabled){background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35)}
+.exec-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,0.04);color:var(--muted);border-color:rgba(255,255,255,0.08)}
+
+.info-strip{margin-top:18px;padding:14px 18px;border-radius:12px;background:rgba(77,214,219,0.05);border:1px solid rgba(77,214,219,0.18);font-size:13px;color:var(--muted);line-height:1.6}
+.info-strip strong{color:var(--text)}
+
+/* HOW IT WORKS */
+.how-section{margin-top:60px}
+.how-title{font-size:13px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:24px}
+.how-title::before{content:'// ';color:rgba(140,160,189,.55);font-weight:400}
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.how-card{padding:22px;background:var(--surface);border:1px solid var(--border);border-radius:14px}
+.how-step{font-family:var(--mono);font-size:11px;color:var(--arc1);font-weight:700;letter-spacing:.12em;margin-bottom:10px}
+.how-card h3{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.how-card p{font-size:13.5px;color:var(--muted);line-height:1.6}
+
+/* Coming soon banner */
+.beta-banner{margin:18px 0 28px;padding:18px 22px;border:1px solid rgba(255,180,84,0.3);border-radius:14px;background:linear-gradient(180deg,rgba(255,180,84,0.08),rgba(255,180,84,0.02));display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.beta-banner-emoji{font-size:32px;line-height:1}
+.beta-banner-text{flex:1;min-width:240px}
+.beta-banner-eyebrow{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#FFB454;margin-bottom:6px}
+.beta-banner-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.beta-banner-desc{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+@media(max-width:768px){
+  .nav-links{display:none}
+  .balance-amount{font-size:48px}
+}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-tag">Balance</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/vault">Vault</a>
+    <a class="nav-link" href="/trade">Trade</a>
+    <a class="nav-link" href="/pool">Pool</a>
+    <a class="nav-link active" href="/balance">Balance</a>
+    <a class="nav-link" href="/docs">Docs</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn-ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    <a class="btn-primary" href="/trade">Launch App ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="hero-strip">
+    <div class="eyebrow">Unified Balance · Powered by Circle Gateway</div>
+    <h1>Balance</h1>
+    <p>One USDC balance, spendable on any chain. Deposit from Base, Arbitrum, Optimism, Polygon — settle on Arc instantly. No bridge clicks, no chain switching, no wrapped tokens.</p>
+  </div>
+
+  <!-- BETA BANNER -->
+  <div class="beta-banner">
+    <div class="beta-banner-emoji">🌐</div>
+    <div class="beta-banner-text">
+      <div class="beta-banner-eyebrow">// Beta · Arc Testnet</div>
+      <div class="beta-banner-title">Unified Balance is in early beta</div>
+      <div class="beta-banner-desc">Circle Gateway is rolling out support across testnet chains. Deposits from <strong>Base Sepolia, Arbitrum Sepolia, Optimism Sepolia</strong> are supported. UI shows estimated balance; some flows may need wallet network switches.</div>
+    </div>
+  </div>
+
+  <!-- BALANCE OVERVIEW -->
+  <div class="balance-card">
+    <div class="balance-label">Total Unified Balance</div>
+    <div>
+      <span class="balance-amount" id="ub-total">—</span>
+      <span class="balance-token">USDC</span>
+    </div>
+    <div class="balance-sub" id="ub-sub">Connect wallet to view balance across chains</div>
+    <div class="balance-actions">
+      <button class="act-btn primary" id="ub-refresh-btn" onclick="refreshBalance()">↻ Refresh</button>
+      <button class="act-btn" onclick="setMode('deposit')">↓ Deposit</button>
+      <button class="act-btn" onclick="setMode('spend')">↗ Spend</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" id="tab-deposit" onclick="setMode('deposit')">↓ Deposit</button>
+    <button class="tab" id="tab-spend" onclick="setMode('spend')">↗ Spend</button>
+  </div>
+
+  <!-- DEPOSIT FORM -->
+  <div class="action-card" id="form-deposit">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">Source chain</div>
+    <div class="chain-grid" id="src-chain-grid">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="amount-row">
+      <input class="amount-input" id="deposit-amount" type="text" inputmode="decimal" placeholder="0.00"/>
+      <span class="amount-token">USDC</span>
+    </div>
+
+    <button class="exec-btn" id="deposit-btn" onclick="execDeposit()" disabled>Connect wallet</button>
+
+    <div class="info-strip">
+      <strong>How it works:</strong> Your USDC is deposited into Circle Gateway's smart contract on the source chain. Gateway issues a chain-agnostic balance that you can spend instantly on Arc (or any supported chain) without bridging.
+    </div>
+  </div>
+
+  <!-- SPEND FORM -->
+  <div class="action-card" id="form-spend" style="display:none">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">Destination chain</div>
+    <div class="chain-grid" id="dst-chain-grid">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="amount-row">
+      <input class="amount-input" id="spend-amount" type="text" inputmode="decimal" placeholder="0.00"/>
+      <span class="amount-token">USDC</span>
+    </div>
+
+    <div class="recipient-row">
+      <span style="font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">To:</span>
+      <input id="spend-recipient" type="text" placeholder="0x... (your wallet by default)"/>
+      <span class="recipient-toggle" onclick="useMyAddress()">Use mine</span>
+    </div>
+
+    <button class="exec-btn" id="spend-btn" onclick="execSpend()" disabled>Connect wallet</button>
+
+    <div class="info-strip">
+      <strong>Instant settlement:</strong> Your unified balance lands at the destination address in seconds. No CCTP attestation wait, no bridge fees beyond Circle's protocol fee.
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-section">
+    <div class="how-title">How Unified Balance works</div>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-step">// STEP 1</div>
+        <h3>Deposit</h3>
+        <p>From any supported chain (Base, Arbitrum, Optimism, etc.), deposit USDC into Circle Gateway's vault contract on that chain.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-step">// STEP 2</div>
+        <h3>Aggregate</h3>
+        <p>Gateway tracks deposits across chains and exposes a single chain-agnostic balance you can spend anywhere supported.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-step">// STEP 3</div>
+        <h3>Spend instantly</h3>
+        <p>Spend on Arc (or any supported chain). Gateway routes liquidity in the background — funds arrive at the destination in seconds, not minutes.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-step">// STEP 4</div>
+        <h3>No bridges</h3>
+        <p>Skip CCTP burn-mint cycles, skip wrapped tokens, skip switching networks. One balance, one button.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
+        integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+<script src="/assets/arc-appkit-config.js?v=9.1.20"></script>
+<script>
+(async () => {
+  // App Kit dynamic import — same pattern as /trade
+  let APPKIT = null;
+  try {
+    APPKIT = await import('/assets/arc-appkit.js?v=9.1.20');
+    if (!APPKIT.isAppKitReady()) { console.warn('[balance] App Kit not ready'); APPKIT = null; }
+  } catch (e) { console.error('[balance] App Kit load failed:', e); }
+
+  // Supported source chains for deposit (Circle Gateway testnet support)
+  const SRC_CHAINS = [
+    { id: 'Base_Sepolia',     name: 'Base Sepolia',     short: 'Base',    color: '#0052FF' },
+    { id: 'Arbitrum_Sepolia', name: 'Arbitrum Sepolia', short: 'Arb',     color: '#28A0F0' },
+    { id: 'Optimism_Sepolia', name: 'Optimism Sepolia', short: 'OP',      color: '#FF0420' },
+    { id: 'Ethereum_Sepolia', name: 'Ethereum Sepolia', short: 'ETH',     color: '#627EEA' },
+  ];
+  const DST_CHAINS = [
+    { id: 'Arc_Testnet',      name: 'Arc Testnet',      short: 'Arc',     color: '#4DD6DB' },
+    ...SRC_CHAINS,
+  ];
+
+  let state = {
+    mode: 'deposit',
+    srcChain: SRC_CHAINS[0].id,
+    dstChain: 'Arc_Testnet',
+    walletAddr: null,
+  };
+
+  // Wallet connect via window.ethereum
+  async function connectWallet() {
+    if (!window.ethereum) { alert('No wallet detected. Install MetaMask/Rabby.'); return; }
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    state.walletAddr = accounts[0];
+    document.getElementById('ub-sub').textContent = state.walletAddr.slice(0,6) + '…' + state.walletAddr.slice(-4);
+    refreshBalance();
+    refreshButtons();
+  }
+
+  // Render chain grid
+  function renderChainGrid(elId, chains, selected, onPick) {
+    const el = document.getElementById(elId);
+    el.innerHTML = chains.map(c => `
+      <div class="chain-card ${c.id === selected ? 'active' : ''}" data-id="${c.id}">
+        <div class="chain-card-name">${c.name}</div>
+        <div class="chain-card-balance" data-bal="${c.id}">—</div>
+      </div>
+    `).join('');
+    el.querySelectorAll('.chain-card').forEach(card => {
+      card.onclick = () => { onPick(card.dataset.id); };
+    });
+  }
+
+  function refreshChainGrids() {
+    renderChainGrid('src-chain-grid', SRC_CHAINS, state.srcChain, id => { state.srcChain = id; refreshChainGrids(); });
+    renderChainGrid('dst-chain-grid', DST_CHAINS, state.dstChain, id => { state.dstChain = id; refreshChainGrids(); });
+  }
+
+  window.setMode = function(mode) {
+    state.mode = mode;
+    document.getElementById('tab-deposit').classList.toggle('active', mode === 'deposit');
+    document.getElementById('tab-spend').classList.toggle('active', mode === 'spend');
+    document.getElementById('form-deposit').style.display = mode === 'deposit' ? 'block' : 'none';
+    document.getElementById('form-spend').style.display = mode === 'spend' ? 'block' : 'none';
+  };
+
+  window.useMyAddress = function() {
+    if (state.walletAddr) document.getElementById('spend-recipient').value = state.walletAddr;
+  };
+
+  window.refreshBalance = async function() {
+    if (!APPKIT || !state.walletAddr) return;
+    const sub = document.getElementById('ub-sub');
+    const total = document.getElementById('ub-total');
+    sub.textContent = 'Loading…';
+    try {
+      const bal = await APPKIT.ubGetBalance();
+      console.log('[balance] ubGetBalance:', bal);
+      // Try to extract total from response shape
+      const totalAmount = bal?.total?.amount || bal?.balance?.amount || bal?.totalBalance || '0';
+      total.textContent = parseFloat(totalAmount).toFixed(4);
+      sub.textContent = `Across ${bal?.chains?.length || 0} chain(s) · Last sync: ${new Date().toLocaleTimeString()}`;
+    } catch (e) {
+      console.error('[balance] refresh failed:', e);
+      total.textContent = '—';
+      sub.textContent = 'Unified Balance unavailable: ' + (e?.message || 'unknown error');
+    }
+  };
+
+  window.execDeposit = async function() {
+    if (!state.walletAddr) { connectWallet(); return; }
+    const amt = document.getElementById('deposit-amount').value.trim();
+    if (!amt || parseFloat(amt) <= 0) { alert('Enter amount'); return; }
+    const btn = document.getElementById('deposit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Depositing…';
+    try {
+      if (!APPKIT) throw new Error('App Kit not initialized');
+      const result = await APPKIT.ubDeposit(state.srcChain, amt);
+      console.log('[balance] deposit result:', result);
+      alert(`Deposit complete! Tx: ${result?.txHash || result?.transactionHash || '(see console)'}`);
+      refreshBalance();
+    } catch (e) {
+      console.error('[balance] deposit failed:', e);
+      alert('Deposit failed: ' + (e?.message || 'unknown'));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = `Deposit ${amt} USDC from ${SRC_CHAINS.find(c => c.id === state.srcChain)?.name}`;
+    }
+  };
+
+  window.execSpend = async function() {
+    if (!state.walletAddr) { connectWallet(); return; }
+    const amt = document.getElementById('spend-amount').value.trim();
+    const to = document.getElementById('spend-recipient').value.trim() || state.walletAddr;
+    if (!amt || parseFloat(amt) <= 0) { alert('Enter amount'); return; }
+    if (!to.startsWith('0x') || to.length !== 42) { alert('Invalid recipient address'); return; }
+    const btn = document.getElementById('spend-btn');
+    btn.disabled = true;
+    btn.textContent = 'Spending…';
+    try {
+      if (!APPKIT) throw new Error('App Kit not initialized');
+      const result = await APPKIT.ubSpend(amt, state.dstChain, to);
+      console.log('[balance] spend result:', result);
+      alert(`Spend complete! Tx: ${result?.txHash || result?.transactionHash || '(see console)'}`);
+      refreshBalance();
+    } catch (e) {
+      console.error('[balance] spend failed:', e);
+      alert('Spend failed: ' + (e?.message || 'unknown'));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = `Spend ${amt} USDC on ${DST_CHAINS.find(c => c.id === state.dstChain)?.name}`;
+    }
+  };
+
+  function refreshButtons() {
+    const dBtn = document.getElementById('deposit-btn');
+    const sBtn = document.getElementById('spend-btn');
+    if (!state.walletAddr) {
+      dBtn.textContent = 'Connect wallet';
+      dBtn.disabled = false;
+      dBtn.onclick = connectWallet;
+      sBtn.textContent = 'Connect wallet';
+      sBtn.disabled = false;
+      sBtn.onclick = connectWallet;
+    } else {
+      dBtn.disabled = false;
+      dBtn.textContent = `Deposit USDC from ${SRC_CHAINS.find(c => c.id === state.srcChain)?.name || '...'}`;
+      dBtn.onclick = execDeposit;
+      sBtn.disabled = false;
+      sBtn.textContent = `Spend USDC on ${DST_CHAINS.find(c => c.id === state.dstChain)?.name || '...'}`;
+      sBtn.onclick = execSpend;
+    }
+  }
+
+  // Init
+  refreshChainGrids();
+  refreshButtons();
+  setMode('deposit');
+
+  // Auto-connect if wallet already authorized
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length > 0) {
+        state.walletAddr = accounts[0];
+        document.getElementById('ub-sub').textContent = state.walletAddr.slice(0,6) + '…' + state.walletAddr.slice(-4);
+        refreshButtons();
+        refreshBalance();
+      }
+    } catch {}
+  }
+})();
+</script>
+
+</body>
+</html>
