@@ -55,6 +55,107 @@
         multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
         tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
         messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter:       '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    // ── Additional Gateway-supported EVM testnets ──
+    // GatewayWallet & GatewayMinter share the SAME address on every EVM chain
+    // (deterministic-deploy via CREATE2). USDC addresses confirmed from Circle docs.
+    baseSepolia: {
+      id: 84532, hex: '0x14a34',
+      name: 'Base Sepolia', short: 'Base',
+      rpc: 'https://sepolia.base.org',
+      explorer: 'https://sepolia.basescan.org',
+      explorerTx: h => `https://sepolia.basescan.org/tx/${h}`,
+      explorerAddr: a => `https://sepolia.basescan.org/address/${a}`,
+      native: { symbol: 'ETH', name: 'Base Sepolia ETH', decimals: 18 },
+      cctpDomain: 6,
+      iconGrad: 'linear-gradient(135deg,#0052FF,#62A5FF)',
+      contracts: {
+        multicall3:    '0xcA11bde05977b3631167028862bE2a173976CA11',
+        gatewayWallet: '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    avalancheFuji: {
+      id: 43113, hex: '0xa869',
+      name: 'Avalanche Fuji', short: 'Fuji',
+      rpc: 'https://api.avax-test.network/ext/bc/C/rpc',
+      explorer: 'https://testnet.snowtrace.io',
+      explorerTx: h => `https://testnet.snowtrace.io/tx/${h}`,
+      explorerAddr: a => `https://testnet.snowtrace.io/address/${a}`,
+      native: { symbol: 'AVAX', name: 'Fuji AVAX', decimals: 18 },
+      cctpDomain: 1,
+      iconGrad: 'linear-gradient(135deg,#E84142,#F87C7D)',
+      contracts: {
+        multicall3:    '0xcA11bde05977b3631167028862bE2a173976CA11',
+        gatewayWallet: '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    arbitrumSepolia: {
+      id: 421614, hex: '0x66eee',
+      name: 'Arbitrum Sepolia', short: 'Arb Sep',
+      rpc: 'https://sepolia-rollup.arbitrum.io/rpc',
+      explorer: 'https://sepolia.arbiscan.io',
+      explorerTx: h => `https://sepolia.arbiscan.io/tx/${h}`,
+      explorerAddr: a => `https://sepolia.arbiscan.io/address/${a}`,
+      native: { symbol: 'ETH', name: 'Arb Sepolia ETH', decimals: 18 },
+      cctpDomain: 3,
+      iconGrad: 'linear-gradient(135deg,#28A0F0,#80C8F8)',
+      contracts: {
+        multicall3:    '0xcA11bde05977b3631167028862bE2a173976CA11',
+        gatewayWallet: '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    optimismSepolia: {
+      id: 11155420, hex: '0xaa37dc',
+      name: 'OP Sepolia', short: 'OP Sep',
+      rpc: 'https://sepolia.optimism.io',
+      explorer: 'https://sepolia-optimism.etherscan.io',
+      explorerTx: h => `https://sepolia-optimism.etherscan.io/tx/${h}`,
+      explorerAddr: a => `https://sepolia-optimism.etherscan.io/address/${a}`,
+      native: { symbol: 'ETH', name: 'OP Sepolia ETH', decimals: 18 },
+      cctpDomain: 2,
+      iconGrad: 'linear-gradient(135deg,#FF0420,#FF6B7E)',
+      contracts: {
+        multicall3:    '0xcA11bde05977b3631167028862bE2a173976CA11',
+        gatewayWallet: '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    polygonAmoy: {
+      id: 80002, hex: '0x13882',
+      name: 'Polygon Amoy', short: 'Amoy',
+      rpc: 'https://rpc-amoy.polygon.technology',
+      explorer: 'https://amoy.polygonscan.com',
+      explorerTx: h => `https://amoy.polygonscan.com/tx/${h}`,
+      explorerAddr: a => `https://amoy.polygonscan.com/address/${a}`,
+      native: { symbol: 'POL', name: 'Polygon Amoy POL', decimals: 18 },
+      cctpDomain: 7,
+      iconGrad: 'linear-gradient(135deg,#8247E5,#B58CF0)',
+      contracts: {
+        multicall3:    '0xcA11bde05977b3631167028862bE2a173976CA11',
+        gatewayWallet: '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    unichainSepolia: {
+      id: 1301, hex: '0x515',
+      name: 'Unichain Sepolia', short: 'Unichain',
+      rpc: 'https://sepolia.unichain.org',
+      explorer: 'https://sepolia.uniscan.xyz',
+      explorerTx: h => `https://sepolia.uniscan.xyz/tx/${h}`,
+      explorerAddr: a => `https://sepolia.uniscan.xyz/address/${a}`,
+      native: { symbol: 'ETH', name: 'Unichain Sep ETH', decimals: 18 },
+      cctpDomain: 10,
+      iconGrad: 'linear-gradient(135deg,#FF007A,#FF66B0)',
+      contracts: {
+        multicall3:    '0xcA11bde05977b3631167028862bE2a173976CA11',
+        gatewayWallet: '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
       },
     },
   };
@@ -108,6 +209,24 @@
         isGas: true,
         icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
       },
+    },
+    baseSepolia: {
+      USDC: { symbol:'USDC', name:'USD Coin (Base Sepolia)', address:'0x036CbD53842c5426634e7929541eC2318f3dCF7e', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    avalancheFuji: {
+      USDC: { symbol:'USDC', name:'USD Coin (Fuji)', address:'0x5425890298aed601595a70AB815c96711a31Bc65', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    arbitrumSepolia: {
+      USDC: { symbol:'USDC', name:'USD Coin (Arb Sepolia)', address:'0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    optimismSepolia: {
+      USDC: { symbol:'USDC', name:'USD Coin (OP Sepolia)', address:'0x5fd84259d66Cd46123540766Be93DFE6D43130D7', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    polygonAmoy: {
+      USDC: { symbol:'USDC', name:'USD Coin (Amoy)', address:'0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    unichainSepolia: {
+      USDC: { symbol:'USDC', name:'USD Coin (Unichain Sep)', address:'0x31d0220469e10c4E71834a79b1f276d740d3768F', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
     },
   };
 
@@ -163,6 +282,26 @@
       'function receiveMessage(bytes message, bytes attestation) returns (bool)',
       'function usedNonces(bytes32) view returns (uint256)',
       'event MessageReceived(address indexed caller, uint32 sourceDomain, bytes32 indexed nonce, bytes32 sender, uint32 indexed finalityThresholdExecuted, bytes messageBody)',
+    ],
+    // ── Circle Gateway ──
+    // Single GatewayWallet contract per chain holds user-deposited USDC and tracks
+    // it as a *unified balance* spendable via signed BurnIntent on any other chain.
+    gatewayWallet: [
+      'function deposit(address token, uint256 value)',
+      'function depositFor(address token, uint256 value, address depositor)',
+      'function initiateWithdrawal(address token, uint256 value)',
+      'function withdraw(address token)',
+      'function availableBalance(address token, address depositor) view returns (uint256)',
+      'function totalBalance(address token, address depositor) view returns (uint256)',
+      'function withdrawalDelay() view returns (uint256)',
+      'function getWithdrawals(address token, address depositor) view returns (tuple(uint256 value, uint256 withdrawableAfter)[])',
+      'event Deposited(address indexed token, address indexed depositor, uint256 value)',
+      'event WithdrawalInitiated(address indexed token, address indexed depositor, uint256 value, uint256 withdrawableAfter)',
+      'event Withdrawn(address indexed token, address indexed depositor, address indexed recipient, uint256 value)',
+    ],
+    gatewayMinter: [
+      'function gatewayMint(bytes attestationPayload, bytes signature)',
+      'event Minted(address indexed token, address indexed recipient, uint256 value)',
     ],
     usycTeller: [
       // ERC-4626-like subscribe / redeem
@@ -457,6 +596,10 @@
     toCctpAmount, fromCctpAmount,
     multicall, sendAndWait, explainError,
     irisMessages, irisFastAllowance, IRIS_BASE,
-    version: '9.1.11',
+    // List of chain keys that have a GatewayWallet deployed (used by arc-gateway.js)
+    gatewayChains: () => Object.entries(CHAINS)
+      .filter(([, c]) => c.contracts?.gatewayWallet)
+      .map(([k]) => k),
+    version: '9.2.0',
   };
 })(window);

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://iris-api-sandbox.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://sepolia.optimism.io https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com https://gateway-api-testnet.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
@@ -24,7 +24,6 @@
 }
 html{scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
-
 .aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
   background:
     radial-gradient(ellipse 100% 50% at 50% 0%,rgba(244,200,154,0.12) 0%,transparent 60%),
@@ -46,16 +45,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
 .btn-primary{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);transition:all .2s;text-decoration:none}
 .btn-primary:hover{background:rgba(255,255,255,0.14)}
 
-.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:110px 24px 80px}
+.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:110px 24px 80px}
 
 .hero-strip{margin-bottom:24px}
 .hero-strip h1{font-size:clamp(40px,5.5vw,72px);letter-spacing:-.035em;font-weight:900;line-height:1;text-transform:uppercase}
-.hero-strip p{color:var(--muted);font-size:14px;margin-top:6px;max-width:620px;line-height:1.55}
-
+.hero-strip p{color:var(--muted);font-size:14px;margin-top:6px;max-width:680px;line-height:1.55}
 .eyebrow{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--arc3);margin-bottom:14px}
 .eyebrow::before{content:'// ';color:rgba(140,160,189,.55)}
 
-/* BALANCE CARD */
+/* TOTAL CARD */
 .balance-card{margin-top:18px;padding:32px;border-radius:20px;background:linear-gradient(135deg,rgba(244,200,154,0.10),rgba(77,214,219,0.06),rgba(74,123,236,0.08));border:1px solid var(--border);position:relative;overflow:hidden}
 .balance-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(244,200,154,0.10),transparent 50%);pointer-events:none}
 .balance-label{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;position:relative}
@@ -65,61 +63,81 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
 .balance-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;position:relative}
 .act-btn{padding:11px 22px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all .2s;display:inline-flex;align-items:center;gap:8px}
 .act-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3);transform:translateY(-1px)}
+.act-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .act-btn.primary{background:linear-gradient(135deg,var(--arc1),var(--arc2));border-color:transparent;color:var(--bg);font-weight:700}
 .act-btn.primary:hover{box-shadow:0 4px 20px rgba(77,214,219,0.3)}
 
-/* TABS for Deposit / Spend */
-.tabs{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin:32px 0 18px}
-.tab{padding:8px 18px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;font-family:var(--font);transition:all .2s}
-.tab.active{background:rgba(255,255,255,0.08);color:var(--text)}
+/* PER-CHAIN TABLE */
+.chain-table{margin-top:32px;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:rgba(255,255,255,0.02)}
+.chain-row{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--border);transition:background .15s}
+.chain-row:first-child{border-top:none}
+.chain-row.header{background:rgba(255,255,255,0.04);font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:11px 18px}
+.chain-row:hover:not(.header){background:rgba(255,255,255,0.025)}
+.chain-info{display:flex;align-items:center;gap:12px;min-width:0}
+.chain-dot{width:30px;height:30px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,#4DD6DB,#4A7BEC);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.chain-name{font-size:14px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis}
+.chain-name small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:400;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.chain-bal{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.chain-bal small{color:var(--muted);margin-left:4px;font-weight:400}
+.chain-bal.zero{color:var(--muted);font-weight:400}
+.chain-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chain-actions button{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .15s;font-family:var(--font)}
+.chain-actions button:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
+.chain-actions button:disabled{opacity:.4;cursor:not-allowed}
 
-.action-card{background:rgba(10,6,28,.85);border:1px solid var(--border);border-radius:18px;padding:24px}
+/* PENDING WITHDRAWALS */
+.pending-section{margin-top:32px}
+.pending-card{padding:14px 18px;border:1px dashed rgba(255,180,84,.3);border-radius:12px;background:rgba(255,180,84,.04);font-size:13px;color:var(--muted);display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+.pending-card strong{color:var(--text)}
+.pending-card button{margin-left:auto;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,180,84,.4);background:rgba(255,180,84,.1);color:var(--warn);font-weight:600;cursor:pointer;font-size:12px;font-family:var(--font)}
+.pending-card button:hover{background:rgba(255,180,84,.2)}
+.pending-card button:disabled{opacity:.5;cursor:not-allowed}
 
-/* Chain selector */
-.chain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
-.chain-card{padding:14px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;text-align:center}
-.chain-card:hover{border-color:var(--border2)}
-.chain-card.active{border-color:var(--arc1);background:rgba(77,214,219,0.08)}
-.chain-card-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
-.chain-card-balance{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.section-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:32px 0 14px}
+.section-title::before{content:'// ';color:rgba(140,160,189,.55);font-weight:400}
 
-.amount-row{display:flex;align-items:center;gap:12px;padding:18px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:14px}
-.amount-input{flex:1;font-family:var(--mono);font-size:32px;font-weight:600;background:none;border:none;outline:none;color:var(--text);min-width:0}
-.amount-input::placeholder{color:rgba(139,126,170,.4)}
-.amount-token{padding:8px 14px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)}
-
-.recipient-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px dashed var(--border);border-radius:12px;background:rgba(255,255,255,.015);margin-bottom:14px}
-.recipient-row input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:12.5px;min-width:0}
-.recipient-toggle{font-size:11px;color:var(--arc1);cursor:pointer;font-weight:600;padding:4px 8px;border-radius:6px}
-
-.exec-btn{width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:700;border:1px solid rgba(255,255,255,0.22);cursor:pointer;transition:all .2s;background:rgba(255,255,255,0.1);color:var(--text);letter-spacing:.02em}
-.exec-btn:hover:not(:disabled){background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35)}
-.exec-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,0.04);color:var(--muted);border-color:rgba(255,255,255,0.08)}
+/* MODAL */
+.gw-modal-bg{position:fixed;inset:0;background:rgba(5,12,24,.7);backdrop-filter:blur(8px);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;animation:fade .2s ease-out}
+.gw-modal-bg.show{display:flex}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.gw-modal{width:100%;max-width:460px;background:linear-gradient(180deg,#101F36 0%,#0B1729 100%);border:1px solid var(--border2);border-radius:18px;padding:24px;animation:slide .25s ease-out}
+@keyframes slide{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.gw-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.gw-modal-title{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.gw-modal-close{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;padding:0 4px}
+.gw-modal-close:hover{color:var(--text)}
+.gw-label{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.gw-input{width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:14px;outline:none;transition:border .15s}
+.gw-input:focus{border-color:var(--arc1)}
+.gw-input.amount{font-size:24px;font-weight:600;padding:14px;text-align:right}
+.gw-select{width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:14px;outline:none;cursor:pointer;font-family:var(--font)}
+.gw-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:6px}
+.gw-row strong{color:var(--text);font-family:var(--mono);font-weight:600}
+.gw-action{width:100%;margin-top:18px;padding:14px;border-radius:12px;font-size:14px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,var(--arc1),var(--arc2));color:var(--bg);transition:all .2s;letter-spacing:.02em}
+.gw-action:hover:not(:disabled){box-shadow:0 4px 24px rgba(77,214,219,.4);transform:translateY(-1px)}
+.gw-action:disabled{opacity:.5;cursor:not-allowed;background:var(--surface2);color:var(--muted)}
+.gw-status{margin-top:12px;padding:11px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);font-size:13px;color:var(--muted);font-family:var(--mono);display:none}
+.gw-status.show{display:block}
+.gw-status.ok{border-color:rgba(123,228,149,.3);color:var(--arc4)}
+.gw-status.err{border-color:rgba(255,122,122,.3);color:var(--danger)}
 
 .info-strip{margin-top:18px;padding:14px 18px;border-radius:12px;background:rgba(77,214,219,0.05);border:1px solid rgba(77,214,219,0.18);font-size:13px;color:var(--muted);line-height:1.6}
 .info-strip strong{color:var(--text)}
 
 /* HOW IT WORKS */
 .how-section{margin-top:60px}
-.how-title{font-size:13px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:24px}
-.how-title::before{content:'// ';color:rgba(140,160,189,.55);font-weight:400}
 .how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
 .how-card{padding:22px;background:var(--surface);border:1px solid var(--border);border-radius:14px}
 .how-step{font-family:var(--mono);font-size:11px;color:var(--arc1);font-weight:700;letter-spacing:.12em;margin-bottom:10px}
 .how-card h3{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)}
 .how-card p{font-size:13.5px;color:var(--muted);line-height:1.6}
 
-/* Coming soon banner */
-.beta-banner{margin:18px 0 28px;padding:18px 22px;border:1px solid rgba(255,180,84,0.3);border-radius:14px;background:linear-gradient(180deg,rgba(255,180,84,0.08),rgba(255,180,84,0.02));display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-.beta-banner-emoji{font-size:32px;line-height:1}
-.beta-banner-text{flex:1;min-width:240px}
-.beta-banner-eyebrow{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#FFB454;margin-bottom:6px}
-.beta-banner-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
-.beta-banner-desc{font-size:13.5px;color:var(--muted);line-height:1.55}
-
 @media(max-width:768px){
   .nav-links{display:none}
   .balance-amount{font-size:48px}
+  .chain-row{grid-template-columns:1fr 1fr;row-gap:8px}
+  .chain-row.header{display:none}
+  .chain-actions{grid-column:1/-1;justify-content:flex-start}
 }
 </style>
 </head>
@@ -141,7 +159,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     <a class="nav-link" href="/docs">Docs</a>
   </div>
   <div class="nav-right">
-    <a class="btn-ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    <button id="gw-connect-btn" class="btn-ghost" type="button">Connect Wallet</button>
     <a class="btn-primary" href="/trade">Launch App ↗</a>
   </div>
 </nav>
@@ -151,305 +169,508 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   <div class="hero-strip">
     <div class="eyebrow">Unified Balance · Powered by Circle Gateway</div>
     <h1>Balance</h1>
-    <p>One USDC balance, spendable on any chain. Deposit from Base, Arbitrum, Optimism, Polygon — settle on Arc instantly. No bridge clicks, no chain switching, no wrapped tokens.</p>
+    <p>One USDC balance, spendable on any supported chain. Deposit from Sepolia, Base, Arbitrum, Optimism, Polygon — settle on Arc in seconds. No bridge clicks, no chain switching, no wrapped tokens.</p>
   </div>
 
-  <!-- COMING SOON BANNER (Unified Balance integration in progress — current SDK doesn't expose getBalance) -->
-  <div class="beta-banner" style="border-color:rgba(255,180,84,0.3);background:linear-gradient(180deg,rgba(255,180,84,0.08),rgba(255,180,84,0.02))">
-    <div class="beta-banner-emoji">🛠</div>
-    <div class="beta-banner-text">
-      <div class="beta-banner-eyebrow" style="color:#FFB454">// In Development · Coming Soon</div>
-      <div class="beta-banner-title">Unified Balance integration in progress</div>
-      <div class="beta-banner-desc">
-        Circle App Kit's <code>kit.unifiedBalance</code> SDK is still maturing on Arc Testnet. Direct browser integration currently doesn't expose <code>getBalance</code> — we're working with Circle to clarify the proper flow (likely needs a server-side adapter via Pages Functions).
-        <br><br>
-        <strong>Planned flow</strong>: connect wallet → deposit USDC from Base/Arbitrum/Optimism Sepolia → see total unified balance → spend instantly on Arc. This page will activate when the integration is verified end-to-end. Track progress in our <a href="/blog" style="color:var(--arc1);text-decoration:underline">blog</a>.
-      </div>
-    </div>
-  </div>
-
-  <!-- BALANCE OVERVIEW -->
+  <!-- TOTAL CARD -->
   <div class="balance-card">
     <div class="balance-label">Total Unified Balance</div>
     <div>
       <span class="balance-amount" id="ub-total">—</span>
       <span class="balance-token">USDC</span>
     </div>
-    <div class="balance-sub" id="ub-sub">Integration in progress — see banner above</div>
+    <div class="balance-sub" id="ub-sub">Connect wallet to view your balance across all Gateway chains.</div>
     <div class="balance-actions">
-      <button class="act-btn primary" id="ub-refresh-btn" onclick="refreshBalance()">↻ Refresh</button>
-      <button class="act-btn" onclick="setMode('deposit')">↓ Deposit</button>
-      <button class="act-btn" onclick="setMode('spend')">↗ Spend</button>
+      <button class="act-btn primary" id="ub-refresh" type="button">↻ Refresh</button>
+      <button class="act-btn" id="ub-spend-top" type="button">↗ Spend cross-chain</button>
     </div>
   </div>
 
-  <!-- TABS -->
-  <div class="tabs">
-    <button class="tab active" id="tab-deposit" onclick="setMode('deposit')">↓ Deposit</button>
-    <button class="tab" id="tab-spend" onclick="setMode('spend')">↗ Spend</button>
+  <div class="section-title">Per-chain breakdown</div>
+  <div class="chain-table" id="chain-table">
+    <div class="chain-row header">
+      <div>Chain</div>
+      <div>Available</div>
+      <div>Wallet (USDC)</div>
+      <div style="text-align:right">Actions</div>
+    </div>
+    <!-- rows injected by JS -->
   </div>
 
-  <!-- DEPOSIT FORM -->
-  <div class="action-card" id="form-deposit">
-    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">Source chain</div>
-    <div class="chain-grid" id="src-chain-grid">
-      <!-- populated by JS -->
-    </div>
-
-    <div class="amount-row">
-      <input class="amount-input" id="deposit-amount" type="text" inputmode="decimal" placeholder="0.00"/>
-      <span class="amount-token">USDC</span>
-    </div>
-
-    <button class="exec-btn" id="deposit-btn" onclick="execDeposit()" disabled>Connect wallet</button>
-
-    <div class="info-strip">
-      <strong>How it works:</strong> Your USDC is deposited into Circle Gateway's smart contract on the source chain. Gateway issues a chain-agnostic balance that you can spend instantly on Arc (or any supported chain) without bridging.
-    </div>
+  <div id="pending-wrap" style="display:none">
+    <div class="section-title">Pending withdrawals</div>
+    <div id="pending-list"></div>
   </div>
 
-  <!-- SPEND FORM -->
-  <div class="action-card" id="form-spend" style="display:none">
-    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">Destination chain</div>
-    <div class="chain-grid" id="dst-chain-grid">
-      <!-- populated by JS -->
-    </div>
-
-    <div class="amount-row">
-      <input class="amount-input" id="spend-amount" type="text" inputmode="decimal" placeholder="0.00"/>
-      <span class="amount-token">USDC</span>
-    </div>
-
-    <div class="recipient-row">
-      <span style="font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">To:</span>
-      <input id="spend-recipient" type="text" placeholder="0x... (your wallet by default)"/>
-      <span class="recipient-toggle" onclick="useMyAddress()">Use mine</span>
-    </div>
-
-    <button class="exec-btn" id="spend-btn" onclick="execSpend()" disabled>Connect wallet</button>
-
-    <div class="info-strip">
-      <strong>Instant settlement:</strong> Your unified balance lands at the destination address in seconds. No CCTP attestation wait, no bridge fees beyond Circle's protocol fee.
-    </div>
+  <div class="info-strip" style="margin-top:32px">
+    <strong>How balance flows:</strong>
+    <strong>Deposit</strong> sends your USDC to <code>GatewayWallet</code> on a single chain. The Circle aggregator REST API (<code>/v1/balances</code>) then exposes that deposit as part of one cross-chain total. <strong>Spend</strong> signs a burn intent off-chain, swaps it for an attestation, and mints USDC on the destination — typically in seconds.
   </div>
 
   <!-- HOW IT WORKS -->
   <div class="how-section">
-    <div class="how-title">How Unified Balance works</div>
+    <div class="section-title">How Unified Balance works</div>
     <div class="how-grid">
       <div class="how-card">
         <div class="how-step">// STEP 1</div>
         <h3>Deposit</h3>
-        <p>From any supported chain (Base, Arbitrum, Optimism, etc.), deposit USDC into Circle Gateway's vault contract on that chain.</p>
+        <p>Approve USDC and call <code>deposit()</code> on Circle's <code>GatewayWallet</code>. Funds are escrowed and credited to your unified balance immediately.</p>
       </div>
       <div class="how-card">
         <div class="how-step">// STEP 2</div>
         <h3>Aggregate</h3>
-        <p>Gateway tracks deposits across chains and exposes a single chain-agnostic balance you can spend anywhere supported.</p>
+        <p>Gateway's REST API tracks deposits across every supported chain and returns one aggregated number per token, per address.</p>
       </div>
       <div class="how-card">
         <div class="how-step">// STEP 3</div>
         <h3>Spend instantly</h3>
-        <p>Spend on Arc (or any supported chain). Gateway routes liquidity in the background — funds arrive at the destination in seconds, not minutes.</p>
+        <p>Sign an EIP-712 burn intent → submit to <code>/v1/transfer</code> → receive an attestation → call <code>gatewayMint</code> on the destination. Done in seconds.</p>
       </div>
       <div class="how-card">
         <div class="how-step">// STEP 4</div>
-        <h3>No bridges</h3>
-        <p>Skip CCTP burn-mint cycles, skip wrapped tokens, skip switching networks. One balance, one button.</p>
+        <h3>Withdraw</h3>
+        <p>Need to exit? Initiate a withdrawal on any chain holding your funds; after the protocol delay finalize and the USDC returns to your wallet.</p>
       </div>
     </div>
   </div>
 
 </div>
 
+<!-- ──────── DEPOSIT MODAL ──────── -->
+<div class="gw-modal-bg" id="modal-deposit">
+  <div class="gw-modal">
+    <div class="gw-modal-head">
+      <div class="gw-modal-title">Deposit USDC</div>
+      <button class="gw-modal-close" data-close>×</button>
+    </div>
+    <div class="gw-label">Source chain</div>
+    <select id="deposit-chain" class="gw-select"></select>
+    <div class="gw-label">Amount</div>
+    <input id="deposit-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
+    <div class="gw-row"><span>Wallet balance</span><strong id="deposit-walbal">—</strong></div>
+    <div class="gw-row"><span>Currently in Gateway</span><strong id="deposit-gwbal">—</strong></div>
+    <button id="deposit-go" class="gw-action" type="button">Deposit</button>
+    <div id="deposit-status" class="gw-status"></div>
+  </div>
+</div>
+
+<!-- ──────── WITHDRAW MODAL ──────── -->
+<div class="gw-modal-bg" id="modal-withdraw">
+  <div class="gw-modal">
+    <div class="gw-modal-head">
+      <div class="gw-modal-title">Withdraw USDC</div>
+      <button class="gw-modal-close" data-close>×</button>
+    </div>
+    <div class="gw-label">Chain</div>
+    <select id="withdraw-chain" class="gw-select"></select>
+    <div class="gw-label">Amount</div>
+    <input id="withdraw-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
+    <div class="gw-row"><span>Available in Gateway</span><strong id="withdraw-gwbal">—</strong></div>
+    <div class="gw-row"><span>Withdrawal delay</span><strong id="withdraw-delay">—</strong></div>
+    <button id="withdraw-go" class="gw-action" type="button">Initiate withdrawal</button>
+    <div id="withdraw-status" class="gw-status"></div>
+    <div class="info-strip" style="margin-top:14px;font-size:12px">
+      Withdrawals are 2-step: <strong>initiate</strong> now, then <strong>finalize</strong> after the delay. We'll show pending withdrawals on this page.
+    </div>
+  </div>
+</div>
+
+<!-- ──────── SPEND MODAL ──────── -->
+<div class="gw-modal-bg" id="modal-spend">
+  <div class="gw-modal">
+    <div class="gw-modal-head">
+      <div class="gw-modal-title">Spend cross-chain</div>
+      <button class="gw-modal-close" data-close>×</button>
+    </div>
+    <div class="gw-label">From (source chain — USDC will be burned here)</div>
+    <select id="spend-src" class="gw-select"></select>
+    <div class="gw-label">To (destination chain — USDC will be minted here)</div>
+    <select id="spend-dst" class="gw-select"></select>
+    <div class="gw-label">Amount</div>
+    <input id="spend-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
+    <div class="gw-label">Recipient</div>
+    <input id="spend-recipient" class="gw-input" type="text" placeholder="0x… (defaults to your wallet)"/>
+    <div class="gw-row"><span>Source available</span><strong id="spend-srcbal">—</strong></div>
+    <button id="spend-go" class="gw-action" type="button">Sign intent + mint</button>
+    <div id="spend-status" class="gw-status"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-appkit-config.js?v=9.1.20"></script>
+<script src="/assets/arc-core.js?v=9.2.0"></script>
+<script src="/assets/arc-gateway.js?v=9.2.0"></script>
 <script>
 (async () => {
-  // App Kit dynamic import — same pattern as /trade
-  let APPKIT = null;
-  try {
-    APPKIT = await import('/assets/arc-appkit.js?v=9.1.20');
-    if (!APPKIT.isAppKitReady()) { console.warn('[balance] App Kit not ready'); APPKIT = null; }
-  } catch (e) { console.error('[balance] App Kit load failed:', e); }
+  const ARC = window.ARC;
+  if (!ARC?.gateway) { console.error('ARC.gateway missing'); return; }
 
-  // Supported source chains for deposit (Circle Gateway testnet support)
-  const SRC_CHAINS = [
-    { id: 'Base_Sepolia',     name: 'Base Sepolia',     short: 'Base',    color: '#0052FF' },
-    { id: 'Arbitrum_Sepolia', name: 'Arbitrum Sepolia', short: 'Arb',     color: '#28A0F0' },
-    { id: 'Optimism_Sepolia', name: 'Optimism Sepolia', short: 'OP',      color: '#FF0420' },
-    { id: 'Ethereum_Sepolia', name: 'Ethereum Sepolia', short: 'ETH',     color: '#627EEA' },
-  ];
-  const DST_CHAINS = [
-    { id: 'Arc_Testnet',      name: 'Arc Testnet',      short: 'Arc',     color: '#4DD6DB' },
-    ...SRC_CHAINS,
-  ];
-
-  let state = {
-    mode: 'deposit',
-    srcChain: SRC_CHAINS[0].id,
-    dstChain: 'Arc_Testnet',
-    walletAddr: null,
+  // ───── State ─────
+  const state = {
+    addr: null,
+    balances: [],         // [{chainKey, canonical, raw, display, depositor}]
+    walletBals: {},       // chainKey → raw bigint of wallet's USDC (separate from Gateway escrow)
+    pending: [],          // [{chainKey, value, withdrawableAfter}]
+    lastSyncMs: 0,
   };
 
-  // Wallet connect via window.ethereum
-  async function connectWallet() {
-    if (!window.ethereum) { alert('No wallet detected. Install MetaMask/Rabby.'); return; }
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    state.walletAddr = accounts[0];
-    document.getElementById('ub-sub').textContent = state.walletAddr.slice(0,6) + '…' + state.walletAddr.slice(-4);
-    refreshBalance();
-    refreshButtons();
+  const fmtBig = (canonical) => {
+    // canonical is 6-decimal BigInt → human readable
+    try { return ARC.formatAmt(canonical, 6, 4); } catch { return '0'; }
+  };
+  const human = (raw, decimals) => {
+    try { return ARC.formatAmt(raw, decimals, 4); } catch { return '0'; }
+  };
+
+  const chainKeys = ARC.gateway.gatewayChains();
+
+  // ───── Wallet button ─────
+  const connectBtn = document.getElementById('gw-connect-btn');
+  function refreshConnectBtn() {
+    const s = ARC.wallet.snapshot();
+    if (s.connected) {
+      connectBtn.textContent = ARC.shortAddr(s.address);
+      connectBtn.title = s.address;
+    } else {
+      connectBtn.textContent = 'Connect Wallet';
+      connectBtn.title = '';
+    }
+  }
+  connectBtn.onclick = async () => {
+    const s = ARC.wallet.snapshot();
+    if (s.connected) { ARC.wallet.disconnect(); state.addr = null; state.balances = []; renderTable(); refreshTotal(); refreshConnectBtn(); return; }
+    try { await ARC.wallet.connect(); }
+    catch (e) { alert('Connect failed: ' + ARC.explainError(e)); return; }
+    state.addr = ARC.wallet.address;
+    refreshConnectBtn();
+    refreshAll();
+  };
+  ARC.wallet.on(refreshConnectBtn);
+
+  // ───── Modal helpers ─────
+  function openModal(id) { document.getElementById(id).classList.add('show'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  document.querySelectorAll('.gw-modal-bg').forEach(bg => {
+    bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('show'); });
+    bg.querySelector('[data-close]')?.addEventListener('click', () => bg.classList.remove('show'));
+  });
+  function setStatus(elId, kind, msg) {
+    const el = document.getElementById(elId);
+    el.className = 'gw-status show ' + (kind || '');
+    el.textContent = msg;
+  }
+  function clearStatus(elId) {
+    document.getElementById(elId).className = 'gw-status';
+    document.getElementById(elId).textContent = '';
   }
 
-  // Render chain grid
-  function renderChainGrid(elId, chains, selected, onPick) {
+  // ───── Populate chain selects ─────
+  function fillSelect(elId) {
     const el = document.getElementById(elId);
-    el.innerHTML = chains.map(c => `
-      <div class="chain-card ${c.id === selected ? 'active' : ''}" data-id="${c.id}">
-        <div class="chain-card-name">${c.name}</div>
-        <div class="chain-card-balance" data-bal="${c.id}">—</div>
-      </div>
-    `).join('');
-    el.querySelectorAll('.chain-card').forEach(card => {
-      card.onclick = () => { onPick(card.dataset.id); };
+    el.innerHTML = chainKeys.map(k => `<option value="${k}">${ARC.CHAINS[k].name}</option>`).join('');
+  }
+  fillSelect('deposit-chain');
+  fillSelect('withdraw-chain');
+  fillSelect('spend-src');
+  fillSelect('spend-dst');
+  // default destination = Arc
+  document.getElementById('spend-dst').value = 'arc';
+
+  // ───── Render table rows ─────
+  function chainShort(k) { return ARC.CHAINS[k]?.short || k.slice(0, 4).toUpperCase(); }
+  function chainName(k) { return ARC.CHAINS[k]?.name || k; }
+  function chainColor(k) { return ARC.CHAINS[k]?.iconGrad || 'linear-gradient(135deg,#4DD6DB,#4A7BEC)'; }
+
+  function renderTable() {
+    const table = document.getElementById('chain-table');
+    // Keep header
+    const header = table.querySelector('.chain-row.header');
+    table.innerHTML = '';
+    table.appendChild(header);
+    const connected = !!state.addr;
+    chainKeys.forEach(k => {
+      const tok = ARC.TOKENS[k]?.USDC;
+      const row = document.createElement('div');
+      row.className = 'chain-row';
+      const bal = state.balances.find(b => b.chainKey === k);
+      const gwDisp = connected ? (bal ? bal.display : '0') : '—';
+      const wal = state.walletBals[k];
+      const walDisp = (connected && wal !== undefined) ? human(wal, tok?.decimals || 6) : '—';
+      const isZero = !bal || bal.canonical === 0n;
+      row.innerHTML = `
+        <div class="chain-info">
+          <div class="chain-dot" style="background:${chainColor(k)}">${chainShort(k).slice(0,3)}</div>
+          <div class="chain-name">${chainName(k)}<small>Domain ${ARC.CHAINS[k].cctpDomain}</small></div>
+        </div>
+        <div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small></div>
+        <div class="chain-bal ${(!wal||wal===0n)?'zero':''}">${walDisp}<small>USDC</small></div>
+        <div class="chain-actions">
+          <button data-act="deposit" data-chain="${k}" ${connected?'':'disabled'}>Deposit</button>
+          <button data-act="withdraw" data-chain="${k}" ${(connected && !isZero)?'':'disabled'}>Withdraw</button>
+        </div>`;
+      table.appendChild(row);
+    });
+    table.querySelectorAll('button[data-act]').forEach(btn => {
+      btn.onclick = () => {
+        const k = btn.dataset.chain;
+        if (btn.dataset.act === 'deposit') openDepositModal(k);
+        else openWithdrawModal(k);
+      };
     });
   }
 
-  function refreshChainGrids() {
-    renderChainGrid('src-chain-grid', SRC_CHAINS, state.srcChain, id => { state.srcChain = id; refreshChainGrids(); });
-    renderChainGrid('dst-chain-grid', DST_CHAINS, state.dstChain, id => { state.dstChain = id; refreshChainGrids(); });
-  }
-
-  window.setMode = function(mode) {
-    state.mode = mode;
-    document.getElementById('tab-deposit').classList.toggle('active', mode === 'deposit');
-    document.getElementById('tab-spend').classList.toggle('active', mode === 'spend');
-    document.getElementById('form-deposit').style.display = mode === 'deposit' ? 'block' : 'none';
-    document.getElementById('form-spend').style.display = mode === 'spend' ? 'block' : 'none';
-  };
-
-  window.useMyAddress = function() {
-    if (state.walletAddr) document.getElementById('spend-recipient').value = state.walletAddr;
-  };
-
-  window.refreshBalance = async function() {
-    if (!APPKIT || !state.walletAddr) return;
-    const sub = document.getElementById('ub-sub');
-    const total = document.getElementById('ub-total');
-    sub.textContent = 'Loading…';
-    try {
-      const bal = await APPKIT.ubGetBalance();
-      console.log('[balance] ubGetBalance:', bal);
-      // Try to extract total from response shape
-      const totalAmount = bal?.total?.amount || bal?.balance?.amount || bal?.totalBalance || '0';
-      total.textContent = parseFloat(totalAmount).toFixed(4);
-      sub.textContent = `Across ${bal?.chains?.length || 0} chain(s) · Last sync: ${new Date().toLocaleTimeString()}`;
-    } catch (e) {
-      console.error('[balance] refresh failed:', e);
-      total.textContent = '—';
-      sub.textContent = 'Unified Balance unavailable: ' + (e?.message || 'unknown error');
-    }
-  };
-
-  // Force-disable Unified Balance until SDK integration is verified end-to-end.
-  // Set to false once kit.unifiedBalance.deposit/spend/getBalance work in browser
-  // (likely needs server-side proxy via Pages Functions for kit key).
-  const UB_DISABLED = true;
-
-  window.execDeposit = async function() {
-    if (UB_DISABLED) {
-      alert('Unified Balance is in development. See banner above for status.');
-      return;
-    }
-    if (!state.walletAddr) { connectWallet(); return; }
-    const amt = document.getElementById('deposit-amount').value.trim();
-    if (!amt || parseFloat(amt) <= 0) { alert('Enter amount'); return; }
-    const btn = document.getElementById('deposit-btn');
-    btn.disabled = true;
-    btn.textContent = 'Depositing…';
-    try {
-      if (!APPKIT) throw new Error('App Kit not initialized');
-      const result = await APPKIT.ubDeposit(state.srcChain, amt);
-      console.log('[balance] deposit result:', result);
-      alert(`Deposit complete! Tx: ${result?.txHash || result?.transactionHash || '(see console)'}`);
-      refreshBalance();
-    } catch (e) {
-      console.error('[balance] deposit failed:', e);
-      alert('Deposit failed: ' + (e?.message || 'unknown'));
-    } finally {
-      btn.disabled = false;
-      btn.textContent = `Deposit ${amt} USDC from ${SRC_CHAINS.find(c => c.id === state.srcChain)?.name}`;
-    }
-  };
-
-  window.execSpend = async function() {
-    if (UB_DISABLED) {
-      alert('Unified Balance is in development. See banner above for status.');
-      return;
-    }
-    if (!state.walletAddr) { connectWallet(); return; }
-    const amt = document.getElementById('spend-amount').value.trim();
-    const to = document.getElementById('spend-recipient').value.trim() || state.walletAddr;
-    if (!amt || parseFloat(amt) <= 0) { alert('Enter amount'); return; }
-    if (!to.startsWith('0x') || to.length !== 42) { alert('Invalid recipient address'); return; }
-    const btn = document.getElementById('spend-btn');
-    btn.disabled = true;
-    btn.textContent = 'Spending…';
-    try {
-      if (!APPKIT) throw new Error('App Kit not initialized');
-      const result = await APPKIT.ubSpend(amt, state.dstChain, to);
-      console.log('[balance] spend result:', result);
-      alert(`Spend complete! Tx: ${result?.txHash || result?.transactionHash || '(see console)'}`);
-      refreshBalance();
-    } catch (e) {
-      console.error('[balance] spend failed:', e);
-      alert('Spend failed: ' + (e?.message || 'unknown'));
-    } finally {
-      btn.disabled = false;
-      btn.textContent = `Spend ${amt} USDC on ${DST_CHAINS.find(c => c.id === state.dstChain)?.name}`;
-    }
-  };
-
-  function refreshButtons() {
-    const dBtn = document.getElementById('deposit-btn');
-    const sBtn = document.getElementById('spend-btn');
-    if (!state.walletAddr) {
-      dBtn.textContent = 'Connect wallet';
-      dBtn.disabled = false;
-      dBtn.onclick = connectWallet;
-      sBtn.textContent = 'Connect wallet';
-      sBtn.disabled = false;
-      sBtn.onclick = connectWallet;
-    } else {
-      dBtn.disabled = false;
-      dBtn.textContent = `Deposit USDC from ${SRC_CHAINS.find(c => c.id === state.srcChain)?.name || '...'}`;
-      dBtn.onclick = execDeposit;
-      sBtn.disabled = false;
-      sBtn.textContent = `Spend USDC on ${DST_CHAINS.find(c => c.id === state.dstChain)?.name || '...'}`;
-      sBtn.onclick = execSpend;
+  function refreshTotal() {
+    const totalCanonical = state.balances.reduce((acc, b) => acc + b.canonical, 0n);
+    document.getElementById('ub-total').textContent = fmtBig(totalCanonical);
+    if (!state.addr) {
+      document.getElementById('ub-sub').textContent = 'Connect wallet to view your balance across all Gateway chains.';
+    } else if (state.lastSyncMs) {
+      const n = state.balances.filter(b => b.canonical > 0n).length;
+      document.getElementById('ub-sub').textContent = `Across ${n} chain${n!==1?'s':''} · Last sync ${new Date(state.lastSyncMs).toLocaleTimeString()}`;
     }
   }
 
-  // Init
-  refreshChainGrids();
-  refreshButtons();
-  setMode('deposit');
+  // ───── Pending withdrawals ─────
+  async function refreshPending() {
+    if (!state.addr) { document.getElementById('pending-wrap').style.display = 'none'; return; }
+    const all = [];
+    await Promise.all(chainKeys.map(async k => {
+      try {
+        const list = await ARC.gateway.listPendingWithdrawals(k, state.addr);
+        list.forEach(w => {
+          const value = BigInt(w[0] ?? w.value);
+          const after = BigInt(w[1] ?? w.withdrawableAfter);
+          if (value > 0n) all.push({ chainKey: k, value, after });
+        });
+      } catch { /* chain may not respond */ }
+    }));
+    state.pending = all;
+    const wrap = document.getElementById('pending-wrap');
+    const list = document.getElementById('pending-list');
+    if (all.length === 0) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    list.innerHTML = '';
+    all.forEach(p => {
+      const tok = ARC.TOKENS[p.chainKey].USDC;
+      const ready = p.after * 1000n <= BigInt(Date.now());
+      const card = document.createElement('div');
+      card.className = 'pending-card';
+      card.innerHTML = `
+        <strong>${human(p.value, tok.decimals)}</strong> USDC on <strong>${chainName(p.chainKey)}</strong>
+        — ${ready ? '✅ Ready to finalize' : '⏳ Available at ' + new Date(Number(p.after) * 1000).toLocaleString()}
+        <button data-chain="${p.chainKey}" ${ready?'':'disabled'}>Finalize</button>`;
+      card.querySelector('button').onclick = async (e) => {
+        const btn = e.target;
+        btn.disabled = true; btn.textContent = 'Finalizing…';
+        try {
+          await ARC.gateway.finalizeWithdrawal(p.chainKey);
+          alert('Withdrawal finalized!');
+          refreshAll();
+        } catch (err) {
+          alert('Failed: ' + ARC.explainError(err));
+          btn.disabled = false; btn.textContent = 'Finalize';
+        }
+      };
+      list.appendChild(card);
+    });
+  }
 
-  // Auto-connect if wallet already authorized
-  if (window.ethereum) {
+  // ───── Refresh ─────
+  async function refreshBalances() {
+    if (!state.addr) return;
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      if (accounts.length > 0) {
-        state.walletAddr = accounts[0];
-        document.getElementById('ub-sub').textContent = state.walletAddr.slice(0,6) + '…' + state.walletAddr.slice(-4);
-        refreshButtons();
-        refreshBalance();
-      }
-    } catch {}
+      const out = await ARC.gateway.readBalances(state.addr, chainKeys);
+      state.balances = out.balances;
+      state.lastSyncMs = Date.now();
+    } catch (e) {
+      console.warn('[balance] REST failed, falling back to on-chain:', e?.message);
+      const arr = await Promise.all(chainKeys.map(async k => {
+        try {
+          const canonical = await ARC.gateway.readBalanceOnChain(k, state.addr);
+          const tok = ARC.TOKENS[k].USDC;
+          // on-chain `availableBalance` returns in token's native decimals;
+          // normalize to canonical 6-decimal for the total bar
+          let cn = canonical;
+          if (tok.decimals > 6) cn = canonical / (10n ** BigInt(tok.decimals - 6));
+          else if (tok.decimals < 6) cn = canonical * (10n ** BigInt(6 - tok.decimals));
+          return { chainKey: k, domain: ARC.CHAINS[k].cctpDomain, canonical: cn, raw: canonical, display: human(canonical, tok.decimals), depositor: state.addr };
+        } catch { return null; }
+      }));
+      state.balances = arr.filter(Boolean);
+      state.lastSyncMs = Date.now();
+    }
+  }
+
+  async function refreshWallets() {
+    if (!state.addr) return;
+    const out = {};
+    await Promise.all(chainKeys.map(async k => {
+      try {
+        const tok = ARC.TOKENS[k]?.USDC;
+        if (!tok) return;
+        out[k] = await ARC.tokenBalance(k, tok, state.addr);
+      } catch { /* skip */ }
+    }));
+    state.walletBals = out;
+  }
+
+  async function refreshAll() {
+    if (!state.addr) { renderTable(); refreshTotal(); return; }
+    document.getElementById('ub-sub').textContent = 'Loading…';
+    await Promise.all([refreshBalances(), refreshWallets()]);
+    renderTable(); refreshTotal();
+    refreshPending().catch(() => {});
+  }
+
+  document.getElementById('ub-refresh').onclick = refreshAll;
+
+  // ───── Top-bar Spend button ─────
+  document.getElementById('ub-spend-top').onclick = () => {
+    if (!state.addr) { connectBtn.click(); return; }
+    openSpendModal();
+  };
+
+  // ───── Deposit modal ─────
+  function openDepositModal(chainKey) {
+    if (!state.addr) { alert('Connect wallet first'); return; }
+    document.getElementById('deposit-chain').value = chainKey || chainKeys[0];
+    document.getElementById('deposit-amount').value = '';
+    clearStatus('deposit-status');
+    syncDepositInfo();
+    openModal('modal-deposit');
+  }
+  function syncDepositInfo() {
+    const k = document.getElementById('deposit-chain').value;
+    const tok = ARC.TOKENS[k].USDC;
+    const wal = state.walletBals[k];
+    const bal = state.balances.find(b => b.chainKey === k);
+    document.getElementById('deposit-walbal').textContent = (wal !== undefined) ? human(wal, tok.decimals) + ' USDC' : '—';
+    document.getElementById('deposit-gwbal').textContent = (bal ? bal.display : '0') + ' USDC';
+  }
+  document.getElementById('deposit-chain').onchange = syncDepositInfo;
+  document.getElementById('deposit-go').onclick = async () => {
+    const k = document.getElementById('deposit-chain').value;
+    const amtStr = document.getElementById('deposit-amount').value.trim();
+    if (!amtStr) { setStatus('deposit-status', 'err', 'Enter an amount'); return; }
+    const tok = ARC.TOKENS[k].USDC;
+    const value = ARC.parseAmt(amtStr, tok.decimals);
+    if (value <= 0n) { setStatus('deposit-status', 'err', 'Invalid amount'); return; }
+    const btn = document.getElementById('deposit-go');
+    btn.disabled = true; btn.textContent = 'Working…';
+    try {
+      await ARC.gateway.deposit(k, value, { onStep: (m) => setStatus('deposit-status', '', m) });
+      setStatus('deposit-status', 'ok', '✅ Deposit confirmed');
+      setTimeout(() => closeModal('modal-deposit'), 1200);
+      refreshAll();
+    } catch (e) {
+      console.error(e); setStatus('deposit-status', 'err', '❌ ' + ARC.explainError(e));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Deposit';
+    }
+  };
+
+  // ───── Withdraw modal ─────
+  async function openWithdrawModal(chainKey) {
+    if (!state.addr) { alert('Connect wallet first'); return; }
+    document.getElementById('withdraw-chain').value = chainKey || chainKeys[0];
+    document.getElementById('withdraw-amount').value = '';
+    clearStatus('withdraw-status');
+    await syncWithdrawInfo();
+    openModal('modal-withdraw');
+  }
+  async function syncWithdrawInfo() {
+    const k = document.getElementById('withdraw-chain').value;
+    const tok = ARC.TOKENS[k].USDC;
+    const bal = state.balances.find(b => b.chainKey === k);
+    document.getElementById('withdraw-gwbal').textContent = (bal ? bal.display : '0') + ' USDC';
+    try {
+      const d = await ARC.gateway.withdrawalDelay(k);
+      const sec = Number(d);
+      const human = sec >= 3600 ? `${(sec/3600).toFixed(1)} h` : sec >= 60 ? `${Math.round(sec/60)} min` : `${sec} s`;
+      document.getElementById('withdraw-delay').textContent = human;
+    } catch { document.getElementById('withdraw-delay').textContent = '—'; }
+  }
+  document.getElementById('withdraw-chain').onchange = syncWithdrawInfo;
+  document.getElementById('withdraw-go').onclick = async () => {
+    const k = document.getElementById('withdraw-chain').value;
+    const amtStr = document.getElementById('withdraw-amount').value.trim();
+    if (!amtStr) { setStatus('withdraw-status', 'err', 'Enter an amount'); return; }
+    const tok = ARC.TOKENS[k].USDC;
+    const value = ARC.parseAmt(amtStr, tok.decimals);
+    if (value <= 0n) { setStatus('withdraw-status', 'err', 'Invalid amount'); return; }
+    const btn = document.getElementById('withdraw-go');
+    btn.disabled = true; btn.textContent = 'Working…';
+    try {
+      await ARC.gateway.initiateWithdrawal(k, value, { onStep: (m) => setStatus('withdraw-status', '', m) });
+      setStatus('withdraw-status', 'ok', '✅ Withdrawal initiated. Check pending list.');
+      setTimeout(() => closeModal('modal-withdraw'), 1500);
+      refreshAll();
+    } catch (e) {
+      console.error(e); setStatus('withdraw-status', 'err', '❌ ' + ARC.explainError(e));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Initiate withdrawal';
+    }
+  };
+
+  // ───── Spend modal ─────
+  function openSpendModal() {
+    if (!state.addr) { alert('Connect wallet first'); return; }
+    document.getElementById('spend-recipient').value = state.addr;
+    document.getElementById('spend-amount').value = '';
+    clearStatus('spend-status');
+    // Pick best source = chain with largest balance
+    if (state.balances.length) {
+      const best = [...state.balances].sort((a,b) => (b.canonical > a.canonical ? 1 : -1))[0];
+      document.getElementById('spend-src').value = best.chainKey;
+    }
+    syncSpendInfo();
+    openModal('modal-spend');
+  }
+  function syncSpendInfo() {
+    const k = document.getElementById('spend-src').value;
+    const bal = state.balances.find(b => b.chainKey === k);
+    document.getElementById('spend-srcbal').textContent = (bal ? bal.display : '0') + ' USDC';
+  }
+  document.getElementById('spend-src').onchange = syncSpendInfo;
+  document.getElementById('spend-go').onclick = async () => {
+    const src = document.getElementById('spend-src').value;
+    const dst = document.getElementById('spend-dst').value;
+    if (src === dst) { setStatus('spend-status', 'err', 'Source and destination must differ'); return; }
+    const amtStr = document.getElementById('spend-amount').value.trim();
+    const recipient = document.getElementById('spend-recipient').value.trim() || state.addr;
+    if (!amtStr) { setStatus('spend-status', 'err', 'Enter an amount'); return; }
+    if (!ethers.isAddress(recipient)) { setStatus('spend-status', 'err', 'Invalid recipient'); return; }
+    // Amount in canonical 6-decimal
+    const valueCanonical = ARC.parseAmt(amtStr, 6);
+    if (valueCanonical <= 0n) { setStatus('spend-status', 'err', 'Invalid amount'); return; }
+    const btn = document.getElementById('spend-go');
+    btn.disabled = true; btn.textContent = 'Working…';
+    try {
+      await ARC.gateway.spend({
+        srcChainKey: src, dstChainKey: dst, recipient, valueCanonical,
+        onStep: (m) => setStatus('spend-status', '', m),
+      });
+      setStatus('spend-status', 'ok', '✅ Cross-chain spend complete');
+      setTimeout(() => closeModal('modal-spend'), 1500);
+      refreshAll();
+    } catch (e) {
+      console.error(e); setStatus('spend-status', 'err', '❌ ' + ARC.explainError(e));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Sign intent + mint';
+    }
+  };
+
+  // ───── Init ─────
+  renderTable();
+  refreshTotal();
+  refreshConnectBtn();
+  await ARC.wallet.autoConnect().catch(() => null);
+  if (ARC.wallet.address) {
+    state.addr = ARC.wallet.address;
+    refreshConnectBtn();
+    refreshAll();
   }
 })();
 </script>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://iris-api-sandbox.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://sepolia.optimism.io https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com https://gateway-api-testnet.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
@@ -144,6 +144,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   <!-- App Kit Swap status pill (compact, full-width across both grid columns) -->
   <div id="appkit-status" style="display:none;grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4"></div>
 
+  <!-- Gateway smart-routing hint: shown only when user has USDC scattered across
+       multiple chains (i.e. Unified Balance > local wallet) → encourage using /balance -->
+  <div id="gateway-hint" style="display:none;grid-column:1/-1;margin:0 0 8px;padding:9px 14px;border-radius:10px;font-size:12.5px;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.45;background:rgba(244,200,154,0.07);border:1px solid rgba(244,200,154,0.22);color:var(--text)"></div>
+
   <!-- LEFT: main trade form -->
   <div>
     <div class="card">
@@ -266,8 +270,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.1.11"></script>
-<script src="/assets/arc-ui.js?v=9.1.20"></script>
+<script src="/assets/arc-core.js?v=9.2.0"></script>
+<script src="/assets/arc-ui.js?v=9.2.0"></script>
+<script src="/assets/arc-gateway.js?v=9.2.0"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -1100,8 +1105,38 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   tick(); setInterval(tick, 8000);
 
   // ── Wallet reactivity ────────────────────────────────
-  ARC.wallet.on(() => { updateBalances(); refreshExec(); renderActivity(); });
+  ARC.wallet.on(() => { updateBalances(); refreshExec(); renderActivity(); refreshGatewayHint(); });
   updateBalances(); refreshExec();
+
+  // ── Gateway smart-routing hint ────────────────────────
+  // Show a soft nudge when the user has Unified Balance scattered across chains.
+  // Threshold: total USDC in Gateway across foreign chains > 1 → "deposited on N
+  // chains, you can spend instantly via Balance page". Updates on wallet events
+  // and every 30s.
+  const gwHintEl = document.getElementById('gateway-hint');
+  function hideGatewayHint() { if (gwHintEl) gwHintEl.style.display = 'none'; }
+  async function refreshGatewayHint() {
+    if (!ARC.gateway || !gwHintEl) return;
+    if (!ARC.wallet.address) { hideGatewayHint(); return; }
+    try {
+      const out = await ARC.gateway.readBalances(ARC.wallet.address);
+      const nonZero = (out.balances || []).filter(b => b.canonical > 0n);
+      const totalCanonical = nonZero.reduce((a, b) => a + b.canonical, 0n);
+      // 1 USDC = 1_000_000 in canonical 6-decimal
+      if (totalCanonical < 1_000_000n) { hideGatewayHint(); return; }
+      const total = ARC.formatAmt(totalCanonical, 6, 2);
+      const n = nonZero.length;
+      gwHintEl.style.display = 'flex';
+      gwHintEl.innerHTML = `
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#F4C89A;white-space:nowrap">// GATEWAY</span>
+        <span>You hold <strong>${total} USDC</strong> across <strong>${n} chain${n!==1?'s':''}</strong> in Circle Gateway. Spend it on any chain instantly without bridging — open <a href="/balance" style="color:#F4C89A;text-decoration:underline;font-weight:600">Balance ↗</a>.</span>`;
+    } catch (e) {
+      console.warn('[trade] gateway hint skipped:', e?.message);
+      hideGatewayHint();
+    }
+  }
+  refreshGatewayHint();
+  setInterval(refreshGatewayHint, 30000);
 })();
 </script>
 </body>
