@@ -216,7 +216,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <a class="nav-tab" href="/pool">Pool</a>
     <a class="nav-tab" href="/vault">Vault</a>
     <a class="nav-tab active" href="/token">Token</a>
-    <a class="nav-tab" href="/point">Points</a>
     <a class="nav-tab faucet-tab" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
   </div>
   <div class="nav-right">
@@ -634,7 +633,6 @@ const ERC20_CONSTRUCTOR_ABI = [
   ],"stateMutability":"nonpayable","type":"constructor"}
 ];
 
-
 async function deployToken(){
   const name    = document.getElementById('f-name').value.trim();
   const sym     = document.getElementById('f-sym').value.trim();
@@ -700,7 +698,6 @@ async function deployToken(){
 
   return txHash;
 }
-
 
 async function waitForReceipt(txHash){
   for(let i=0;i<40;i++){
@@ -794,7 +791,6 @@ async function handleDeploy(){
   }
 }
 
-
 /* ============================================================
    DEPLOY SUCCESS MODAL
 ============================================================ */
@@ -830,7 +826,6 @@ function showToast(icon,msg,sub=''){
   document.getElementById('toast').classList.add('show');
   toastTimer=setTimeout(()=>document.getElementById('toast').classList.remove('show'),5000);
 }
-
 
 /* RPC helper */
 async function rpcCall(method, params){

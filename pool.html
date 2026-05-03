@@ -210,7 +210,6 @@ nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bot
     <button class="nav-tab active">Pool</button>
     <a class="nav-tab" href="/vault">Vault</a>
     <a class="nav-tab" href="/token">Token</a>
-    <a class="nav-tab" href="/point">Points</a>
     <a class="nav-tab faucet-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
   </div>
   <div class="nav-right">
@@ -776,7 +775,6 @@ function syncLiqInputs(changed){
   }
 }
 
-
 /* Fetch on-chain pool rate from reserves */
 async function rpcCallPool(method, params){
   const r = await fetch('https://rpc.testnet.arc.network',{
@@ -1041,7 +1039,6 @@ function timeAgo(ts){
   if(diff<86400) return Math.floor(diff/3600)+'h ago';
   return Math.floor(diff/86400)+'d ago';
 }
-
 
 /* ============================================================
    NO ROUTER — Pool

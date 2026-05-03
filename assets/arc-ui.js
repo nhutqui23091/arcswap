@@ -6,13 +6,14 @@
 
   // ── NAVBAR ─────────────────────────────────────────────
   function renderNav(active) {
+    // Central nav — top-level product pages.
+    // Balance moved to wallet dropdown (only relevant when connected).
+    // Points hidden — page disabled until incentive program ready.
     const tabs = [
-      { id: 'trade',   label: 'Trade',   href: '/trade'   },
-      { id: 'pool',    label: 'Pool',    href: '/pool'    },
-      { id: 'vault',   label: 'Vault',   href: '/vault'   },
-      { id: 'balance', label: 'Balance', href: '/balance' },
-      { id: 'token',   label: 'Token',   href: '/token'   },
-      { id: 'point',   label: 'Points',  href: '/point'   },
+      { id: 'trade', label: 'Trade', href: '/trade' },
+      { id: 'pool',  label: 'Pool',  href: '/pool'  },
+      { id: 'vault', label: 'Vault', href: '/vault' },
+      { id: 'token', label: 'Token', href: '/token' },
     ];
     const html = `
       <a class="nav-logo" href="/">
@@ -74,6 +75,10 @@
             <div class="label-caps" style="margin-bottom:4px">Address</div>
             <div class="mono" style="font-size:13px;word-break:break-all">${addr}</div>
           </div>
+          <a class="btn-ghost" href="/balance" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none">
+            <span>💰 Unified Balance</span>
+            <span style="font-family:var(--mono);font-size:10px;color:#FFB454;letter-spacing:.12em">// BETA</span>
+          </a>
           <div style="display:flex;gap:8px">
             <button class="btn-ghost" style="flex:1" id="arc-copy-addr">Copy</button>
             <a class="btn-ghost" style="flex:1;text-align:center" id="arc-explorer-link" target="_blank" rel="noopener">View on Explorer ↗</a>

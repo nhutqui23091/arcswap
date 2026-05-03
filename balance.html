@@ -154,13 +154,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     <p>One USDC balance, spendable on any chain. Deposit from Base, Arbitrum, Optimism, Polygon — settle on Arc instantly. No bridge clicks, no chain switching, no wrapped tokens.</p>
   </div>
 
-  <!-- BETA BANNER -->
-  <div class="beta-banner">
-    <div class="beta-banner-emoji">🌐</div>
+  <!-- COMING SOON BANNER (Unified Balance integration in progress — current SDK doesn't expose getBalance) -->
+  <div class="beta-banner" style="border-color:rgba(255,180,84,0.3);background:linear-gradient(180deg,rgba(255,180,84,0.08),rgba(255,180,84,0.02))">
+    <div class="beta-banner-emoji">🛠</div>
     <div class="beta-banner-text">
-      <div class="beta-banner-eyebrow">// Beta · Arc Testnet</div>
-      <div class="beta-banner-title">Unified Balance is in early beta</div>
-      <div class="beta-banner-desc">Circle Gateway is rolling out support across testnet chains. Deposits from <strong>Base Sepolia, Arbitrum Sepolia, Optimism Sepolia</strong> are supported. UI shows estimated balance; some flows may need wallet network switches.</div>
+      <div class="beta-banner-eyebrow" style="color:#FFB454">// In Development · Coming Soon</div>
+      <div class="beta-banner-title">Unified Balance integration in progress</div>
+      <div class="beta-banner-desc">
+        Circle App Kit's <code>kit.unifiedBalance</code> SDK is still maturing on Arc Testnet. Direct browser integration currently doesn't expose <code>getBalance</code> — we're working with Circle to clarify the proper flow (likely needs a server-side adapter via Pages Functions).
+        <br><br>
+        <strong>Planned flow</strong>: connect wallet → deposit USDC from Base/Arbitrum/Optimism Sepolia → see total unified balance → spend instantly on Arc. This page will activate when the integration is verified end-to-end. Track progress in our <a href="/blog" style="color:var(--arc1);text-decoration:underline">blog</a>.
+      </div>
     </div>
   </div>
 
@@ -171,7 +175,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       <span class="balance-amount" id="ub-total">—</span>
       <span class="balance-token">USDC</span>
     </div>
-    <div class="balance-sub" id="ub-sub">Connect wallet to view balance across chains</div>
+    <div class="balance-sub" id="ub-sub">Integration in progress — see banner above</div>
     <div class="balance-actions">
       <button class="act-btn primary" id="ub-refresh-btn" onclick="refreshBalance()">↻ Refresh</button>
       <button class="act-btn" onclick="setMode('deposit')">↓ Deposit</button>
@@ -351,7 +355,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     }
   };
 
+  // Force-disable Unified Balance until SDK integration is verified end-to-end.
+  // Set to false once kit.unifiedBalance.deposit/spend/getBalance work in browser
+  // (likely needs server-side proxy via Pages Functions for kit key).
+  const UB_DISABLED = true;
+
   window.execDeposit = async function() {
+    if (UB_DISABLED) {
+      alert('Unified Balance is in development. See banner above for status.');
+      return;
+    }
     if (!state.walletAddr) { connectWallet(); return; }
     const amt = document.getElementById('deposit-amount').value.trim();
     if (!amt || parseFloat(amt) <= 0) { alert('Enter amount'); return; }
@@ -374,6 +387,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   };
 
   window.execSpend = async function() {
+    if (UB_DISABLED) {
+      alert('Unified Balance is in development. See banner above for status.');
+      return;
+    }
     if (!state.walletAddr) { connectWallet(); return; }
     const amt = document.getElementById('spend-amount').value.trim();
     const to = document.getElementById('spend-recipient').value.trim() || state.walletAddr;

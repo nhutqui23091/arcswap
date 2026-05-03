@@ -267,7 +267,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/arc-core.js?v=9.1.11"></script>
-<script src="/assets/arc-ui.js?v=9.1.11"></script>
+<script src="/assets/arc-ui.js?v=9.1.20"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -873,8 +873,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     const dst = CHAINS[state.toChain];
     const srcUSDC = TOKENS[state.fromChain].USDC;
 
-    // ── App Kit Bridge path (preferred — wraps CCTP, handles attestation + mint) ──
-    if (APPKIT && APPKIT_CHAINS[state.fromChain] && APPKIT_CHAINS[state.toChain]) {
+    // ── App Kit Bridge path — DISABLED ──
+    // App Kit Bridge uses an EIP-712 signing pattern that MetaMask's risk
+    // detector flags as "Giao dịch này có rủi ro" (false positive). Until
+    // MetaMask whitelists Circle's TokenMessenger, we use direct CCTP V2 path
+    // below (proven to work, no scam warning).
+    // To re-enable App Kit Bridge for testing, set BRIDGE_USE_APPKIT = true.
+    const BRIDGE_USE_APPKIT = false;
+    if (BRIDGE_USE_APPKIT && APPKIT && APPKIT_CHAINS[state.fromChain] && APPKIT_CHAINS[state.toChain]) {
       const amountStr = formatAmt(amt, srcUSDC.decimals);
       const steps = [
         { id: 'bridge', title: `Bridge ${amountStr} USDC: ${src.short} → ${dst.short}` },
