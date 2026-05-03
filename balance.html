@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://sepolia.optimism.io https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com https://gateway-api-testnet.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com https://gateway-api-testnet.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
@@ -110,7 +110,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
 .gw-input{width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:14px;outline:none;transition:border .15s}
 .gw-input:focus{border-color:var(--arc1)}
 .gw-input.amount{font-size:24px;font-weight:600;padding:14px;text-align:right}
-.gw-select{width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:14px;outline:none;cursor:pointer;font-family:var(--font)}
+.gw-select{width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:14px;outline:none;cursor:pointer;font-family:var(--font);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238CA0BD' d='M6 9L1 4h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+/* Native <option> popup colors — Windows/Chrome default to white-on-white in
+   dark themes, so we explicitly paint the dropdown items dark. */
+.gw-select option{background:#0F1E36;color:var(--text);padding:6px}
+.gw-select option:checked,.gw-select option:hover{background:#1a2c4a;color:#fff}
 .gw-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:6px}
 .gw-row strong{color:var(--text);font-family:var(--mono);font-weight:600}
 .gw-action{width:100%;margin-top:18px;padding:14px;border-radius:12px;font-size:14px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,var(--arc1),var(--arc2));color:var(--bg);transition:all .2s;letter-spacing:.02em}
@@ -300,8 +304,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.2.1"></script>
-<script src="/assets/arc-gateway.js?v=9.2.1"></script>
+<script src="/assets/arc-core.js?v=9.2.2"></script>
+<script src="/assets/arc-gateway.js?v=9.2.2"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -427,13 +431,21 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
 
   function refreshTotal() {
     const totalCanonical = state.balances.reduce((acc, b) => acc + b.canonical, 0n);
+    const totalPending = state.balances.reduce((acc, b) => acc + (b.pending || 0n), 0n);
     document.getElementById('ub-total').textContent = fmtBig(totalCanonical);
+    const subEl = document.getElementById('ub-sub');
     if (!state.addr) {
-      document.getElementById('ub-sub').textContent = 'Connect wallet to view your balance across all Gateway chains.';
-    } else if (state.lastSyncMs) {
-      const n = state.balances.filter(b => b.canonical > 0n).length;
-      document.getElementById('ub-sub').textContent = `Across ${n} chain${n!==1?'s':''} · Last sync ${new Date(state.lastSyncMs).toLocaleTimeString()}`;
+      subEl.innerHTML = 'Connect wallet to view your balance across all Gateway chains.';
+      return;
     }
+    if (!state.lastSyncMs) return;
+    const n = state.balances.filter(b => b.canonical > 0n).length;
+    let s = `Across ${n} chain${n!==1?'s':''} · Last sync ${new Date(state.lastSyncMs).toLocaleTimeString()}`;
+    if (totalPending > 0n) {
+      const pendDisp = ARC.formatAmt(totalPending, 6, 4);
+      s += ` <span style="color:#FFB454;font-weight:600">· +${pendDisp} USDC pending finality (~12-15 min)</span>`;
+    }
+    subEl.innerHTML = s;
   }
 
   // ───── Pending withdrawals ─────
@@ -528,6 +540,20 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   }
 
   document.getElementById('ub-refresh').onclick = refreshAll;
+
+  // Auto-refresh every 15s while page is visible — Circle's operator can take
+  // 12-15min to credit deposits (Sepolia/L2 finality), so the page should keep
+  // checking on its own instead of forcing the user to click.
+  let _autoRefreshTimer = null;
+  function startAutoRefresh() {
+    if (_autoRefreshTimer) return;
+    _autoRefreshTimer = setInterval(() => {
+      if (document.visibilityState === 'visible' && state.addr) refreshAll();
+    }, 15000);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.addr) refreshAll();
+  });
 
   // ───── Top-bar Spend button ─────
   document.getElementById('ub-spend-top').onclick = () => {
@@ -674,7 +700,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     state.addr = ARC.wallet.address;
     refreshConnectBtn();
     refreshAll();
+    startAutoRefresh();
   }
+  // Also start the timer when the user connects later
+  ARC.wallet.on(() => { if (ARC.wallet.address) { state.addr = ARC.wallet.address; startAutoRefresh(); } });
 })();
 </script>
 

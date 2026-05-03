@@ -113,7 +113,9 @@
     optimismSepolia: {
       id: 11155420, hex: '0xaa37dc',
       name: 'OP Sepolia', short: 'OP Sep',
-      rpc: 'https://sepolia.optimism.io',
+      // sepolia.optimism.io throttles aggressively → "could not coalesce error".
+      // publicnode is more reliable for browser use.
+      rpc: 'https://optimism-sepolia.publicnode.com',
       explorer: 'https://sepolia-optimism.etherscan.io',
       explorerTx: h => `https://sepolia-optimism.etherscan.io/tx/${h}`,
       explorerAddr: a => `https://sepolia-optimism.etherscan.io/address/${a}`,
@@ -602,6 +604,6 @@
     gatewayChains: () => Object.entries(CHAINS)
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
-    version: '9.2.1',
+    version: '9.2.2',
   };
 })(window);
