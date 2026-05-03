@@ -48,6 +48,30 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 .chain-select .chip.active{background:linear-gradient(135deg,rgba(77,214,219,.2),rgba(74,123,236,.15));border-color:rgba(77,214,219,.5);color:#fff}
 .chain-select .chip .cdot{width:6px;height:6px;border-radius:50%}
 
+/* Smart-routing source / destination dropdown */
+.src-select,.dst-select{
+  width:100%;padding:9px 36px 9px 14px;border-radius:12px;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);font-size:13px;font-weight:600;font-family:var(--font);
+  outline:none;cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238CA0BD' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+  transition:border .15s;
+}
+.src-select:hover,.dst-select:hover,.src-select:focus,.dst-select:focus{border-color:var(--border2)}
+.src-select option,.dst-select option{background:#0F1E36;color:var(--text);padding:8px}
+.src-select option:disabled{color:#5B6D85;background:#0A1628}
+.src-select option:checked,.dst-select option:checked{background:#1a2c4a;color:#fff}
+.src-select optgroup,.dst-select optgroup{background:#0A1628;color:#FFB454;font-weight:700;font-size:11px;letter-spacing:.08em}
+
+/* Source-kind badge inside dropdown wrapper */
+.source-wrap{display:flex;flex-direction:column;gap:6px}
+.source-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-family:var(--mono);padding:0 4px}
+.source-meta .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.source-meta .badge.gateway{background:rgba(244,200,154,.12);color:#FFB454;border:1px solid rgba(244,200,154,.3)}
+.source-meta .badge.wallet{background:rgba(77,214,219,.1);color:var(--arc1);border:1px solid rgba(77,214,219,.3)}
+
 .swap-flipbar{position:relative;height:14px;margin:4px 0}
 .swap-flip-btn{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:38px;height:38px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:2}
 .swap-flip-btn:hover{border-color:var(--arc2);color:var(--arc2);transform:translateX(-50%) rotate(180deg)}
@@ -154,10 +178,13 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
       <!-- FROM leg -->
       <div class="leg" id="from-leg">
         <div class="leg-head">
-          <span class="leg-lbl">You pay · From</span>
+          <span class="leg-lbl">You pay · Source</span>
           <span class="leg-bal" id="from-bal">Balance: —</span>
         </div>
-        <div class="chain-select" id="from-chains"></div>
+        <div class="source-wrap">
+          <select class="src-select" id="from-source" aria-label="Source"></select>
+          <div class="source-meta" id="from-source-meta"><span></span><span></span></div>
+        </div>
         <div style="height:10px"></div>
         <div class="leg-row">
           <div style="min-width:0">
@@ -181,10 +208,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
       <!-- TO leg -->
       <div class="leg" id="to-leg">
         <div class="leg-head">
-          <span class="leg-lbl">You receive · To</span>
+          <span class="leg-lbl">You receive · Destination</span>
           <span class="leg-bal" id="to-bal">Balance: —</span>
         </div>
-        <div class="chain-select" id="to-chains"></div>
+        <select class="dst-select" id="to-dest" aria-label="Destination chain"></select>
         <div style="height:10px"></div>
         <div class="leg-row">
           <div style="min-width:0">
@@ -270,9 +297,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.2.2"></script>
-<script src="/assets/arc-ui.js?v=9.2.2"></script>
-<script src="/assets/arc-gateway.js?v=9.2.2"></script>
+<script src="/assets/arc-core.js?v=9.3.0"></script>
+<script src="/assets/arc-ui.js?v=9.3.0"></script>
+<script src="/assets/arc-gateway.js?v=9.3.0"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -327,9 +354,11 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   }
 
   // ── STATE ────────────────────────────────────────────
+  // src.kind: 'wallet' (USDC sitting in user's wallet) or 'gateway' (USDC deposited
+  // in Circle's GatewayWallet contract on that chain — spendable cross-chain instantly).
   const state = {
-    fromChain: 'arc',
-    toChain: 'arc',
+    src: { chainKey: 'arc', kind: 'wallet' },
+    dst: { chainKey: 'arc' },
     fromToken: TOKENS.arc.USDC,
     toToken:   TOKENS.arc.EURC,
     amountIn: '',
@@ -338,34 +367,176 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     useSelfRecipient: true,
     slippageBps: 50, // 0.5%
     cctpMode: 'fast',
-    quote: null, // { type, amountOut, minOut, priceImpact, fee, path, steps, time, rate, ... }
+    quote: null,
     quoting: false,
+    // sources cache: Map<"chainKey:kind", {chainKey, kind, balance, tokenDecimals, display, canonical}>
+    // Built by loadAllSources(). Used by source dropdown + smart routing.
+    sources: new Map(),
+    sourcesLoaded: false,
   };
 
-  // ── CHAIN CHIPS ──────────────────────────────────────
-  function renderChainChips(containerId, side) {
-    const el = document.getElementById(containerId);
-    const chains = ['arc', 'sepolia'];
-    el.innerHTML = chains.map(k => {
-      const c = CHAINS[k];
-      const active = state[side + 'Chain'] === k;
-      return `<span class="chip ${active ? 'active' : ''}" data-k="${k}"><span class="cdot" style="background:${c.iconGrad}"></span>${c.short}</span>`;
-    }).join('');
-    el.querySelectorAll('.chip').forEach(ch => ch.onclick = () => setChain(side, ch.dataset.k));
-  }
-  renderChainChips('from-chains', 'from');
-  renderChainChips('to-chains', 'to');
+  // List of all chains where Gateway is deployed (USDC available)
+  const GATEWAY_CHAINS = ARC.gatewayChains();
+  // All chains we know about (everything in CHAINS)
+  const ALL_CHAINS = Object.keys(CHAINS);
+  // Chains where App Kit swap (USDC↔EURC etc.) works
+  const SWAP_CHAINS = ['arc'];
 
-  function setChain(side, key) {
-    state[side + 'Chain'] = key;
-    const tokens = TOKENS[key];
-    const currentSym = state[side + 'Token']?.symbol;
-    state[side + 'Token'] = tokens[currentSym] || Object.values(tokens)[0];
-    renderChainChips('from-chains', 'from');
-    renderChainChips('to-chains', 'to');
-    renderPickBtn('from'); renderPickBtn('to');
-    updateBalances(); triggerQuote();
+  // shorthand helpers
+  function chainShort(k) { return CHAINS[k]?.short || k; }
+  function chainName(k) { return CHAINS[k]?.name || k; }
+
+  // ── SOURCE LOADER ────────────────────────────────────
+  // Loads, in parallel, USDC balances for every chain × {wallet, gateway}.
+  // Wallet balances come from on-chain RPC (one per chain). Gateway balances
+  // come from a single REST call (POST /v1/balances).
+  async function loadAllSources() {
+    if (!wallet.address) {
+      state.sources.clear();
+      state.sourcesLoaded = false;
+      renderSourceSelect();
+      return;
+    }
+    const addr = wallet.address;
+    const map = new Map();
+    // Always seed Arc wallet so it's available even if 0
+    for (const k of ALL_CHAINS) {
+      const tok = TOKENS[k]?.USDC;
+      if (!tok) continue;
+      map.set(`${k}:wallet`, { chainKey: k, kind: 'wallet', balance: 0n, tokenDecimals: tok.decimals, display: '0', canonical: 0n });
+    }
+    for (const k of GATEWAY_CHAINS) {
+      const tok = TOKENS[k]?.USDC;
+      if (!tok) continue;
+      map.set(`${k}:gateway`, { chainKey: k, kind: 'gateway', balance: 0n, tokenDecimals: tok.decimals, display: '0', canonical: 0n });
+    }
+
+    // Wallet balances in parallel
+    const walletPromise = Promise.all(ALL_CHAINS.map(async (k) => {
+      const tok = TOKENS[k]?.USDC;
+      if (!tok) return null;
+      try {
+        const bal = await tokenBalance(k, tok, addr);
+        const canonical = ARC.toCctpAmount(bal, tok); // normalize to 6-decimal canonical
+        return { key: `${k}:wallet`, chainKey: k, kind: 'wallet', balance: bal, tokenDecimals: tok.decimals, display: formatAmt(bal, tok.decimals, 4), canonical };
+      } catch (e) {
+        console.warn(`[trade] wallet balance ${k} failed:`, e?.message);
+        return null;
+      }
+    }));
+
+    // Gateway balances via REST in 1 call
+    const gatewayPromise = (async () => {
+      try {
+        const out = await ARC.gateway.readBalances(addr);
+        return (out.balances || []).filter(b => b.chainKey).map(b => ({
+          key: `${b.chainKey}:gateway`,
+          chainKey: b.chainKey,
+          kind: 'gateway',
+          balance: b.raw,
+          tokenDecimals: TOKENS[b.chainKey]?.USDC?.decimals || 6,
+          display: b.display,
+          canonical: b.canonical,
+        }));
+      } catch (e) {
+        console.warn('[trade] gateway balances failed:', e?.message);
+        return [];
+      }
+    })();
+
+    const [walletEntries, gatewayEntries] = await Promise.all([walletPromise, gatewayPromise]);
+    walletEntries.filter(Boolean).forEach(e => map.set(e.key, e));
+    gatewayEntries.forEach(e => map.set(e.key, e));
+
+    state.sources = map;
+    state.sourcesLoaded = true;
+    renderSourceSelect();
   }
+
+  // ── SOURCE / DEST SELECT RENDERERS ───────────────────
+  const fromSelectEl = document.getElementById('from-source');
+  const fromMetaEl = document.getElementById('from-source-meta');
+  const toSelectEl = document.getElementById('to-dest');
+
+  function renderSourceSelect() {
+    const all = [...state.sources.values()];
+    // Sort: kind=gateway first (instant!), then wallet; within each, descending by canonical
+    const withBal = all.filter(s => s.canonical > 0n).sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'gateway' ? -1 : 1;
+      return b.canonical > a.canonical ? 1 : -1;
+    });
+    const empty = all.filter(s => s.canonical === 0n).sort((a, b) => chainShort(a.chainKey).localeCompare(chainShort(b.chainKey)));
+
+    function optHtml(s, disabled = false) {
+      const label = `${chainName(s.chainKey)} · ${s.kind === 'gateway' ? 'Gateway ⚡' : 'Wallet'} — ${s.display} USDC`;
+      const sel = (state.src.chainKey === s.chainKey && state.src.kind === s.kind) ? 'selected' : '';
+      return `<option value="${s.chainKey}:${s.kind}" ${sel} ${disabled ? 'disabled' : ''}>${label}</option>`;
+    }
+
+    let html = '';
+    if (withBal.length) {
+      html += `<optgroup label="Available">`;
+      html += withBal.map(s => optHtml(s, false)).join('');
+      html += `</optgroup>`;
+    }
+    if (empty.length) {
+      html += `<optgroup label="Empty (deposit first)">`;
+      html += empty.map(s => optHtml(s, true)).join('');
+      html += `</optgroup>`;
+    }
+    if (!html) html = `<option disabled>Connect wallet to see sources</option>`;
+    fromSelectEl.innerHTML = html;
+
+    // Sync metadata row under the dropdown
+    const cur = state.sources.get(`${state.src.chainKey}:${state.src.kind}`);
+    if (cur) {
+      const badge = cur.kind === 'gateway'
+        ? '<span class="badge gateway">Gateway ⚡ instant</span>'
+        : '<span class="badge wallet">Wallet</span>';
+      fromMetaEl.innerHTML = `${badge}<span>${cur.display} USDC available</span>`;
+    } else {
+      fromMetaEl.innerHTML = '<span></span><span></span>';
+    }
+  }
+
+  function renderDestSelect() {
+    // Destination = any chain we can deposit/receive USDC. Use ALL_CHAINS.
+    toSelectEl.innerHTML = ALL_CHAINS.map(k => {
+      const c = CHAINS[k];
+      const sel = state.dst.chainKey === k ? 'selected' : '';
+      return `<option value="${k}" ${sel}>${c.name}</option>`;
+    }).join('');
+  }
+
+  fromSelectEl.onchange = () => {
+    const [chainKey, kind] = fromSelectEl.value.split(':');
+    state.src = { chainKey, kind };
+    // If this source is Gateway → token must be USDC
+    if (kind === 'gateway') {
+      state.fromToken = TOKENS[chainKey].USDC;
+    } else {
+      // Wallet — keep current token if available on chain, else USDC
+      const sym = state.fromToken?.symbol;
+      state.fromToken = TOKENS[chainKey]?.[sym] || TOKENS[chainKey]?.USDC;
+    }
+    renderSourceSelect();
+    renderPickBtn('from');
+    triggerQuote();
+  };
+
+  toSelectEl.onchange = () => {
+    state.dst = { chainKey: toSelectEl.value };
+    // If destination is not Arc, force toToken = USDC (no swap available there)
+    if (state.dst.chainKey !== 'arc') {
+      state.toToken = TOKENS[state.dst.chainKey]?.USDC || state.toToken;
+    }
+    renderPickBtn('to');
+    updateBalances();
+    triggerQuote();
+  };
+
+  renderSourceSelect();
+  renderDestSelect();
 
   function renderPickBtn(side) {
     const t = state[side + 'Token'];
@@ -386,8 +557,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   document.getElementById('to-pick').onclick = () => openTokenPicker('to');
 
   function openTokenPicker(side) {
-    const chainKey = state[side + 'Chain'];
-    const tokens = Object.values(TOKENS[chainKey]);
+    // Source side: token list comes from src.chainKey; gateway sources are USDC-only
+    // Destination side: token list comes from dst.chainKey
+    const chainKey = side === 'from' ? state.src.chainKey : state.dst.chainKey;
+    const isGatewaySource = side === 'from' && state.src.kind === 'gateway';
+    let tokens = Object.values(TOKENS[chainKey] || {});
+    if (isGatewaySource) tokens = tokens.filter(t => t.symbol === 'USDC');
     const body = document.createElement('div');
     body.innerHTML = `
       <input class="picker-search" id="pick-search" placeholder="Search token or paste address"/>
@@ -428,6 +603,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   }
 
   // ── BALANCES ─────────────────────────────────────────
+  // For "from" side: balance shown depends on src.kind:
+  //   - wallet → on-chain ERC20 balance (or eth_getBalance for gas tokens)
+  //   - gateway → Circle Gateway availableBalance via REST cache (state.sources)
+  // For "to" side: always on-chain balance of toToken on dst.chainKey
   async function updateBalances() {
     const addr = wallet.address;
     const fromBal = document.getElementById('from-bal');
@@ -436,11 +615,16 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     fromBal.innerHTML = `Balance: <span class="skel">—</span>`;
     toBal.innerHTML = `Balance: <span class="skel">—</span>`;
     try {
-      const [fb, tb] = await Promise.all([
-        tokenBalance(state.fromChain, state.fromToken, addr),
-        tokenBalance(state.toChain, state.toToken, addr),
-      ]);
-      fromBal.innerHTML = `Balance: <b id="from-bal-b">${formatAmt(fb, state.fromToken.decimals)}</b> ${state.fromToken.symbol}`;
+      let fb;
+      if (state.src.kind === 'gateway') {
+        const cur = state.sources.get(`${state.src.chainKey}:gateway`);
+        fb = cur ? cur.balance : 0n;
+      } else {
+        fb = await tokenBalance(state.src.chainKey, state.fromToken, addr);
+      }
+      const tb = await tokenBalance(state.dst.chainKey, state.toToken, addr);
+      const fLabel = state.src.kind === 'gateway' ? 'Gateway available' : 'Wallet';
+      fromBal.innerHTML = `${fLabel}: <b id="from-bal-b">${formatAmt(fb, state.fromToken.decimals)}</b> ${state.fromToken.symbol}`;
       toBal.innerHTML = `Balance: <b>${formatAmt(tb, state.toToken.decimals)}</b> ${state.toToken.symbol}`;
       document.getElementById('from-bal-b').onclick = () => {
         const max = formatAmt(fb, state.fromToken.decimals, state.fromToken.decimals);
@@ -491,10 +675,15 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   };
 
   // ── FLIP ─────────────────────────────────────────────
+  // Swaps source ↔ destination. Source kind defaults to 'wallet' since we don't
+  // know if the new source has Gateway funds (loadAllSources will refresh dropdown).
   document.getElementById('flip-btn').onclick = () => {
-    [state.fromChain, state.toChain] = [state.toChain, state.fromChain];
+    const oldSrc = state.src;
+    state.src = { chainKey: state.dst.chainKey, kind: 'wallet' };
+    state.dst = { chainKey: oldSrc.chainKey };
     [state.fromToken, state.toToken] = [state.toToken, state.fromToken];
-    renderChainChips('from-chains', 'from'); renderChainChips('to-chains', 'to');
+    renderSourceSelect();
+    renderDestSelect();
     renderPickBtn('from'); renderPickBtn('to');
     updateBalances(); triggerQuote();
   };
@@ -509,43 +698,94 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   };
 
   // ── ROUTE PLANNER ────────────────────────────────────
+  // Returns an array of pipeline steps that, executed in order, move the user's
+  // value from src → dst.
+  // Step types:
+  //   { type:'swap',          chain, tIn, tOut }       — App Kit swap on Arc
+  //   { type:'gateway-spend', src,   dst   }           — Gateway burn+mint (instant)
+  //   { type:'cctp-bridge',   src,   dst   }           — CCTP V2 burn+attest+mint
+  //   { type:'transfer',      chain, token }           — same-chain ERC-20 transfer
+  // Throws when there's no viable route (e.g. EURC destination outside Arc).
   function planRoute() {
-    const sameChain = state.fromChain === state.toChain;
-    const sameToken = state.fromToken.address.toLowerCase() === state.toToken.address.toLowerCase();
-    if (sameChain && sameToken) return { type: 'transfer' };
-    if (sameChain) return { type: 'swap', chain: state.fromChain };
-    // cross-chain
-    const srcIsUSDC = state.fromToken.symbol === 'USDC';
-    const dstIsUSDC = state.toToken.symbol === 'USDC';
-    if (srcIsUSDC && dstIsUSDC) return { type: 'bridge' };
-    if (srcIsUSDC && !dstIsUSDC) return { type: 'bridge+swap', hopChain: state.toChain };
-    if (!srcIsUSDC && dstIsUSDC) return { type: 'swap+bridge', hopChain: state.fromChain };
-    return { type: 'swap+bridge+swap' };
+    const srcChain = state.src.chainKey;
+    const srcKind = state.src.kind;
+    const dstChain = state.dst.chainKey;
+    const srcSym = state.fromToken.symbol;
+    const dstSym = state.toToken.symbol;
+
+    let runChain = srcChain;
+    let runSym = srcSym;
+    const steps = [];
+
+    // STEP A: pre-swap on Arc if source is non-USDC (e.g. EURC wallet on Arc → bridge to Sepolia)
+    if (runSym !== 'USDC') {
+      if (runChain !== 'arc') throw new Error('Non-USDC source supported only on Arc');
+      steps.push({ type: 'swap', chain: 'arc', tIn: runSym, tOut: 'USDC' });
+      runSym = 'USDC';
+    }
+
+    // STEP B: cross-chain hop if needed
+    if (runChain !== dstChain) {
+      // Gateway only available if our USDC is in Gateway on the source chain AND we
+      // haven't done a swap (swap would've put USDC into wallet on Arc, not Gateway).
+      const canGateway = srcKind === 'gateway' && runChain === srcChain
+        && CHAINS[srcChain]?.contracts?.gatewayWallet
+        && CHAINS[dstChain]?.contracts?.gatewayMinter;
+      if (canGateway) {
+        steps.push({ type: 'gateway-spend', src: runChain, dst: dstChain });
+      } else {
+        const canCctp = CHAINS[srcChain]?.contracts?.tokenMessengerV2
+          && CHAINS[dstChain]?.contracts?.messageTransmitterV2;
+        if (!canCctp) throw new Error('No CCTP route between these chains on testnet');
+        steps.push({ type: 'cctp-bridge', src: runChain, dst: dstChain });
+      }
+      runChain = dstChain;
+      runSym = 'USDC';
+    }
+
+    // STEP C: post-swap on Arc if destination wants non-USDC
+    if (dstSym !== 'USDC') {
+      if (runChain !== 'arc') throw new Error('Non-USDC destination supported only on Arc');
+      steps.push({ type: 'swap', chain: 'arc', tIn: 'USDC', tOut: dstSym });
+    }
+
+    // STEP D: pure transfer when nothing else needed but recipient differs
+    if (steps.length === 0) {
+      const recipient = state.recipient && isAddress(state.recipient) ? getAddress(state.recipient) : wallet.address;
+      if (recipient && recipient !== wallet.address) {
+        steps.push({ type: 'transfer', chain: srcChain, token: srcSym });
+      }
+    }
+
+    return steps;
   }
 
-  function showRoute(plan) {
+  // Render the visual route preview based on the step pipeline
+  function showRoute(steps) {
     const box = document.getElementById('route-box');
-    const steps = document.getElementById('route-steps');
-    const ft = state.fromToken.symbol, tt = state.toToken.symbol;
-    const fc = CHAINS[state.fromChain].short, tc = CHAINS[state.toChain].short;
-    let nodes = [];
-    switch (plan.type) {
-      case 'transfer':
-        nodes = [`Transfer ${ft}`, `on ${fc}`]; break;
-      case 'swap':
-        nodes = [`${ft} (${fc})`, '→', `Swap on Arc`, '→', `${tt} (${tc})`]; break;
-      case 'bridge':
-        nodes = [`USDC (${fc})`, '→', `CCTP burn`, '→', `CCTP mint`, '→', `USDC (${tc})`]; break;
-      case 'bridge+swap':
-        nodes = [`USDC (${fc})`, '→', `CCTP bridge`, '→', `USDC (${tc})`, '→', `Swap`, '→', `${tt}`]; break;
-      case 'swap+bridge':
-        nodes = [`${ft} (${fc})`, '→', `Swap to USDC`, '→', `CCTP bridge`, '→', `USDC (${tc})`]; break;
-      default:
-        nodes = ['Unsupported route']; break;
+    const stepsEl = document.getElementById('route-steps');
+    if (!steps.length) {
+      box.style.display = 'block';
+      stepsEl.innerHTML = `<span class="route-step">Same source & destination — pick a different chain or token, or set a recipient address</span>`;
+      document.getElementById('fast-toggle').style.display = 'none';
+      return;
     }
-    steps.innerHTML = nodes.map(n => n === '→' ? `<span class="route-arrow">→</span>` : `<span class="route-step">${n}</span>`).join('');
+    const nodes = [];
+    nodes.push(`<span class="route-step">${state.fromToken.symbol} (${chainShort(state.src.chainKey)}${state.src.kind === 'gateway' ? ' · GW' : ''})</span>`);
+    for (const s of steps) {
+      nodes.push('<span class="route-arrow">→</span>');
+      if (s.type === 'gateway-spend') nodes.push(`<span class="route-step" style="background:rgba(244,200,154,.1);border-color:rgba(244,200,154,.3)">⚡ Gateway ${chainShort(s.src)}→${chainShort(s.dst)}</span>`);
+      else if (s.type === 'cctp-bridge') nodes.push(`<span class="route-step">CCTP ${chainShort(s.src)}→${chainShort(s.dst)}</span>`);
+      else if (s.type === 'swap') nodes.push(`<span class="route-step">Swap ${s.tIn}→${s.tOut} on Arc</span>`);
+      else if (s.type === 'transfer') nodes.push(`<span class="route-step">Transfer on ${chainShort(s.chain)}</span>`);
+    }
+    nodes.push('<span class="route-arrow">→</span>');
+    nodes.push(`<span class="route-step">${state.toToken.symbol} (${chainShort(state.dst.chainKey)})</span>`);
+    stepsEl.innerHTML = nodes.join('');
     box.style.display = 'block';
-    document.getElementById('fast-toggle').style.display = (plan.type === 'bridge' || plan.type.includes('bridge')) ? 'flex' : 'none';
+    // Show CCTP fast/standard toggle only if pipeline contains a CCTP bridge
+    const hasCctp = steps.some(s => s.type === 'cctp-bridge');
+    document.getElementById('fast-toggle').style.display = hasCctp ? 'flex' : 'none';
   }
 
   // ── QUOTE ENGINE ─────────────────────────────────────
@@ -555,8 +795,22 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 
   async function quote() {
     const seq = ++quoteSeq;
-    const plan = planRoute();
-    showRoute(plan);
+    let steps;
+    try {
+      steps = planRoute();
+    } catch (e) {
+      // Plan failed — show error in route box and reset metrics
+      const box = document.getElementById('route-box');
+      box.style.display = 'block';
+      document.getElementById('route-steps').innerHTML = `<span class="route-step" style="background:rgba(255,122,122,.1);border-color:rgba(255,122,122,.3);color:var(--red)">${e.message}</span>`;
+      document.getElementById('fast-toggle').style.display = 'none';
+      setMetrics({ rate: 'No route', impact: '—', fee: '—', min: '—', time: '—' }, 'danger');
+      state.quote = null;
+      document.getElementById('amount-out').value = '';
+      refreshExec();
+      return;
+    }
+    showRoute(steps);
     const amt = parseAmt(state.amountIn, state.fromToken.decimals);
     if (amt === 0n) {
       setMetrics({ rate: '—', impact: '—', fee: '—', min: '—', time: '—' });
@@ -565,28 +819,75 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
       state.quote = null; refreshExec(); return;
     }
     setMetrics({ rate: '<span class="skel">—</span>', impact: '<span class="skel">—</span>', fee: '<span class="skel">—</span>', min: '<span class="skel">—</span>', time: '<span class="skel">—</span>' });
+
     try {
-      let q;
-      if (plan.type === 'transfer') q = await quoteTransfer(amt);
-      else if (plan.type === 'swap') q = await quoteSwap(plan.chain, state.fromToken, state.toToken, amt);
-      else if (plan.type === 'bridge') q = await quoteBridge(amt);
-      else if (plan.type === 'bridge+swap') q = await quoteBridgeSwap(amt);
-      else if (plan.type === 'swap+bridge') q = await quoteSwapBridge(amt);
-      else throw new Error('Route not supported on testnet');
+      // Walk the pipeline, accumulating output token + fee labels + time.
+      let runAmt = amt;
+      let runChain = state.src.chainKey;
+      let runTokSym = state.fromToken.symbol;
+      let totalSec = 0;
+      const fees = [];
+      let lastSwap = null; // remember swap quote for rate/impact display
+
+      for (const step of steps) {
+        if (step.type === 'gateway-spend') {
+          const srcTok = TOKENS[step.src].USDC;
+          const dstTok = TOKENS[step.dst].USDC;
+          const canonical = ARC.toCctpAmount(runAmt, srcTok);
+          runAmt = ARC.fromCctpAmount(canonical, dstTok);
+          runChain = step.dst;
+          totalSec += 30;
+          fees.push('Gateway · 0 fee');
+        } else if (step.type === 'cctp-bridge') {
+          const srcTok = TOKENS[step.src].USDC;
+          const dstTok = TOKENS[step.dst].USDC;
+          const canonical = ARC.toCctpAmount(runAmt, srcTok);
+          const feeBps = state.cctpMode === 'fast' ? 1n : 0n; // ~0.01% in fast
+          const feeCanonical = (canonical * feeBps) / 10000n;
+          const outCanonical = canonical - feeCanonical;
+          runAmt = ARC.fromCctpAmount(outCanonical, dstTok);
+          runChain = step.dst;
+          totalSec += state.cctpMode === 'fast' ? 25 : 14 * 60;
+          fees.push(state.cctpMode === 'fast'
+            ? `CCTP fast ≈ ${formatAmt(feeCanonical, 6, 4)} USDC`
+            : 'CCTP standard · 0 fee');
+        } else if (step.type === 'swap') {
+          const tInTok = TOKENS.arc[step.tIn];
+          const tOutTok = TOKENS.arc[step.tOut];
+          const sw = await quoteSwap('arc', tInTok, tOutTok, runAmt);
+          runAmt = sw.amountOut;
+          runTokSym = step.tOut;
+          totalSec += 5;
+          fees.push(sw.feeLabel || 'pool');
+          lastSwap = sw;
+        } else if (step.type === 'transfer') {
+          totalSec += 5;
+          fees.push('gas only');
+        }
+      }
+
       if (seq !== quoteSeq) return;
-      state.quote = { ...q, plan };
-      document.getElementById('amount-out').value = formatAmt(q.amountOut, state.toToken.decimals);
-      document.getElementById('to-usd').textContent = '≈ $' + estimateUSD(q.amountOut, state.toToken);
+      const slip = BigInt(state.slippageBps);
+      const minOut = runAmt - (runAmt * slip) / 10000n;
+      const inFloat = parseFloat(formatAmt(amt, state.fromToken.decimals));
+      const outFloat = parseFloat(formatAmt(runAmt, state.toToken.decimals));
+      const rateNum = inFloat > 0 ? outFloat / inFloat : 0;
+
+      state.quote = { steps, amountOut: runAmt, minOut, fees, totalSec };
+      document.getElementById('amount-out').value = formatAmt(runAmt, state.toToken.decimals);
+      document.getElementById('to-usd').textContent = '≈ $' + estimateUSD(runAmt, state.toToken);
       document.getElementById('from-usd').textContent = '≈ $' + estimateUSD(amt, state.fromToken);
+      const timeLbl = totalSec < 60 ? `~${totalSec}s` : `~${Math.round(totalSec / 60)} min`;
       setMetrics({
-        rate: q.rate || '—',
-        impact: q.impact ? q.impact + ' %' : '—',
-        fee: q.feeLabel || '—',
-        min: formatAmt(q.minOut, state.toToken.decimals) + ' ' + state.toToken.symbol,
-        time: q.time || '—',
-      }, q.impactBad ? 'danger' : (q.impactWarn ? 'warn' : ''));
+        rate: `1 ${state.fromToken.symbol} ≈ ${rateNum.toFixed(6)} ${state.toToken.symbol}`,
+        impact: lastSwap ? (lastSwap.impact + ' %') : '0.00 %',
+        fee: fees.join(' + '),
+        min: formatAmt(minOut, state.toToken.decimals) + ' ' + state.toToken.symbol,
+        time: timeLbl,
+      }, lastSwap?.impactBad ? 'danger' : (lastSwap?.impactWarn ? 'warn' : ''));
     } catch (e) {
       if (seq !== quoteSeq) return;
+      console.warn('[trade] quote failed:', e?.message);
       setMetrics({ rate: 'No route', impact: '—', fee: '—', min: '—', time: '—' }, 'danger');
       state.quote = null;
       document.getElementById('amount-out').value = '';
@@ -613,13 +914,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   }
 
   // ── QUOTE HELPERS ────────────────────────────────────
-  async function quoteTransfer(amt) {
-    return {
-      amountOut: amt, minOut: amt, rate: '1 : 1',
-      feeLabel: 'Only network gas', time: '< 1 s', impact: '0.00',
-    };
-  }
-
+  // Used by quote() pipeline for the swap step. Returns { amountOut, minOut,
+  // rate, feeLabel, time, impact, impactWarn, impactBad, provider, path }.
   async function quoteSwap(chainKey, tIn, tOut, amtIn) {
     // ── App Kit Swap path (Circle's official liquidity on Arc Testnet) ─────
     // Use App Kit for USDC/EURC pairs on Arc — Uniswap V2 pools on Arc Testnet
@@ -716,257 +1012,201 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     };
   }
 
-  async function quoteBridge(amt) {
-    // CCTP 1:1. Fast mode takes a small fee via maxFee param.
-    let feeBps = 0n, feeLabel = '0 USDC', time = '13–19 min';
-    if (state.cctpMode === 'fast') {
-      feeBps = 1n; // 0.01% default; real value fetched when executing
-      feeLabel = '≈ ' + formatAmt((amt * feeBps) / 10000n, state.fromToken.decimals) + ' USDC';
-      time = '~20 s';
-    }
-    const fee = (amt * feeBps) / 10000n;
-    const out = amt - fee;
-    const slip = BigInt(state.slippageBps);
-    const minOut = out - (out * slip) / 10000n;
-    return {
-      amountOut: out, minOut,
-      rate: '1 : 1', impact: '0.00',
-      feeLabel, time,
-    };
-  }
-
-  async function quoteBridgeSwap(amt) {
-    // USDC bridge to Arc (or Sepolia) then swap to another token on dest. Only Arc dest is swappable.
-    if (state.toChain !== 'arc') throw new Error('Unsupported');
-    const br = await quoteBridge(amt);
-    const sw = await quoteSwap('arc', TOKENS.arc.USDC, state.toToken, br.amountOut);
-    const slip = BigInt(state.slippageBps);
-    const min = sw.amountOut - (sw.amountOut * slip) / 10000n;
-    return {
-      amountOut: sw.amountOut, minOut: min,
-      rate: sw.rate, impact: sw.impact,
-      impactWarn: sw.impactWarn, impactBad: sw.impactBad,
-      feeLabel: `${br.feeLabel} + pool`,
-      time: (state.cctpMode === 'fast' ? '~30 s' : '~14 min'),
-    };
-  }
-
-  async function quoteSwapBridge(amt) {
-    if (state.fromChain !== 'arc') throw new Error('Unsupported');
-    const sw = await quoteSwap('arc', state.fromToken, TOKENS.arc.USDC, amt);
-    const br = await quoteBridge(sw.amountOut);
-    const slip = BigInt(state.slippageBps);
-    const min = br.amountOut - (br.amountOut * slip) / 10000n;
-    return {
-      amountOut: br.amountOut, minOut: min,
-      rate: sw.rate, impact: sw.impact,
-      impactWarn: sw.impactWarn, impactBad: sw.impactBad,
-      feeLabel: `pool + ${br.feeLabel}`,
-      time: (state.cctpMode === 'fast' ? '~30 s' : '~14 min'),
-    };
-  }
+  // (quoteBridge / quoteBridgeSwap / quoteSwapBridge removed — replaced by the
+  //  pipeline-walking logic in quote() above which composes step quotes inline.)
 
   // ── EXEC BUTTON STATE ────────────────────────────────
   function refreshExec() {
     const btn = document.getElementById('exec-btn');
     const addr = wallet.address;
     if (!addr) { btn.disabled = false; btn.textContent = 'Connect wallet'; btn.onclick = () => wallet.connect().catch(e => ArcUI.toast('error','Connect failed',explainError(e))); return; }
-    const plan = planRoute();
     if (state.recipient && !isAddress(state.recipient)) { btn.disabled = true; btn.textContent = 'Invalid recipient'; return; }
     if (!state.amountIn || parseAmt(state.amountIn, state.fromToken.decimals) === 0n) { btn.disabled = true; btn.textContent = 'Enter amount'; return; }
-    if (!state.quote) { btn.disabled = true; btn.textContent = 'No route'; return; }
-    if (wallet.chainKey !== state.fromChain) {
-      btn.disabled = false; btn.textContent = `Switch to ${CHAINS[state.fromChain].short}`;
-      btn.onclick = () => wallet.ensureChain(state.fromChain).catch(e => ArcUI.toast('error','Switch failed',explainError(e)));
+    if (!state.quote || !state.quote.steps) { btn.disabled = true; btn.textContent = 'No route'; return; }
+
+    // Wallet must be on the chain of the FIRST step (gateway-spend / cctp-bridge / swap)
+    // — pipeline auto-switches between subsequent steps.
+    const firstStep = state.quote.steps[0];
+    let firstChain = state.src.chainKey;
+    if (firstStep) {
+      if (firstStep.type === 'gateway-spend' || firstStep.type === 'cctp-bridge') firstChain = firstStep.src;
+      else if (firstStep.type === 'swap' || firstStep.type === 'transfer') firstChain = firstStep.chain;
+    }
+    if (wallet.chainKey !== firstChain) {
+      btn.disabled = false; btn.textContent = `Switch to ${chainShort(firstChain)}`;
+      btn.onclick = () => wallet.ensureChain(firstChain).catch(e => ArcUI.toast('error','Switch failed',explainError(e)));
       return;
     }
-    const label = {
-      transfer: `Transfer ${state.fromToken.symbol}`,
-      swap: `Swap ${state.fromToken.symbol} → ${state.toToken.symbol}`,
-      bridge: `Bridge USDC to ${CHAINS[state.toChain].short}`,
-      'bridge+swap': `Bridge + Swap → ${state.toToken.symbol}`,
-      'swap+bridge': `Swap + Bridge → ${CHAINS[state.toChain].short}`,
-    }[plan.type] || 'Execute';
+
+    // Build a button label that summarises the pipeline
+    const steps = state.quote.steps;
+    let label = 'Execute';
+    if (steps.length === 0) {
+      label = 'Nothing to do';
+    } else if (steps.length === 1) {
+      const s = steps[0];
+      if (s.type === 'gateway-spend') label = `⚡ Send ${state.fromToken.symbol}: ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+      else if (s.type === 'cctp-bridge') label = `Bridge ${state.fromToken.symbol}: ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+      else if (s.type === 'swap') label = `Swap ${s.tIn} → ${s.tOut}`;
+      else if (s.type === 'transfer') label = `Transfer ${state.fromToken.symbol}`;
+    } else {
+      const types = steps.map(s => s.type === 'gateway-spend' ? '⚡Gateway' : s.type === 'cctp-bridge' ? 'CCTP' : s.type === 'swap' ? 'Swap' : 'Transfer');
+      label = `${types.join(' + ')} → ${state.toToken.symbol} (${chainShort(state.dst.chainKey)})`;
+    }
     btn.disabled = false; btn.textContent = label; btn.onclick = execute;
   }
 
-  // ── EXECUTE ──────────────────────────────────────────
+  // ── EXECUTE PIPELINE ─────────────────────────────────
+  // Walks the planned step array, executing each on-chain action sequentially.
+  // Intermediate steps target the user's own wallet on the destination chain;
+  // only the FINAL step honours the user's recipient address.
   async function execute() {
-    const plan = state.quote.plan;
+    const steps = state.quote?.steps || [];
+    if (!steps.length) { ArcUI.toast('error', 'Nothing to do', ''); return; }
     const recipient = state.recipient && isAddress(state.recipient) ? getAddress(state.recipient) : wallet.address;
-    const amt = parseAmt(state.amountIn, state.fromToken.decimals);
-    try {
-      await wallet.ensureChain(state.fromChain);
-      if (plan.type === 'transfer') await execTransfer(amt, recipient);
-      else if (plan.type === 'swap') await execSwap(amt, recipient, state.quote);
-      else if (plan.type === 'bridge') await execBridge(amt, recipient);
-      else if (plan.type === 'bridge+swap') await execBridgeThenSwap(amt, recipient);
-      else if (plan.type === 'swap+bridge') await execSwapThenBridge(amt, recipient);
-      else throw new Error('Not supported');
-      updateBalances();
-    } catch (e) {
-      console.error(e);
-      ArcUI.toast('error', 'Failed', explainError(e));
-    }
-  }
+    let runAmt = parseAmt(state.amountIn, state.fromToken.decimals);
+    let runChain = state.src.chainKey;
+    let runTokSym = state.fromToken.symbol;
 
-  async function execTransfer(amt, to) {
-    const t = state.fromToken;
-    const signer = wallet.signer;
-    let txHash;
-    if (t.isGas) {
-      // Pure native (e.g. Sepolia ETH) — value transfer
-      const tx = await signer.sendTransaction({ to, value: amt });
-      txHash = tx.hash;
-      pushActivity({ kind: 'transfer', chain: state.fromChain, hash: txHash, status: 'pending', text: `${formatAmt(amt, t.decimals)} ${t.symbol} → ${shortAddr(to)}` });
-      ArcUI.toast('', 'Sending…', shortAddr(txHash));
-      await tx.wait();
-    } else {
-      // Standard ERC-20 transfer (also covers USDC on Arc which doubles as gas)
-      const c = new Contract(t.address, ABIS.erc20, signer);
-      const tx = await c.transfer(to, amt);
-      txHash = tx.hash;
-      pushActivity({ kind: 'transfer', chain: state.fromChain, hash: txHash, status: 'pending', text: `${formatAmt(amt, t.decimals)} ${t.symbol} → ${shortAddr(to)}` });
-      await tx.wait();
-    }
-    updateActivity(txHash, 'done');
-    ArcUI.toast('success', 'Transferred', `<a href="${CHAINS[state.fromChain].explorerTx(txHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">View ↗</a>`);
-  }
+    // Build progress modal steps
+    const modalSteps = steps.map((s, i) => ({ id: 'step' + i, title: stepTitle(s) }));
+    const modal = openProgress('Trade pipeline', modalSteps);
 
-  async function execSwap(amt, to, q) {
-    // ── App Kit Swap path ─────────────────────────────────────────────────
-    // If the quote came from App Kit, use kit.swap() — handles approval +
-    // routing internally. The kit signs via the browser wallet (window.ethereum).
-    if (q && q.provider === 'appkit') {
-      const amountInStr = formatAmt(amt, state.fromToken.decimals);
-      pushActivity({ kind: 'swap', chain: state.fromChain, hash: '', status: 'pending', text: `${amountInStr} ${state.fromToken.symbol} → ${state.toToken.symbol} (App Kit)` });
-      ArcUI.toast('', 'Swapping via Circle App Kit…', 'Sign the transaction in your wallet');
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const stepId = 'step' + i;
+      const isLast = i === steps.length - 1;
+      const stepRecipient = isLast ? recipient : wallet.address;
       try {
-        const result = await APPKIT.appKitSwap(state.fromToken.symbol, state.toToken.symbol, amountInStr);
-        const txHash = result?.txHash || result?.transactionHash || result?.hash || '';
-        if (txHash) updateActivity(txHash, 'done');
-        const outDisplay = result?.amountOut || formatAmt(q.amountOut, state.toToken.decimals);
-        ArcUI.toast('success', 'Swap complete', txHash
-          ? `Received ≈ ${outDisplay} ${state.toToken.symbol} · <a href="${CHAINS[state.fromChain].explorerTx(txHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">${shortAddr(txHash)} ↗</a>`
-          : `Received ≈ ${outDisplay} ${state.toToken.symbol}`);
-        return;
+        modal.set(stepId, 'active', 'Working…');
+
+        if (step.type === 'gateway-spend') {
+          await wallet.ensureChain(step.src);
+          const srcTok = TOKENS[step.src].USDC;
+          const dstTok = TOKENS[step.dst].USDC;
+          const valueCanonical = ARC.toCctpAmount(runAmt, srcTok);
+          await ARC.gateway.spend({
+            srcChainKey: step.src, dstChainKey: step.dst,
+            recipient: stepRecipient, valueCanonical,
+            onStep: (m) => modal.set(stepId, 'active', m),
+          });
+          runAmt = ARC.fromCctpAmount(valueCanonical, dstTok);
+          runChain = step.dst;
+          runTokSym = 'USDC';
+          pushActivity({ kind: 'bridge', chain: step.src, hash: '', status: 'done', text: `⚡ Gateway ${formatAmt(valueCanonical, 6, 4)} USDC: ${chainShort(step.src)} → ${chainShort(step.dst)}` });
+          modal.set(stepId, 'done', 'Minted on ' + chainShort(step.dst));
+        }
+        else if (step.type === 'cctp-bridge') {
+          const result = await runCctpBridge(step.src, step.dst, runAmt, stepRecipient, modal, stepId);
+          runAmt = result.amountOut;
+          runChain = step.dst;
+          runTokSym = 'USDC';
+        }
+        else if (step.type === 'swap') {
+          await wallet.ensureChain('arc');
+          const tInTok = TOKENS.arc[step.tIn];
+          const tOutTok = TOKENS.arc[step.tOut];
+          const balBefore = await tokenBalance('arc', tOutTok, wallet.address).catch(() => 0n);
+          const inputStr = formatAmt(runAmt, tInTok.decimals);
+          modal.set(stepId, 'active', `Swap ${step.tIn} → ${step.tOut}…`);
+          if (APPKIT && appKitSupports('arc', tInTok, tOutTok)) {
+            const result = await APPKIT.appKitSwap(step.tIn, step.tOut, inputStr);
+            const txHash = result?.txHash || result?.transactionHash || result?.hash || '';
+            modal.set(stepId, 'done', txHash
+              ? `<a href="${CHAINS.arc.explorerTx(txHash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(txHash)} ↗</a>`
+              : 'Done');
+            pushActivity({ kind: 'swap', chain: 'arc', hash: txHash, status: 'done', text: `${inputStr} ${step.tIn} → ${step.tOut} (App Kit)` });
+          } else {
+            // Uniswap V2 fallback (rarely useful on Arc Testnet but kept as backstop)
+            const sw = await quoteSwap('arc', tInTok, tOutTok, runAmt);
+            const slip = BigInt(state.slippageBps);
+            const minOut = sw.amountOut - (sw.amountOut * slip) / 10000n;
+            const router = CHAINS.arc.contracts.router;
+            await ensureAllowance('arc', tInTok, router, runAmt, m => modal.set(stepId, 'active', m));
+            const r = new Contract(router, ABIS.router, wallet.signer);
+            const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+            const tx = await r.swapExactTokensForTokens(runAmt, minOut, sw.path, wallet.address, deadline);
+            modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} — waiting…`);
+            await tx.wait();
+            modal.set(stepId, 'done', `<a href="${CHAINS.arc.explorerTx(tx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(tx.hash)} ↗</a>`);
+          }
+          // Refresh runAmt from actual balance delta (App Kit's returned amount may not be exact)
+          const balAfter = await tokenBalance('arc', tOutTok, wallet.address).catch(() => balBefore);
+          runAmt = balAfter > balBefore ? (balAfter - balBefore) : runAmt;
+          runChain = 'arc';
+          runTokSym = step.tOut;
+        }
+        else if (step.type === 'transfer') {
+          await wallet.ensureChain(step.chain);
+          const tok = TOKENS[step.chain][step.token];
+          const c = new Contract(tok.address, ABIS.erc20, wallet.signer);
+          const tx = await c.transfer(stepRecipient, runAmt);
+          modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} — waiting…`);
+          await tx.wait();
+          modal.set(stepId, 'done', `<a href="${CHAINS[step.chain].explorerTx(tx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(tx.hash)} ↗</a>`);
+          pushActivity({ kind: 'transfer', chain: step.chain, hash: tx.hash, status: 'done', text: `${formatAmt(runAmt, tok.decimals)} ${step.token} → ${shortAddr(stepRecipient)}` });
+        }
       } catch (e) {
-        console.error('[arcswap] App Kit swap error:', e);
-        throw e;  // bubble up to executeAction toast
+        console.error(e);
+        modal.fail(stepId, explainError(e));
+        ArcUI.toast('error', 'Step failed', explainError(e));
+        return; // halt pipeline on failure
       }
     }
-    // ── Uniswap V2 fallback ───────────────────────────────────────────────
-    const signer = wallet.signer;
-    const router = CHAINS[state.fromChain].contracts.router;
-    await ensureAllowance(state.fromChain, state.fromToken, router, amt, s => ArcUI.toast('', 'Approval', s));
-    const r = new Contract(router, ABIS.router, signer);
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
-    const tx = await r.swapExactTokensForTokens(amt, q.minOut, q.path, to, deadline);
-    pushActivity({ kind: 'swap', chain: state.fromChain, hash: tx.hash, status: 'pending', text: `${formatAmt(amt, state.fromToken.decimals)} ${state.fromToken.symbol} → ${state.toToken.symbol}` });
-    ArcUI.toast('', 'Swapping…', `<a href="${CHAINS[state.fromChain].explorerTx(tx.hash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">${shortAddr(tx.hash)} ↗</a>`);
-    await tx.wait();
-    updateActivity(tx.hash, 'done');
-    ArcUI.toast('success', 'Swap complete', `Received ≈ ${formatAmt(q.amountOut, state.toToken.decimals)} ${state.toToken.symbol}`);
+    modal.finish();
+    ArcUI.toast('success', 'Trade complete', `Received ≈ ${formatAmt(runAmt, state.toToken.decimals)} ${state.toToken.symbol} on ${chainShort(state.dst.chainKey)}`);
+    // Refresh sources and current-balance widgets
+    loadAllSources().catch(() => null);
+    updateBalances();
   }
 
-  // ── CCTP BRIDGE ──────────────────────────────────────
-  // Map our internal chain keys to App Kit chain identifiers
-  const APPKIT_CHAINS = { arc: 'Arc_Testnet', sepolia: 'Ethereum_Sepolia' };
+  function stepTitle(s) {
+    if (s.type === 'gateway-spend') return `⚡ Gateway ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+    if (s.type === 'cctp-bridge') return `CCTP burn+mint ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+    if (s.type === 'swap') return `Swap ${s.tIn} → ${s.tOut} on Arc`;
+    if (s.type === 'transfer') return `Transfer on ${chainShort(s.chain)}`;
+    return 'Step';
+  }
 
-  async function execBridge(amt, recipient) {
-    const src = CHAINS[state.fromChain];
-    const dst = CHAINS[state.toChain];
-    const srcUSDC = TOKENS[state.fromChain].USDC;
-
-    // ── App Kit Bridge path — DISABLED ──
-    // App Kit Bridge uses an EIP-712 signing pattern that MetaMask's risk
-    // detector flags as "Giao dịch này có rủi ro" (false positive). Until
-    // MetaMask whitelists Circle's TokenMessenger, we use direct CCTP V2 path
-    // below (proven to work, no scam warning).
-    // To re-enable App Kit Bridge for testing, set BRIDGE_USE_APPKIT = true.
-    const BRIDGE_USE_APPKIT = false;
-    if (BRIDGE_USE_APPKIT && APPKIT && APPKIT_CHAINS[state.fromChain] && APPKIT_CHAINS[state.toChain]) {
-      const amountStr = formatAmt(amt, srcUSDC.decimals);
-      const steps = [
-        { id: 'bridge', title: `Bridge ${amountStr} USDC: ${src.short} → ${dst.short}` },
-      ];
-      const modal = openProgress('Bridge USDC (App Kit)', steps);
-      modal.set('bridge', 'active', 'Sign in wallet…');
-      try {
-        const result = await APPKIT.appKitBridge(
-          APPKIT_CHAINS[state.fromChain],
-          APPKIT_CHAINS[state.toChain],
-          amountStr,
-          recipient
-        );
-        const burnHash = result?.burnTxHash || result?.sourceTxHash || result?.txHash || '';
-        const mintHash = result?.mintTxHash || result?.destinationTxHash || '';
-        pushActivity({ kind: 'bridge', chain: state.fromChain, hash: burnHash, status: 'done', text: `Bridge ${amountStr} USDC → ${dst.short}` });
-        const links = [
-          burnHash ? `<a href="${src.explorerTx(burnHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">burn ↗</a>` : '',
-          mintHash ? `<a href="${dst.explorerTx(mintHash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">mint ↗</a>` : '',
-        ].filter(Boolean).join(' · ');
-        modal.set('bridge', 'done', links || 'Complete');
-        ArcUI.toast('success', 'Bridge complete', `USDC landed on ${dst.short}`);
-        modal.finish();
-        return;
-      } catch (e) {
-        console.warn('[arcswap] App Kit bridge failed, falling back to CCTP raw:', e?.message || e);
-        modal.finish();
-        // Fall through to CCTP raw path
-      }
-    }
-
-    // ── Fallback: CCTP raw (legacy — manual burn + attestation + mint) ──
-    const signer = wallet.signer;
-
-    // Approve USDC spend (in ERC-20 decimals native to the source chain)
-    await ensureAllowance(state.fromChain, srcUSDC, src.contracts.tokenMessengerV2, amt, s => ArcUI.toast('', 'Approval', s));
-
-    const tm = new Contract(src.contracts.tokenMessengerV2, ABIS.tokenMessengerV2, signer);
+  // Standalone CCTP bridge (extracted from old execBridge — parametrized so the
+  // pipeline can call it for arbitrary src/dst rather than reading state.fromChain).
+  async function runCctpBridge(srcKey, dstKey, amt, recipient, modal, stepId) {
+    const src = CHAINS[srcKey];
+    const dst = CHAINS[dstKey];
+    const srcUSDC = TOKENS[srcKey].USDC;
+    const dstUSDC = TOKENS[dstKey].USDC;
+    await wallet.ensureChain(srcKey);
+    await ensureAllowance(srcKey, srcUSDC, src.contracts.tokenMessengerV2, amt, m => modal.set(stepId, 'active', m));
+    const tm = new Contract(src.contracts.tokenMessengerV2, ABIS.tokenMessengerV2, wallet.signer);
     const mintRecipient32 = addrToBytes32(recipient);
     const destCaller32 = '0x' + '00'.repeat(32);
-    // CCTP amounts are canonical 6-decimal. Arc's USDC is 18d native, so scale it.
     const cctpAmt = ARC.toCctpAmount(amt, srcUSDC);
-    const maxFee = state.cctpMode === 'fast' ? (cctpAmt / 10000n) + 1n : 0n; // 0.01% cap
-    const minFinality = state.cctpMode === 'fast' ? 1000 : 2000; // <2000 = fast
-
-    // Progress modal
-    const steps = [
-      { id: 'burn',    title: 'Burn USDC on ' + src.short },
-      { id: 'attest',  title: 'Circle attestation' },
-      { id: 'mint',    title: 'Mint USDC on ' + dst.short },
-    ];
-    const modal = openProgress('Bridge USDC', steps);
-    modal.set('burn', 'active', 'Signing burn tx…');
-
+    const maxFee = state.cctpMode === 'fast' ? (cctpAmt / 10000n) + 1n : 0n;
+    const minFinality = state.cctpMode === 'fast' ? 1000 : 2000;
+    modal.set(stepId, 'active', 'Sign burn tx…');
     const burnTx = await tm.depositForBurn(cctpAmt, dst.cctpDomain, mintRecipient32, srcUSDC.address, destCaller32, maxFee, minFinality);
-    modal.set('burn', 'active', `Tx ${shortAddr(burnTx.hash)} — waiting receipt…`);
-    pushActivity({ kind: 'bridge', chain: state.fromChain, hash: burnTx.hash, status: 'pending', text: `Bridge ${formatAmt(amt, srcUSDC.decimals)} USDC → ${dst.short}` });
+    modal.set(stepId, 'active', `Burn ${shortAddr(burnTx.hash)} — waiting receipt…`);
+    pushActivity({ kind: 'bridge', chain: srcKey, hash: burnTx.hash, status: 'pending', text: `Bridge ${formatAmt(amt, srcUSDC.decimals)} USDC → ${chainShort(dstKey)}` });
     await burnTx.wait();
-    modal.set('burn', 'done', `<a href="${src.explorerTx(burnTx.hash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">${shortAddr(burnTx.hash)} ↗</a>`);
-
-    modal.set('attest', 'active', 'Polling Circle IRIS…');
+    modal.set(stepId, 'active', 'Polling Circle IRIS…');
     const att = await pollAttestation(src.cctpDomain, burnTx.hash, (tries, total) => {
-      modal.set('attest', 'active', `Polling Circle IRIS… (${tries}/${total})`);
+      modal.set(stepId, 'active', `Polling Circle IRIS… (${tries}/${total})`);
     });
-    modal.set('attest', 'done', 'Attestation received');
-
-    // Switch to destination chain
-    modal.set('mint', 'active', `Switch wallet to ${dst.short}…`);
-    await wallet.ensureChain(state.toChain);
+    modal.set(stepId, 'active', `Switch to ${chainShort(dstKey)}…`);
+    await wallet.ensureChain(dstKey);
     const mt = new Contract(dst.contracts.messageTransmitterV2, ABIS.messageTransmitterV2, wallet.signer);
-    modal.set('mint', 'active', 'Signing mint tx…');
+    modal.set(stepId, 'active', 'Sign mint tx…');
     const mintTx = await mt.receiveMessage(att.message, att.attestation);
-    modal.set('mint', 'active', `Tx ${shortAddr(mintTx.hash)} — waiting…`);
     await mintTx.wait();
-    modal.set('mint', 'done', `<a href="${dst.explorerTx(mintTx.hash)}" target="_blank" rel="noopener noreferrer" style="color:var(--arc2)">${shortAddr(mintTx.hash)} ↗</a>`);
     updateActivity(burnTx.hash, 'done');
-    ArcUI.toast('success', 'Bridge complete', `USDC landed on ${dst.short}`);
-    modal.finish();
-    // Return to source chain for subsequent quotes
-    await wallet.ensureChain(state.fromChain).catch(() => null);
+    const fee = state.cctpMode === 'fast' ? cctpAmt / 10000n + 1n : 0n;
+    const out = ARC.fromCctpAmount(cctpAmt - fee, dstUSDC);
+    modal.set(stepId, 'done', `<a href="${dst.explorerTx(mintTx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">mint ↗</a>`);
+    return { amountOut: out, burnTxHash: burnTx.hash, mintTxHash: mintTx.hash };
   }
+
+  // (execTransfer / execSwap / execBridge / execBridgeThenSwap / execSwapThenBridge
+  //  removed — replaced by the pipeline executor in execute() and runCctpBridge above.)
 
   async function pollAttestation(srcDomain, txHash, onTick) {
     const maxTries = 160; // ~8 minutes at 3s interval (good cap for both modes)
@@ -982,27 +1222,6 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
       await new Promise(r => setTimeout(r, 3000));
     }
     throw new Error('Attestation timed out. It may still complete — retry "receive" from history.');
-  }
-
-  async function execBridgeThenSwap(amt, recipient) {
-    // Strategy: bridge USDC from source → USDC on Arc owned by wallet, then swap on Arc to recipient
-    if (state.toChain !== 'arc') throw new Error('Only Arc as swap destination supported on testnet');
-    await execBridge(amt, wallet.address); // bridge to self on Arc
-    // After bridge, rely on updated balance; swap from USDC to target token on Arc
-    const usdcBal = await tokenBalance('arc', TOKENS.arc.USDC, wallet.address);
-    if (usdcBal === 0n) throw new Error('USDC not yet visible on Arc. Retry swap shortly.');
-    const q = await quoteSwap('arc', TOKENS.arc.USDC, state.toToken, usdcBal);
-    await execSwap(usdcBal, recipient, { minOut: q.minOut, path: q.path, amountOut: q.amountOut });
-  }
-
-  async function execSwapThenBridge(amt, recipient) {
-    if (state.fromChain !== 'arc') throw new Error('Only Arc as swap source supported on testnet');
-    // 1) swap to USDC on Arc held by wallet
-    const q = await quoteSwap('arc', state.fromToken, TOKENS.arc.USDC, amt);
-    await execSwap(amt, wallet.address, { minOut: q.minOut, path: q.path, amountOut: q.amountOut });
-    // 2) bridge USDC to destination
-    const usdcBal = await tokenBalance('arc', TOKENS.arc.USDC, wallet.address);
-    await execBridge(usdcBal, recipient);
   }
 
   // ── PROGRESS MODAL ───────────────────────────────────
@@ -1105,37 +1324,38 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   tick(); setInterval(tick, 8000);
 
   // ── Wallet reactivity ────────────────────────────────
-  ARC.wallet.on(() => { updateBalances(); refreshExec(); renderActivity(); refreshGatewayHint(); });
-  updateBalances(); refreshExec();
+  ARC.wallet.on(async () => {
+    await loadAllSources().catch(() => null);
+    updateBalances(); refreshExec(); renderActivity(); refreshGatewayHint();
+  });
+  // Initial load — fires after autoConnect resolves (ArcUI.boot already awaited it).
+  loadAllSources().catch(() => null).then(() => {
+    updateBalances(); refreshExec(); refreshGatewayHint();
+  });
 
-  // ── Gateway smart-routing hint ────────────────────────
-  // Show a soft nudge when the user has Unified Balance scattered across chains.
-  // Threshold: total USDC in Gateway across foreign chains > 1 → "deposited on N
-  // chains, you can spend instantly via Balance page". Updates on wallet events
-  // and every 30s.
+  // ── Gateway hint pill ─────────────────────────────────
+  // Now that sources are surfaced inline in the dropdown, the pill becomes a
+  // friendly callout that nudges users towards using the new picker.
   const gwHintEl = document.getElementById('gateway-hint');
   function hideGatewayHint() { if (gwHintEl) gwHintEl.style.display = 'none'; }
   async function refreshGatewayHint() {
     if (!ARC.gateway || !gwHintEl) return;
     if (!ARC.wallet.address) { hideGatewayHint(); return; }
     try {
-      const out = await ARC.gateway.readBalances(ARC.wallet.address);
-      const nonZero = (out.balances || []).filter(b => b.canonical > 0n);
-      const totalCanonical = nonZero.reduce((a, b) => a + b.canonical, 0n);
-      // 1 USDC = 1_000_000 in canonical 6-decimal
-      if (totalCanonical < 1_000_000n) { hideGatewayHint(); return; }
+      const gateways = [...state.sources.values()].filter(s => s.kind === 'gateway' && s.canonical > 0n);
+      if (!gateways.length) { hideGatewayHint(); return; }
+      const totalCanonical = gateways.reduce((a, b) => a + b.canonical, 0n);
       const total = ARC.formatAmt(totalCanonical, 6, 2);
-      const n = nonZero.length;
+      const n = gateways.length;
       gwHintEl.style.display = 'flex';
       gwHintEl.innerHTML = `
-        <span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#F4C89A;white-space:nowrap">// GATEWAY</span>
-        <span>You hold <strong>${total} USDC</strong> across <strong>${n} chain${n!==1?'s':''}</strong> in Circle Gateway. Spend it on any chain instantly without bridging — open <a href="/balance" style="color:#F4C89A;text-decoration:underline;font-weight:600">Balance ↗</a>.</span>`;
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#F4C89A;white-space:nowrap">// GATEWAY ⚡</span>
+        <span>${total} USDC across ${n} chain${n!==1?'s':''} ready to spend. Pick "<strong>Gateway ⚡</strong>" sources in the dropdown above for instant cross-chain swaps. <a href="/balance" style="color:#F4C89A;text-decoration:underline;font-weight:600">Manage ↗</a></span>`;
     } catch (e) {
       console.warn('[trade] gateway hint skipped:', e?.message);
       hideGatewayHint();
     }
   }
-  refreshGatewayHint();
   setInterval(refreshGatewayHint, 30000);
 })();
 </script>
