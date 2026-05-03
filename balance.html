@@ -190,7 +190,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   <div class="chain-table" id="chain-table">
     <div class="chain-row header">
       <div>Chain</div>
-      <div>Available</div>
+      <div>Available · Pending</div>
       <div>Wallet (USDC)</div>
       <div style="text-align:right">Actions</div>
     </div>
@@ -300,8 +300,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.2.0"></script>
-<script src="/assets/arc-gateway.js?v=9.2.0"></script>
+<script src="/assets/arc-core.js?v=9.2.1"></script>
+<script src="/assets/arc-gateway.js?v=9.2.1"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -396,15 +396,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       row.className = 'chain-row';
       const bal = state.balances.find(b => b.chainKey === k);
       const gwDisp = connected ? (bal ? bal.display : '0') : '—';
+      const pendDisp = (connected && bal && bal.pending > 0n) ? bal.pendingDisplay : null;
       const wal = state.walletBals[k];
       const walDisp = (connected && wal !== undefined) ? human(wal, tok?.decimals || 6) : '—';
       const isZero = !bal || bal.canonical === 0n;
+      const balCell = pendDisp
+        ? `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small><div style="font-size:11px;color:#FFB454;font-weight:500;margin-top:2px">+ ${pendDisp} pending</div></div>`
+        : `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small></div>`;
       row.innerHTML = `
         <div class="chain-info">
           <div class="chain-dot" style="background:${chainColor(k)}">${chainShort(k).slice(0,3)}</div>
           <div class="chain-name">${chainName(k)}<small>Domain ${ARC.CHAINS[k].cctpDomain}</small></div>
         </div>
-        <div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small></div>
+        ${balCell}
         <div class="chain-bal ${(!wal||wal===0n)?'zero':''}">${walDisp}<small>USDC</small></div>
         <div class="chain-actions">
           <button data-act="deposit" data-chain="${k}" ${connected?'':'disabled'}>Deposit</button>
@@ -438,12 +442,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     const all = [];
     await Promise.all(chainKeys.map(async k => {
       try {
-        const list = await ARC.gateway.listPendingWithdrawals(k, state.addr);
-        list.forEach(w => {
-          const value = BigInt(w[0] ?? w.value);
-          const after = BigInt(w[1] ?? w.withdrawableAfter);
-          if (value > 0n) all.push({ chainKey: k, value, after });
-        });
+        const info = await ARC.gateway.getWithdrawalInfo(k, state.addr);
+        if (info.withdrawing > 0n) {
+          all.push({ chainKey: k, withdrawing: info.withdrawing, withdrawable: info.withdrawable, blockReady: info.blockReady, currentBlock: info.currentBlock });
+        }
       } catch { /* chain may not respond */ }
     }));
     state.pending = all;
@@ -454,12 +456,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     list.innerHTML = '';
     all.forEach(p => {
       const tok = ARC.TOKENS[p.chainKey].USDC;
-      const ready = p.after * 1000n <= BigInt(Date.now());
+      const ready = p.withdrawable > 0n;
+      const blocksLeft = p.blockReady > p.currentBlock ? Number(p.blockReady - p.currentBlock) : 0;
       const card = document.createElement('div');
       card.className = 'pending-card';
       card.innerHTML = `
-        <strong>${human(p.value, tok.decimals)}</strong> USDC on <strong>${chainName(p.chainKey)}</strong>
-        — ${ready ? '✅ Ready to finalize' : '⏳ Available at ' + new Date(Number(p.after) * 1000).toLocaleString()}
+        <strong>${human(p.withdrawing, tok.decimals)}</strong> USDC on <strong>${chainName(p.chainKey)}</strong>
+        — ${ready ? '✅ Ready to finalize' : `⏳ ${blocksLeft} block${blocksLeft!==1?'s':''} left (block #${p.blockReady})`}
         <button data-chain="${p.chainKey}" ${ready?'':'disabled'}>Finalize</button>`;
       card.querySelector('button').onclick = async (e) => {
         const btn = e.target;
@@ -488,14 +491,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       console.warn('[balance] REST failed, falling back to on-chain:', e?.message);
       const arr = await Promise.all(chainKeys.map(async k => {
         try {
-          const canonical = await ARC.gateway.readBalanceOnChain(k, state.addr);
+          const raw = await ARC.gateway.readBalanceOnChain(k, state.addr);
           const tok = ARC.TOKENS[k].USDC;
           // on-chain `availableBalance` returns in token's native decimals;
           // normalize to canonical 6-decimal for the total bar
-          let cn = canonical;
-          if (tok.decimals > 6) cn = canonical / (10n ** BigInt(tok.decimals - 6));
-          else if (tok.decimals < 6) cn = canonical * (10n ** BigInt(6 - tok.decimals));
-          return { chainKey: k, domain: ARC.CHAINS[k].cctpDomain, canonical: cn, raw: canonical, display: human(canonical, tok.decimals), depositor: state.addr };
+          let canonical = raw;
+          if (tok.decimals > 6) canonical = raw / (10n ** BigInt(tok.decimals - 6));
+          else if (tok.decimals < 6) canonical = raw * (10n ** BigInt(6 - tok.decimals));
+          return { chainKey: k, domain: ARC.CHAINS[k].cctpDomain, canonical, pending: 0n, raw, display: human(raw, tok.decimals), pendingDisplay: '0', depositor: state.addr };
         } catch { return null; }
       }));
       state.balances = arr.filter(Boolean);

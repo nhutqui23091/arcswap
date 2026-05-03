@@ -75,8 +75,18 @@
   }
 
   // Normalize REST balance string → canonical 6-decimal BigInt.
+  // Circle's API returns decimals as "10.000000" (NOT "10000000"). Plain BigInt()
+  // throws on strings containing '.' — so we go through ethers.parseUnits which
+  // handles both decimal-formatted and integer-formatted strings cleanly.
   function balToCanonical(balStr) {
-    try { return BigInt(balStr); } catch { return 0n; }
+    if (balStr == null || balStr === '' || balStr === '0') return 0n;
+    const s = String(balStr).trim();
+    try {
+      if (s.includes('.') || s.includes('e') || s.includes('E')) {
+        return ARC.parseAmt(s, CANONICAL_DECIMALS);
+      }
+      return BigInt(s);
+    } catch { return 0n; }
   }
 
   // For display: scale canonical 6-decimal balance to a chain's native USDC decimals
@@ -116,10 +126,14 @@
     const balances = (j.balances || []).map(b => {
       const ck = chainByDomain(b.domain);
       const canonical = balToCanonical(b.balance);
+      const pending = balToCanonical(b.pendingBatch);
       const tok = ck ? usdcOnChain(ck) : null;
       const raw = tok ? canonicalToTokenRaw(canonical, tok) : canonical;
       const display = ARC.formatAmt(raw, tok?.decimals || CANONICAL_DECIMALS, 4);
-      return { chainKey: ck, domain: b.domain, canonical, raw, display, depositor: b.depositor };
+      const pendingDisplay = pending > 0n
+        ? ARC.formatAmt(canonicalToTokenRaw(pending, tok || { decimals: CANONICAL_DECIMALS }), tok?.decimals || CANONICAL_DECIMALS, 4)
+        : '0';
+      return { chainKey: ck, domain: b.domain, canonical, pending, raw, display, pendingDisplay, depositor: b.depositor };
     });
     return { token: j.token || 'USDC', balances };
   }
@@ -183,11 +197,24 @@
     return { tx, receipt: await tx.wait() };
   }
 
-  async function listPendingWithdrawals(chainKey, addr) {
+  /**
+   * On-chain pending withdrawal info for one chain.
+   * Returns { withdrawing, withdrawable, blockReady, currentBlock } — all BigInt.
+   *  - withdrawing: total amount initiated but not yet finalized
+   *  - withdrawable: amount currently claimable (0 if delay not elapsed)
+   *  - blockReady: block number when the withdrawal becomes finalizable
+   */
+  async function getWithdrawalInfo(chainKey, addr) {
     const c = ARC.CHAINS[chainKey];
     const tok = usdcOnChain(chainKey);
     const wallet = new Contract(c.contracts.gatewayWallet, ARC.ABIS.gatewayWallet, ARC.rpcProvider(chainKey));
-    return await wallet.getWithdrawals(tok.address, getAddress(addr));
+    const [withdrawing, withdrawable, blockReady, currentBlock] = await Promise.all([
+      wallet.withdrawingBalance(tok.address, getAddress(addr)).catch(() => 0n),
+      wallet.withdrawableBalance(tok.address, getAddress(addr)).catch(() => 0n),
+      wallet.withdrawalBlock(tok.address, getAddress(addr)).catch(() => 0n),
+      ARC.rpcProvider(chainKey).getBlockNumber().catch(() => 0),
+    ]);
+    return { withdrawing, withdrawable, blockReady, currentBlock: BigInt(currentBlock) };
   }
 
   async function withdrawalDelay(chainKey) {
@@ -306,7 +333,7 @@
     canonicalToTokenRaw,
     readBalances, readBalanceOnChain,
     deposit, initiateWithdrawal, finalizeWithdrawal,
-    listPendingWithdrawals, withdrawalDelay,
+    getWithdrawalInfo, withdrawalDelay,
     buildBurnIntent, signAndSubmitBurnIntent, gatewayMint, spend,
   };
 })(window);

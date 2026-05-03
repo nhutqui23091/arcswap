@@ -287,17 +287,19 @@
     // Single GatewayWallet contract per chain holds user-deposited USDC and tracks
     // it as a *unified balance* spendable via signed BurnIntent on any other chain.
     gatewayWallet: [
+      // Verified against on-chain implementation 0xcf3F2Ab96967e755Cd56CeaCcEB276E437288858
       'function deposit(address token, uint256 value)',
-      'function depositFor(address token, uint256 value, address depositor)',
+      'function depositFor(address token, address depositor, uint256 value)',
       'function initiateWithdrawal(address token, uint256 value)',
       'function withdraw(address token)',
       'function availableBalance(address token, address depositor) view returns (uint256)',
       'function totalBalance(address token, address depositor) view returns (uint256)',
+      'function withdrawingBalance(address token, address depositor) view returns (uint256)',
+      'function withdrawableBalance(address token, address depositor) view returns (uint256)',
+      'function withdrawalBlock(address token, address depositor) view returns (uint256)',
       'function withdrawalDelay() view returns (uint256)',
-      'function getWithdrawals(address token, address depositor) view returns (tuple(uint256 value, uint256 withdrawableAfter)[])',
-      'event Deposited(address indexed token, address indexed depositor, uint256 value)',
-      'event WithdrawalInitiated(address indexed token, address indexed depositor, uint256 value, uint256 withdrawableAfter)',
-      'event Withdrawn(address indexed token, address indexed depositor, address indexed recipient, uint256 value)',
+      'function isTokenSupported(address token) view returns (bool)',
+      'event Deposited(address indexed token, address indexed depositor, address indexed sender, uint256 value)',
     ],
     gatewayMinter: [
       'function gatewayMint(bytes attestationPayload, bytes signature)',
@@ -600,6 +602,6 @@
     gatewayChains: () => Object.entries(CHAINS)
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
-    version: '9.2.0',
+    version: '9.2.1',
   };
 })(window);
