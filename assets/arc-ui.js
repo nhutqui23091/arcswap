@@ -7,11 +7,12 @@
   // ── NAVBAR ─────────────────────────────────────────────
   function renderNav(active) {
     const tabs = [
-      { id: 'trade',  label: 'Trade',  href: '/trade'  },
-      { id: 'pool',   label: 'Pool',   href: '/pool'   },
-      { id: 'vault',  label: 'Vault',  href: '/vault'  },
-      { id: 'token',  label: 'Token',  href: '/token'  },
-      { id: 'point',  label: 'Points', href: '/point'  },
+      { id: 'trade',   label: 'Trade',   href: '/trade'   },
+      { id: 'pool',    label: 'Pool',    href: '/pool'    },
+      { id: 'vault',   label: 'Vault',   href: '/vault'   },
+      { id: 'balance', label: 'Balance', href: '/balance' },
+      { id: 'token',   label: 'Token',   href: '/token'   },
+      { id: 'point',   label: 'Points',  href: '/point'   },
     ];
     const html = `
       <a class="nav-logo" href="/">

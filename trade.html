@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://iris-api-sandbox.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://iris-api-sandbox.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
@@ -141,8 +141,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     </div>
   </div>
 
-  <!-- App Kit Swap status pill (set by JS once module loads) -->
-  <div id="appkit-status" style="display:none;margin:0 0 14px;padding:10px 14px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"></div>
+  <!-- App Kit Swap status pill (compact, full-width across both grid columns) -->
+  <div id="appkit-status" style="display:none;grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4"></div>
 
   <!-- LEFT: main trade form -->
   <div>
@@ -285,14 +285,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   function setAppkitPill(state) {
     if (!appkitPill) return;
     if (state === 'ready') {
-      appkitPill.style.cssText = 'margin:0 0 14px;padding:10px 14px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(77,214,219,0.06);border:1px solid rgba(77,214,219,0.2);color:var(--text)';
-      appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--arc1)">// APP KIT</span>'
-        + '<span style="font-size:13px">Same-chain swaps (USDC ↔ EURC on Arc) routed through <strong>Circle App Kit</strong> — '
+      appkitPill.style.cssText = 'grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4;background:rgba(77,214,219,0.06);border:1px solid rgba(77,214,219,0.2);color:var(--text)';
+      appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--arc1);white-space:nowrap">// APP KIT</span>'
+        + '<span>Same-chain USDC ↔ EURC swaps routed through <strong>Circle App Kit</strong> — '
         + '<a href="https://docs.arc.network/app-kit/swap" target="_blank" rel="noopener noreferrer" style="color:var(--arc1);text-decoration:underline">official liquidity</a>.</span>';
     } else if (state === 'fallback') {
-      appkitPill.style.cssText = 'margin:0 0 14px;padding:10px 14px;border-radius:12px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(255,180,84,0.06);border:1px solid rgba(255,180,84,0.22);color:var(--text)';
-      appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#FFB454">// LIMITED</span>'
-        + '<span style="font-size:13px">App Kit unavailable — using Uniswap V2 fallback (testnet pools may be thin).</span>';
+      appkitPill.style.cssText = 'grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4;background:rgba(255,180,84,0.06);border:1px solid rgba(255,180,84,0.22);color:var(--text)';
+      appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#FFB454;white-space:nowrap">// LIMITED</span>'
+        + '<span>App Kit unavailable — using Uniswap V2 fallback (testnet pools may be thin).</span>';
     }
   }
   try {
