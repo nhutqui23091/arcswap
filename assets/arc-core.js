@@ -367,13 +367,54 @@
       return { address: this.address, chainKey: this.chainKey, connected: !!this.address };
     },
 
+    // EIP-6963 wallet discovery: modern standard that lets multiple wallets
+    // (MetaMask, Rabby, Coinbase, OKX, …) coexist without stomping on
+    // window.ethereum. Browsers without any wallet won't respond.
+    _eip6963Providers: [],
+    _eip6963Init() {
+      if (this._eip6963Bound) return;
+      this._eip6963Bound = true;
+      window.addEventListener('eip6963:announceProvider', (e) => {
+        const detail = e.detail; if (!detail?.provider) return;
+        if (!this._eip6963Providers.find(p => p.info?.uuid === detail.info?.uuid)) {
+          this._eip6963Providers.push(detail);
+        }
+      });
+      window.dispatchEvent(new Event('eip6963:requestProvider'));
+    },
+
     eip1193() {
+      this._eip6963Init();
+      // Prefer EIP-6963 announced providers (cleaner — wallets explicitly opt in)
+      if (this._eip6963Providers.length) {
+        // Prefer MetaMask if multiple, else first
+        const mm = this._eip6963Providers.find(p => /metamask/i.test(p.info?.name || ''));
+        return (mm || this._eip6963Providers[0]).provider;
+      }
+      // Legacy fallback: window.ethereum (set by older wallets)
       return global.ethereum || global.okxwallet?.ethereum || global.okexchain || null;
+    },
+
+    /** Returns a friendly description of why no wallet was detected. */
+    _noWalletReason() {
+      // Common diagnoses to help the user fix it themselves
+      const ua = (navigator.userAgent || '').toLowerCase();
+      if (/firefox/.test(ua)) {
+        return 'No wallet extension detected. Install MetaMask for Firefox or Rabby, then reload this page.';
+      }
+      // Detect private/incognito (best-effort: extensions are usually disabled there)
+      const isInPrivate = !window.indexedDB || (() => {
+        try { localStorage.setItem('__t__', '1'); localStorage.removeItem('__t__'); return false; } catch { return true; }
+      })();
+      if (isInPrivate) {
+        return 'No wallet detected. Browser extensions are usually disabled in Incognito/Private mode — open this site in a normal window.';
+      }
+      return 'No wallet extension detected. Install MetaMask (metamask.io), Rabby, or OKX Wallet, then reload this page.';
     },
 
     async connect() {
       const eth = this.eip1193();
-      if (!eth) throw new Error('No wallet detected. Install MetaMask or OKX Wallet.');
+      if (!eth) throw new Error(this._noWalletReason());
       this._eth = eth;
       const accounts = await eth.request({ method: 'eth_requestAccounts' });
       if (!accounts || !accounts.length) throw new Error('Wallet returned no accounts');
@@ -604,6 +645,6 @@
     gatewayChains: () => Object.entries(CHAINS)
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
-    version: '9.3.1',
+    version: '9.3.3',
   };
 })(window);

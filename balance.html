@@ -207,8 +207,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   </div>
 
   <div class="info-strip" style="margin-top:32px">
-    <strong>How balance flows:</strong>
-    <strong>Deposit</strong> sends your USDC to <code>GatewayWallet</code> on a single chain. The Circle aggregator REST API (<code>/v1/balances</code>) then exposes that deposit as part of one cross-chain total. <strong>Spend</strong> signs a burn intent off-chain, swaps it for an attestation, and mints USDC on the destination — typically in seconds.
+    <strong>Unified Balance is NOT a single shared pool.</strong> Each supported chain has its own
+    <code>GatewayWallet</code> contract (same address <code>0x0077…19b9</code>, deployed independently).
+    Depositing on Sepolia stores your USDC in Sepolia's contract; depositing on Fuji stores it in Fuji's. Circle's
+    REST API then <strong>sums all of them</strong> into one number = "Unified Balance".
+    <br><br>
+    <strong>To spend cross-chain</strong>: pick a source chain (USDC will be burned from its GatewayWallet) and a
+    destination chain (USDC minted there). Whole flow takes ~30s with a single EIP-712 signature — no bridge tx, no
+    wrapped tokens. <strong>Tip</strong>: deposit on <strong>Avalanche Fuji</strong> — credits in ~30s vs ~12-15min for
+    Sepolia / L2 chains (block-finality bottleneck).
   </div>
 
   <!-- HOW IT WORKS -->
@@ -304,8 +311,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.3.1"></script>
-<script src="/assets/arc-gateway.js?v=9.3.1"></script>
+<script src="/assets/arc-core.js?v=9.3.3"></script>
+<script src="/assets/arc-gateway.js?v=9.3.3"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -371,11 +378,24 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   }
 
   // ───── Populate chain selects ─────
-  function fillSelect(elId) {
+  // Sync time per chain (for sorting + recommendation labels). Faster chains
+  // surface first because their deposit→credit time is dramatically shorter.
+  // Arc / Fuji finalize in ~3s → credited in ~30s; L2 testnets need 12-15min.
+  const SYNC_RANK = { avalancheFuji: 1, arc: 2, polygonAmoy: 3, sepolia: 4, baseSepolia: 4, optimismSepolia: 4, arbitrumSepolia: 4, unichainSepolia: 4 };
+  const SYNC_LABEL = { avalancheFuji: '~30s', arc: '~30s', polygonAmoy: '~3min', sepolia: '~12-15min', baseSepolia: '~12-15min', optimismSepolia: '~12-15min', arbitrumSepolia: '~12-15min', unichainSepolia: '~12-15min' };
+  function fillSelect(elId, opts = {}) {
     const el = document.getElementById(elId);
-    el.innerHTML = chainKeys.map(k => `<option value="${k}">${ARC.CHAINS[k].name}</option>`).join('');
+    const sorted = opts.bySync
+      ? [...chainKeys].sort((a, b) => (SYNC_RANK[a] || 99) - (SYNC_RANK[b] || 99) || ARC.CHAINS[a].name.localeCompare(ARC.CHAINS[b].name))
+      : chainKeys;
+    el.innerHTML = sorted.map(k => {
+      const tag = opts.bySync && k === 'avalancheFuji' ? ' ⚡ Recommended (fastest sync)'
+                : opts.bySync ? ` · ${SYNC_LABEL[k] || ''} sync` : '';
+      return `<option value="${k}">${ARC.CHAINS[k].name}${tag}</option>`;
+    }).join('');
   }
-  fillSelect('deposit-chain');
+  // Deposit modal sorts by sync speed so users land on the fastest chain first.
+  fillSelect('deposit-chain', { bySync: true });
   fillSelect('withdraw-chain');
   fillSelect('spend-src');
   fillSelect('spend-dst');
@@ -562,9 +582,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   };
 
   // ───── Deposit modal ─────
+  // Default chain: if user clicked from a per-chain row use that. Otherwise
+  // default to Avalanche Fuji — fastest finality (~30s) so the user's first
+  // deposit credits in seconds instead of waiting 12-15min on Sepolia/L2.
   function openDepositModal(chainKey) {
     if (!state.addr) { alert('Connect wallet first'); return; }
-    document.getElementById('deposit-chain').value = chainKey || chainKeys[0];
+    document.getElementById('deposit-chain').value = chainKey || 'avalancheFuji';
     document.getElementById('deposit-amount').value = '';
     clearStatus('deposit-status');
     syncDepositInfo();

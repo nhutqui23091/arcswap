@@ -363,9 +363,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.3.2"></script>
-<script src="/assets/arc-ui.js?v=9.3.2"></script>
-<script src="/assets/arc-gateway.js?v=9.3.2"></script>
+<script src="/assets/arc-core.js?v=9.3.3"></script>
+<script src="/assets/arc-ui.js?v=9.3.3"></script>
+<script src="/assets/arc-gateway.js?v=9.3.3"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -553,33 +553,36 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 
   function renderSourcePanel() {
     const all = [...state.sources.values()];
-    // Wallet column: every chain (always include, even 0, so user sees they could deposit)
-    const wallet = all.filter(s => s.kind === 'wallet').sort(colSort);
-    // Gateway column: chains where Gateway is deployed; show all (even 0) so user
-    // sees where they can pre-deposit for instant cross-chain
-    const gateway = all.filter(s => s.kind === 'gateway').sort(colSort);
+    // Visibility: only show non-zero entries. If user has nothing anywhere we
+    // still surface Arc rows as a starting point so the picker isn't empty.
+    const hasAny = all.some(s => s.canonical > 0n || (s.pending && s.pending > 0n));
+    const visibleFilter = (s) => (s.canonical > 0n) || (s.pending && s.pending > 0n)
+      || (!hasAny && s.chainKey === 'arc');
+    const wallet  = all.filter(s => s.kind === 'wallet'  && visibleFilter(s)).sort(colSort);
+    const gateway = all.filter(s => s.kind === 'gateway' && visibleFilter(s)).sort(colSort);
 
     const isActive = (s) => state.src.chainKey === s.chainKey && state.src.kind === s.kind;
+    const emptyHtml = '<div style="padding:14px;font-size:11.5px;color:var(--muted);text-align:center">No funded sources here yet</div>';
 
     fromPanelEl.innerHTML = `
       <div class="src-cols">
         <div class="src-col wallet">
           <div class="src-col-head">💼 Wallet
-            <span class="src-col-sub">USDC trong ví của bạn</span>
+            <span class="src-col-sub">USDC sitting in your MetaMask</span>
           </div>
-          <div class="src-list">${wallet.map(s => rowHtml(s, isActive(s))).join('')}</div>
+          <div class="src-list">${wallet.length ? wallet.map(s => rowHtml(s, isActive(s))).join('') : emptyHtml}</div>
         </div>
         <div class="src-col gateway">
           <div class="src-col-head">⚡ Gateway
-            <span class="src-col-sub">Spendable instantly across chains</span>
+            <span class="src-col-sub">Pre-deposited · spend instantly anywhere</span>
           </div>
-          <div class="src-list">${gateway.map(s => rowHtml(s, isActive(s))).join('')}</div>
+          <div class="src-list">${gateway.length ? gateway.map(s => rowHtml(s, isActive(s))).join('') : emptyHtml}</div>
         </div>
       </div>
       <div class="src-help">
-        <span class="pill wl">Wallet</span> = USDC trong MetaMask, cross-chain qua <strong>CCTP</strong> (~30s fast / ~13min standard).
-        <span class="pill gw">Gateway</span> = USDC đã pre-deposit vào Circle's instant pool, spend xuyên chain trong <strong>~30s không cần bridge</strong>.
-        <br>Deposit mới mất từ <strong>~30s (Fuji/Arc)</strong> đến <strong>~12-15 phút (Sepolia/L2)</strong> để credit do block-finality của Circle's operator.
+        <span class="pill wl">Wallet</span> = USDC in your MetaMask. Cross-chain happens via <strong>CCTP burn-and-mint</strong> (~30s fast / ~13min standard).
+        <span class="pill gw">Gateway</span> = USDC pre-deposited into Circle's instant pool. Spend across any chain in <strong>~30s, no bridging</strong>.
+        <br>New deposits take <strong>~30s on Avalanche Fuji or Arc</strong>, but <strong>~12-15 min on Sepolia / L2 chains</strong> because Circle's operator waits for source-block finality before crediting.
       </div>`;
 
     fromPanelEl.querySelectorAll('.src-row').forEach(btn => {
