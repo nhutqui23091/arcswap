@@ -326,6 +326,100 @@
     return { intent, attResp, mint };
   }
 
+  /**
+   * Greedy source selection for multi-chain spend.
+   * Given a target amount (canonical 6-decimal BigInt) and an array of
+   * `{chainKey, canonical}` entries (each chain's available Gateway balance),
+   * returns the minimum set of sources that cover the target amount.
+   *
+   * Strategy: sort descending by balance → consume largest first → fall through
+   * to smaller chains. Last chain may be partially used (just enough to fill).
+   *
+   * Returns [{chainKey, valueCanonical}] in spend order, or null if total
+   * available is less than the requested amount.
+   */
+  function pickSources(targetCanonical, available) {
+    if (targetCanonical <= 0n) return [];
+    const totalAvail = available.reduce((acc, s) => acc + (s.canonical || 0n), 0n);
+    if (totalAvail < targetCanonical) return null;
+    const sorted = [...available]
+      .filter(s => s.canonical && s.canonical > 0n && CHAINS_HAS_MINTER(s.chainKey))
+      .sort((a, b) => (b.canonical > a.canonical ? 1 : -1));
+    const out = [];
+    let remaining = targetCanonical;
+    for (const s of sorted) {
+      if (remaining <= 0n) break;
+      const take = s.canonical >= remaining ? remaining : s.canonical;
+      out.push({ chainKey: s.chainKey, valueCanonical: take });
+      remaining -= take;
+    }
+    if (remaining > 0n) return null;
+    return out;
+  }
+  // Helper: chain has a GatewayWallet (we can spend FROM it)
+  function CHAINS_HAS_MINTER(k) {
+    return Boolean(ARC.CHAINS[k]?.contracts?.gatewayWallet);
+  }
+
+  /**
+   * Multi-source unified spend: burn from N source chains in one transfer
+   * to mint a single combined amount on destination.
+   *
+   * Flow:
+   *   1. Build N burn intents (1 per source chain, with that chain's value)
+   *   2. Sign each intent via wallet (user signs N times — one per source chain)
+   *      — each chain switch is needed because EIP-712 domain includes the
+   *        source chainId via `verifyingContract` semantics in some wallets.
+   *      Actually the domain is `{name:"GatewayWallet", version:"1"}` only —
+   *      no chainId, no verifyingContract — so we can sign all from any chain.
+   *   3. POST array of {burnIntent, signature} to /v1/transfer
+   *   4. Receive ONE combined attestation
+   *   5. Switch to destination chain → call gatewayMint() once
+   *
+   * `sources`: [{chainKey, valueCanonical}] — produced by pickSources() or hand-picked
+   * Returns { intents, attResp, mint }.
+   */
+  async function multiSpend({ sources, dstChainKey, recipient, maxFee = 0n, onStep }) {
+    if (!ARC.wallet.signer) throw new Error('Connect wallet');
+    if (!sources || !sources.length) throw new Error('No sources to spend from');
+
+    onStep?.(`Building ${sources.length} burn intent${sources.length > 1 ? 's' : ''}…`);
+    const intents = sources.map(s => buildBurnIntent({
+      srcChainKey: s.chainKey,
+      dstChainKey,
+      recipient,
+      valueCanonical: s.valueCanonical,
+      maxFee,
+    }));
+
+    // Sign each. EIP-712 domain has no chainId so signature is portable across
+    // chains — wallet doesn't need to switch between sigs. User just confirms N
+    // times in the same wallet popup queue.
+    const signed = [];
+    for (let i = 0; i < intents.length; i++) {
+      const s = sources[i];
+      onStep?.(`Sign ${i + 1}/${intents.length}: ${ARC.CHAINS[s.chainKey].short} → ${ARC.formatAmt(s.valueCanonical, 6, 4)} USDC`);
+      const signature = await ARC.wallet.signer.signTypedData(EIP712_DOMAIN, EIP712_TYPES, intents[i]);
+      signed.push({ burnIntent: burnIntentToJson(intents[i]), signature });
+    }
+
+    onStep?.('Submitting to Gateway API…');
+    const res = await fetch(`${GW_BASE}/v1/transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(signed),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`Gateway /v1/transfer ${res.status}: ${txt.slice(0, 300)}`);
+    }
+    const attResp = await res.json();
+
+    onStep?.(`Mint on ${ARC.CHAINS[dstChainKey].short}…`);
+    const mint = await gatewayMint(dstChainKey, attResp.attestation, attResp.signature, { onStep });
+    return { intents, attResp, mint, sources };
+  }
+
   // ───────── EXPORTS ─────────
   ARC.gateway = {
     GW_BASE, EIP712_DOMAIN, EIP712_TYPES, CANONICAL_DECIMALS,
@@ -335,5 +429,6 @@
     deposit, initiateWithdrawal, finalizeWithdrawal,
     getWithdrawalInfo, withdrawalDelay,
     buildBurnIntent, signAndSubmitBurnIntent, gatewayMint, spend,
+    pickSources, multiSpend,
   };
 })(window);

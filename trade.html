@@ -363,9 +363,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.3.4"></script>
-<script src="/assets/arc-ui.js?v=9.3.4"></script>
-<script src="/assets/arc-gateway.js?v=9.3.4"></script>
+<script src="/assets/arc-core.js?v=9.4.0"></script>
+<script src="/assets/arc-ui.js?v=9.4.0"></script>
+<script src="/assets/arc-gateway.js?v=9.4.0"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -553,8 +553,6 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 
   function renderSourcePanel() {
     const all = [...state.sources.values()];
-    // Visibility: only show non-zero entries. If user has nothing anywhere we
-    // still surface Arc rows as a starting point so the picker isn't empty.
     const hasAny = all.some(s => s.canonical > 0n || (s.pending && s.pending > 0n));
     const visibleFilter = (s) => (s.canonical > 0n) || (s.pending && s.pending > 0n)
       || (!hasAny && s.chainKey === 'arc');
@@ -562,7 +560,24 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     const gateway = all.filter(s => s.kind === 'gateway' && visibleFilter(s)).sort(colSort);
 
     const isActive = (s) => state.src.chainKey === s.chainKey && state.src.kind === s.kind;
+    const isUnifiedActive = state.src.kind === 'unified';
     const emptyHtml = '<div style="padding:14px;font-size:11.5px;color:var(--muted);text-align:center">No funded sources here yet</div>';
+
+    // "⚡ Unified Balance" virtual row — sums all gateway-funded chains. Only
+    // appears when user has Gateway funds across 2+ chains. Selecting it triggers
+    // the multi-burn pipeline (one signature per source chain, then ONE attestation,
+    // then ONE mint on destination).
+    const gwFunded = gateway.filter(s => s.canonical > 0n);
+    const unifiedTotal = gwFunded.reduce((acc, s) => acc + s.canonical, 0n);
+    const unifiedRow = (gwFunded.length >= 2) ? `
+      <button class="src-row src-row-unified ${isUnifiedActive ? 'active' : ''}" type="button" data-src="unified:unified" style="background:rgba(244,200,154,.07);border:1px solid rgba(244,200,154,.3);margin-bottom:6px">
+        <span class="src-row-dot" style="background:linear-gradient(135deg,#FFB454,#F4C89A)"></span>
+        <span class="src-row-name" style="color:#FFB454;font-weight:700">⚡ Unified Balance</span>
+        <span class="src-row-meta">
+          <span class="src-row-bal" style="color:#FFB454">${ARC.formatAmt(unifiedTotal, 6, 4)} USDC</span>
+          <span style="font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--mono)">across ${gwFunded.length} chains</span>
+        </span>
+      </button>` : '';
 
     fromPanelEl.innerHTML = `
       <div class="src-cols">
@@ -576,21 +591,25 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
           <div class="src-col-head">⚡ Gateway
             <span class="src-col-sub">Pre-deposited · spend instantly anywhere</span>
           </div>
-          <div class="src-list">${gateway.length ? gateway.map(s => rowHtml(s, isActive(s))).join('') : emptyHtml}</div>
+          <div class="src-list">${unifiedRow}${gateway.length ? gateway.map(s => rowHtml(s, isActive(s))).join('') : emptyHtml}</div>
         </div>
       </div>
       <div class="src-help">
-        <span class="pill wl">Wallet</span> = USDC in your MetaMask. Cross-chain happens via <strong>CCTP burn-and-mint</strong> (~30s fast / ~13min standard).
-        <span class="pill gw">Gateway</span> = USDC pre-deposited into Circle's instant pool. Spend across any chain in <strong>~30s, no bridging</strong>.
-        <br>New deposits take <strong>~30s on Avalanche Fuji or Arc</strong>, but <strong>~12-15 min on Sepolia / L2 chains</strong> because Circle's operator waits for source-block finality before crediting.
+        <span class="pill wl">Wallet</span> = USDC in your MetaMask. Cross-chain via <strong>CCTP burn-and-mint</strong> (~30s fast / ~13min standard).
+        <span class="pill gw">Gateway</span> = USDC pre-deposited into Circle's instant pool. Spend across any chain in <strong>~30s</strong>.
+        <br><strong style="color:#FFB454">⚡ Unified Balance</strong> spends from MULTIPLE Gateway chains in one transfer — N intents → 1 attestation → 1 mint. Picks largest chains first to minimise signatures.
+        <br>Sync time: <strong>~30s on Fuji/Arc</strong>, <strong>~12-15min on Sepolia/L2</strong>.
       </div>`;
 
     fromPanelEl.querySelectorAll('.src-row').forEach(btn => {
       btn.onclick = () => {
         const [chainKey, kind] = btn.dataset.src.split(':');
         state.src = { chainKey, kind };
-        if (kind === 'gateway') state.fromToken = TOKENS[chainKey].USDC;
-        else {
+        // Both kind=gateway and kind=unified are USDC-only paths
+        if (kind === 'gateway' || kind === 'unified') {
+          // For unified: lock to Arc USDC display (Arc is canonical home chain)
+          state.fromToken = TOKENS[kind === 'unified' ? 'arc' : chainKey].USDC;
+        } else {
           const sym = state.fromToken?.symbol;
           state.fromToken = TOKENS[chainKey]?.[sym] || TOKENS[chainKey]?.USDC;
         }
@@ -604,6 +623,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   }
 
   function renderSourceTrigger() {
+    if (state.src.kind === 'unified') {
+      const gwFunded = [...state.sources.values()].filter(s => s.kind === 'gateway' && s.canonical > 0n);
+      const total = gwFunded.reduce((acc, s) => acc + s.canonical, 0n);
+      fromCurrentEl.textContent = `⚡ Unified Balance — ${ARC.formatAmt(total, 6, 4)} USDC across ${gwFunded.length} chains`;
+      return;
+    }
     const cur = state.sources.get(`${state.src.chainKey}:${state.src.kind}`);
     if (!cur) {
       fromCurrentEl.textContent = wallet.address ? 'Pick a source…' : 'Connect wallet…';
@@ -745,15 +770,21 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     fromBal.innerHTML = `Balance: <span class="skel">—</span>`;
     toBal.innerHTML = `Balance: <span class="skel">—</span>`;
     try {
-      let fb;
-      if (state.src.kind === 'gateway') {
+      let fb, fLabel;
+      if (state.src.kind === 'unified') {
+        // Sum all gateway balances in canonical 6-decimal, then convert to fromToken decimals
+        const totalCanonical = [...state.sources.values()].filter(s => s.kind === 'gateway').reduce((acc, s) => acc + s.canonical, 0n);
+        fb = ARC.fromCctpAmount(totalCanonical, state.fromToken);
+        fLabel = '⚡ Unified Gateway';
+      } else if (state.src.kind === 'gateway') {
         const cur = state.sources.get(`${state.src.chainKey}:gateway`);
         fb = cur ? cur.balance : 0n;
+        fLabel = 'Gateway available';
       } else {
         fb = await tokenBalance(state.src.chainKey, state.fromToken, addr);
+        fLabel = 'Wallet';
       }
       const tb = await tokenBalance(state.dst.chainKey, state.toToken, addr);
-      const fLabel = state.src.kind === 'gateway' ? 'Gateway available' : 'Wallet';
       fromBal.innerHTML = `${fLabel}: <b id="from-bal-b">${formatAmt(fb, state.fromToken.decimals)}</b> ${state.fromToken.symbol}`;
       toBal.innerHTML = `Balance: <b>${formatAmt(tb, state.toToken.decimals)}</b> ${state.toToken.symbol}`;
       document.getElementById('from-bal-b').onclick = () => {
@@ -837,12 +868,24 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   //   { type:'transfer',      chain, token }           — same-chain ERC-20 transfer
   // Throws when there's no viable route (e.g. EURC destination outside Arc).
   function planRoute() {
-    const srcChain = state.src.chainKey;
     const srcKind = state.src.kind;
     const dstChain = state.dst.chainKey;
-    const srcSym = state.fromToken.symbol;
     const dstSym = state.toToken.symbol;
 
+    // ── UNIFIED MODE ── Multi-source spend across N Gateway chains.
+    // Skips per-chain pre-swap (unified is always USDC). Always emits ONE
+    // gateway-multi-spend step + optional swap on dest (Arc only).
+    if (srcKind === 'unified') {
+      const steps = [{ type: 'gateway-multi-spend', dst: dstChain }];
+      if (dstSym !== 'USDC') {
+        if (dstChain !== 'arc') throw new Error('Non-USDC destination supported only on Arc');
+        steps.push({ type: 'swap', chain: 'arc', tIn: 'USDC', tOut: dstSym });
+      }
+      return steps;
+    }
+
+    const srcChain = state.src.chainKey;
+    const srcSym = state.fromToken.symbol;
     let runChain = srcChain;
     let runSym = srcSym;
     const steps = [];
@@ -905,6 +948,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     for (const s of steps) {
       nodes.push('<span class="route-arrow">→</span>');
       if (s.type === 'gateway-spend') nodes.push(`<span class="route-step" style="background:rgba(244,200,154,.1);border-color:rgba(244,200,154,.3)">⚡ Gateway ${chainShort(s.src)}→${chainShort(s.dst)}</span>`);
+      else if (s.type === 'gateway-multi-spend') nodes.push(`<span class="route-step" style="background:rgba(244,200,154,.15);border-color:rgba(244,200,154,.45);font-weight:700;color:#FFB454">⚡ Unified Multi-burn → ${chainShort(s.dst)}</span>`);
       else if (s.type === 'cctp-bridge') nodes.push(`<span class="route-step">CCTP ${chainShort(s.src)}→${chainShort(s.dst)}</span>`);
       else if (s.type === 'swap') nodes.push(`<span class="route-step">Swap ${s.tIn}→${s.tOut} on Arc</span>`);
       else if (s.type === 'transfer') nodes.push(`<span class="route-step">Transfer on ${chainShort(s.chain)}</span>`);
@@ -968,6 +1012,20 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
           runChain = step.dst;
           totalSec += 30;
           fees.push('Gateway · 0 fee');
+        } else if (step.type === 'gateway-multi-spend') {
+          // Unified spend: pickSources greedily covers runAmt across all gateway chains.
+          const dstTok = TOKENS[step.dst].USDC;
+          // runAmt is in fromToken decimals (== Arc 18 for unified mode); convert to canonical
+          const canonical = ARC.toCctpAmount(runAmt, state.fromToken);
+          const eligible = [...state.sources.values()].filter(s => s.kind === 'gateway' && s.chainKey !== step.dst);
+          const plan = ARC.gateway.pickSources(canonical, eligible);
+          if (!plan) throw new Error('Insufficient unified balance');
+          runAmt = ARC.fromCctpAmount(canonical, dstTok);
+          runChain = step.dst;
+          totalSec += 30 + (plan.length * 3); // ~3s per signature popup
+          fees.push(`Gateway · ${plan.length} sig${plan.length>1?'s':''} → 1 attestation → 1 mint`);
+          // Stash plan on quote for execute() to reuse without re-picking
+          step._plan = plan;
         } else if (step.type === 'cctp-bridge') {
           const srcTok = TOKENS[step.src].USDC;
           const dstTok = TOKENS[step.dst].USDC;
@@ -1160,6 +1218,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     let firstChain = state.src.chainKey;
     if (firstStep) {
       if (firstStep.type === 'gateway-spend' || firstStep.type === 'cctp-bridge') firstChain = firstStep.src;
+      else if (firstStep.type === 'gateway-multi-spend') {
+        // Multi-source: pick the first plan source's chain (signing happens there first)
+        const eligible = [...state.sources.values()].filter(s => s.kind === 'gateway' && s.chainKey !== firstStep.dst);
+        const sorted = [...eligible].sort((a,b) => (b.canonical > a.canonical ? 1 : -1));
+        firstChain = sorted[0]?.chainKey || 'arc';
+      }
       else if (firstStep.type === 'swap' || firstStep.type === 'transfer') firstChain = firstStep.chain;
     }
     if (wallet.chainKey !== firstChain) {
@@ -1176,6 +1240,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     } else if (steps.length === 1) {
       const s = steps[0];
       if (s.type === 'gateway-spend') label = `⚡ Send ${state.fromToken.symbol}: ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+      else if (s.type === 'gateway-multi-spend') label = `⚡ Unified spend → ${chainShort(s.dst)}`;
       else if (s.type === 'cctp-bridge') label = `Bridge ${state.fromToken.symbol}: ${chainShort(s.src)} → ${chainShort(s.dst)}`;
       else if (s.type === 'swap') label = `Swap ${s.tIn} → ${s.tOut}`;
       else if (s.type === 'transfer') label = `Transfer ${state.fromToken.symbol}`;
@@ -1225,6 +1290,25 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
           runTokSym = 'USDC';
           pushActivity({ kind: 'bridge', chain: step.src, hash: '', status: 'done', text: `⚡ Gateway ${formatAmt(valueCanonical, 6, 4)} USDC: ${chainShort(step.src)} → ${chainShort(step.dst)}` });
           modal.set(stepId, 'done', 'Minted on ' + chainShort(step.dst));
+        }
+        else if (step.type === 'gateway-multi-spend') {
+          // Re-pick sources at execute time (state.sources may have refreshed since quote).
+          const dstTok = TOKENS[step.dst].USDC;
+          const canonical = ARC.toCctpAmount(runAmt, state.fromToken);
+          const eligible = [...state.sources.values()].filter(s => s.kind === 'gateway' && s.chainKey !== step.dst);
+          const plan = ARC.gateway.pickSources(canonical, eligible);
+          if (!plan) throw new Error('Insufficient unified balance');
+          modal.set(stepId, 'active', `Will burn from ${plan.length} chain${plan.length>1?'s':''}: ${plan.map(p => `${chainShort(p.chainKey)} (${formatAmt(p.valueCanonical,6,2)})`).join(' + ')}`);
+          await ARC.gateway.multiSpend({
+            sources: plan, dstChainKey: step.dst,
+            recipient: stepRecipient,
+            onStep: (m) => modal.set(stepId, 'active', m),
+          });
+          runAmt = ARC.fromCctpAmount(canonical, dstTok);
+          runChain = step.dst;
+          runTokSym = 'USDC';
+          pushActivity({ kind: 'bridge', chain: plan[0].chainKey, hash: '', status: 'done', text: `⚡ Unified ${formatAmt(canonical, 6, 4)} USDC from ${plan.length} chains → ${chainShort(step.dst)}` });
+          modal.set(stepId, 'done', `Minted ${formatAmt(canonical,6,4)} USDC on ${chainShort(step.dst)} from ${plan.length} sources`);
         }
         else if (step.type === 'cctp-bridge') {
           const result = await runCctpBridge(step.src, step.dst, runAmt, stepRecipient, modal, stepId);
@@ -1292,6 +1376,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 
   function stepTitle(s) {
     if (s.type === 'gateway-spend') return `⚡ Gateway ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+    if (s.type === 'gateway-multi-spend') return `⚡ Unified Gateway → ${chainShort(s.dst)}`;
     if (s.type === 'cctp-bridge') return `CCTP burn+mint ${chainShort(s.src)} → ${chainShort(s.dst)}`;
     if (s.type === 'swap') return `Swap ${s.tIn} → ${s.tOut} on Arc`;
     if (s.type === 'transfer') return `Transfer on ${chainShort(s.chain)}`;

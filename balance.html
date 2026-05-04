@@ -293,17 +293,42 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       <div class="gw-modal-title">Spend cross-chain</div>
       <button class="gw-modal-close" data-close>×</button>
     </div>
-    <div class="gw-label">From (source chain — USDC will be burned here)</div>
-    <select id="spend-src" class="gw-select"></select>
+
+    <!-- Mode toggle: Unified (auto-pick from all chains) vs Single (one chain) -->
+    <div style="display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:14px">
+      <button id="spend-mode-unified" class="spend-mode-tab active" type="button" style="flex:1;padding:8px;border-radius:8px;background:linear-gradient(135deg,var(--arc1),var(--arc2));color:var(--bg);border:none;font-weight:700;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">⚡ Unified (auto)</button>
+      <button id="spend-mode-single" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:transparent;color:var(--muted);border:none;font-weight:600;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">Single chain</button>
+    </div>
+
+    <!-- Single chain mode (hidden by default) -->
+    <div id="spend-single-section" style="display:none">
+      <div class="gw-label">From (USDC will be burned here)</div>
+      <select id="spend-src" class="gw-select"></select>
+    </div>
+
     <div class="gw-label">To (destination chain — USDC will be minted here)</div>
     <select id="spend-dst" class="gw-select"></select>
     <div class="gw-label">Amount</div>
     <input id="spend-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
     <div class="gw-label">Recipient</div>
     <input id="spend-recipient" class="gw-input" type="text" placeholder="0x… (defaults to your wallet)"/>
-    <div class="gw-row"><span>Source available</span><strong id="spend-srcbal">—</strong></div>
+
+    <!-- Source breakdown (Unified mode) — shows which chains will be drawn from -->
+    <div id="spend-breakdown" style="display:none;margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(244,200,154,.06);border:1px solid rgba(244,200,154,.22);font-size:12.5px;color:var(--muted);line-height:1.6">
+      <div style="font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#FFB454;margin-bottom:6px">⚡ Unified spend plan</div>
+      <div id="spend-breakdown-rows"></div>
+    </div>
+
+    <!-- Single chain available (only in single mode) -->
+    <div class="gw-row" id="spend-srcbal-row" style="display:none"><span>Source available</span><strong id="spend-srcbal">—</strong></div>
+    <!-- Unified totals (default) -->
+    <div class="gw-row" id="spend-totals-row"><span>Total available across all chains</span><strong id="spend-total-bal">—</strong></div>
+
     <button id="spend-go" class="gw-action" type="button">Sign intent + mint</button>
     <div id="spend-status" class="gw-status"></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.55">
+      <strong style="color:var(--text)">Unified mode</strong> spends from multiple chains in one transfer. You'll sign once per source chain (e.g. 3 sigs if 3 chains contribute), then receive ONE attestation that mints the combined amount on the destination — exactly like having a single cross-chain balance.
+    </div>
   </div>
 </div>
 
@@ -311,8 +336,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.3.4"></script>
-<script src="/assets/arc-gateway.js?v=9.3.4"></script>
+<script src="/assets/arc-core.js?v=9.4.0"></script>
+<script src="/assets/arc-gateway.js?v=9.4.0"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -667,43 +692,116 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   };
 
   // ───── Spend modal ─────
+  // Two modes:
+  //   Unified  → user enters amount; app auto-picks the minimum set of chains
+  //              (largest first) to cover it. N signatures → 1 attestation → 1 mint.
+  //              This is what makes "Unified Balance" actually behave unified.
+  //   Single   → classic single-chain burn (legacy fallback).
+  let spendMode = 'unified';
   function openSpendModal() {
     if (!state.addr) { alert('Connect wallet first'); return; }
     document.getElementById('spend-recipient').value = state.addr;
     document.getElementById('spend-amount').value = '';
     clearStatus('spend-status');
-    // Pick best source = chain with largest balance
     if (state.balances.length) {
       const best = [...state.balances].sort((a,b) => (b.canonical > a.canonical ? 1 : -1))[0];
       document.getElementById('spend-src').value = best.chainKey;
     }
-    syncSpendInfo();
+    setSpendMode('unified');
     openModal('modal-spend');
   }
-  function syncSpendInfo() {
-    const k = document.getElementById('spend-src').value;
-    const bal = state.balances.find(b => b.chainKey === k);
-    document.getElementById('spend-srcbal').textContent = (bal ? bal.display : '0') + ' USDC';
+  function setSpendMode(mode) {
+    spendMode = mode;
+    const isUni = mode === 'unified';
+    document.getElementById('spend-mode-unified').style.background = isUni
+      ? 'linear-gradient(135deg,var(--arc1),var(--arc2))' : 'transparent';
+    document.getElementById('spend-mode-unified').style.color = isUni ? 'var(--bg)' : 'var(--muted)';
+    document.getElementById('spend-mode-single').style.background = !isUni
+      ? 'linear-gradient(135deg,var(--arc1),var(--arc2))' : 'transparent';
+    document.getElementById('spend-mode-single').style.color = !isUni ? 'var(--bg)' : 'var(--muted)';
+    document.getElementById('spend-single-section').style.display = isUni ? 'none' : 'block';
+    document.getElementById('spend-srcbal-row').style.display = isUni ? 'none' : 'flex';
+    document.getElementById('spend-totals-row').style.display = isUni ? 'flex' : 'none';
+    syncSpendInfo();
   }
-  document.getElementById('spend-src').onchange = syncSpendInfo;
-  document.getElementById('spend-go').onclick = async () => {
-    const src = document.getElementById('spend-src').value;
+  document.getElementById('spend-mode-unified').onclick = () => setSpendMode('unified');
+  document.getElementById('spend-mode-single').onclick = () => setSpendMode('single');
+
+  function syncSpendInfo() {
+    if (spendMode === 'single') {
+      const k = document.getElementById('spend-src').value;
+      const bal = state.balances.find(b => b.chainKey === k);
+      document.getElementById('spend-srcbal').textContent = (bal ? bal.display : '0') + ' USDC';
+      document.getElementById('spend-breakdown').style.display = 'none';
+      return;
+    }
+    // Unified mode — show total available + breakdown preview
+    const totalCanonical = state.balances.reduce((acc, b) => acc + b.canonical, 0n);
+    document.getElementById('spend-total-bal').textContent = ARC.formatAmt(totalCanonical, 6, 4) + ' USDC';
+    refreshSpendBreakdown();
+  }
+
+  function refreshSpendBreakdown() {
+    const breakdown = document.getElementById('spend-breakdown');
+    const rows = document.getElementById('spend-breakdown-rows');
+    const amtStr = document.getElementById('spend-amount').value.trim();
+    if (!amtStr || spendMode !== 'unified') { breakdown.style.display = 'none'; return; }
+    const valueCanonical = ARC.parseAmt(amtStr, 6);
+    if (valueCanonical <= 0n) { breakdown.style.display = 'none'; return; }
     const dst = document.getElementById('spend-dst').value;
-    if (src === dst) { setStatus('spend-status', 'err', 'Source and destination must differ'); return; }
+    // Exclude destination chain from sources (no point burning then minting on same chain)
+    const eligible = state.balances.filter(b => b.chainKey !== dst);
+    const plan = ARC.gateway.pickSources(valueCanonical, eligible);
+    if (!plan) {
+      breakdown.style.display = 'block';
+      rows.innerHTML = `<div style="color:var(--danger)">Insufficient unified balance — need ${ARC.formatAmt(valueCanonical,6,4)} USDC, have ${ARC.formatAmt(eligible.reduce((a,b)=>a+b.canonical,0n),6,4)} USDC across other chains</div>`;
+      return;
+    }
+    breakdown.style.display = 'block';
+    rows.innerHTML = plan.map(p => `
+      <div style="display:flex;justify-content:space-between;padding:3px 0">
+        <span>Burn from <strong style="color:var(--text)">${ARC.CHAINS[p.chainKey].name}</strong></span>
+        <strong style="color:var(--text);font-family:var(--mono)">${ARC.formatAmt(p.valueCanonical,6,4)} USDC</strong>
+      </div>`).join('') +
+      `<div style="display:flex;justify-content:space-between;padding:6px 0 0;border-top:1px solid rgba(255,180,84,.2);margin-top:4px">
+        <span style="color:var(--text)">→ Mint on <strong>${ARC.CHAINS[dst].name}</strong></span>
+        <strong style="color:#FFB454;font-family:var(--mono)">${ARC.formatAmt(valueCanonical,6,4)} USDC</strong>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted)">${plan.length} signature${plan.length>1?'s':''} required → 1 attestation → 1 mint tx</div>`;
+  }
+  document.getElementById('spend-amount').addEventListener('input', refreshSpendBreakdown);
+  document.getElementById('spend-dst').addEventListener('change', refreshSpendBreakdown);
+  document.getElementById('spend-src').onchange = syncSpendInfo;
+
+  document.getElementById('spend-go').onclick = async () => {
+    const dst = document.getElementById('spend-dst').value;
     const amtStr = document.getElementById('spend-amount').value.trim();
     const recipient = document.getElementById('spend-recipient').value.trim() || state.addr;
     if (!amtStr) { setStatus('spend-status', 'err', 'Enter an amount'); return; }
     if (!ethers.isAddress(recipient)) { setStatus('spend-status', 'err', 'Invalid recipient'); return; }
-    // Amount in canonical 6-decimal
     const valueCanonical = ARC.parseAmt(amtStr, 6);
     if (valueCanonical <= 0n) { setStatus('spend-status', 'err', 'Invalid amount'); return; }
     const btn = document.getElementById('spend-go');
     btn.disabled = true; btn.textContent = 'Working…';
     try {
-      await ARC.gateway.spend({
-        srcChainKey: src, dstChainKey: dst, recipient, valueCanonical,
-        onStep: (m) => setStatus('spend-status', '', m),
-      });
+      if (spendMode === 'unified') {
+        // Auto-pick sources from all chains except destination
+        const eligible = state.balances.filter(b => b.chainKey !== dst);
+        const plan = ARC.gateway.pickSources(valueCanonical, eligible);
+        if (!plan) throw new Error(`Insufficient unified balance: need ${ARC.formatAmt(valueCanonical,6,4)} USDC across non-destination chains`);
+        await ARC.gateway.multiSpend({
+          sources: plan, dstChainKey: dst, recipient,
+          onStep: (m) => setStatus('spend-status', '', m),
+        });
+      } else {
+        // Single-chain mode (legacy)
+        const src = document.getElementById('spend-src').value;
+        if (src === dst) { throw new Error('Source and destination must differ'); }
+        await ARC.gateway.spend({
+          srcChainKey: src, dstChainKey: dst, recipient, valueCanonical,
+          onStep: (m) => setStatus('spend-status', '', m),
+        });
+      }
       setStatus('spend-status', 'ok', '✅ Cross-chain spend complete');
       setTimeout(() => closeModal('modal-spend'), 1500);
       refreshAll();

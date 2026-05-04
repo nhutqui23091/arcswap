@@ -58,54 +58,93 @@
   async function onWalletClick() {
     const s = ARC.wallet.snapshot();
     if (s.connected) { openWalletMenu(); return; }
+    // Always open the picker — even with 0 detected wallets, the picker shows
+    // install links for popular wallets so the user has a path forward instead
+    // of a dead-end toast. With 1 wallet they still get a one-click confirm.
     const providers = ARC.wallet.listProviders();
-    if (providers.length === 0) {
-      const reason = ARC.wallet._noWalletReason ? ARC.wallet._noWalletReason() : 'Install MetaMask, OKX, Rabby, or Coinbase Wallet.';
-      toast('error', 'No wallet detected', reason);
-      return;
-    }
-    if (providers.length === 1) {
-      // Only one wallet — connect directly, no chooser needed
-      try { await ARC.wallet.connect(); toast('success', 'Connected', ARC.shortAddr(ARC.wallet.address)); }
-      catch (e) { toast('error', 'Connect failed', ARC.explainError(e)); }
-      return;
-    }
     openWalletPicker(providers);
   }
 
+  // Curated catalog of popular EVM wallets. Used to surface install links for
+  // wallets the user DOESN'T have yet (greys them out below the installed list).
+  // Order here matches the priority order in arc-core.js _PROVIDER_PRIORITY.
+  const WALLET_CATALOG = [
+    { rdns: 'io.metamask',          name: 'MetaMask',     install: 'https://metamask.io/download/',
+      icon: 'data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath fill=%22%23E2761B%22 d=%22M28.7 4 17.5 12.3l2-4.9z%22/%3E%3Cpath fill=%22%23E4761B%22 d=%22m3.3 4 11 8.4-1.9-5zM24.6 22.2l-3 4.5 6.4 1.8 1.8-6.2zM2.2 22.3 4 28.5l6.4-1.8-3-4.5z%22/%3E%3Cpath fill=%22%23F6851B%22 d=%22M16 14 13.7 17l5 .2-.2-5.4zM21.4 21.5l-1.7-1 1.2-1z%22/%3E%3C/svg%3E' },
+    { rdns: 'com.okxwallet',        name: 'OKX Wallet',   install: 'https://www.okx.com/web3' },
+    { rdns: 'io.rabby',             name: 'Rabby',        install: 'https://rabby.io' },
+    { rdns: 'com.coinbase.wallet',  name: 'Coinbase Wallet', install: 'https://www.coinbase.com/wallet' },
+    { rdns: 'com.trustwallet.app',  name: 'Trust Wallet', install: 'https://trustwallet.com/download' },
+    { rdns: 'com.brave.wallet',     name: 'Brave Wallet', install: 'https://brave.com/wallet/' },
+    { rdns: 'app.phantom',          name: 'Phantom',      install: 'https://phantom.app/download' },
+    { rdns: 'app.keplr',            name: 'Keplr',        install: 'https://www.keplr.app/download' },
+  ];
+
   function openWalletPicker(providers) {
-    const rows = providers.map(p => {
+    const installedRdns = new Set(providers.map(p => p.info?.rdns).filter(Boolean));
+
+    function iconFor(p) {
+      if (p.info?.icon) return `<img src="${p.info.icon}" alt="" style="width:36px;height:36px;border-radius:9px;flex-shrink:0;object-fit:cover"/>`;
+      const cat = WALLET_CATALOG.find(c => c.rdns === p.info?.rdns);
+      if (cat?.icon) return `<img src="${cat.icon}" alt="" style="width:36px;height:36px;border-radius:9px;flex-shrink:0;background:#fff;padding:4px"/>`;
+      return `<div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#4DD6DB,#4A7BEC);display:flex;align-items:center;justify-content:center;color:#0A1628;font-weight:800;font-size:15px;flex-shrink:0">${(p.info?.name?.[0] || 'W').toUpperCase()}</div>`;
+    }
+
+    const installedRows = providers.map(p => {
       const name = p.info?.name || 'Wallet';
       const rdns = p.info?.rdns || '';
-      const icon = p.info?.icon
-        ? `<img src="${p.info.icon}" alt="" style="width:32px;height:32px;border-radius:8px;flex-shrink:0"/>`
-        : `<div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#4DD6DB,#4A7BEC);display:flex;align-items:center;justify-content:center;color:#0A1628;font-weight:800;font-size:14px;flex-shrink:0">${(name[0] || 'W').toUpperCase()}</div>`;
       return `
-        <button class="arc-wp-row" data-rdns="${rdns}" type="button">
-          ${icon}
+        <button class="arc-wp-row arc-wp-installed" data-rdns="${rdns}" type="button">
+          ${iconFor(p)}
           <div style="flex:1;min-width:0;text-align:left">
             <div style="font-size:14px;font-weight:600;color:var(--text)">${name}</div>
-            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px">${rdns || 'browser provider'}</div>
           </div>
-          <span style="color:var(--muted);font-size:14px">→</span>
+          <span class="arc-wp-badge installed">INSTALLED</span>
         </button>`;
     }).join('');
+
+    const notInstalled = WALLET_CATALOG.filter(c => !installedRdns.has(c.rdns));
+    const suggestRows = notInstalled.map(c => {
+      const iconHtml = c.icon
+        ? `<img src="${c.icon}" alt="" style="width:36px;height:36px;border-radius:9px;flex-shrink:0;background:#fff;padding:4px"/>`
+        : `<div style="width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:700;font-size:14px;flex-shrink:0">${c.name[0]}</div>`;
+      return `
+        <a class="arc-wp-row arc-wp-suggest" href="${c.install}" target="_blank" rel="noopener noreferrer">
+          ${iconHtml}
+          <div style="flex:1;min-width:0;text-align:left">
+            <div style="font-size:14px;font-weight:500;color:var(--muted)">${c.name}</div>
+          </div>
+          <span class="arc-wp-badge">Install ↗</span>
+        </a>`;
+    }).join('');
+
     openModal({
       title: 'Connect a wallet',
       body: `
         <style>
-          .arc-wp-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;width:100%;margin-bottom:6px;font-family:inherit}
+          .arc-wp-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;width:100%;margin-bottom:6px;font-family:inherit;text-decoration:none}
           .arc-wp-row:hover{border-color:var(--border2);background:rgba(255,255,255,.06);transform:translateX(2px)}
           .arc-wp-row:active{transform:translateX(0)}
+          .arc-wp-installed{border-color:rgba(123,228,149,.25);background:rgba(123,228,149,.04)}
+          .arc-wp-installed:hover{border-color:rgba(123,228,149,.5);background:rgba(123,228,149,.08)}
+          .arc-wp-suggest{opacity:.7}
+          .arc-wp-suggest:hover{opacity:1;transform:translateX(2px)}
+          .arc-wp-badge{font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:6px;background:var(--surface2);color:var(--muted);font-family:var(--mono);white-space:nowrap}
+          .arc-wp-badge.installed{background:rgba(123,228,149,.15);color:#7BE495}
+          .arc-wp-section{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:14px 4px 8px;display:block}
+          .arc-wp-section:first-child{margin-top:0}
         </style>
-        <div style="display:flex;flex-direction:column;gap:0">
-          ${rows}
-        </div>
-        <div style="margin-top:14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.55">
-          <strong style="color:var(--text)">EVM-first ordering.</strong> MetaMask, OKX, Rabby, Coinbase appear at the top. Phantom / Keplr work but are deprioritized — they're primarily Solana / Cosmos wallets.
+        ${providers.length ? `
+          <div class="arc-wp-section">${providers.length === 1 ? '1 wallet' : providers.length + ' wallets'} detected</div>
+          ${installedRows}` : ''}
+        ${notInstalled.length ? `
+          <div class="arc-wp-section">More options</div>
+          ${suggestRows}` : ''}
+        <div style="margin-top:14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid var(--border);font-size:11.5px;color:var(--muted);line-height:1.55">
+          <strong style="color:var(--text)">EVM-first ordering.</strong> MetaMask, OKX, Rabby, Coinbase top the list. Phantom / Keplr work too but are deprioritized — they're primarily Solana / Cosmos wallets.
         </div>`,
       onOpen: () => {
-        document.querySelectorAll('.arc-wp-row').forEach(btn => {
+        document.querySelectorAll('.arc-wp-installed').forEach(btn => {
           btn.onclick = async () => {
             const rdns = btn.dataset.rdns;
             closeModal();
