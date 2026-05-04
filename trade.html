@@ -61,16 +61,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 }
 .src-select:hover,.dst-select:hover,.src-select:focus,.dst-select:focus{border-color:var(--border2)}
 .src-select option,.dst-select option{background:#0F1E36;color:var(--text);padding:8px}
-.src-select option:disabled{color:#5B6D85;background:#0A1628}
 .src-select option:checked,.dst-select option:checked{background:#1a2c4a;color:#fff}
-.src-select optgroup,.dst-select optgroup{background:#0A1628;color:#FFB454;font-weight:700;font-size:11px;letter-spacing:.08em}
-
-/* Source-kind badge inside dropdown wrapper */
-.source-wrap{display:flex;flex-direction:column;gap:6px}
-.source-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-family:var(--mono);padding:0 4px}
-.source-meta .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.source-meta .badge.gateway{background:rgba(244,200,154,.12);color:#FFB454;border:1px solid rgba(244,200,154,.3)}
-.source-meta .badge.wallet{background:rgba(77,214,219,.1);color:var(--arc1);border:1px solid rgba(77,214,219,.3)}
 
 .swap-flipbar{position:relative;height:14px;margin:4px 0}
 .swap-flip-btn{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:38px;height:38px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:2}
@@ -181,10 +172,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
           <span class="leg-lbl">You pay · Source</span>
           <span class="leg-bal" id="from-bal">Balance: —</span>
         </div>
-        <div class="source-wrap">
-          <select class="src-select" id="from-source" aria-label="Source"></select>
-          <div class="source-meta" id="from-source-meta"><span></span><span></span></div>
-        </div>
+        <select class="src-select" id="from-source" aria-label="Source"></select>
         <div style="height:10px"></div>
         <div class="leg-row">
           <div style="min-width:0">
@@ -297,9 +285,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.3.0"></script>
-<script src="/assets/arc-ui.js?v=9.3.0"></script>
-<script src="/assets/arc-gateway.js?v=9.3.0"></script>
+<script src="/assets/arc-core.js?v=9.3.1"></script>
+<script src="/assets/arc-ui.js?v=9.3.1"></script>
+<script src="/assets/arc-gateway.js?v=9.3.1"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -403,12 +391,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     for (const k of ALL_CHAINS) {
       const tok = TOKENS[k]?.USDC;
       if (!tok) continue;
-      map.set(`${k}:wallet`, { chainKey: k, kind: 'wallet', balance: 0n, tokenDecimals: tok.decimals, display: '0', canonical: 0n });
+      map.set(`${k}:wallet`, { chainKey: k, kind: 'wallet', balance: 0n, tokenDecimals: tok.decimals, display: '0', canonical: 0n, pending: 0n });
     }
     for (const k of GATEWAY_CHAINS) {
       const tok = TOKENS[k]?.USDC;
       if (!tok) continue;
-      map.set(`${k}:gateway`, { chainKey: k, kind: 'gateway', balance: 0n, tokenDecimals: tok.decimals, display: '0', canonical: 0n });
+      map.set(`${k}:gateway`, { chainKey: k, kind: 'gateway', balance: 0n, tokenDecimals: tok.decimals, display: '0', canonical: 0n, pending: 0n });
     }
 
     // Wallet balances in parallel
@@ -418,7 +406,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
       try {
         const bal = await tokenBalance(k, tok, addr);
         const canonical = ARC.toCctpAmount(bal, tok); // normalize to 6-decimal canonical
-        return { key: `${k}:wallet`, chainKey: k, kind: 'wallet', balance: bal, tokenDecimals: tok.decimals, display: formatAmt(bal, tok.decimals, 4), canonical };
+        return { key: `${k}:wallet`, chainKey: k, kind: 'wallet', balance: bal, tokenDecimals: tok.decimals, display: formatAmt(bal, tok.decimals, 4), canonical, pending: 0n };
       } catch (e) {
         console.warn(`[trade] wallet balance ${k} failed:`, e?.message);
         return null;
@@ -437,6 +425,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
           tokenDecimals: TOKENS[b.chainKey]?.USDC?.decimals || 6,
           display: b.display,
           canonical: b.canonical,
+          pending: b.pending || 0n,
         }));
       } catch (e) {
         console.warn('[trade] gateway balances failed:', e?.message);
@@ -455,53 +444,50 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 
   // ── SOURCE / DEST SELECT RENDERERS ───────────────────
   const fromSelectEl = document.getElementById('from-source');
-  const fromMetaEl = document.getElementById('from-source-meta');
   const toSelectEl = document.getElementById('to-dest');
 
   function renderSourceSelect() {
     const all = [...state.sources.values()];
-    // Sort: kind=gateway first (instant!), then wallet; within each, descending by canonical
-    const withBal = all.filter(s => s.canonical > 0n).sort((a, b) => {
+    // Visibility rule: keep Arc options always (so user can default to Arc even
+    // with 0 balance). For other chains, only show entries that have balance OR
+    // pending deposits (deposits in finality wait — surfaces "+N pending").
+    const visible = all.filter(s =>
+      s.chainKey === 'arc' || s.canonical > 0n || (s.pending && s.pending > 0n)
+    );
+    // Sort priority:
+    //   1. Arc Testnet first (this app is built on Arc)
+    //      → within Arc: Wallet then Gateway
+    //   2. Then by canonical balance descending
+    //   3. Within ties: Gateway preferred (instant) over Wallet
+    visible.sort((a, b) => {
+      const aArc = a.chainKey === 'arc';
+      const bArc = b.chainKey === 'arc';
+      if (aArc !== bArc) return aArc ? -1 : 1;
+      if (aArc && bArc) return a.kind === 'wallet' ? -1 : 1;
+      if (a.canonical !== b.canonical) return b.canonical > a.canonical ? 1 : -1;
       if (a.kind !== b.kind) return a.kind === 'gateway' ? -1 : 1;
-      return b.canonical > a.canonical ? 1 : -1;
+      return 0;
     });
-    const empty = all.filter(s => s.canonical === 0n).sort((a, b) => chainShort(a.chainKey).localeCompare(chainShort(b.chainKey)));
 
-    function optHtml(s, disabled = false) {
-      const label = `${chainName(s.chainKey)} · ${s.kind === 'gateway' ? 'Gateway ⚡' : 'Wallet'} — ${s.display} USDC`;
+    fromSelectEl.innerHTML = visible.map(s => {
+      const kindLbl = s.kind === 'gateway' ? 'Gateway ⚡' : 'Wallet';
+      const pendingLbl = (s.pending && s.pending > 0n)
+        ? ` + ${ARC.formatAmt(s.pending, 6, 2)} pending`
+        : '';
+      const label = `${chainName(s.chainKey)} · ${kindLbl} — ${s.display} USDC${pendingLbl}`;
       const sel = (state.src.chainKey === s.chainKey && state.src.kind === s.kind) ? 'selected' : '';
-      return `<option value="${s.chainKey}:${s.kind}" ${sel} ${disabled ? 'disabled' : ''}>${label}</option>`;
-    }
-
-    let html = '';
-    if (withBal.length) {
-      html += `<optgroup label="Available">`;
-      html += withBal.map(s => optHtml(s, false)).join('');
-      html += `</optgroup>`;
-    }
-    if (empty.length) {
-      html += `<optgroup label="Empty (deposit first)">`;
-      html += empty.map(s => optHtml(s, true)).join('');
-      html += `</optgroup>`;
-    }
-    if (!html) html = `<option disabled>Connect wallet to see sources</option>`;
-    fromSelectEl.innerHTML = html;
-
-    // Sync metadata row under the dropdown
-    const cur = state.sources.get(`${state.src.chainKey}:${state.src.kind}`);
-    if (cur) {
-      const badge = cur.kind === 'gateway'
-        ? '<span class="badge gateway">Gateway ⚡ instant</span>'
-        : '<span class="badge wallet">Wallet</span>';
-      fromMetaEl.innerHTML = `${badge}<span>${cur.display} USDC available</span>`;
-    } else {
-      fromMetaEl.innerHTML = '<span></span><span></span>';
-    }
+      return `<option value="${s.chainKey}:${s.kind}" ${sel}>${label}</option>`;
+    }).join('') || `<option disabled>Connect wallet to see sources</option>`;
   }
 
   function renderDestSelect() {
-    // Destination = any chain we can deposit/receive USDC. Use ALL_CHAINS.
-    toSelectEl.innerHTML = ALL_CHAINS.map(k => {
+    // Destination chains: Arc first (this app's home chain), then alphabetical by name
+    const sorted = [...ALL_CHAINS].sort((a, b) => {
+      if (a === 'arc') return -1;
+      if (b === 'arc') return 1;
+      return chainName(a).localeCompare(chainName(b));
+    });
+    toSelectEl.innerHTML = sorted.map(k => {
       const c = CHAINS[k];
       const sel = state.dst.chainKey === k ? 'selected' : '';
       return `<option value="${k}" ${sel}>${c.name}</option>`;
@@ -1332,6 +1318,26 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   loadAllSources().catch(() => null).then(() => {
     updateBalances(); refreshExec(); refreshGatewayHint();
   });
+
+  // Auto-refresh sources every 15s while page is visible. Circle's operator
+  // can take 12-15min to credit deposits (Sepolia/L2 finality), so this loop
+  // makes pending deposits appear in the dropdown ASAP without manual reload.
+  // Also re-syncs immediately when the user returns to the tab.
+  let _sourceRefreshTimer = null;
+  function startSourceAutoRefresh() {
+    if (_sourceRefreshTimer || !ARC.wallet.address) return;
+    _sourceRefreshTimer = setInterval(() => {
+      if (document.visibilityState !== 'visible' || !ARC.wallet.address) return;
+      loadAllSources().then(() => { updateBalances(); refreshGatewayHint(); }).catch(() => null);
+    }, 15000);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && ARC.wallet.address) {
+      loadAllSources().then(() => { updateBalances(); refreshGatewayHint(); }).catch(() => null);
+    }
+  });
+  ARC.wallet.on(() => { if (ARC.wallet.address) startSourceAutoRefresh(); });
+  if (ARC.wallet.address) startSourceAutoRefresh();
 
   // ── Gateway hint pill ─────────────────────────────────
   // Now that sources are surfaced inline in the dropdown, the pill becomes a

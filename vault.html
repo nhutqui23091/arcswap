@@ -212,12 +212,12 @@ nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bot
     </div>
   </div>
 
-  <!-- LIVE BANNER (Vault unlocked — Circle granted SUBSCRIBER role 2026-04-28) -->
-  <div style="margin:18px 0 28px;padding:14px 20px;border:1px solid rgba(123,228,149,0.28);border-radius:14px;background:linear-gradient(180deg,rgba(123,228,149,0.07),rgba(123,228,149,0.02));display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <div style="font-size:24px;line-height:1">✅</div>
-    <div style="flex:1;min-width:240px">
-      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#7BE495;margin-bottom:4px">// LIVE · Arc Testnet</div>
-      <div style="font-size:14px;color:var(--muted);line-height:1.5">USYC vault is open for deposit/redeem. Powered by <strong style="color:var(--text)">Hashnote USYC Teller</strong>. Trades during U.S. Treasury market hours.</div>
+  <!-- COMING SOON BANNER (Vault temporarily paused — coordinating with Circle for re-enable) -->
+  <div style="margin:18px 0 28px;padding:16px 22px;border:1px solid rgba(255,180,84,0.3);border-radius:14px;background:linear-gradient(180deg,rgba(255,180,84,0.08),rgba(255,180,84,0.02));display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="font-size:28px;line-height:1">🛠</div>
+    <div style="flex:1;min-width:260px">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#FFB454;margin-bottom:6px">// Coming Soon · Vault Paused</div>
+      <div style="font-size:14px;color:var(--text);line-height:1.55"><strong>USYC vault temporarily disabled.</strong> We're coordinating with the <strong>Circle / Hashnote</strong> team to re-enable subscribe/redeem on Arc Testnet — should be back online shortly. In the meantime, browse <a href="/blog-usyc.html" style="color:#FFB454;text-decoration:underline">how USYC works</a> or use <a href="/balance" style="color:#FFB454;text-decoration:underline">Unified Balance ↗</a>.</div>
     </div>
   </div>
 
@@ -844,11 +844,11 @@ async function refreshQuote(){
 
     // Button state
     const bal = mode==='deposit' ? balances.usdc : balances.usyc;
-    // Vault unlocked: Circle granted SUBSCRIBER role on Arc Testnet (2026-04-28).
-    // To re-disable temporarily, set VAULT_PRIVATE_BETA = true.
-    const VAULT_PRIVATE_BETA = false;
+    // Vault paused while we coordinate with Circle/Hashnote to re-enable on Arc
+    // Testnet. Flip back to false once approval lands.
+    const VAULT_PRIVATE_BETA = true;
     if(VAULT_PRIVATE_BETA){
-      btn.textContent = 'Coming soon — Private Beta';
+      btn.textContent = 'Coming soon — pending Circle re-enable';
       btn.disabled = true;
     } else if(!walletAddr){
       btn.textContent = 'Connect wallet';

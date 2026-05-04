@@ -604,6 +604,6 @@
     gatewayChains: () => Object.entries(CHAINS)
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
-    version: '9.3.0',
+    version: '9.3.1',
   };
 })(window);
