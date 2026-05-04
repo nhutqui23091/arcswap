@@ -115,25 +115,47 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   cursor:pointer;transition:all .12s;
   font-family:var(--font);width:100%;text-align:left;color:var(--text);
 }
+.src-row{padding:10px 12px !important;gap:11px !important;border-radius:10px !important}
 .src-row:hover{background:rgba(255,255,255,.04);border-color:var(--border)}
 .src-row.active{background:rgba(77,214,219,.1);border-color:rgba(77,214,219,.4)}
 .src-col.gateway .src-row.active{background:rgba(255,180,84,.1);border-color:rgba(255,180,84,.4)}
-.src-row-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.src-row-name{flex:1;font-size:12.5px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.src-row-bal{font-family:var(--mono);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
-.src-row-bal.zero{color:var(--muted);font-weight:400}
-.src-row-pending{display:block;font-size:10px;color:#FFB454;font-family:var(--mono);font-weight:500;margin-top:2px}
+.src-row-icon{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:#0F1E36;overflow:hidden;display:block}
+.src-row-icon img{width:100%;height:100%;display:block;object-fit:cover}
+/* legacy dot — kept for any leftover refs (e.g. unified row) */
+.src-row-dot{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff}
+.src-row-name{flex:1;font-size:14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.src-row-bal{font-family:var(--mono);font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
+.src-row-bal.zero{color:var(--muted);font-weight:500}
+.src-row-pending{display:block;font-size:10.5px;color:#FFB454;font-family:var(--mono);font-weight:500;margin-top:2px;white-space:nowrap}
 .src-row-meta{display:flex;flex-direction:column;align-items:flex-end;min-width:0}
 
-.src-help{
-  margin-top:12px;padding:11px 13px;border-radius:10px;
-  background:rgba(255,255,255,.025);border:1px solid var(--border);
-  font-size:11.5px;color:var(--muted);line-height:1.6;
+/* "?" help icon next to each column header — toggles a small popover with
+   the explanation. Replaces the old bottom-of-panel help block. */
+.src-col-head{position:relative}
+.src-help-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  color:var(--muted);font-size:11px;font-weight:700;
+  cursor:pointer;margin-left:8px;
+  transition:all .15s;font-family:var(--mono);vertical-align:middle;
 }
-.src-help strong{color:var(--text);font-weight:600}
-.src-help .pill{display:inline-block;padding:1px 7px;border-radius:5px;font-family:var(--mono);font-weight:700;font-size:10.5px}
-.src-help .pill.wl{background:rgba(77,214,219,.12);color:var(--arc1)}
-.src-help .pill.gw{background:rgba(244,200,154,.12);color:#FFB454}
+.src-help-btn:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.12)}
+.src-help-pop{
+  position:absolute;top:32px;left:0;z-index:200;
+  min-width:280px;max-width:340px;padding:12px 14px;
+  background:linear-gradient(180deg,#101F36 0%,#0A1729 100%);
+  border:1px solid var(--border2);border-radius:12px;
+  box-shadow:0 8px 28px rgba(0,0,0,.5);
+  font-size:12px;color:var(--muted);line-height:1.55;
+  display:none;animation:srcHelpFade .12s ease-out;text-transform:none;letter-spacing:0;font-weight:400;
+}
+.src-help-pop.open{display:block}
+.src-help-pop strong{color:var(--text);font-weight:600}
+.src-help-pop .pill{display:inline-block;padding:1px 7px;border-radius:5px;font-family:var(--mono);font-weight:700;font-size:10.5px}
+.src-help-pop .pill.wl{background:rgba(77,214,219,.12);color:var(--arc1)}
+.src-help-pop .pill.gw{background:rgba(244,200,154,.12);color:#FFB454}
+@keyframes srcHelpFade{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
 
 .swap-flipbar{position:relative;height:14px;margin:4px 0}
 .swap-flip-btn{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:38px;height:38px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:2}
@@ -363,9 +385,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.4.0"></script>
-<script src="/assets/arc-ui.js?v=9.4.0"></script>
-<script src="/assets/arc-gateway.js?v=9.4.0"></script>
+<script src="/assets/arc-core.js?v=9.4.1"></script>
+<script src="/assets/arc-ui.js?v=9.4.1"></script>
+<script src="/assets/arc-gateway.js?v=9.4.1"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -540,10 +562,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     const pending = (s.pending && s.pending > 0n)
       ? `<span class="src-row-pending">+${ARC.formatAmt(s.pending, 6, 2)} pending</span>`
       : '';
-    const grad = CHAINS[s.chainKey]?.iconGrad || 'linear-gradient(135deg,#8CA0BD,#5B6D85)';
+    const iconUrl = ARC.chainIcon(s.chainKey);
     return `<button class="src-row ${active ? 'active' : ''}" type="button" data-src="${s.chainKey}:${s.kind}">
-      <span class="src-row-dot" style="background:${grad}"></span>
-      <span class="src-row-name">${chainShort(s.chainKey)}</span>
+      <span class="src-row-icon"><img src="${iconUrl}" alt=""/></span>
+      <span class="src-row-name">${chainName(s.chainKey)}</span>
       <span class="src-row-meta">
         <span class="src-row-bal ${balCls}">${s.display} USDC</span>
         ${pending}
@@ -582,24 +604,45 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     fromPanelEl.innerHTML = `
       <div class="src-cols">
         <div class="src-col wallet">
-          <div class="src-col-head">💼 Wallet
+          <div class="src-col-head">💼 Wallet<button class="src-help-btn" type="button" data-help="wallet" aria-label="What is Wallet?">?</button>
             <span class="src-col-sub">USDC sitting in your MetaMask</span>
+            <div class="src-help-pop" id="src-help-wallet">
+              <span class="pill wl">Wallet</span> = USDC sitting in your MetaMask on each chain. To move it cross-chain we use <strong>CCTP burn-and-mint</strong> (~30s fast mode with a tiny fee, or ~13 min standard mode for free).
+              <br><br>Sync time: instant — what's in your wallet IS in your wallet.
+            </div>
           </div>
           <div class="src-list">${wallet.length ? wallet.map(s => rowHtml(s, isActive(s))).join('') : emptyHtml}</div>
         </div>
         <div class="src-col gateway">
-          <div class="src-col-head">⚡ Gateway
+          <div class="src-col-head">⚡ Gateway<button class="src-help-btn" type="button" data-help="gateway" aria-label="What is Gateway?">?</button>
             <span class="src-col-sub">Pre-deposited · spend instantly anywhere</span>
+            <div class="src-help-pop" id="src-help-gateway">
+              <span class="pill gw">Gateway</span> = USDC you've pre-deposited into Circle's instant pool. Spend across any chain in <strong>~30s</strong>, no bridge tx, no wrapped tokens.
+              <br><br><strong style="color:#FFB454">⚡ Unified Balance</strong> spends from MULTIPLE Gateway chains at once — N intents → 1 attestation → 1 mint. Picks largest chains first to minimise signatures.
+              <br><br>Deposit sync: <strong>~30s on Fuji/Arc</strong>, <strong>~12-15 min on Sepolia / L2</strong> (block-finality bottleneck).
+            </div>
           </div>
           <div class="src-list">${unifiedRow}${gateway.length ? gateway.map(s => rowHtml(s, isActive(s))).join('') : emptyHtml}</div>
         </div>
-      </div>
-      <div class="src-help">
-        <span class="pill wl">Wallet</span> = USDC in your MetaMask. Cross-chain via <strong>CCTP burn-and-mint</strong> (~30s fast / ~13min standard).
-        <span class="pill gw">Gateway</span> = USDC pre-deposited into Circle's instant pool. Spend across any chain in <strong>~30s</strong>.
-        <br><strong style="color:#FFB454">⚡ Unified Balance</strong> spends from MULTIPLE Gateway chains in one transfer — N intents → 1 attestation → 1 mint. Picks largest chains first to minimise signatures.
-        <br>Sync time: <strong>~30s on Fuji/Arc</strong>, <strong>~12-15min on Sepolia/L2</strong>.
       </div>`;
+
+    // Wire ? buttons — toggle popover, close on outside click within panel
+    fromPanelEl.querySelectorAll('.src-help-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const which = btn.dataset.help;
+        const pop = document.getElementById('src-help-' + which);
+        // close any other open pop first
+        fromPanelEl.querySelectorAll('.src-help-pop.open').forEach(p => { if (p !== pop) p.classList.remove('open'); });
+        pop?.classList.toggle('open');
+      };
+    });
+    // Close popovers when clicking elsewhere INSIDE the panel
+    fromPanelEl.addEventListener('click', (e) => {
+      if (!e.target.closest('.src-help-btn') && !e.target.closest('.src-help-pop')) {
+        fromPanelEl.querySelectorAll('.src-help-pop.open').forEach(p => p.classList.remove('open'));
+      }
+    });
 
     fromPanelEl.querySelectorAll('.src-row').forEach(btn => {
       btn.onclick = () => {
