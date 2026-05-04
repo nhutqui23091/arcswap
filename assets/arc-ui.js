@@ -57,12 +57,68 @@
 
   async function onWalletClick() {
     const s = ARC.wallet.snapshot();
-    if (s.connected) {
-      openWalletMenu();
-    } else {
+    if (s.connected) { openWalletMenu(); return; }
+    const providers = ARC.wallet.listProviders();
+    if (providers.length === 0) {
+      const reason = ARC.wallet._noWalletReason ? ARC.wallet._noWalletReason() : 'Install MetaMask, OKX, Rabby, or Coinbase Wallet.';
+      toast('error', 'No wallet detected', reason);
+      return;
+    }
+    if (providers.length === 1) {
+      // Only one wallet — connect directly, no chooser needed
       try { await ARC.wallet.connect(); toast('success', 'Connected', ARC.shortAddr(ARC.wallet.address)); }
       catch (e) { toast('error', 'Connect failed', ARC.explainError(e)); }
+      return;
     }
+    openWalletPicker(providers);
+  }
+
+  function openWalletPicker(providers) {
+    const rows = providers.map(p => {
+      const name = p.info?.name || 'Wallet';
+      const rdns = p.info?.rdns || '';
+      const icon = p.info?.icon
+        ? `<img src="${p.info.icon}" alt="" style="width:32px;height:32px;border-radius:8px;flex-shrink:0"/>`
+        : `<div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#4DD6DB,#4A7BEC);display:flex;align-items:center;justify-content:center;color:#0A1628;font-weight:800;font-size:14px;flex-shrink:0">${(name[0] || 'W').toUpperCase()}</div>`;
+      return `
+        <button class="arc-wp-row" data-rdns="${rdns}" type="button">
+          ${icon}
+          <div style="flex:1;min-width:0;text-align:left">
+            <div style="font-size:14px;font-weight:600;color:var(--text)">${name}</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px">${rdns || 'browser provider'}</div>
+          </div>
+          <span style="color:var(--muted);font-size:14px">→</span>
+        </button>`;
+    }).join('');
+    openModal({
+      title: 'Connect a wallet',
+      body: `
+        <style>
+          .arc-wp-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;width:100%;margin-bottom:6px;font-family:inherit}
+          .arc-wp-row:hover{border-color:var(--border2);background:rgba(255,255,255,.06);transform:translateX(2px)}
+          .arc-wp-row:active{transform:translateX(0)}
+        </style>
+        <div style="display:flex;flex-direction:column;gap:0">
+          ${rows}
+        </div>
+        <div style="margin-top:14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.55">
+          <strong style="color:var(--text)">EVM-first ordering.</strong> MetaMask, OKX, Rabby, Coinbase appear at the top. Phantom / Keplr work but are deprioritized — they're primarily Solana / Cosmos wallets.
+        </div>`,
+      onOpen: () => {
+        document.querySelectorAll('.arc-wp-row').forEach(btn => {
+          btn.onclick = async () => {
+            const rdns = btn.dataset.rdns;
+            closeModal();
+            try {
+              await ARC.wallet.connect(rdns);
+              toast('success', 'Connected', ARC.shortAddr(ARC.wallet.address));
+            } catch (e) {
+              toast('error', 'Connect failed', ARC.explainError(e));
+            }
+          };
+        });
+      },
+    });
   }
 
   function openWalletMenu() {

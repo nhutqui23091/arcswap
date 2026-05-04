@@ -383,16 +383,78 @@
       window.dispatchEvent(new Event('eip6963:requestProvider'));
     },
 
-    eip1193() {
+    // EVM-first priority. Phantom + Keplr support EVM but their primary chains
+    // are Solana / Cosmos, so they go LAST — users typically have them installed
+    // for those ecosystems and don't expect them to be the default for an EVM dApp.
+    _PROVIDER_PRIORITY: {
+      'io.metamask': 1,
+      'com.okxwallet': 2,
+      'io.rabby': 3,
+      'com.coinbase.wallet': 4,
+      'com.coinbase.coinbasewallet': 4,
+      'com.trustwallet.app': 5,
+      'com.brave.wallet': 6,
+      'walletconnect': 7,
+      // Multi-chain wallets — deprioritized for EVM dApps
+      'app.phantom': 90,
+      'app.keplr': 95,
+    },
+
+    /**
+     * Returns all detected wallets, sorted by EVM priority (MetaMask → OKX → ...).
+     * Each entry: { info: {name, rdns, icon, uuid}, provider }.
+     * Includes a synthetic legacy entry for `window.ethereum` if it's NOT one of
+     * the EIP-6963 announcements (avoids dup) and looks like a real provider.
+     */
+    listProviders() {
       this._eip6963Init();
-      // Prefer EIP-6963 announced providers (cleaner — wallets explicitly opt in)
-      if (this._eip6963Providers.length) {
-        // Prefer MetaMask if multiple, else first
-        const mm = this._eip6963Providers.find(p => /metamask/i.test(p.info?.name || ''));
-        return (mm || this._eip6963Providers[0]).provider;
+      const list = [...this._eip6963Providers];
+      // If window.ethereum exists but isn't in any 6963 announcement, add it as
+      // a fallback option (some wallet builds still don't announce 6963).
+      const legacy = global.ethereum;
+      if (legacy && !list.some(p => p.provider === legacy)) {
+        let name = 'Browser Wallet';
+        if (legacy.isMetaMask && !legacy.isRabby) name = 'MetaMask (legacy)';
+        else if (legacy.isRabby) name = 'Rabby (legacy)';
+        else if (legacy.isOkxWallet) name = 'OKX Wallet (legacy)';
+        else if (legacy.isCoinbaseWallet) name = 'Coinbase Wallet (legacy)';
+        list.push({
+          info: { name, rdns: 'legacy.window.ethereum', icon: null, uuid: 'legacy-ethereum' },
+          provider: legacy,
+        });
       }
-      // Legacy fallback: window.ethereum (set by older wallets)
-      return global.ethereum || global.okxwallet?.ethereum || global.okexchain || null;
+      const PRIO = this._PROVIDER_PRIORITY;
+      list.sort((a, b) => {
+        const pa = PRIO[a.info?.rdns] ?? 50;
+        const pb = PRIO[b.info?.rdns] ?? 50;
+        if (pa !== pb) return pa - pb;
+        return (a.info?.name || '').localeCompare(b.info?.name || '');
+      });
+      return list;
+    },
+
+    /**
+     * Resolve which provider to use for connect.
+     * Lookup order:
+     *   1. Explicit `rdns` arg (when user picked from picker UI)
+     *   2. Last-used RDNS from localStorage
+     *   3. Top of priority list (MetaMask preferred)
+     */
+    eip1193(rdns) {
+      const list = this.listProviders();
+      if (!list.length) return null;
+      if (rdns) {
+        const m = list.find(p => p.info?.rdns === rdns);
+        if (m) return m.provider;
+      }
+      try {
+        const saved = localStorage.getItem('arc.wallet.rdns');
+        if (saved) {
+          const m = list.find(p => p.info?.rdns === saved);
+          if (m) return m.provider;
+        }
+      } catch {}
+      return list[0].provider;
     },
 
     /** Returns a friendly description of why no wallet was detected. */
@@ -412,9 +474,14 @@
       return 'No wallet extension detected. Install MetaMask (metamask.io), Rabby, or OKX Wallet, then reload this page.';
     },
 
-    async connect() {
-      const eth = this.eip1193();
+    async connect(rdns) {
+      const eth = this.eip1193(rdns);
       if (!eth) throw new Error(this._noWalletReason());
+      // Remember which wallet for next time so user doesn't keep re-picking
+      try {
+        const info = this.listProviders().find(p => p.provider === eth)?.info;
+        if (info?.rdns) localStorage.setItem('arc.wallet.rdns', info.rdns);
+      } catch {}
       this._eth = eth;
       const accounts = await eth.request({ method: 'eth_requestAccounts' });
       if (!accounts || !accounts.length) throw new Error('Wallet returned no accounts');
@@ -645,6 +712,6 @@
     gatewayChains: () => Object.entries(CHAINS)
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
-    version: '9.3.3',
+    version: '9.3.4',
   };
 })(window);
