@@ -48,8 +48,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 .chain-select .chip.active{background:linear-gradient(135deg,rgba(77,214,219,.2),rgba(74,123,236,.15));border-color:rgba(77,214,219,.5);color:#fff}
 .chain-select .chip .cdot{width:6px;height:6px;border-radius:50%}
 
-/* Smart-routing source / destination dropdown */
-.src-select,.dst-select{
+/* Smart-routing destination dropdown (native select kept for simplicity) */
+.dst-select{
   width:100%;padding:9px 36px 9px 14px;border-radius:12px;
   background:var(--surface2);border:1px solid var(--border);
   color:var(--text);font-size:13px;font-weight:600;font-family:var(--font);
@@ -59,9 +59,81 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   background-repeat:no-repeat;background-position:right 14px center;
   transition:border .15s;
 }
-.src-select:hover,.dst-select:hover,.src-select:focus,.dst-select:focus{border-color:var(--border2)}
-.src-select option,.dst-select option{background:#0F1E36;color:var(--text);padding:8px}
-.src-select option:checked,.dst-select option:checked{background:#1a2c4a;color:#fff}
+.dst-select:hover,.dst-select:focus{border-color:var(--border2)}
+.dst-select option{background:#0F1E36;color:var(--text);padding:8px}
+.dst-select option:checked{background:#1a2c4a;color:#fff}
+
+/* Custom 2-column source picker (Wallet | Gateway) ─ replaces native select.
+   Native <select> can't render two columns, can't show colour dots, can't
+   group meaningfully — and the kind distinction (wallet vs gateway) is the
+   most important UX choice on this page, so it deserves a dedicated panel. */
+.src-picker{position:relative}
+.src-trigger{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 14px;border-radius:12px;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);font-size:13px;font-weight:600;cursor:pointer;
+  text-align:left;font-family:var(--font);transition:all .15s;
+}
+.src-trigger:hover{border-color:var(--border2)}
+.src-trigger.open{border-color:var(--arc2);background:rgba(77,214,219,.05)}
+.src-trigger-caret{color:var(--muted);font-size:11px;transition:transform .15s}
+.src-trigger.open .src-trigger-caret{transform:rotate(180deg);color:var(--arc2)}
+
+.src-panel{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:100;
+  background:linear-gradient(180deg,#101F36 0%,#0B1729 100%);
+  border:1px solid var(--border2);border-radius:14px;
+  padding:14px;box-shadow:0 10px 36px rgba(0,0,0,.45);
+  display:none;animation:srcPanelSlide .15s ease-out;
+}
+.src-panel.open{display:block}
+@keyframes srcPanelSlide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+.src-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:520px){.src-cols{grid-template-columns:1fr}}
+
+.src-col{display:flex;flex-direction:column;min-width:0}
+.src-col-head{
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--arc1);
+  margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);
+}
+.src-col.gateway .src-col-head{color:#FFB454}
+.src-col-sub{display:block;font-size:10px;color:var(--muted);font-weight:400;
+  text-transform:none;letter-spacing:0;margin-top:3px;font-family:var(--font)}
+
+.src-list{display:flex;flex-direction:column;gap:1px;max-height:280px;overflow:auto;padding-right:2px}
+.src-list::-webkit-scrollbar{width:6px}
+.src-list::-webkit-scrollbar-track{background:transparent}
+.src-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+.src-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:8px;
+  background:transparent;border:1px solid transparent;
+  cursor:pointer;transition:all .12s;
+  font-family:var(--font);width:100%;text-align:left;color:var(--text);
+}
+.src-row:hover{background:rgba(255,255,255,.04);border-color:var(--border)}
+.src-row.active{background:rgba(77,214,219,.1);border-color:rgba(77,214,219,.4)}
+.src-col.gateway .src-row.active{background:rgba(255,180,84,.1);border-color:rgba(255,180,84,.4)}
+.src-row-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.src-row-name{flex:1;font-size:12.5px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-row-bal{font-family:var(--mono);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
+.src-row-bal.zero{color:var(--muted);font-weight:400}
+.src-row-pending{display:block;font-size:10px;color:#FFB454;font-family:var(--mono);font-weight:500;margin-top:2px}
+.src-row-meta{display:flex;flex-direction:column;align-items:flex-end;min-width:0}
+
+.src-help{
+  margin-top:12px;padding:11px 13px;border-radius:10px;
+  background:rgba(255,255,255,.025);border:1px solid var(--border);
+  font-size:11.5px;color:var(--muted);line-height:1.6;
+}
+.src-help strong{color:var(--text);font-weight:600}
+.src-help .pill{display:inline-block;padding:1px 7px;border-radius:5px;font-family:var(--mono);font-weight:700;font-size:10.5px}
+.src-help .pill.wl{background:rgba(77,214,219,.12);color:var(--arc1)}
+.src-help .pill.gw{background:rgba(244,200,154,.12);color:#FFB454}
 
 .swap-flipbar{position:relative;height:14px;margin:4px 0}
 .swap-flip-btn{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:38px;height:38px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:2}
@@ -172,7 +244,13 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
           <span class="leg-lbl">You pay · Source</span>
           <span class="leg-bal" id="from-bal">Balance: —</span>
         </div>
-        <select class="src-select" id="from-source" aria-label="Source"></select>
+        <div class="src-picker" id="from-source-wrap">
+          <button class="src-trigger" id="from-source-btn" type="button">
+            <span class="src-current" id="from-source-current">Connect wallet…</span>
+            <span class="src-trigger-caret">▾</span>
+          </button>
+          <div class="src-panel" id="from-source-panel"></div>
+        </div>
         <div style="height:10px"></div>
         <div class="leg-row">
           <div style="min-width:0">
@@ -285,9 +363,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.3.1"></script>
-<script src="/assets/arc-ui.js?v=9.3.1"></script>
-<script src="/assets/arc-gateway.js?v=9.3.1"></script>
+<script src="/assets/arc-core.js?v=9.3.2"></script>
+<script src="/assets/arc-ui.js?v=9.3.2"></script>
+<script src="/assets/arc-gateway.js?v=9.3.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -442,46 +520,126 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     renderSourceSelect();
   }
 
-  // ── SOURCE / DEST SELECT RENDERERS ───────────────────
-  const fromSelectEl = document.getElementById('from-source');
-  const toSelectEl = document.getElementById('to-dest');
+  // ── SOURCE PICKER (custom 2-col panel) / DEST SELECT RENDERERS ──
+  const fromTriggerEl  = document.getElementById('from-source-btn');
+  const fromCurrentEl  = document.getElementById('from-source-current');
+  const fromPanelEl    = document.getElementById('from-source-panel');
+  const toSelectEl     = document.getElementById('to-dest');
 
-  function renderSourceSelect() {
-    const all = [...state.sources.values()];
-    // Visibility rule: keep Arc options always (so user can default to Arc even
-    // with 0 balance). For other chains, only show entries that have balance OR
-    // pending deposits (deposits in finality wait — surfaces "+N pending").
-    const visible = all.filter(s =>
-      s.chainKey === 'arc' || s.canonical > 0n || (s.pending && s.pending > 0n)
-    );
-    // Sort priority:
-    //   1. Arc Testnet first (this app is built on Arc)
-    //      → within Arc: Wallet then Gateway
-    //   2. Then by canonical balance descending
-    //   3. Within ties: Gateway preferred (instant) over Wallet
-    visible.sort((a, b) => {
-      const aArc = a.chainKey === 'arc';
-      const bArc = b.chainKey === 'arc';
-      if (aArc !== bArc) return aArc ? -1 : 1;
-      if (aArc && bArc) return a.kind === 'wallet' ? -1 : 1;
-      if (a.canonical !== b.canonical) return b.canonical > a.canonical ? 1 : -1;
-      if (a.kind !== b.kind) return a.kind === 'gateway' ? -1 : 1;
-      return 0;
-    });
-
-    fromSelectEl.innerHTML = visible.map(s => {
-      const kindLbl = s.kind === 'gateway' ? 'Gateway ⚡' : 'Wallet';
-      const pendingLbl = (s.pending && s.pending > 0n)
-        ? ` + ${ARC.formatAmt(s.pending, 6, 2)} pending`
-        : '';
-      const label = `${chainName(s.chainKey)} · ${kindLbl} — ${s.display} USDC${pendingLbl}`;
-      const sel = (state.src.chainKey === s.chainKey && state.src.kind === s.kind) ? 'selected' : '';
-      return `<option value="${s.chainKey}:${s.kind}" ${sel}>${label}</option>`;
-    }).join('') || `<option disabled>Connect wallet to see sources</option>`;
+  // Sort comparator used inside each column: Arc first, then balance desc.
+  function colSort(a, b) {
+    const aArc = a.chainKey === 'arc';
+    const bArc = b.chainKey === 'arc';
+    if (aArc !== bArc) return aArc ? -1 : 1;
+    if (a.canonical !== b.canonical) return b.canonical > a.canonical ? 1 : -1;
+    return chainName(a.chainKey).localeCompare(chainName(b.chainKey));
   }
 
+  function rowHtml(s, active) {
+    const balCls = s.canonical === 0n ? 'zero' : '';
+    const pending = (s.pending && s.pending > 0n)
+      ? `<span class="src-row-pending">+${ARC.formatAmt(s.pending, 6, 2)} pending</span>`
+      : '';
+    const grad = CHAINS[s.chainKey]?.iconGrad || 'linear-gradient(135deg,#8CA0BD,#5B6D85)';
+    return `<button class="src-row ${active ? 'active' : ''}" type="button" data-src="${s.chainKey}:${s.kind}">
+      <span class="src-row-dot" style="background:${grad}"></span>
+      <span class="src-row-name">${chainShort(s.chainKey)}</span>
+      <span class="src-row-meta">
+        <span class="src-row-bal ${balCls}">${s.display} USDC</span>
+        ${pending}
+      </span>
+    </button>`;
+  }
+
+  function renderSourcePanel() {
+    const all = [...state.sources.values()];
+    // Wallet column: every chain (always include, even 0, so user sees they could deposit)
+    const wallet = all.filter(s => s.kind === 'wallet').sort(colSort);
+    // Gateway column: chains where Gateway is deployed; show all (even 0) so user
+    // sees where they can pre-deposit for instant cross-chain
+    const gateway = all.filter(s => s.kind === 'gateway').sort(colSort);
+
+    const isActive = (s) => state.src.chainKey === s.chainKey && state.src.kind === s.kind;
+
+    fromPanelEl.innerHTML = `
+      <div class="src-cols">
+        <div class="src-col wallet">
+          <div class="src-col-head">💼 Wallet
+            <span class="src-col-sub">USDC trong ví của bạn</span>
+          </div>
+          <div class="src-list">${wallet.map(s => rowHtml(s, isActive(s))).join('')}</div>
+        </div>
+        <div class="src-col gateway">
+          <div class="src-col-head">⚡ Gateway
+            <span class="src-col-sub">Spendable instantly across chains</span>
+          </div>
+          <div class="src-list">${gateway.map(s => rowHtml(s, isActive(s))).join('')}</div>
+        </div>
+      </div>
+      <div class="src-help">
+        <span class="pill wl">Wallet</span> = USDC trong MetaMask, cross-chain qua <strong>CCTP</strong> (~30s fast / ~13min standard).
+        <span class="pill gw">Gateway</span> = USDC đã pre-deposit vào Circle's instant pool, spend xuyên chain trong <strong>~30s không cần bridge</strong>.
+        <br>Deposit mới mất từ <strong>~30s (Fuji/Arc)</strong> đến <strong>~12-15 phút (Sepolia/L2)</strong> để credit do block-finality của Circle's operator.
+      </div>`;
+
+    fromPanelEl.querySelectorAll('.src-row').forEach(btn => {
+      btn.onclick = () => {
+        const [chainKey, kind] = btn.dataset.src.split(':');
+        state.src = { chainKey, kind };
+        if (kind === 'gateway') state.fromToken = TOKENS[chainKey].USDC;
+        else {
+          const sym = state.fromToken?.symbol;
+          state.fromToken = TOKENS[chainKey]?.[sym] || TOKENS[chainKey]?.USDC;
+        }
+        closeSourcePanel();
+        renderSourceTrigger();
+        renderPickBtn('from');
+        updateBalances();
+        triggerQuote();
+      };
+    });
+  }
+
+  function renderSourceTrigger() {
+    const cur = state.sources.get(`${state.src.chainKey}:${state.src.kind}`);
+    if (!cur) {
+      fromCurrentEl.textContent = wallet.address ? 'Pick a source…' : 'Connect wallet…';
+      return;
+    }
+    const kindIcon = cur.kind === 'gateway' ? '⚡ Gateway' : '💼 Wallet';
+    fromCurrentEl.textContent = `${chainName(cur.chainKey)} · ${kindIcon} — ${cur.display} USDC`;
+  }
+
+  function openSourcePanel() {
+    renderSourcePanel();
+    fromPanelEl.classList.add('open');
+    fromTriggerEl.classList.add('open');
+  }
+  function closeSourcePanel() {
+    fromPanelEl.classList.remove('open');
+    fromTriggerEl.classList.remove('open');
+  }
+
+  fromTriggerEl.onclick = (e) => {
+    e.stopPropagation();
+    if (fromPanelEl.classList.contains('open')) closeSourcePanel();
+    else openSourcePanel();
+  };
+  document.addEventListener('click', (e) => {
+    if (fromPanelEl.classList.contains('open')
+        && !fromPanelEl.contains(e.target)
+        && e.target !== fromTriggerEl
+        && !fromTriggerEl.contains(e.target)) {
+      closeSourcePanel();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && fromPanelEl.classList.contains('open')) closeSourcePanel();
+  });
+
+  function renderSourceSelect() { renderSourceTrigger(); /* alias for callers */ }
+
   function renderDestSelect() {
-    // Destination chains: Arc first (this app's home chain), then alphabetical by name
     const sorted = [...ALL_CHAINS].sort((a, b) => {
       if (a === 'arc') return -1;
       if (b === 'arc') return 1;
@@ -494,25 +652,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     }).join('');
   }
 
-  fromSelectEl.onchange = () => {
-    const [chainKey, kind] = fromSelectEl.value.split(':');
-    state.src = { chainKey, kind };
-    // If this source is Gateway → token must be USDC
-    if (kind === 'gateway') {
-      state.fromToken = TOKENS[chainKey].USDC;
-    } else {
-      // Wallet — keep current token if available on chain, else USDC
-      const sym = state.fromToken?.symbol;
-      state.fromToken = TOKENS[chainKey]?.[sym] || TOKENS[chainKey]?.USDC;
-    }
-    renderSourceSelect();
-    renderPickBtn('from');
-    triggerQuote();
-  };
-
   toSelectEl.onchange = () => {
     state.dst = { chainKey: toSelectEl.value };
-    // If destination is not Arc, force toToken = USDC (no swap available there)
     if (state.dst.chainKey !== 'arc') {
       state.toToken = TOKENS[state.dst.chainKey]?.USDC || state.toToken;
     }
@@ -521,7 +662,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     triggerQuote();
   };
 
-  renderSourceSelect();
+  renderSourceTrigger();
   renderDestSelect();
 
   function renderPickBtn(side) {
