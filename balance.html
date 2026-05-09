@@ -322,7 +322,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     <!-- Single chain available (only in single mode) -->
     <div class="gw-row" id="spend-srcbal-row" style="display:none"><span>Source available</span><strong id="spend-srcbal">—</strong></div>
     <!-- Unified totals (default) -->
-    <div class="gw-row" id="spend-totals-row"><span>Total available across all chains</span><strong id="spend-total-bal">—</strong></div>
+    <div class="gw-row" id="spend-totals-row"><span>Spendable cross-chain (after fee headroom)</span><strong id="spend-total-bal">—</strong></div>
 
     <button id="spend-go" class="gw-action" type="button">Sign intent + mint</button>
     <div id="spend-status" class="gw-status"></div>
@@ -336,8 +336,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.4.3"></script>
-<script src="/assets/arc-gateway.js?v=9.4.3"></script>
+<script src="/assets/arc-core.js?v=9.4.4"></script>
+<script src="/assets/arc-gateway.js?v=9.4.4"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -745,9 +745,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       document.getElementById('spend-breakdown').style.display = 'none';
       return;
     }
-    // Unified mode — show total available + breakdown preview
-    const totalCanonical = state.balances.reduce((acc, b) => acc + b.canonical, 0n);
-    document.getElementById('spend-total-bal').textContent = ARC.formatAmt(totalCanonical, 6, 4) + ' USDC';
+    // Unified mode — show *spendable* total (raw balance minus fee headroom
+    // we have to leave on each source for Circle's per-intent maxFee check).
+    // Excludes the destination chain since no point burning on the same chain
+    // we mint on.
+    const dst = document.getElementById('spend-dst').value;
+    const eligible = state.balances.filter(b => b.chainKey !== dst);
+    const spendable = ARC.gateway.totalSpendable(eligible);
+    document.getElementById('spend-total-bal').textContent = ARC.formatAmt(spendable, 6, 4) + ' USDC';
     refreshSpendBreakdown();
   }
 
@@ -763,8 +768,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     const eligible = state.balances.filter(b => b.chainKey !== dst);
     const plan = ARC.gateway.pickSources(valueCanonical, eligible);
     if (!plan) {
+      const spendable = ARC.gateway.totalSpendable(eligible);
       breakdown.style.display = 'block';
-      rows.innerHTML = `<div style="color:var(--danger)">Insufficient unified balance — need ${ARC.formatAmt(valueCanonical,6,4)} USDC, have ${ARC.formatAmt(eligible.reduce((a,b)=>a+b.canonical,0n),6,4)} USDC across other chains</div>`;
+      rows.innerHTML = `<div style="color:var(--danger)">Insufficient spendable balance — need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle Gateway per-intent fee headroom (~1.5 USDC reserved on each source).</div>`;
       return;
     }
     breakdown.style.display = 'block';
@@ -806,7 +812,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
         // Auto-pick sources from all chains except destination
         const eligible = state.balances.filter(b => b.chainKey !== dst);
         const plan = ARC.gateway.pickSources(valueCanonical, eligible);
-        if (!plan) throw new Error(`Insufficient unified balance: need ${ARC.formatAmt(valueCanonical,6,4)} USDC across non-destination chains`);
+        if (!plan) {
+          const spendable = ARC.gateway.totalSpendable(eligible);
+          throw new Error(`Insufficient spendable balance: need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle's per-intent fee headroom`);
+        }
         await ARC.gateway.multiSpend({
           sources: plan, dstChainKey: dst, recipient,
           onStep: (m) => setStatus('spend-status', '', m),

@@ -54,17 +54,34 @@
   const ZERO_BYTES32 = '0x' + '00'.repeat(32);
 
   // Circle Gateway enforces a per-intent minimum `maxFee` on /v1/transfer.
-  // Testnet quotes are volatile — we've observed the relayer ask for ~0.024
-  // and ~1.00015 USDC for the same flow on different days. `maxFee` is just
-  // the user's *authorisation ceiling* (actual fee charged ≤ maxFee), so we
-  // pick a generous floor that virtually always clears the relayer's quote
-  // and a 5% proportional component so large transfers also have headroom.
+  // Testnet quotes have been observed at ~0.024 and ~1.00015 USDC; we pick a
+  // floor a touch above the higher quote and a 1% proportional component
+  // (matching Circle's own example fee policy in the SDK docs).
+  //
+  // IMPORTANT: GatewayWallet pre-checks `availableBalance ≥ burn + maxFee`
+  // per intent. So a too-aggressive maxFee can starve sources whose balance
+  // is exactly the allocation. Keep the floor as low as Circle will accept.
   // All values are in canonical 6-decimal USDC units.
-  const MAX_FEE_FLOOR = 2_000_000n;       // 2 USDC — clears observed ~1.0 testnet floor
-  const MAX_FEE_BPS_DIVISOR = 20n;        // 5% = value / 20
+  const MAX_FEE_FLOOR = 1_500_000n;       // 1.5 USDC — clears observed ~1.0 testnet quote
+  const MAX_FEE_BPS_DIVISOR = 100n;       // 1% = value / 100
   function defaultMaxFee(valueCanonical) {
     const proportional = valueCanonical / MAX_FEE_BPS_DIVISOR;
     return proportional > MAX_FEE_FLOOR ? proportional : MAX_FEE_FLOOR;
+  }
+
+  // Maximum amount actually burnable from a source given fee headroom needed.
+  // Solves: burn + defaultMaxFee(burn) ≤ canonical, returning the largest burn.
+  // Returns 0n when canonical can't even cover the fee floor.
+  function maxBurnableFromBalance(canonical) {
+    if (canonical <= MAX_FEE_FLOOR) return 0n;
+    // Two regimes:
+    //  · proportional binding: fee = burn / D → burn = canonical * D / (D+1)
+    //  · floor binding:        fee = FLOOR    → burn = canonical - FLOOR
+    // Whichever yields a *larger fee* is the actual binding constraint.
+    const propBurn = (canonical * MAX_FEE_BPS_DIVISOR) / (MAX_FEE_BPS_DIVISOR + 1n);
+    const propFee = propBurn / MAX_FEE_BPS_DIVISOR;
+    if (propFee > MAX_FEE_FLOOR) return propBurn;
+    return canonical - MAX_FEE_FLOOR;
   }
 
   // Parse Circle's 400 hint: '...expected at least X, got Y' → BigInt(X canonical)
@@ -377,21 +394,34 @@
    */
   function pickSources(targetCanonical, available) {
     if (targetCanonical <= 0n) return [];
-    const totalAvail = available.reduce((acc, s) => acc + (s.canonical || 0n), 0n);
-    if (totalAvail < targetCanonical) return null;
+    // Fee-aware: each source's effective burnable = canonical - maxFee headroom.
+    // Sources where canonical ≤ FLOOR contribute 0 (fee alone exceeds balance).
     const sorted = [...available]
       .filter(s => s.canonical && s.canonical > 0n && CHAINS_HAS_MINTER(s.chainKey))
-      .sort((a, b) => (b.canonical > a.canonical ? 1 : -1));
+      .map(s => ({ ...s, burnable: maxBurnableFromBalance(s.canonical) }))
+      .filter(s => s.burnable > 0n)
+      .sort((a, b) => (b.burnable > a.burnable ? 1 : -1));
+    const totalBurnable = sorted.reduce((acc, s) => acc + s.burnable, 0n);
+    if (totalBurnable < targetCanonical) return null;
     const out = [];
     let remaining = targetCanonical;
     for (const s of sorted) {
       if (remaining <= 0n) break;
-      const take = s.canonical >= remaining ? remaining : s.canonical;
+      const take = s.burnable >= remaining ? remaining : s.burnable;
       out.push({ chainKey: s.chainKey, valueCanonical: take });
       remaining -= take;
     }
     if (remaining > 0n) return null;
     return out;
+  }
+
+  // Total spendable across a balance set, after reserving fee headroom on each.
+  // Useful for "Available for cross-chain spend" UI that reflects what
+  // pickSources will actually be able to allocate.
+  function totalSpendable(available) {
+    return available
+      .filter(s => CHAINS_HAS_MINTER(s.chainKey))
+      .reduce((acc, s) => acc + maxBurnableFromBalance(s.canonical || 0n), 0n);
   }
   // Helper: chain has a GatewayWallet (we can spend FROM it)
   function CHAINS_HAS_MINTER(k) {
@@ -482,7 +512,7 @@
   // ───────── EXPORTS ─────────
   ARC.gateway = {
     GW_BASE, EIP712_DOMAIN, EIP712_TYPES, CANONICAL_DECIMALS,
-    MAX_FEE_FLOOR, defaultMaxFee,
+    MAX_FEE_FLOOR, defaultMaxFee, maxBurnableFromBalance, totalSpendable,
     gatewayChains, chainByDomain, usdcOnChain,
     canonicalToTokenRaw,
     readBalances, readBalanceOnChain,
