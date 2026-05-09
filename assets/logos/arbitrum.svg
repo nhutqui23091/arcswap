@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Outer hex outline (light blue) -->
+  <path fill="#9DCCED" d="M32 2 L60 18 L60 46 L32 62 L4 46 L4 18 Z"/>
+  <!-- Inner hex (dark navy) -->
+  <path fill="#1B2A3D" d="M32 8 L55 21 L55 43 L32 56 L9 43 L9 21 Z"/>
+  <!-- Left white slash -->
+  <path fill="white" d="
+    M22 47
+    L 16 47
+    L 22 21
+    L 28 21
+    Z"/>
+  <!-- Center white wedge (shorter) -->
+  <path fill="white" d="
+    M37 47
+    L 31 47
+    L 33.5 30
+    L 39.5 30
+    Z"/>
+  <!-- Right blue triangle (large blade) -->
+  <path fill="#28A0F0" d="
+    M48 47
+    L 36 47
+    L 42 14
+    Z"/>
+</svg>

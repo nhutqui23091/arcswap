@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="arcBg" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#3B5577"/>
+      <stop offset="60%" stop-color="#152741"/>
+      <stop offset="100%" stop-color="#06101F"/>
+    </radialGradient>
+    <linearGradient id="arcMark" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#C9D6E6"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#arcBg)"/>
+  <!-- Stylized arch: tall curving left stroke + shorter right leg with curl -->
+  <path fill="url(#arcMark)" d="
+    M32 8
+    C 21 8 13 18 13 32
+    L 13 52
+    C 13 53.7 14.3 55 16 55
+    L 19 55
+    C 20.7 55 22 53.7 22 52
+    L 22 32
+    C 22 25 26 21 32 21
+    C 38 21 42 25 42 32
+    L 42 38
+    L 36 38
+    C 33.5 38 32 39.5 32 42
+    C 32 44.5 33.5 46 36 46
+    L 42 46
+    L 42 52
+    C 42 53.7 43.3 55 45 55
+    L 48 55
+    C 49.7 55 51 53.7 51 52
+    L 51 32
+    C 51 18 43 8 32 8
+    Z"/>
+</svg>

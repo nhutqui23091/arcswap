@@ -719,7 +719,7 @@
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
     chainIcon,
-    version: '9.5.0',
+    version: '9.5.1',
   };
 
   // ───────── CHAIN ICONS ─────────
@@ -727,13 +727,13 @@
   // Inline so they always render (no CDN dependency, no CSP changes needed).
   // Keep them minimal but distinctive so users can scan the picker visually.
   const CHAIN_ICONS = {
-    // Arc — white arch/A-mark on dark blue gradient (matches arc.network branding).
-    arc: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='ag' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23E6EDF5'/%3E%3Cstop offset='55%25' stop-color='%23355072'/%3E%3Cstop offset='100%25' stop-color='%230B1A2E'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23ag)'/%3E%3Cpath fill='white' d='M22 50V28c0-5.5 4.5-10 10-10s10 4.5 10 10v22h-6V40h-8v10h-6zm6-16h8v-6c0-2.2-1.8-4-4-4s-4 1.8-4 4v6z'/%3E%3C/svg%3E",
+    // Brand-matched logos hosted locally (see /assets/logos/) so they always
+    // load and stay in sync with the official marks.
+    arc: "/assets/logos/arc.svg",
+    avalancheFuji: "/assets/logos/avalanche.svg",
+    arbitrumSepolia: "/assets/logos/arbitrum.svg",
     sepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23627EEA'/%3E%3Cg fill='white'%3E%3Cpath opacity='0.6' d='M16 4v8.87l7.5 3.35z'/%3E%3Cpath d='M16 4l-7.5 12.22L16 12.87V4z'/%3E%3Cpath opacity='0.6' d='M16 21.97v6.03L23.5 17.62z'/%3E%3Cpath d='M16 28v-6.03L8.5 17.62 16 28z'/%3E%3Cpath opacity='0.2' d='M16 20.57l7.5-4.35L16 12.87v7.7z'/%3E%3Cpath opacity='0.6' d='M8.5 16.22L16 20.57v-7.7l-7.5 3.35z'/%3E%3C/g%3E%3C/svg%3E",
     baseSepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%230052FF'/%3E%3Cpath fill='white' d='M16 4a12 12 0 100 24 12 12 0 000-24zm0 4a8 8 0 110 16 8 8 0 010-16z' transform='translate(0 0)'/%3E%3Cpath fill='%230052FF' d='M16 24a8 8 0 100-16v16z'/%3E%3C/svg%3E",
-    // Avalanche — official red rounded square with white triangle + delta cutout.
-    avalancheFuji: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23E84142'/%3E%3Cpath fill='white' d='M19 47L32 17l13 30H35l-3-7-3 7H19zm10-10h6l-3-7-3 7z'/%3E%3C/svg%3E",
-    arbitrumSepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%2328A0F0'/%3E%3Cpath fill='white' d='M16 6l-7 12 4 6 3-2-3-6 4-7-1-3zm2 4l5 8-3 6h-2l-2-3 2-3 1-3-1-5z'/%3E%3C/svg%3E",
     optimismSepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23FF0420'/%3E%3Cpath fill='white' d='M11 12c-2.5 0-4 1.5-4 4s1.5 4 4 4 4-1.5 4-4-1.5-4-4-4zm0 6c-1 0-2-1-2-2s1-2 2-2 2 1 2 2-1 2-2 2zm10-6h-3l-1 8h2l.3-2.5h.7c2 0 3.5-1 4-3 0-1.5-1-2.5-3-2.5zm-.5 4h-1l.3-2h1c.5 0 1 .3 1 1 0 .5-.5 1-1.3 1z'/%3E%3C/svg%3E",
     polygonAmoy: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%238247E5'/%3E%3Cpath fill='white' d='M21.6 13.2L19 11.7c-.3-.2-.7-.2-1 0l-2.5 1.5-1.7 1-2.5 1.5c-.3.2-.7.2-1 0l-2-1.2c-.3-.2-.5-.5-.5-.9v-2.4c0-.4.2-.7.5-.9l2-1.1c.3-.2.7-.2 1 0l2 1.1c.3.2.5.5.5.9v1.5l1.7-1V8.4c0-.4-.2-.7-.5-.9L11.5 6c-.3-.2-.7-.2-1 0L6.5 8.5c-.3.2-.5.5-.5.9V13c0 .4.2.7.5.9l4 2.4c.3.2.7.2 1 0l2.5-1.5 1.7-1 2.5-1.5c.3-.2.7-.2 1 0l2 1.1c.3.2.5.5.5.9v2.4c0 .4-.2.7-.5.9l-2 1.2c-.3.2-.7.2-1 0l-2-1.1c-.3-.2-.5-.5-.5-.9v-1.5l-1.7 1v1.5c0 .4.2.7.5.9l4 2.4c.3.2.7.2 1 0l4-2.5c.3-.2.5-.5.5-.9v-4.5c0-.4-.2-.7-.5-.9z'/%3E%3C/svg%3E",
     unichainSepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23FF007A'/%3E%3Cpath fill='white' d='M14.5 7c-.3 4 .3 6 1.5 7-1.5-.5-3-2-3.5-4 .5 4 2.5 6 5 6.5-1 .5-3 .5-4-.5 1 1.5 2.5 2.5 4.5 2.5-1 1-2.5 1.5-4.5 1.5C16 22 19 20 19.5 16c.5 4-1 7-3.5 8.5C19 24 22 21 22 16.5 22 11 18 7 14.5 7z'/%3E%3C/svg%3E",
