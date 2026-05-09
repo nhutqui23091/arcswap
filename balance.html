@@ -336,8 +336,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.4.1"></script>
-<script src="/assets/arc-gateway.js?v=9.4.1"></script>
+<script src="/assets/arc-core.js?v=9.4.2"></script>
+<script src="/assets/arc-gateway.js?v=9.4.2"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -410,9 +410,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   const SYNC_LABEL = { avalancheFuji: '~30s', arc: '~30s', polygonAmoy: '~3min', sepolia: '~12-15min', baseSepolia: '~12-15min', optimismSepolia: '~12-15min', arbitrumSepolia: '~12-15min', unichainSepolia: '~12-15min' };
   function fillSelect(elId, opts = {}) {
     const el = document.getElementById(elId);
+    const filtered = opts.filter ? chainKeys.filter(opts.filter) : chainKeys;
     const sorted = opts.bySync
-      ? [...chainKeys].sort((a, b) => (SYNC_RANK[a] || 99) - (SYNC_RANK[b] || 99) || ARC.CHAINS[a].name.localeCompare(ARC.CHAINS[b].name))
-      : chainKeys;
+      ? [...filtered].sort((a, b) => (SYNC_RANK[a] || 99) - (SYNC_RANK[b] || 99) || ARC.CHAINS[a].name.localeCompare(ARC.CHAINS[b].name))
+      : filtered;
     el.innerHTML = sorted.map(k => {
       const tag = opts.bySync && k === 'avalancheFuji' ? ' ⚡ Recommended (fastest sync)'
                 : opts.bySync ? ` · ${SYNC_LABEL[k] || ''} sync` : '';
@@ -420,7 +421,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
     }).join('');
   }
   // Deposit modal sorts by sync speed so users land on the fastest chain first.
-  fillSelect('deposit-chain', { bySync: true });
+  // Filter out chains where direct deposit can't work (e.g. Arc — native-gas
+  // USDC isn't transferable via standard ERC-20 transferFrom).
+  const depositable = (k) => !ARC.CHAINS[k]?.gatewayDepositDisabled;
+  fillSelect('deposit-chain', { bySync: true, filter: depositable });
   fillSelect('withdraw-chain');
   fillSelect('spend-src');
   fillSelect('spend-dst');
@@ -449,6 +453,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       const wal = state.walletBals[k];
       const walDisp = (connected && wal !== undefined) ? human(wal, tok?.decimals || 6) : '—';
       const isZero = !bal || bal.canonical === 0n;
+      const depositOff = !!ARC.CHAINS[k]?.gatewayDepositDisabled;
+      const depositTitle = depositOff
+        ? 'Direct deposit unavailable on Arc — USDC here is the native gas token. Spend cross-chain to mint USDC on Arc instead.'
+        : '';
       const balCell = pendDisp
         ? `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small><div style="font-size:11px;color:#FFB454;font-weight:500;margin-top:2px">+ ${pendDisp} pending</div></div>`
         : `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small></div>`;
@@ -460,7 +468,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
         ${balCell}
         <div class="chain-bal ${(!wal||wal===0n)?'zero':''}">${walDisp}<small>USDC</small></div>
         <div class="chain-actions">
-          <button data-act="deposit" data-chain="${k}" ${connected?'':'disabled'}>Deposit</button>
+          <button data-act="deposit" data-chain="${k}" ${(connected && !depositOff)?'':'disabled'} title="${depositTitle}">Deposit</button>
           <button data-act="withdraw" data-chain="${k}" ${(connected && !isZero)?'':'disabled'}>Withdraw</button>
         </div>`;
       table.appendChild(row);
@@ -612,7 +620,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
   // deposit credits in seconds instead of waiting 12-15min on Sepolia/L2.
   function openDepositModal(chainKey) {
     if (!state.addr) { alert('Connect wallet first'); return; }
-    document.getElementById('deposit-chain').value = chainKey || 'avalancheFuji';
+    // Never land on a chain that can't actually deposit (e.g. Arc native USDC).
+    const safeKey = (chainKey && !ARC.CHAINS[chainKey]?.gatewayDepositDisabled) ? chainKey : 'avalancheFuji';
+    document.getElementById('deposit-chain').value = safeKey;
     document.getElementById('deposit-amount').value = '';
     clearStatus('deposit-status');
     syncDepositInfo();
@@ -758,6 +768,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       return;
     }
     breakdown.style.display = 'block';
+    // Sum the per-intent maxFees so the user sees the worst-case relayer fee
+    // they're authorising. Each intent must clear Circle's per-intent minimum
+    // independently — fees do NOT pool across sources.
+    const totalFee = plan.reduce((acc, p) => acc + ARC.gateway.defaultMaxFee(p.valueCanonical), 0n);
     rows.innerHTML = plan.map(p => `
       <div style="display:flex;justify-content:space-between;padding:3px 0">
         <span>Burn from <strong style="color:var(--text)">${ARC.CHAINS[p.chainKey].name}</strong></span>
@@ -766,6 +780,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       `<div style="display:flex;justify-content:space-between;padding:6px 0 0;border-top:1px solid rgba(255,180,84,.2);margin-top:4px">
         <span style="color:var(--text)">→ Mint on <strong>${ARC.CHAINS[dst].name}</strong></span>
         <strong style="color:#FFB454;font-family:var(--mono)">${ARC.formatAmt(valueCanonical,6,4)} USDC</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0 0;font-size:11.5px;color:var(--muted)">
+        <span>Max relayer fee (Circle Gateway)</span>
+        <span style="font-family:var(--mono)">≤ ${ARC.formatAmt(totalFee,6,4)} USDC</span>
       </div>
       <div style="margin-top:6px;font-size:11px;color:var(--muted)">${plan.length} signature${plan.length>1?'s':''} required → 1 attestation → 1 mint tx</div>`;
   }

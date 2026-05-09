@@ -26,6 +26,12 @@
       native: { symbol: 'USDC', name: 'USDC (Arc Gas)', decimals: 18 },
       cctpDomain: 26,
       iconGrad: 'linear-gradient(135deg,#6C3FFF,#00CFFF)',
+      // Arc's USDC is the native gas token — it lives in the L1 ledger, not in
+      // the ERC-20 wrapper at 0x3600…. Standard `approve` + `transferFrom`
+      // (which GatewayWallet.deposit relies on) cannot move native balance, so
+      // direct deposits revert with "ERC20: transfer amount exceeds balance".
+      // Users should fund Arc by spending cross-chain (mint on Arc) instead.
+      gatewayDepositDisabled: true,
       contracts: {
         router:              '0x48a9bd1644ac67fbef4183261c466bea3eb333fc',
         factory:             '0x45dd35611179ae6663ae47791175d7d598ced086',
@@ -713,7 +719,7 @@
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
     chainIcon,
-    version: '9.4.1',
+    version: '9.4.2',
   };
 
   // ───────── CHAIN ICONS ─────────

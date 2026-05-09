@@ -53,6 +53,19 @@
 
   const ZERO_BYTES32 = '0x' + '00'.repeat(32);
 
+  // Circle Gateway enforces a per-intent minimum `maxFee` on /v1/transfer
+  // (testnet currently quotes ~0.02385 USDC). Sending maxFee=0 → 400
+  // "Insufficient max fee". We set a comfortable floor and add a 1bp
+  // proportional component so larger transfers still leave headroom for
+  // Circle's relayer to claim a higher fee if it needs to.
+  // All values are in canonical 6-decimal USDC units.
+  const MAX_FEE_FLOOR = 50_000n;          // 0.05 USDC — well above the ~0.024 minimum
+  const MAX_FEE_BPS_DIVISOR = 10_000n;    // 1bp = value / 10000
+  function defaultMaxFee(valueCanonical) {
+    const proportional = valueCanonical / MAX_FEE_BPS_DIVISOR;
+    return proportional > MAX_FEE_FLOOR ? proportional : MAX_FEE_FLOOR;
+  }
+
   // ───────── HELPERS ─────────
   // `balance` from REST is a decimal string in 6-decimal canonical USDC units.
   // To compare/show against Arc's 18-decimal native USDC we always work in
@@ -319,8 +332,11 @@
    *   build burn intent → sign → submit → mint on destination.
    * `valueCanonical` in 6-decimal BigInt.
    */
-  async function spend({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee = 0n, onStep }) {
-    const intent = buildBurnIntent({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee });
+  async function spend({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee, onStep }) {
+    // Circle's /v1/transfer rejects maxFee=0 with "Insufficient max fee".
+    // Pick a safe default scaled to amount when caller didn't set one.
+    const fee = (maxFee == null || maxFee === 0n) ? defaultMaxFee(valueCanonical) : maxFee;
+    const intent = buildBurnIntent({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee: fee });
     const attResp = await signAndSubmitBurnIntent(intent, { onStep });
     const mint = await gatewayMint(dstChainKey, attResp.attestation, attResp.signature, { onStep });
     return { intent, attResp, mint };
@@ -379,17 +395,19 @@
    * `sources`: [{chainKey, valueCanonical}] — produced by pickSources() or hand-picked
    * Returns { intents, attResp, mint }.
    */
-  async function multiSpend({ sources, dstChainKey, recipient, maxFee = 0n, onStep }) {
+  async function multiSpend({ sources, dstChainKey, recipient, maxFee, onStep }) {
     if (!ARC.wallet.signer) throw new Error('Connect wallet');
     if (!sources || !sources.length) throw new Error('No sources to spend from');
 
     onStep?.(`Building ${sources.length} burn intent${sources.length > 1 ? 's' : ''}…`);
+    // Per-intent maxFee: each source intent must clear Circle's minimum on its
+    // own (the API doesn't sum fees across sources). Scale per source value.
     const intents = sources.map(s => buildBurnIntent({
       srcChainKey: s.chainKey,
       dstChainKey,
       recipient,
       valueCanonical: s.valueCanonical,
-      maxFee,
+      maxFee: (maxFee == null || maxFee === 0n) ? defaultMaxFee(s.valueCanonical) : maxFee,
     }));
 
     // Sign each. EIP-712 domain has no chainId so signature is portable across
@@ -423,6 +441,7 @@
   // ───────── EXPORTS ─────────
   ARC.gateway = {
     GW_BASE, EIP712_DOMAIN, EIP712_TYPES, CANONICAL_DECIMALS,
+    MAX_FEE_FLOOR, defaultMaxFee,
     gatewayChains, chainByDomain, usdcOnChain,
     canonicalToTokenRaw,
     readBalances, readBalanceOnChain,
