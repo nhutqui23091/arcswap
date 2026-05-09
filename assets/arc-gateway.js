@@ -53,17 +53,25 @@
 
   const ZERO_BYTES32 = '0x' + '00'.repeat(32);
 
-  // Circle Gateway enforces a per-intent minimum `maxFee` on /v1/transfer
-  // (testnet currently quotes ~0.02385 USDC). Sending maxFee=0 → 400
-  // "Insufficient max fee". We set a comfortable floor and add a 1bp
-  // proportional component so larger transfers still leave headroom for
-  // Circle's relayer to claim a higher fee if it needs to.
+  // Circle Gateway enforces a per-intent minimum `maxFee` on /v1/transfer.
+  // Testnet quotes are volatile — we've observed the relayer ask for ~0.024
+  // and ~1.00015 USDC for the same flow on different days. `maxFee` is just
+  // the user's *authorisation ceiling* (actual fee charged ≤ maxFee), so we
+  // pick a generous floor that virtually always clears the relayer's quote
+  // and a 5% proportional component so large transfers also have headroom.
   // All values are in canonical 6-decimal USDC units.
-  const MAX_FEE_FLOOR = 50_000n;          // 0.05 USDC — well above the ~0.024 minimum
-  const MAX_FEE_BPS_DIVISOR = 10_000n;    // 1bp = value / 10000
+  const MAX_FEE_FLOOR = 2_000_000n;       // 2 USDC — clears observed ~1.0 testnet floor
+  const MAX_FEE_BPS_DIVISOR = 20n;        // 5% = value / 20
   function defaultMaxFee(valueCanonical) {
     const proportional = valueCanonical / MAX_FEE_BPS_DIVISOR;
     return proportional > MAX_FEE_FLOOR ? proportional : MAX_FEE_FLOOR;
+  }
+
+  // Parse Circle's 400 hint: '...expected at least X, got Y' → BigInt(X canonical)
+  function parseRequiredFee(txt) {
+    const m = /expected at least ([\d.]+)/i.exec(txt || '');
+    if (!m) return null;
+    try { return ARC.parseAmt(m[1], CANONICAL_DECIMALS); } catch { return null; }
   }
 
   // ───────── HELPERS ─────────
@@ -278,25 +286,38 @@
   /**
    * Sign + submit burn intent → returns { attestation, signature, transferId, fees }.
    * On success the destination chain has a ready-to-mint payload.
+   *
+   * Resilience: if Circle returns 400 "Insufficient max fee: expected at
+   * least X" we parse X, bump the intent's maxFee above it, re-sign once,
+   * and retry. This costs the user one extra signature in the rare case
+   * Circle's quote moves between our default and submission time.
    */
   async function signAndSubmitBurnIntent(burnIntent, opts = {}) {
     if (!ARC.wallet.signer) throw new Error('Connect wallet');
-    opts.onStep?.('Sign burn intent in wallet…');
-    const signature = await ARC.wallet.signer.signTypedData(EIP712_DOMAIN, EIP712_TYPES, burnIntent);
-    opts.onStep?.('Submitting to Gateway API…');
-    const body = JSON.stringify([{
-      burnIntent: burnIntentToJson(burnIntent),
-      signature,
-    }]);
-    const res = await fetch(`${GW_BASE}/v1/transfer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      throw new Error(`Gateway /v1/transfer ${res.status}: ${txt.slice(0, 300)}`);
+    const submit = async (intent, label) => {
+      opts.onStep?.(label);
+      const signature = await ARC.wallet.signer.signTypedData(EIP712_DOMAIN, EIP712_TYPES, intent);
+      opts.onStep?.('Submitting to Gateway API…');
+      const res = await fetch(`${GW_BASE}/v1/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([{ burnIntent: burnIntentToJson(intent), signature }]),
+      });
+      const txt = res.ok ? null : await res.text().catch(() => '');
+      return { res, txt };
+    };
+    let { res, txt } = await submit(burnIntent, 'Sign burn intent in wallet…');
+    if (!res.ok && res.status === 400) {
+      const required = parseRequiredFee(txt);
+      if (required && required > burnIntent.maxFee) {
+        // Bump well above the quoted minimum (+25%) so a tiny rate change
+        // mid-flight doesn't trip the same error a second time.
+        burnIntent.maxFee = required + (required / 4n);
+        opts.onStep?.(`Fee bumped to ${ARC.formatAmt(burnIntent.maxFee, CANONICAL_DECIMALS, 4)} USDC — please re-sign`);
+        ({ res, txt } = await submit(burnIntent, 'Re-sign with bumped fee…'));
+      }
     }
+    if (!res.ok) throw new Error(`Gateway /v1/transfer ${res.status}: ${(txt || '').slice(0, 300)}`);
     return await res.json();
   }
 
@@ -410,27 +431,47 @@
       maxFee: (maxFee == null || maxFee === 0n) ? defaultMaxFee(s.valueCanonical) : maxFee,
     }));
 
-    // Sign each. EIP-712 domain has no chainId so signature is portable across
-    // chains — wallet doesn't need to switch between sigs. User just confirms N
-    // times in the same wallet popup queue.
-    const signed = [];
-    for (let i = 0; i < intents.length; i++) {
-      const s = sources[i];
-      onStep?.(`Sign ${i + 1}/${intents.length}: ${ARC.CHAINS[s.chainKey].short} → ${ARC.formatAmt(s.valueCanonical, 6, 4)} USDC`);
-      const signature = await ARC.wallet.signer.signTypedData(EIP712_DOMAIN, EIP712_TYPES, intents[i]);
-      signed.push({ burnIntent: burnIntentToJson(intents[i]), signature });
+    // Sign each + submit, with one auto-retry across ALL intents if Circle
+    // quotes a higher per-intent minimum than we picked. EIP-712 domain has
+    // no chainId so signatures are portable — wallet doesn't switch between sigs.
+    const signOnce = async (label) => {
+      const out = [];
+      for (let i = 0; i < intents.length; i++) {
+        const s = sources[i];
+        onStep?.(`${label} ${i + 1}/${intents.length}: ${ARC.CHAINS[s.chainKey].short} → ${ARC.formatAmt(s.valueCanonical, 6, 4)} USDC`);
+        const signature = await ARC.wallet.signer.signTypedData(EIP712_DOMAIN, EIP712_TYPES, intents[i]);
+        out.push({ burnIntent: burnIntentToJson(intents[i]), signature });
+      }
+      return out;
+    };
+    const submit = async (signed) => {
+      onStep?.('Submitting to Gateway API…');
+      const res = await fetch(`${GW_BASE}/v1/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(signed),
+      });
+      const txt = res.ok ? null : await res.text().catch(() => '');
+      return { res, txt };
+    };
+    let signed = await signOnce('Sign');
+    let { res, txt } = await submit(signed);
+    if (!res.ok && res.status === 400) {
+      const required = parseRequiredFee(txt);
+      if (required) {
+        const bumped = required + (required / 4n); // +25% headroom
+        let bumpedAny = false;
+        intents.forEach(it => {
+          if (bumped > it.maxFee) { it.maxFee = bumped; bumpedAny = true; }
+        });
+        if (bumpedAny) {
+          onStep?.(`Fee bumped to ${ARC.formatAmt(bumped, CANONICAL_DECIMALS, 4)} USDC per intent — please re-sign`);
+          signed = await signOnce('Re-sign');
+          ({ res, txt } = await submit(signed));
+        }
+      }
     }
-
-    onStep?.('Submitting to Gateway API…');
-    const res = await fetch(`${GW_BASE}/v1/transfer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(signed),
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      throw new Error(`Gateway /v1/transfer ${res.status}: ${txt.slice(0, 300)}`);
-    }
+    if (!res.ok) throw new Error(`Gateway /v1/transfer ${res.status}: ${(txt || '').slice(0, 300)}`);
     const attResp = await res.json();
 
     onStep?.(`Mint on ${ARC.CHAINS[dstChainKey].short}…`);

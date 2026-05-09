@@ -719,7 +719,7 @@
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
     chainIcon,
-    version: '9.4.2',
+    version: '9.4.3',
   };
 
   // ───────── CHAIN ICONS ─────────
