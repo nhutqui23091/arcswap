@@ -74,7 +74,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
 .chain-row.header{background:rgba(255,255,255,0.04);font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:11px 18px}
 .chain-row:hover:not(.header){background:rgba(255,255,255,0.025)}
 .chain-info{display:flex;align-items:center;gap:12px;min-width:0}
-.chain-dot{width:30px;height:30px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,#4DD6DB,#4A7BEC);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.chain-dot{width:32px;height:32px;border-radius:9px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:800;font-size:12px;color:#0E1B2E;text-shadow:none;box-shadow:0 0 0 1px rgba(255,255,255,0.06),0 1px 2px rgba(0,0,0,.18)}
+.chain-dot img{width:100%;height:100%;object-fit:cover;display:block}
+.chain-dot.fallback{background:linear-gradient(135deg,#4DD6DB,#4A7BEC);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
 .chain-name{font-size:14px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis}
 .chain-name small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:400;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
 .chain-bal{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
@@ -459,9 +461,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:f
       const balCell = pendDisp
         ? `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small><div style="font-size:11px;color:#FFB454;font-weight:500;margin-top:2px">+ ${pendDisp} pending</div></div>`
         : `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small></div>`;
+      const iconUrl = ARC.chainIcon ? ARC.chainIcon(k) : '';
+      const shortLabel = chainShort(k).slice(0, 3);
+      const dotHtml = iconUrl
+        ? `<div class="chain-dot"><img src="${iconUrl}" alt="${chainShort(k)}" onerror="this.parentElement.classList.add('fallback');this.parentElement.textContent='${shortLabel}'"/></div>`
+        : `<div class="chain-dot fallback" style="background:${chainColor(k)}">${shortLabel}</div>`;
       row.innerHTML = `
         <div class="chain-info">
-          <div class="chain-dot" style="background:${chainColor(k)}">${chainShort(k).slice(0,3)}</div>
+          ${dotHtml}
           <div class="chain-name">${chainName(k)}<small>Domain ${ARC.CHAINS[k].cctpDomain}</small></div>
         </div>
         ${balCell}
