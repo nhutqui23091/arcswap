@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 <link rel="apple-touch-icon" href="/favicon.svg"/>
-<title>ArcSwap — One USDC. Everywhere.</title>
+<title>ArcSwap — One USDC. One Balance. Everywhere.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -125,7 +125,7 @@ nav.scrolled{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bo
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--arc4);animation:pulse-dot 2s ease-in-out infinite}
 @keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,178,.4)}50%{opacity:.8;box-shadow:0 0 0 6px rgba(0,255,178,0)}}
 .hero-title{
-  font-size:clamp(48px,8vw,96px);font-weight:900;line-height:1;
+  font-size:clamp(40px,6.4vw,80px);font-weight:900;line-height:1.05;
   letter-spacing:-.035em;margin-bottom:24px;text-transform:uppercase;
   color:var(--text);
   animation:fade-up .8s .1s ease both;
@@ -344,7 +344,7 @@ section{position:relative;z-index:1}
   border:1px solid rgba(108,63,255,.25);position:relative;overflow:hidden;
 }
 .cta-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at center,rgba(108,63,255,.08) 0%,transparent 60%);pointer-events:none}
-.cta-title{font-size:clamp(40px,6vw,72px);font-weight:900;line-height:1;letter-spacing:-3px;margin-bottom:20px}
+.cta-title{font-size:clamp(34px,5vw,60px);font-weight:900;line-height:1.05;letter-spacing:-2px;margin-bottom:20px}
 .cta-sub{font-size:18px;color:var(--muted);max-width:480px;margin:0 auto 40px;line-height:1.7}
 .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 
@@ -432,6 +432,7 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
   </div>
   <h1 class="hero-title">
     One USDC.<br>
+    One Balance.<br>
     <span class="grad">Everywhere.</span>
   </h1>
   <p class="hero-sub">See your USDC across every chain in one balance, spend it instantly anywhere via Circle Gateway and CCTP V2, and let idle stablecoins earn tokenized U.S. Treasury yield. Built on Arc Testnet with Circle's native stablecoin stack.</p>
@@ -731,7 +732,7 @@ HIDDEN_END -->
 <section class="cta-section reveal" id="about">
   <div class="section-inner">
     <div class="cta-card glass">
-      <h2 class="cta-title">One USDC.<br><span class="grad">Everywhere on Arc.</span></h2>
+      <h2 class="cta-title">One USDC.<br>One Balance.<br><span class="grad">Everywhere on Arc.</span></h2>
       <p class="cta-sub">ArcSwap unifies stablecoins across chains. Connect any wallet, see your USDC on every supported chain alongside Circle Gateway pre-deposits, and spend instantly anywhere — while idle balances earn tokenized U.S. Treasury yield via USYC. One stack, every surface.</p>
       <div class="cta-btns">
         <button class="btn-launch" onclick="window.location.href='/trade'">
@@ -789,7 +790,7 @@ HIDDEN_END -->
           
           <span class="logo-name" style="font-size:18px">ArcSwap</span>
         </div>
-        <p class="footer-tagline">One USDC, everywhere — unified stablecoin spend across chains via Circle Gateway and CCTP V2, with USYC yield on idle balances. Built on Arc Testnet.</p>
+        <p class="footer-tagline">One USDC, one balance, everywhere — unified stablecoin spend across chains via Circle Gateway and CCTP V2, with USYC yield on idle balances. Built on Arc Testnet.</p>
       </div>
       <div>
         <div class="footer-col-title">Build</div>
