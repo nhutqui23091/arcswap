@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com https://gateway-api-testnet.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
+<link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
+<meta name="description" content="ArcSwap is officially live on Arc Testnet — Unified Balance via Circle Gateway, native Trade with CCTP, and one-click token creation. Free testnet USDC, no signup."/>
+<meta property="og:title" content="ArcSwap is officially live on Arc Testnet"/>
+<meta property="og:description" content="Three surfaces, one wallet — Unified Balance, Trade and Create Token. Live today on Arc Testnet."/>
+<meta property="og:image" content="https://arcswap.net/assets/social/blog-launch-banner.svg"/>
+<meta property="og:type" content="article"/>
+<title>ArcSwap is officially live on Arc Testnet — ArcSwap Blog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;--bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;--muted:#8CA0BD;
+  --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
+  --warn:#FFB454;--danger:#FF7A7A;
+  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.7}
+.aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(123,228,149,0.10) 0%,transparent 60%),
+  linear-gradient(180deg,#0A1628 0%,#0E1F39 60%,#0A1628 100%)}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-name{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.logo-tag{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;border-left:1px solid var(--border);padding-left:10px;margin-left:4px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--text);background:var(--surface)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-ghost{padding:9px 18px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);transition:all .2s;text-decoration:none}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-primary{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);transition:all .2s;text-decoration:none}
+.btn-primary:hover{background:rgba(255,255,255,0.14)}
+
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:120px 24px 80px}
+.crumb{font-size:12px;font-family:var(--mono);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px}
+.crumb a{color:var(--muted);text-decoration:none}
+.crumb a:hover{color:var(--text)}
+.eyebrow{font-size:12px;font-family:var(--mono);color:var(--arc4);letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px}
+.eyebrow::before{content:'// ';color:rgba(140,160,189,.55)}
+h1.title{font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-.025em;line-height:1.08;margin-bottom:18px}
+h1.title .grad{background:linear-gradient(90deg,var(--arc4),var(--arc1),var(--arc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lead{font-size:19px;color:#C8D1E0;line-height:1.6;margin-bottom:28px;font-weight:400}
+.byline{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--muted);margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.byline-author{font-weight:600;color:var(--text)}
+.byline-sep{color:var(--border2)}
+.banner{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--border);margin-bottom:48px;background:#0A1628}
+
+article{font-size:16.5px;line-height:1.78}
+article p{color:#C8D1E0;margin-bottom:20px}
+article p strong{color:var(--text);font-weight:600}
+article p em{color:var(--text);font-style:italic;background:rgba(123,228,149,0.08);padding:1px 4px;border-radius:3px}
+article p a{color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.3);transition:border-color .2s}
+article p a:hover{border-bottom-color:var(--arc1)}
+article h2{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:56px 0 18px;padding-top:28px;border-top:1px solid var(--border);line-height:1.2}
+article h2:first-of-type{border-top:none;padding-top:0}
+article h3{font-size:22px;font-weight:600;margin:36px 0 14px;letter-spacing:-.01em}
+article ul,article ol{padding-left:24px;margin-bottom:24px}
+article li{color:#C8D1E0;margin-bottom:8px}
+article li::marker{color:var(--arc4)}
+
+code{font-family:var(--mono);font-size:14px;background:rgba(123,228,149,0.08);border:1px solid rgba(123,228,149,0.16);padding:1px 6px;border-radius:5px;color:var(--arc4)}
+
+.callout{border-left:3px solid var(--arc4);background:rgba(123,228,149,0.06);padding:16px 20px;border-radius:0 10px 10px 0;margin:28px 0}
+.callout.info{border-left-color:var(--arc1);background:rgba(77,214,219,0.06)}
+.callout.warn{border-left-color:var(--warn);background:rgba(255,180,84,0.06)}
+.callout-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:var(--mono);color:var(--arc4)}
+.callout.info .callout-title{color:var(--arc1)}
+.callout.warn .callout-title{color:var(--warn)}
+.callout-body{font-size:15px;color:#C8D1E0;line-height:1.65}
+
+.inline-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--border);margin:32px 0;background:#0A1628}
+
+table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.t th,.t td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.t th{background:rgba(255,255,255,0.04);font-weight:600;color:var(--text);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono)}
+.t td{color:#C8D1E0}
+.t tr:last-child td{border-bottom:none}
+
+.steps{counter-reset:step;list-style:none;padding:0;margin:24px 0}
+.steps li{padding:18px 20px 18px 64px;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;position:relative;background:var(--surface)}
+.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:18px;top:18px;width:32px;height:32px;border-radius:8px;background:rgba(123,228,149,0.12);border:1px solid rgba(123,228,149,0.32);color:var(--arc4);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:14px}
+.steps li strong{color:var(--text);font-weight:600;display:block;margin-bottom:4px;font-size:15.5px}
+.steps li span{font-size:14.5px;color:#C8D1E0}
+
+.cta-card{border:1px solid var(--border);background:linear-gradient(180deg,rgba(123,228,149,0.08),rgba(255,255,255,0.02));border-radius:14px;padding:28px;margin:48px 0;text-align:center}
+.cta-card h3{font-size:22px;font-weight:700;margin-bottom:8px}
+.cta-card p{color:var(--muted);font-size:14.5px;margin-bottom:18px}
+.cta-card a{display:inline-block;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;background:rgba(123,228,149,0.14);border:1px solid rgba(123,228,149,0.4);color:var(--arc4);transition:all .2s;margin:0 4px}
+.cta-card a:hover{background:rgba(123,228,149,0.22);border-color:var(--arc4)}
+.cta-card a.alt{background:rgba(77,214,219,0.12);border-color:rgba(77,214,219,0.36);color:var(--arc1)}
+.cta-card a.alt:hover{background:rgba(77,214,219,0.2);border-color:var(--arc1)}
+
+.foot{margin-top:60px;padding-top:28px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;color:var(--muted);flex-wrap:wrap;gap:12px}
+.foot a{color:var(--muted);text-decoration:none}
+.foot a:hover{color:var(--arc1)}
+
+@media(max-width:768px){.wrap{padding:100px 18px 60px}.nav-links{display:none}h1.title{font-size:32px}article h2{font-size:24px}}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-tag">Blog</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/trade">Trade</a>
+    <a class="nav-link" href="/balance">Balance</a>
+    <a class="nav-link" href="/token">Create Token</a>
+    <a class="nav-link" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
+    <a class="nav-link active" href="/blog">Blog</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn-ghost" href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    <a class="btn-primary" href="/trade">Launch App ↗</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="crumb"><a href="/">Home</a> &nbsp;/&nbsp; <a href="/blog">Blog</a> &nbsp;/&nbsp; ArcSwap is officially live</div>
+  <div class="eyebrow">Announcement</div>
+  <h1 class="title">ArcSwap is <span class="grad">officially live</span> on Arc Testnet</h1>
+  <p class="lead">Three surfaces, one wallet, no signup. Unified Balance via Circle Gateway, native Trade with CCTP V2, and one-click token creation — all running on Arc Testnet today.</p>
+
+  <div class="byline">
+    <span class="byline-author">ArcSwap Team</span>
+    <span class="byline-sep">·</span>
+    <span>May 10, 2026</span>
+    <span class="byline-sep">·</span>
+    <span>4 min read</span>
+  </div>
+
+  <img class="banner" src="/assets/social/blog-launch-banner.svg" alt="ArcSwap is officially live on Arc Testnet"/>
+
+  <article>
+
+    <p>Today we're flipping the switch. <strong>ArcSwap is officially live on <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc Testnet</a></strong> — open to anyone with a wallet and a few minutes of curiosity.</p>
+
+    <p>No waitlist. No signup. No proprietary token. Connect a wallet, grab some testnet USDC from <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">Circle's faucet</a>, and you're in.</p>
+
+    <div class="callout">
+      <div class="callout-title">TL;DR</div>
+      <div class="callout-body">
+        ArcSwap is a non-custodial frontend that turns Arc into a single venue for stablecoin operations. Today's launch covers three public surfaces — <strong>Balance</strong>, <strong>Trade</strong>, and <strong>Create Token</strong>. Vault and Pool follow in private beta.
+      </div>
+    </div>
+
+    <h2>What's live today</h2>
+
+    <img class="inline-img" src="/assets/social/blog-launch-stack.svg" alt="The three public surfaces: Unified Balance, native Trade + CCTP, and Create Token"/>
+
+    <h3>Unified Balance — powered by Circle Gateway</h3>
+    <p>The headline feature. <strong>Spend USDC on Arc using funds that live on a different chain</strong>, without a manual bridge step. Gateway aggregates your USDC across Ethereum, Base, Arbitrum, Avalanche, Optimism, and Polygon — and presents one balance, one approval, one transaction.</p>
+    <p>Translation: your USDC stops feeling fragmented. Whatever's in your wallet — wherever it is — it's spendable here.</p>
+
+    <h3>Trade — native swap + CCTP V2</h3>
+    <p>USDC ↔ EURC instantly via the Arc-native Uniswap V2 deployment. No wrapped tokens, no synthetic stables. Need to pull USDC in from another chain? <strong>CCTP V2 burn-and-mint is in the same surface</strong> — Circle's official native USDC bridge, no third-party messaging layer in the path.</p>
+
+    <h3>Create Token — one click, no toolchain</h3>
+    <p>Deploy an ERC-20 on Arc by filling out a form. Pick a name, ticker, supply, decimals — sign once, mint on confirmation. <strong>No Hardhat, no Foundry, no Solidity compiler</strong>. Pay gas in USDC. Get a contract address you can verify on the Arc explorer.</p>
+
+    <h2>Why now, why testnet</h2>
+
+    <p>Arc Testnet has been usable for a while. The reason we waited until today: we wanted the Gateway integration solid before calling this <em>actually launched</em>. A trade venue without a real "spend from anywhere" story is just another swap UI — and there are plenty of those.</p>
+
+    <p>What we needed:</p>
+
+    <ul>
+      <li><strong>EIP-6963 wallet detection</strong> that works the same way across MetaMask, Rabby, Coinbase Wallet, and the rest — no more "which provider is the page actually using?"</li>
+      <li><strong>RDNS-based wallet priority</strong> so the wallet you actually picked is the one we use</li>
+      <li><strong>Gateway flow polish</strong> — chain logos in the source picker, source filtering by balance, multi-source spend in a single signature</li>
+      <li><strong>Honest empty states</strong> — when a chain has 0 balance, we hide it instead of showing a confusing zero</li>
+    </ul>
+
+    <p>Those are unglamorous, but they're the difference between "demo" and "I'd actually use this".</p>
+
+    <h2>How to try it — in 60 seconds</h2>
+
+    <ol class="steps">
+      <li><strong>Get testnet USDC.</strong> <span>Open <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">faucet.circle.com</a>, pick any supported testnet (Sepolia, Base Sepolia, Arbitrum Sepolia, Fuji, OP Sepolia, Polygon Amoy), paste your wallet address. You'll get 10 USDC instantly.</span></li>
+      <li><strong>Open <a href="https://arcswap.net">arcswap.net</a>.</strong> <span>Click <strong>Connect Wallet</strong>. Pick your wallet from the picker (we detect via EIP-6963 — no more guessing).</span></li>
+      <li><strong>Go to /balance.</strong> <span>You'll see your USDC across every supported chain in one view. Pick a source, hit <em>Spend</em>, and the funds settle on Arc — no separate bridge tab.</span></li>
+      <li><strong>Trade or ship a token.</strong> <span>Swap USDC ↔ EURC at /trade, or deploy your first ERC-20 at /token. Both run on Arc with sub-second finality.</span></li>
+    </ol>
+
+    <div class="callout warn">
+      <div class="callout-title">Testnet only — no real money</div>
+      <div class="callout-body">
+        Everything on ArcSwap right now is <strong>Arc Testnet</strong>. Tokens are not real, balances are not real, yields would not be real. Mainnet ETA is 2027 and gated on Arc's own L1 launch. If anyone offers you "early access" to ArcSwap mainnet or an ASWP token — that's a scam. We don't have a token.
+      </div>
+    </div>
+
+    <h2>What's still cooking</h2>
+
+    <p>Two surfaces are intentionally <em>not</em> in the public launch — they exist, they work, but they're behind a tester whitelist while we finish polish:</p>
+
+    <table class="t">
+      <tr><th>Surface</th><th>Status</th><th>Why gated</th></tr>
+      <tr><td><strong>Vault</strong></td><td>Private beta</td><td>USYC entitlements UX needs another pass before a wider audience touches T-bill yield flows.</td></tr>
+      <tr><td><strong>Pool</strong></td><td>Private beta</td><td>LP onboarding friction is too high for self-serve right now — fixable, but not today.</td></tr>
+      <tr><td><strong>StableFX</strong></td><td>Q4 2026</td><td>RFQ-driven USDC ⇄ EURC settlement via Arc FxEscrow. Designs only.</td></tr>
+      <tr><td><strong>Mainnet</strong></td><td>2027</td><td>Pinned to Arc L1 mainnet. We'll ship in lockstep with Circle.</td></tr>
+    </table>
+
+    <p>If you'd like access to Vault or Pool earlier, hop into <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a> and ask. We're whitelisting people who'll actually break it for us.</p>
+
+    <h2>The shape of the next few weeks</h2>
+
+    <p>We're focused on three things:</p>
+
+    <ol>
+      <li><strong>More source chains in Gateway.</strong> The list will grow as Circle extends Gateway support — we're plugging chains in the moment they're available.</li>
+      <li><strong>Bug bounty + audit prep.</strong> Even though we don't run our own contracts, the frontend itself matters. CSP, SRI pinning, IPFS contenthash — all the boring defense-in-depth work.</li>
+      <li><strong>Listening.</strong> Tell us what's confusing. We read every Discord message. The roadmap bends to whatever's painful in real use.</li>
+    </ol>
+
+    <h2>Try it</h2>
+
+    <p>Open <a href="https://arcswap.net">arcswap.net</a>. Connect a wallet. Spend USDC from a chain it isn't on. That's the whole pitch — and it actually works today.</p>
+
+    <div class="cta-card">
+      <h3>ArcSwap is live. Come break it.</h3>
+      <p>Free testnet USDC from faucet.circle.com — three surfaces, one wallet.</p>
+      <a href="/balance">Open Balance</a>
+      <a class="alt" href="/trade">Trade &amp; Bridge</a>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>ArcSwap is a non-custodial frontend currently on Arc Testnet. Nothing here is real money or financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
+
+  </article>
+
+  <div class="foot">
+    <span>© 2026 ArcSwap · Built on Arc Testnet</span>
+    <div>
+      <a href="/blog">← Back to blog</a> &nbsp;·&nbsp;
+      <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">X</a> &nbsp;·&nbsp;
+      <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

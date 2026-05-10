@@ -16,5 +16,6 @@
 /points  /trade   302
 
 # Blog post pretty URLs (rewrite, không redirect — URL hiện vẫn là /blog/...)
-/blog/usyc-explained    /blog-usyc.html       200
-/blog/what-is-arcswap   /blog-arcswap.html    200
+/blog/usyc-explained        /blog-usyc.html       200
+/blog/what-is-arcswap       /blog-arcswap.html    200
+/blog/launch-arc-testnet    /blog-launch.html     200

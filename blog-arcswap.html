@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
-<meta name="description" content="What is ArcSwap? Why we built a yield terminal for stablecoins on Arc — the design thesis behind one venue, one balance."/>
+<meta name="description" content="What is ArcSwap? The stablecoin command center on Arc — Unified Balance, native Trade, instant token creation. The design thesis."/>
 <meta property="og:title" content="What is ArcSwap?"/>
-<meta property="og:description" content="A yield terminal for stablecoins on Arc — USYC vault, swap, CCTP bridge, pools in one venue. The design thesis."/>
+<meta property="og:description" content="The stablecoin command center on Arc — Unified Balance via Circle Gateway, native Trade, and one-click token creation. The design thesis."/>
 <meta property="og:image" content="https://arcswap.net/assets/social/blog-arcswap-banner.svg"/>
 <meta property="og:type" content="article"/>
 <title>What is ArcSwap? — ArcSwap Blog</title>
@@ -118,11 +118,10 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
     <span class="logo-tag">Blog</span>
   </a>
   <div class="nav-links">
-    <a class="nav-link" href="/">Home</a>
-    <a class="nav-link" href="/vault">Vault</a>
     <a class="nav-link" href="/trade">Trade</a>
-    <a class="nav-link" href="/pool">Pool</a>
-    <a class="nav-link" href="/docs">Docs</a>
+    <a class="nav-link" href="/balance">Balance</a>
+    <a class="nav-link" href="/token">Create Token</a>
+    <a class="nav-link" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
     <a class="nav-link active" href="/blog">Blog</a>
   </div>
   <div class="nav-right">
@@ -136,67 +135,64 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
   <div class="crumb"><a href="/">Home</a> &nbsp;/&nbsp; <a href="/blog">Blog</a> &nbsp;/&nbsp; What is ArcSwap?</div>
   <div class="eyebrow">Product Note</div>
   <h1 class="title">What is <span class="grad">ArcSwap</span>?</h1>
-  <p class="lead">A yield terminal for stablecoins on Arc — USYC vault, native swap, CCTP bridge and liquidity pools, in one venue. Here's why we built it that way.</p>
+  <p class="lead">The stablecoin command center on Arc — spend USDC from any chain, trade and bridge native, and ship a token in one click. Here's the design thesis.</p>
 
   <div class="byline">
     <span class="byline-author">ArcSwap Team</span>
     <span class="byline-sep">·</span>
-    <span>Apr 27, 2026</span>
+    <span>May 10, 2026</span>
     <span class="byline-sep">·</span>
     <span>6 min read</span>
   </div>
 
-  <img class="banner" src="/assets/social/blog-arcswap-banner.svg" alt="What is ArcSwap"/>
+  <img class="banner" src="/assets/social/blog-arcswap-banner.svg?v=2" alt="What is ArcSwap"/>
 
   <article>
 
-    <p>ArcSwap is a <strong>non-custodial DeFi frontend</strong> on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc</a> Layer 1 blockchain. The pitch in one sentence: <em>everything you want to do with stablecoins, in one tab.</em></p>
+    <p>ArcSwap is a <strong>non-custodial DeFi frontend</strong> on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc</a> Layer 1 blockchain. The pitch in one sentence: <em>spend stablecoins on Arc as if they were already there, no matter which chain they actually live on.</em></p>
 
-    <p>That's vague. Let me be specific.</p>
+    <p>That's still vague. Let me be specific.</p>
 
     <h2>The problem we noticed</h2>
 
-    <p>If you hold $10,000 USDC today and want to be productive with it, your day looks like this:</p>
+    <p>If you hold $10,000 USDC across Ethereum, Base, and Arbitrum today and want to do anything productive with it on a <em>new</em> chain, your day looks like this:</p>
     <ul>
-      <li>Open <strong>Aave</strong> to lend USDC for ~3% APY.</li>
-      <li>Open <strong>Uniswap</strong> to swap into EURC for an FX trade.</li>
-      <li>Open <strong>Stargate / Across</strong> to bridge to another chain.</li>
-      <li>Open <strong>USDM / sFRAX / sUSDe</strong> for yield-bearing stablecoin variants.</li>
+      <li>Open <strong>Stargate / Across / CCTP</strong> to bridge — pick a route, wait for source finality, pay a fee.</li>
+      <li>Open <strong>Uniswap</strong> on the destination chain to swap into a different stablecoin.</li>
       <li>Open <strong>Etherscan</strong> three times to track approvals.</li>
+      <li>Open a <strong>token launcher</strong> if you actually want to deploy something.</li>
+      <li>Realize you forgot gas on the destination chain. Bridge again.</li>
     </ul>
 
     <p>Five tabs, five wallet popups, five fee experiences, five mental models. And after all that, your USDC is fragmented across three protocols, two chains, and four token wrappers.</p>
 
     <p>This is fine for crypto-native users who enjoy the friction. <strong>It's terrible for capital efficiency</strong> and even worse for new users.</p>
 
-    <h2>The thesis: a yield terminal</h2>
+    <h2>The thesis: one balance, one venue</h2>
 
-    <p>What if your USDC just <em>worked</em>? Sitting in your wallet, earning U.S. Treasury yield by default, instantly swappable into other stablecoins, instantly bridgeable across chains, instantly LP-able into pools — all from a single interface, with one balance, one approval pattern, one mental model.</p>
+    <p>What if your USDC just <em>worked</em>? Whatever chain it's sitting on, you can spend it on Arc — instantly. Whatever stablecoin you need, you can swap into it. Whatever token you want to launch, you ship it without a deploy script. One interface, one balance, one mental model.</p>
 
-    <p>That's ArcSwap. Four products tightly integrated:</p>
+    <p>That's ArcSwap today. Three public products, tightly integrated:</p>
 
     <div class="feature-grid">
       <div class="fcard">
-        <span class="fcard-tag c1">VAULT</span>
-        <div class="fcard-name">USYC Yield</div>
-        <div class="fcard-desc">Earn ~4.85% APY on idle USDC via tokenized U.S. T-bills (Hashnote).</div>
+        <span class="fcard-tag c2">BALANCE</span>
+        <div class="fcard-name">Unified Balance</div>
+        <div class="fcard-desc">Powered by Circle Gateway. Spend USDC on Arc using funds sitting on Ethereum, Base, Arbitrum, Avalanche, Optimism, Polygon — no manual bridge.</div>
       </div>
       <div class="fcard">
-        <span class="fcard-tag c2">SWAP</span>
-        <div class="fcard-name">In-Arc AMM</div>
-        <div class="fcard-desc">Convert USDC ↔ EURC ↔ USYC instantly via Uniswap V2.</div>
+        <span class="fcard-tag c1">TRADE</span>
+        <div class="fcard-name">Native Swap + CCTP</div>
+        <div class="fcard-desc">Convert USDC ↔ EURC instantly via Uniswap V2 on Arc, plus burn-and-mint CCTP V2 bridging in the same surface.</div>
       </div>
       <div class="fcard">
-        <span class="fcard-tag c3">BRIDGE</span>
-        <div class="fcard-name">CCTP V2</div>
-        <div class="fcard-desc">Native USDC across chains. Burn-and-mint, no wrapped tokens.</div>
-      </div>
-      <div class="fcard">
-        <span class="fcard-tag c4">POOLS</span>
-        <div class="fcard-name">Liquidity Provision</div>
-        <div class="fcard-desc">Earn 0.25% per trade by providing USDC/EURC or USDC/USYC liquidity.</div>
+        <span class="fcard-tag c3">CREATE</span>
+        <div class="fcard-name">Token Launcher</div>
+        <div class="fcard-desc">Deploy an ERC-20 on Arc with a wallet click. No Hardhat, no Foundry, no Solidity. Pay gas in USDC, mint on confirmation.</div>
       </div>
     </div>
+
+    <p style="font-size:14.5px;color:var(--muted);font-style:italic">Vault (USYC yield) and Pool (LP) are in private beta — see <em>What's coming</em> below.</p>
 
     <h2>Why <em>Arc</em>, specifically</h2>
 
@@ -205,7 +201,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
     <ol>
       <li><strong>USDC as native gas.</strong> No more "I need to bridge in some ETH first to pay gas". Your USDC is the spending money <em>and</em> the gas. Predictable USD-denominated transaction costs.</li>
       <li><strong>Sub-second deterministic finality.</strong> No reorgs, no "wait 12 blocks". Tx confirmed = tx done. Critical for cross-chain UX where the bridge waits for source-chain finality.</li>
-      <li><strong>EVM compatible.</strong> Solidity, Hardhat, Foundry, Viem all work. Hashnote already deployed USYC. Circle already deployed CCTP V2. Uniswap V2 router was deployed by the foundation. The infra was waiting.</li>
+      <li><strong>EVM compatible.</strong> Solidity, Hardhat, Foundry, Viem all work. Circle already deployed CCTP V2 and Gateway. Uniswap V2 router was deployed by the foundation. The infra was waiting.</li>
     </ol>
 
     <p>We didn't have to build any of the protocols ArcSwap surfaces. They all exist on Arc. <strong>ArcSwap is a UX layer, not a protocol</strong> — and that's deliberate.</p>
@@ -217,8 +213,8 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
     <ul>
       <li><strong>We don't custody funds.</strong> Your wallet is your wallet. ArcSwap can't pause, freeze, or move anything you own.</li>
       <li><strong>We don't have our own token.</strong> No ASWP. No airdrop campaign. No governance vote. Anyone telling you otherwise is running a scam.</li>
-      <li><strong>We don't have our own smart contracts.</strong> We call into Hashnote (USYC), Circle (CCTP), and the Arc Foundation's Uniswap deployment. They run the infra; we run the UI.</li>
-      <li><strong>We don't take fees</strong> on yield, swaps, or bridges (current testnet stage). The fees you see come from the underlying protocols (Hashnote subscription fee, Uniswap LP fee, etc.).</li>
+      <li><strong>We don't run our own bridge or AMM contracts.</strong> We call into Circle (CCTP, Gateway) and the Arc Foundation's Uniswap deployment. They run the infra; we run the UI.</li>
+      <li><strong>We don't take fees</strong> on swaps, bridges, or Gateway flows (current testnet stage). The fees you see come from the underlying protocols (Uniswap LP fee, CCTP relayer, etc.).</li>
     </ul>
 
     <h2>Why this design choice</h2>
@@ -232,11 +228,11 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
       <li><strong>Bridge hack</strong> (custom messaging protocol with 1-of-N validators)</li>
     </ul>
 
-    <p>By <em>not</em> running our own contracts, we eliminate an entire class of risk — the kind that comes from rolling our own AMM math or our own bridge messaging. By being non-custodial, we eliminate the "founder runs off with the funds" risk. By using IPFS-pinnable static HTML, we minimize the supply-chain attack surface.</p>
+    <p>By <em>not</em> running our own bridge or AMM, we eliminate an entire class of risk — the kind that comes from rolling our own messaging or our own pricing math. By being non-custodial, we eliminate the "founder runs off with the funds" risk. By using IPFS-pinnable static HTML, we minimize the supply-chain attack surface.</p>
 
-    <p>The cost: we're <em>opinionated</em> about what we surface. We pick USYC over a dozen alternatives. We pick CCTP over LayerZero. These choices simplify the UX but constrain it.</p>
+    <p>The cost: we're <em>opinionated</em> about what we surface. We pick CCTP and Gateway over LayerZero. We pick Uniswap V2 over a fork. These choices simplify the UX but constrain it.</p>
 
-    <p>That's the trade we're making. <strong>Less optionality, less risk, less complexity.</strong> For users who want every yield-bearing stablecoin and every bridge in one place, there are aggregators. We're not that.</p>
+    <p>That's the trade we're making. <strong>Less optionality, less risk, less complexity.</strong> For users who want every bridge and every AMM in one place, there are aggregators. We're not that.</p>
 
     <h2>What's coming</h2>
 
@@ -244,26 +240,26 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <table class="t">
       <tr><th>When</th><th>What</th></tr>
-      <tr><td>Q2 2026</td><td>USYC vault polish — entitlements UX, position history, redemption queue</td></tr>
-      <tr><td>Q3 2026</td><td>Circle Gateway integration — deposit USDC from any supported chain, settle on Arc</td></tr>
-      <tr><td>Q4 2026</td><td>StableFX — RFQ-driven USDC ⇄ EURC PvP settlement via Arc FxEscrow</td></tr>
+      <tr><td>Q2 2026</td><td>Unified Balance polish — more source chains, intent-style "spend X USDC anywhere" flow, Gateway-native deposits to ArcSwap features</td></tr>
+      <tr><td>Q3 2026</td><td>Vault GA — USYC tokenized T-bill yield, position history, redemption queue (private beta now)</td></tr>
+      <tr><td>Q4 2026</td><td>Pool GA + StableFX — RFQ-driven USDC ⇄ EURC PvP settlement via Arc FxEscrow</td></tr>
       <tr><td>2027</td><td>Multi-vault yield products + B2B Memo references + <strong>mainnet</strong></td></tr>
     </table>
 
-    <p>If even half of this ships, ArcSwap becomes the default place to hold productive USDC on Arc. That's the bet.</p>
+    <p>If even half of this ships, ArcSwap becomes the default place to hold and move productive USDC on Arc. That's the bet.</p>
 
     <h2>Try it</h2>
 
-    <p>It's testnet. Nothing is real money. Get USDC from <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">Circle's faucet</a>, connect your wallet to <a href="https://arcswap.net">arcswap.net</a>, and play with the four primitives. Tell us what breaks.</p>
+    <p>It's testnet. Nothing is real money. Get USDC from <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">Circle's faucet</a>, connect your wallet to <a href="https://arcswap.net">arcswap.net</a>, and play with the three public surfaces. Tell us what breaks.</p>
 
     <div class="cta-card">
-      <h3>One venue. One balance. Four primitives.</h3>
+      <h3>One balance. One venue. Three surfaces.</h3>
       <p>Open the app on Arc Testnet — free testnet USDC from faucet.circle.com.</p>
-      <a href="/vault">Open Vault</a>
+      <a href="/balance">Open Balance</a>
       <a href="/trade">Trade &amp; Bridge</a>
     </div>
 
-    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>ArcSwap is a non-custodial frontend currently on Arc Testnet. Yield figures are indicative — not financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
+    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>ArcSwap is a non-custodial frontend currently on Arc Testnet. Figures are indicative — not financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
 
   </article>
 

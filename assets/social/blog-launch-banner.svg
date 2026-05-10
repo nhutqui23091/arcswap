@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A1628"/>
+      <stop offset=".5" stop-color="#0E1F39"/>
+      <stop offset="1" stop-color="#1E4A6E"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4DD6DB"/>
+      <stop offset=".55" stop-color="#4A7BEC"/>
+      <stop offset="1" stop-color="#F4C89A"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7BE495"/>
+      <stop offset="1" stop-color="#4DD6DB"/>
+    </linearGradient>
+    <radialGradient id="orb1" cx=".18" cy=".22" r=".55">
+      <stop offset="0" stop-color="#4DD6DB" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#4DD6DB" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb2" cx=".82" cy=".18" r=".5">
+      <stop offset="0" stop-color="#7BE495" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#7BE495" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb3" cx=".5" cy="1" r=".7">
+      <stop offset="0" stop-color="#F4C89A" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#F4C89A" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="600" fill="url(#bg)"/>
+  <rect width="1200" height="600" fill="url(#grid)"/>
+  <rect width="1200" height="600" fill="url(#orb1)"/>
+  <rect width="1200" height="600" fill="url(#orb2)"/>
+  <rect width="1200" height="600" fill="url(#orb3)"/>
+
+  <!-- LIVE pill -->
+  <g transform="translate(80 96)">
+    <rect width="220" height="48" rx="24" fill="rgba(123,228,149,0.10)" stroke="rgba(123,228,149,0.45)"/>
+    <circle cx="28" cy="24" r="6" fill="#7BE495">
+      <animate attributeName="opacity" values="1;.35;1" dur="1.6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="48" y="30" font-family="DM Mono, monospace" font-size="14" font-weight="700" fill="#7BE495" letter-spacing="2">LIVE ON ARC TESTNET</text>
+  </g>
+
+  <!-- Headline -->
+  <g transform="translate(80 200)">
+    <text x="0" y="0" font-family="DM Mono, monospace" font-size="14" font-weight="600" fill="#4DD6DB" letter-spacing="3">// ANNOUNCEMENT</text>
+    <text x="0" y="84" font-family="Inter, sans-serif" font-size="82" font-weight="900" fill="#F5F7FB" letter-spacing="-3">ArcSwap is</text>
+    <text x="0" y="172" font-family="Inter, sans-serif" font-size="82" font-weight="900" fill="url(#brand)" letter-spacing="-3">officially live.</text>
+    <text x="0" y="234" font-family="Inter, sans-serif" font-size="22" font-weight="400" fill="#8CA0BD">The stablecoin command center on Arc —</text>
+    <text x="0" y="266" font-family="Inter, sans-serif" font-size="22" font-weight="400" fill="#8CA0BD">Unified Balance, Trade and Create Token, today.</text>
+  </g>
+
+  <!-- Right: Arc-inspired concentric ring with ✓ -->
+  <g transform="translate(960 290)">
+    <circle r="190" fill="none" stroke="#4DD6DB" stroke-width="1" opacity=".25"/>
+    <circle r="150" fill="none" stroke="#4A7BEC" stroke-width="1" opacity=".35"/>
+    <circle r="110" fill="none" stroke="#F4C89A" stroke-width="1" opacity=".45"/>
+    <circle r="80" fill="rgba(10,22,40,0.85)" stroke="url(#ring)" stroke-width="2.5"/>
+    <path d="M -28 0 L -8 22 L 30 -22" stroke="#7BE495" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Brand bottom -->
+  <g transform="translate(80 540)">
+    <text x="0" y="0" font-family="Inter, sans-serif" font-size="20" font-weight="900" fill="#F5F7FB" letter-spacing="-.5">ArcSwap</text>
+    <text x="100" y="0" font-family="DM Mono, monospace" font-size="13" fill="#8CA0BD" letter-spacing="2">// arcswap.net  ·  May 10, 2026</text>
+  </g>
+</svg>

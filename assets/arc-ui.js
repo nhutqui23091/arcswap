@@ -17,8 +17,8 @@
 
   function navTabs(active) {
     const base = [
-      { id: 'balance', label: 'Balance',      href: '/balance' },
       { id: 'trade',   label: 'Trade',        href: '/trade'   },
+      { id: 'balance', label: 'Balance',      href: '/balance' },
       { id: 'token',   label: 'Create Token', href: '/token'   },
     ];
     const gated = isTester(ARC.wallet.address)
@@ -47,6 +47,7 @@
         <div class="nav-tabs">
           ${tabs.map(t => `<a class="nav-tab ${t.id===active?'active':''}" href="${t.href}">${t.label}</a>`).join('')}
           <a class="nav-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
+          <a class="nav-tab ${active==='blog'?'active':''}" href="/blog">Blog</a>
         </div>
         <div class="nav-right">
           <span class="nav-pill"><span class="dot"></span>Arc Testnet</span>
