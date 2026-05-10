@@ -1,233 +1,146 @@
-# ArcSwap — Security Readiness Checklist
+# ArcSwap — Security Posture
 
-A single-page index of every security control we ship, what's done, and what
-**you (the human)** still need to do externally before mainnet.
+A public summary of the security controls that ship with every build of ArcSwap,
+and the principles we apply across the lifecycle of the project.
 
-Updated: **2026-04-25**
-
----
-
-## Legend
-
-- ✅ **Done** — committed in this repo, no further action
-- 🟡 **Config needed** — code is ready; you fill in keys / accounts / signers
-- 🔴 **External / paid** — requires registration, payment, or coordination outside the repo
-- ⏳ **Future** — only relevant when we deploy our own contracts
+For vulnerability reporting, see [`SECURITY.md`](SECURITY.md).
+For multi-sig governance, see [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md).
 
 ---
 
-## Stage 1 — Baseline (testnet, ✅ done)
+## Threat model
 
-These ship with every build today.
+ArcSwap is a **non-custodial frontend** for stablecoin primitives on Arc Testnet.
+It owns no smart contracts of its own; users always sign their own transactions
+against third-party protocols (Hashnote USYC, Circle CCTP / Gateway, Uniswap V2).
 
-| Control | Status | Where |
+The threats we design against:
+
+| Threat | Why it matters | Where we defend |
 |---|---|---|
-| Content Security Policy meta tag in every HTML | ✅ | All `*.html` |
-| Subresource Integrity on all CDN scripts | ✅ | `index.html`, `vault.html`, `trade.html` |
-| `rel="noopener noreferrer"` on every `target="_blank"` | ✅ | All HTML + JS |
-| No hardcoded secrets in tracked files | ✅ | enforced by `scripts/preflight-check.sh` |
-| `.env` excluded from git | ✅ | `.gitignore` + preflight check |
-| Strict referrer policy | ✅ | meta tag + `_headers` |
-| Host security headers (CSP, HSTS, X-Frame, X-Content, COOP/CORP) | ✅ | `_headers`, `vercel.json` |
-| Vulnerability disclosure policy | ✅ | `SECURITY.md` |
-| RFC 9116 `security.txt` | ✅ | `.well-known/security.txt` |
-| Pre-deploy audit script | ✅ | `scripts/preflight-check.sh` |
-| Endpoint health probe | ✅ | `scripts/health-check.sh` |
+| **Frontend supply-chain compromise** | Attacker swaps served JS → injects malicious approve / transfer | CSP, SRI, host integrity, multi-host failover |
+| **DNS / domain hijack** | Attacker points `arcswap.net` to a phishing build | Cloudflare 2FA + multi-sig over decentralized backup (ENS) |
+| **Reflected / persistent XSS** | Script execution leads to wallet drain | CSP, no `innerHTML` for user input, SRI on all CDN scripts |
+| **API key extraction** | Attacker exfiltrates Circle Kit Key from client JS | Server-side proxy via Cloudflare Pages Functions |
+| **Transaction tampering at sign-time** | UI lies about tx parameters | Show full target + calldata in confirmations; encourage hardware-wallet review |
+| **Vendor contract exploit** | USYC / CCTP / Uniswap bug surfaces in our UI | Frontend kill-switch via feature flags; advisory banners |
 
-**To verify**: run `bash scripts/preflight-check.sh` — expect all 6 ✓.
+Out of scope: chain-level attacks on Arc L1, attacks on third-party contracts
+(those have their own disclosure channels — see [`SECURITY.md`](SECURITY.md)).
 
 ---
 
-## Stage 2 — Pre-mainnet hardening
+## Controls in every build
 
-### 2A. Production hosting
+These controls are enforced by [`scripts/preflight-check.sh`](scripts/preflight-check.sh) before any deploy.
 
-#### Path A — Cloudflare Pages (primary, ✅ ready)
-
-| Step | Status | Action |
-|---|---|---|
-| Domain `arcswap.net` purchased on Cloudflare | ✅ | Done |
-| Deploy guide | ✅ | `docs/DEPLOY_CLOUDFLARE.md` |
-| `_headers` + `_redirects` configured | ✅ | At repo root, honored by Pages |
-| **Create Pages project + connect repo** | 🟡 | Cloudflare dashboard → Workers & Pages → Connect Git. ~5 min. |
-| **Wire `arcswap.net` to Pages project** | 🟡 | Custom domains tab → add `arcswap.net` and `www.arcswap.net`. ~5 min. |
-| **Enable Email Routing for `security@arcswap.net`** | 🟡 | Cloudflare Email tab → forward to your inbox. ~5 min. |
-| **Verify SSL/TLS = Full (strict)** | 🟡 | SSL/TLS tab. Default may be "Flexible" which causes 525 errors. |
-| **Disable Rocket Loader** | 🟡 | Speed → Optimization. It rewrites JS and breaks SRI. |
-
-**Estimated cost**: $0/month + ~$10/year domain (already purchased).
-
-#### Path B — IPFS + ENS (optional immutable backup, do later)
-
-| Step | Status | Action |
-|---|---|---|
-| Deploy script ready | ✅ | `scripts/deploy-ipfs.sh` |
-| Deploy runbook | ✅ | `docs/DEPLOYMENT.md` |
-| **Register `arcswap.eth` ENS** | 🔵 | Optional. Visit https://app.ens.domains, ~$5/year. |
-| **Web3.storage + Pinata accounts** | 🔵 | Optional. Free tier OK. |
-| First IPFS pin + ENS update | ⏳ | Only when going to mainnet. |
-
-**Recommendation**: Path A is enough for testnet and early mainnet. Add Path B as a parallel
-audit-trail when handling real money or when users start asking for verifiable hashes.
-
----
-
-### 2B. Multi-sig governance
-
-| Step | Status | Action |
-|---|---|---|
-| Multi-sig policy doc | ✅ | `docs/GOVERNANCE.md` |
-| **Treasury Safe (3 of 5)** | 🔴 | Deploy on Arc Testnet via https://app.safe.global. Signers: 2 founders + CTO + community rep + advisor. |
-| **ENS Controller Safe (2 of 3)** | 🔴 | Same flow. Signers: 2 founders + cold backup. |
-| **Hardware wallets for every signer** | 🔴 | Ledger Nano S+ (~$80) or Trezor One (~$70). One per signer. |
-| **Cold backup for ENS Safe** | 🔴 | Printed seed phrase in safe deposit box. |
-| **Document signer info** | 🟡 | Encrypted vault (1Password / Bitwarden). Names, hardware models, response times. |
-| Test transaction (0.001 USDC from each Safe) | ⏳ | Verify each signer can sign; verify execution. |
-| Publish Safe addresses | ⏳ | Add to `governance/safes.json` + website footer. |
-
-**Estimated cost**: ~$300 in hardware wallets + ~$5 gas to deploy each Safe.
-
----
-
-### 2C. Bug bounty program
-
-| Step | Status | Action |
-|---|---|---|
-| Vulnerability disclosure policy | ✅ | `SECURITY.md` (with bounty ranges) |
-| Hall of Fame placeholder | ✅ | `SECURITY.md#hall-of-fame` |
-| **`security@arcswap.net` mailbox** | 🔴 | Forward to founders' personal emails. Set up PGP key. |
-| **Publish PGP public key** | 🟡 | Replace placeholder in `SECURITY.md` + `security.txt` |
-| **Immunefi listing** | 🔴 | Apply at https://immunefi.com/explore/?type=bug-bounty — free to list, requires bounty pool funded in advance. |
-| **Fund bounty pool** | 🔴 | Recommended: $50k USDC in Treasury Safe earmarked for bounties. |
-| **Define program scope** | 🟡 | Mirror `SECURITY.md` scope; explicitly exclude vendor contracts. |
-| Public announcement | ⏳ | Tweet + Discord post when live. |
-
-**Estimated cost**: ~$50k bounty pool (only paid when valid bug found) + Immunefi takes 10% of payouts.
-
----
-
-### 2C. Circle App Kit Key — server-side proxy (mainnet)
-
-**Issue verified 2026-04-28**: Circle's origin whitelist on Kit Keys only enforces
-CORS for browser requests. Direct API calls (curl, server) with the key bypass
-the origin check entirely. The key IS visible in client JS at `window.ARC_APPKIT_CONFIG.kitKey`.
-
-| Risk | Severity | Now (testnet) | Mainnet |
-|---|---|---|---|
-| Key extraction from view-source | Low | Accept (testnet quota) | ❌ Block |
-| Rate-limit abuse via stolen key | Medium | Rotate if detected | Pages Functions proxy |
-| Funds at risk (no — user signs tx) | Low | N/A | N/A |
-
-| Step | Status | Action |
-|---|---|---|
-| **Pages Functions proxy for Circle API** | 🔴 Mainnet | Build `functions/api/circle-proxy/[[path]].js` — adds KIT_KEY from env Secret server-side, forwards to api.circle.com. Browser never sees key. |
-| **Per-IP rate limit on proxy** | 🔴 Mainnet | Use Cloudflare WAF rate limit rule — 10 req/min per IP. |
-| **Key rotation runbook** | 🔴 Mainnet | Document in `INCIDENT_RESPONSE.md`. New key in <5 min via Circle Console + Cloudflare env update. |
-| **Monitor Circle's rate-limit headers** | 🔴 Mainnet | Log `x-ratelimit-remaining` from responses, alert when < 20% capacity. |
-
----
-
-### 2D. Monitoring + incident response
-
-| Step | Status | Action |
-|---|---|---|
-| Incident response playbook | ✅ | `docs/INCIDENT_RESPONSE.md` |
-| Health-check script | ✅ | `scripts/health-check.sh` |
-| Severity classification (SEV-1..4) | ✅ | `INCIDENT_RESPONSE.md` |
-| Communication templates | ✅ | `INCIDENT_RESPONSE.md` |
-| **Better Stack uptime + status page** | 🔴 | https://betterstack.com — free tier (10 monitors, 1 status page). Wire `health-check.sh` as a heartbeat URL. |
-| **PagerDuty / Grafana OnCall** | 🔴 | https://grafana.com/products/oncall/ — free for small teams. Define escalation policy. |
-| **Discord webhook for alerts** | 🟡 | Create `#ops-alerts` channel, paste webhook URL in `.env` as `ALERT_WEBHOOK` |
-| **Tenderly project + alerts** | 🟡 | https://tenderly.co — free tier: 3 alerts. Watch USYC Teller, CCTP TokenMessenger, Uniswap Router. |
-| **OpenZeppelin Defender Sentinels** | 🟡 | https://defender.openzeppelin.com — free up to limits. |
-| **Schedule cron for health-check** | 🔴 | `*/5 * * * *  bash /opt/arcswap/scripts/health-check.sh` on a small VPS, OR run via GitHub Actions every 5 min. |
-| **Fill in contact tree** | 🔴 | `INCIDENT_RESPONSE.md` — real names, Signal handles, phone numbers. Print + keep offline copy. |
-| **First incident drill** | ⏳ | Tabletop exercise. Pick SEV-1 frontend compromise, role-play it. |
-
-**Estimated cost**: $0/month with free tiers. ~$10-20/month for a small VPS to run cron.
-
----
-
-### 2E. Pre-mainnet penetration test
-
-| Step | Status | Action |
-|---|---|---|
-| **Hire pentest firm for frontend audit** | 🔴 | Trail of Bits, ConsenSys Diligence, OpenZeppelin — ~$15-40k for 1-2 week engagement. Focus: XSS, supply-chain, signing UX, transaction tampering. |
-| **Public testnet bug bash** | 🔴 | 2-week incentivized testing window. ~$5-10k in rewards. |
-| **Fix all P1/P2 findings** | ⏳ | Block mainnet on this. |
-| **Publish audit report** | ⏳ | Add to `audits/` directory + link from website footer. |
-
----
-
-## Stage 3 — Mainnet launch gating
-
-Don't ship to mainnet until ALL of the following are ✅:
-
-- [ ] All Stage 1 ✅ items still pass `preflight-check.sh`
-- [ ] ENS `arcswap.eth` registered + controlled by multi-sig
-- [ ] At least 2 IPFS pinning providers funded (one paid, one free backup)
-- [ ] Treasury + ENS Controller Safes deployed, tested, documented
-- [ ] All signers using hardware wallets (no hot keys on multi-sigs)
-- [ ] `security@arcswap.net` live + PGP key published
-- [ ] Immunefi program live with funded bounty pool
-- [ ] Pentest complete, all P1/P2 fixed, report public
-- [ ] Health-check cron running, Discord alerts firing on failure
-- [ ] Status page live at `status.arcswap.net`
-- [ ] Incident response contact tree filled in (real names, real numbers)
-- [ ] Quarterly drill scheduled on calendar
-- [ ] Insurance policy researched (Nexus Mutual / Sherlock — optional but recommended)
-
----
-
-## Stage 4 — Post-launch (ongoing)
-
-| Cadence | Task |
+| Control | Mechanism |
 |---|---|
-| **Daily** | Review health-check + Tenderly alerts |
-| **Weekly** | Review pending bug bounty reports (≤7 days SLA) |
-| **Monthly** | Rotate any short-lived API tokens (web3.storage, Pinata) |
-| **Quarterly** | Incident response drill (tabletop) |
-| **Quarterly** | Signer OpSec review (assume one signer compromised — can rest still operate?) |
-| **Every 6 months** | Multi-sig signer review (rotate inactive, onboard new) |
-| **Yearly** | External re-audit of frontend (lighter scope, ~$5-10k) |
-| **Yearly** | Renew ENS registration |
-| **As needed** | Post-mortem within 7 days of any incident → public blog post |
+| **Content Security Policy** | `<meta http-equiv="Content-Security-Policy">` on every HTML file, plus belt-and-braces `Content-Security-Policy` header in [`_headers`](_headers) |
+| **Subresource Integrity** | Every external script tag carries a SHA-384 `integrity=` attribute; mismatched hashes are refused by the browser |
+| **`rel="noopener noreferrer"`** | On every `target="_blank"` link in HTML and dynamic anchors in JS |
+| **Strict referrer policy** | `Referrer-Policy: strict-origin-when-cross-origin` |
+| **Host security headers** | HSTS (1y, includeSubDomains, preload), X-Frame-Options DENY, X-Content-Type-Options nosniff, COOP/CORP, Permissions-Policy (camera/mic/geolocation off) |
+| **No secrets in tracked files** | `.env` is gitignored; preflight script greps for common API-key patterns and fails the build on match |
+| **Server-side API key handling** | Circle Kit Key and any other privileged key sit in Cloudflare environment secrets and are injected by Pages Functions proxies; the browser never sees them |
+| **HTTPS only** | `Strict-Transport-Security` + `Always Use HTTPS` rule at the edge; no plaintext fallback |
+| **Vulnerability disclosure** | [`SECURITY.md`](SECURITY.md) + [RFC 9116](https://datatracker.ietf.org/doc/html/rfc9116) `.well-known/security.txt` |
 
 ---
 
-## ⏳ Stage 5 — When we deploy our own contracts
+## Verifying a build yourself
 
-We currently use **third-party contracts only** (Hashnote USYC, Circle CCTP, Uniswap V2).
-If/when we ship our own (custom Pool, Swap router, Vault wrapper, etc.), add:
+Anyone can verify these controls on a live deploy:
 
-| Step | Action |
-|---|---|
-| **Smart contract audit** | 2-3 firms in parallel for critical contracts. Budget: $50-200k each. Firms: Trail of Bits, OpenZeppelin, ConsenSys Diligence, Spearbit, Sigma Prime, Zellic. |
-| **Formal verification** | Certora for math-heavy contracts (e.g. AMM invariants). |
-| **Testnet bug bounty** | 4-week public bounty with rewards before mainnet deploy. |
-| **Contract Owner Safe (4 of 7)** | Founders + advisors + auditor. Owns admin/pause/upgrade. |
-| **Timelock wrapper (48h)** | OpenZeppelin TimelockController in front of Owner Safe. |
-| **Pause guardian (1 of N)** | Faster reaction for emergencies — pause-only, no other powers. |
-| **Forta agents** | Detection bots for anomalies (e.g. >10% TVL drop in 1 block). |
-| **Formal incident playbook for contract exploit** | Add to `INCIDENT_RESPONSE.md` |
+```bash
+# Security headers
+curl -sI https://arcswap.net | grep -iE 'content-security|strict-transport|x-frame|referrer-policy|permissions-policy'
 
----
+# CSP meta tag in HTML
+curl -s https://arcswap.net | grep -oE '<meta http-equiv="Content-Security-Policy"[^>]*>'
 
-## TL;DR — What you (Khoa) need to do this week
+# SRI on every CDN script
+curl -s https://arcswap.net | grep -oE '<script[^>]*src="https://[^"]*"[^>]*integrity="[^"]*"'
+```
 
-If you only have an hour right now, do these in order:
+For local development, run the preflight script before pushing:
 
-1. **Push repo to GitHub** (if not yet) — Cloudflare Pages reads from Git (5 min)
-2. **Set up Cloudflare Pages** — connect repo, deploy (5 min, see `docs/DEPLOY_CLOUDFLARE.md`)
-3. **Wire `arcswap.net` to the Pages project** — Custom Domains tab (5 min)
-4. **Enable Email Routing** for `security@arcswap.net` → your inbox (5 min)
-5. **Set SSL/TLS = Full (strict)** + disable Rocket Loader (2 min)
-6. **Run `bash scripts/health-check.sh`** — confirm `arcswap.net` is healthy (1 min)
-
-That gets you a live, secure, free production deployment. Everything else (multi-sig,
-ENS, hardware wallets, Immunefi) can wait until you're closer to mainnet.
+```bash
+bash scripts/preflight-check.sh
+```
 
 ---
 
-_See also: `docs/DEPLOY_CLOUDFLARE.md` (primary deploy), `docs/DEPLOYMENT.md` (optional IPFS+ENS),
-`SECURITY.md` (disclosure policy), `docs/GOVERNANCE.md` (multi-sig), `docs/INCIDENT_RESPONSE.md` (playbook)._
+## Defense in depth
+
+### Hosting
+
+The primary deploy is **Cloudflare Pages** with the orange-cloud proxy enabled —
+this gives us the global CDN, DDoS protection, free TLS, and atomic rollback.
+All site headers and redirects are owned by [`_headers`](_headers) and [`_redirects`](_redirects)
+in the repo, so the deployed configuration is 1:1 with what is reviewed and committed.
+
+For an **immutable audit trail**, the same build can be pinned to IPFS and resolved
+through ENS (`arcswap.eth`) — a pattern used by Uniswap, 1inch, Aave, and other
+DeFi frontends. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the runbook.
+
+### Privileged actions
+
+Anything that affects production state — domain configuration, ENS contenthash,
+treasury funds — is held by **multi-signature wallets** with hardware-wallet
+signers. No single key can move funds, change DNS, or push a build.
+See [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) for the policy.
+
+### Frontend kill-switch
+
+The frontend reads a feature-flag manifest at runtime. Any individual product
+surface (vault deposit / redeem, swap, bridge, pool actions) can be disabled
+without a code push if a vendor contract incident is reported or if we need
+to gate access for any reason.
+
+---
+
+## Vendor surfaces & their disclosure channels
+
+ArcSwap composes third-party contracts. Vulnerabilities in those contracts are
+out of scope for our bounty — please report them upstream:
+
+| Surface | Owner | Report to |
+|---|---|---|
+| USDC, EURC, CCTP, Gateway | Circle | <https://www.circle.com/legal/responsible-disclosure> |
+| USYC, Teller, Entitlements | Hashnote | <security@hashnote.com> |
+| Uniswap V2 Router/Factory on Arc | Arc Foundation | <security@arc.network> |
+| Permit2 | Uniswap Labs | <security@uniswap.org> |
+| Arc L1 chain | Arc Foundation | <security@arc.network> |
+
+For anything in **our** scope (the frontend itself, build pipeline, headers,
+proxies), see [`SECURITY.md`](SECURITY.md).
+
+---
+
+## Mainnet readiness
+
+ArcSwap is currently **testnet-only**. Before any mainnet release, the project
+will additionally complete:
+
+- Public security audit by an established firm
+- Funded bug-bounty program with published scope
+- Treasury and infrastructure multi-sigs deployed and tested on mainnet
+- Public PGP key + verified `security@` mailbox
+- Status page + on-call rotation
+- Incident-response drill log
+
+These are tracked internally and announced publicly when each milestone lands.
+
+---
+
+## Open principles
+
+- **Minimum dependency surface** — vanilla HTML + CSS + JS, one runtime dependency (ethers.js v6, SRI-pinned), no build step
+- **No backend that can pause user access** — all state is on-chain; the proxies we ship are stateless and replaceable
+- **Transparent incidents** — any incident is followed by a public post-mortem within 7 days
+- **Reproducible builds** — what is committed is what is served; preflight enforces this
+
+---
+
+_Last updated: 2026-05-10_

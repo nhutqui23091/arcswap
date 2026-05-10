@@ -1,234 +1,102 @@
-# Incident Response Playbook — ArcSwap
+# Incident Response Policy — ArcSwap
 
-When something breaks (or someone breaks it), this doc tells you exactly what to do
-in what order. Read it now, not during the incident.
+This document is the **public summary** of how ArcSwap classifies, contains, and
+communicates security incidents. The internal playbook (with on-call contacts,
+specific tooling, and rotation schedules) is maintained privately.
+
+For vulnerability reporting, see [`SECURITY.md`](../SECURITY.md).
 
 ---
 
 ## Severity classification
 
-| Severity | Definition | Response time | Examples |
-|---|---|---|---|
-| **SEV-1** | User funds at risk RIGHT NOW | **Acknowledge in 15 min, mitigate in 1 hour** | Frontend serving malicious JS, ENS hijacked, signer key compromised |
-| **SEV-2** | App degraded but funds safe | Ack in 1h, mitigate in 4h | RPC down, vault display showing wrong APY, CCTP route failing |
-| **SEV-3** | Single feature broken | Ack in 4h, mitigate in 24h | Faucet link 404s, one wallet provider not connecting |
-| **SEV-4** | Cosmetic / non-blocking | Ack in 24h, fix in next release | Layout glitch, typo, slow load on slow networks |
-
-**When in doubt, escalate up.** Better to wake someone unnecessarily than miss SEV-1.
-
----
-
-## Roles during an incident
-
-| Role | Responsibility | Default holder |
+| Severity | Definition | Response time |
 |---|---|---|
-| **Incident Commander (IC)** | Decides actions, owns the timeline, single point of authority | First responder (escalates if needed) |
-| **Comms Lead** | Updates status page, posts to Discord/Twitter, talks to users | Marketing / community lead |
-| **Tech Lead** | Diagnoses, executes fixes, coordinates with other engineers | On-call engineer |
-| **Scribe** | Logs everything in real-time (timestamps, actions, decisions) | Anyone available |
+| **SEV-1** | User funds at risk right now (frontend serving malicious code, domain hijack, signer-key compromise) | Acknowledge ≤ 15 min, mitigate ≤ 1 hour |
+| **SEV-2** | App degraded but funds safe (RPC outage, vault values stale, CCTP route failing) | Acknowledge ≤ 1 hour, mitigate ≤ 4 hours |
+| **SEV-3** | Single feature broken (one wallet provider, one chain, one link) | Acknowledge ≤ 4 hours, mitigate ≤ 24 hours |
+| **SEV-4** | Cosmetic / non-blocking (typo, layout glitch, slow load) | Acknowledge ≤ 24 hours, fix in next release |
 
-For a small team (1-3 people): one person can wear multiple hats — but **always name an IC explicitly**.
-
----
-
-## SEV-1: Frontend supply-chain compromise
-
-**Symptoms**:
-- User reports a malicious approval popup appearing on arcswap.net
-- Hash of served JS doesn't match committed CID
-- Browser console shows scripts from unknown origins
-
-### Step 1 — Confirm (5 min)
-
-```bash
-# Compare live build hash against last release manifest
-curl -s https://arcswap.eth.limo/assets/arc-core.js | sha256sum
-cat releases/RELEASE-*.json | jq -r '.ipfs_cid' | tail -1
-
-# Check current ENS contenthash
-cast call $ENS_PUBLIC_RESOLVER "contenthash(bytes32)" $(namehash arcswap.eth)
-```
-
-If the hash differs from the last signed release → **CONFIRMED COMPROMISE**.
-
-### Step 2 — Take down (15 min)
-
-- [ ] Multi-sig signers convene (Discord war-room channel)
-- [ ] **Option A** — revert ENS contenthash to last known-good CID
-- [ ] **Option B** — point ENS to a holding page (`bafkreih...holding`) saying "App is paused for security review. No action required."
-- [ ] DNS-level: if using `arcswap.net` CNAME → swap to holding page directly
-
-### Step 3 — Communicate (within 30 min)
-
-Post in this order:
-1. **Status page** (`status.arcswap.net`) — banner: "App temporarily paused — investigating"
-2. **Twitter** — pinned thread: what happened, what we did, who's affected
-3. **Discord** announcement channel — same message, no DMs (avoid impersonation)
-4. **Email** to known users (if you have list) — same message
-
-**Template**:
-```
-[INCIDENT] ArcSwap frontend paused — security investigation in progress.
-
-What we know:
-- At HH:MM UTC we detected [brief description]
-- We have paused the app at the ENS / DNS level
-- Smart contracts are unaffected (your funds in USYC vault are safe and accessible directly via Hashnote)
-- No user action required
-
-What we're doing:
-- [Specific actions]
-
-Next update: HH:MM UTC (within 2 hours)
-```
-
-### Step 4 — Investigate (1-4h)
-
-- [ ] How did attacker push the bad build? Compromised signer? Build pipeline? CDN?
-- [ ] What was the malicious behavior? (decompile JS, run in sandboxed VM)
-- [ ] How many users may have been exposed? (analytics: unique visitors during window)
-- [ ] Was anyone actually drained? (on-chain analysis of approvals from arcswap.net visitors)
-
-### Step 5 — Recover (when safe)
-
-- [ ] Rotate ALL credentials touched by the incident (signer keys, API tokens, GitHub tokens, deploy keys)
-- [ ] Push a clean rebuild from a fresh dev machine (not the compromised one)
-- [ ] New IPFS pin → multi-sig signs new ENS contenthash
-- [ ] Verify hash matches expected
-- [ ] Lift hold page
-
-### Step 6 — Post-mortem (within 7 days)
-
-Public blog post + GitHub issue. Include:
-- Timeline (UTC, minute-by-minute)
-- Root cause
-- What worked, what didn't
-- Action items with owners + dates
+When the severity is unclear we escalate up, not down.
 
 ---
 
-## SEV-1: Smart contract exploit (third-party)
+## Roles
 
-USYC, CCTP, Uniswap router, etc. We don't own these but our users use them through us.
+For any incident above SEV-3 we name three roles explicitly, even if a single
+person wears multiple hats:
 
-### Step 1 — Confirm
-- [ ] Check vendor security channels (Hashnote / Circle / Arc Foundation status pages)
-- [ ] Check Twitter for chatter from samczsun, blocksec, peckshield, etc.
-
-### Step 2 — Mitigate
-- [ ] Disable the affected feature in the frontend (kill switch — see below)
-- [ ] Show banner explaining the situation, link to vendor advisory
-- [ ] Do NOT speculate publicly — point users to vendor's official statement
-
-### Step 3 — Implement frontend kill switch
-
-We need a **feature flag system** for fast-disable. Suggested implementation:
-
-```js
-// assets/feature-flags.js  (loaded first, fetched fresh each time)
-window.FEATURES = {
-  vault_deposit:  true,
-  vault_redeem:   true,
-  swap:           true,
-  bridge_cctp:    true,
-  pool_add_liq:   true,
-  pool_remove_liq: true,
-};
-```
-
-Pin this file separately to IPFS — when an incident happens, multi-sig flips one flag and re-pins. Frontend reads flags at every interaction and hides disabled actions with a banner.
+- **Incident Commander** — owns the timeline and final call on actions
+- **Communications** — owns external messaging (status page, social, users)
+- **Technical Lead** — owns diagnosis and execution of fixes
 
 ---
 
-## SEV-2: RPC outage
+## Containment principles
 
-**Symptoms**: Vault page shows "—" for all values, transactions fail with network error.
+ArcSwap is a frontend over third-party contracts. Containment options follow
+that architecture:
 
-### Step 1 — Diagnose
-```bash
-# Test RPC directly
-curl -X POST https://rpc.testnet.arc.network \
-  -H "content-type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","id":1}'
+- **Configuration-level**: edge headers and redirects can be reverted in
+  seconds without a code push.
+- **Build-level**: every deploy is atomically rollback-able to any prior green
+  build.
+- **Surface-level**: a frontend feature-flag manifest can disable individual
+  products (vault deposit / redeem, swap, bridge, pool actions) on demand
+  while users keep custody and direct on-chain access.
+- **Identity-level**: domain (DNS) and decentralized identity (ENS contenthash)
+  are governed by multi-signature wallets — see
+  [`docs/GOVERNANCE.md`](GOVERNANCE.md).
 
-# Check Arc status page
-open https://status.arc.network
-```
-
-### Step 2 — Fail over
-
-If we have a backup RPC configured:
-- [ ] Frontend's `ARC_RPC` already supports fallback array
-- [ ] Push a new release with reordered RPC list (first item = backup)
-
-If no backup configured yet:
-- [ ] **Action item for ops**: configure a paid RPC (Alchemy / QuickNode) before mainnet
-
-### Step 3 — Communicate
-- [ ] Status page: "Arc RPC degraded — read-only mode" 
-- [ ] Disable transaction-sending UI, leave read-only working
+**User funds are never under our custody.** If the frontend is paused or
+withdrawn entirely, users retain direct on-chain access to their positions
+(USYC redeem on Hashnote, USDC withdraw on Circle Gateway, swaps on the
+underlying Uniswap V2 contracts, liquidity removal on the same).
 
 ---
 
-## Communication templates
+## Communication
 
-### Initial alert (Twitter)
-```
-🚨 We're investigating an issue with [feature]. Funds in @arc_network contracts are unaffected. No action needed. Next update in 30 min.
-```
+For any SEV-1 or SEV-2, ArcSwap will publish updates in this order and cadence:
 
-### Resolution (Twitter)
-```
-✅ Resolved at HH:MM UTC. Root cause: [one sentence]. Full post-mortem within 7 days. Thanks for your patience.
-```
+1. **Status page** — initial banner within the SLA above
+2. **Public channels** ([@arc_swap](https://x.com/arc_swap) on X, Discord) — same content, no DMs (avoids impersonation)
+3. **Follow-up updates** — at least every 2 hours until resolution
+4. **Resolution notice** — once mitigated, with a one-line root cause
+5. **Public post-mortem** — within 7 days, with timeline, root cause, and action items
 
-### Status page snippet
-```
-[Investigating] [Identified] [Monitoring] [Resolved]
-HH:MM UTC — Brief, factual update. No speculation. No blame.
-```
+We do **not** speculate publicly during an incident, and we do **not** request
+that users share keys, signatures, or seed phrases under any circumstance. Any
+message asking for those, even one that appears to come from us, is fraudulent.
 
 ---
 
-## Contact tree
+## Vendor incidents
 
-| Role | Primary | Secondary | Tertiary |
-|---|---|---|---|
-| Founder / IC | — | — | — |
-| Tech Lead | — | — | — |
-| Comms / Marketing | — | — | — |
-| External — Hashnote | security@hashnote.com | — | — |
-| External — Circle | https://circle.com/responsible-disclosure | — | — |
-| External — Arc Foundation | security@arc.network | — | — |
+If the incident originates in a third-party contract (Hashnote USYC, Circle
+CCTP / Gateway, Uniswap V2, Arc L1 itself):
 
-> Fill in real names, phone numbers, Signal handles before going to mainnet.
-> Print this page. Keep a copy offline. The incident may take down our usual comms.
+1. We disable the affected surface in the frontend via the kill-switch.
+2. We display an advisory banner pointing users to the vendor's official
+   communication.
+3. We do not duplicate or paraphrase vendor advisories — users are sent to the
+   source.
 
----
-
-## Tools to set up before going to mainnet
-
-| Tool | Purpose | Free tier |
-|---|---|---|
-| **Tenderly** | Smart contract monitoring + alerts | 3 alerts free |
-| **OpenZeppelin Defender** | Sentinel + autotask + admin proposals | Free up to limits |
-| **Better Stack (Logtail / Uptime)** | Endpoint uptime, status page | Free tier |
-| **PagerDuty / Grafana OnCall** | On-call rotation, escalation | Free for small teams |
-| **Discord webhook** | Auto-post alerts to ops channel | Free |
-| **Forta** | Decentralized threat detection on contracts | Free agents |
-
-We'll wire these up as part of the mainnet readiness checklist (see `SECURITY_CHECKLIST.md`).
+The vendors and their disclosure channels are listed in
+[`SECURITY.md`](../SECURITY.md#out-of-scope-third-party--report-to-vendor).
 
 ---
 
-## Drills
+## Drills and review
 
-Run an incident drill **once per quarter**. Pick a scenario from above, role-play it
-end-to-end (no production changes — use a tabletop exercise). Time each step.
-Update this playbook based on what you learn.
+ArcSwap runs internal incident-response drills on a recurring cadence. Each
+drill covers one of the threat scenarios in
+[`SECURITY_CHECKLIST.md`](../SECURITY_CHECKLIST.md#threat-model)
+and updates the internal playbook based on what is learned.
 
-Last drill: _none yet_
+This public policy is reviewed at least once per quarter and after every real
+incident.
 
 ---
 
-_Last updated: 2026-04-25_
+_Last updated: 2026-05-10_

@@ -185,7 +185,7 @@ Make it real:
 5. Verify destination email
 6. Test by sending an email to `security@arcswap.net` from another account
 
-Free, takes 5 minutes, removes a TODO from `SECURITY_CHECKLIST.md`.
+Free, takes 5 minutes.
 
 ---
 
