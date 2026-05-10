@@ -149,11 +149,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 .src-row.active{background:rgba(77,214,219,.10);border-color:rgba(77,214,219,.5);box-shadow:0 0 0 1px rgba(77,214,219,.2)}
 .src-col.gateway .src-row.active{background:rgba(255,180,84,.10);border-color:rgba(255,180,84,.5);box-shadow:0 0 0 1px rgba(255,180,84,.2)}
 .src-row-icon{
-  width:36px;height:36px;border-radius:11px;flex-shrink:0;
-  background:#0F1E36;overflow:hidden;display:block;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
+  width:38px;height:38px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
 }
-.src-row-icon img{width:100%;height:100%;display:block;object-fit:cover}
+.src-row-icon img{width:100%;height:100%;display:block;object-fit:contain}
 .src-row-dot{width:36px;height:36px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff}
 .src-row-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .src-row-name{font-size:14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);letter-spacing:-.005em}
@@ -420,9 +419,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.5.1"></script>
-<script src="/assets/arc-ui.js?v=9.5.1"></script>
-<script src="/assets/arc-gateway.js?v=9.5.1"></script>
+<script src="/assets/arc-core.js?v=9.5.2"></script>
+<script src="/assets/arc-ui.js?v=9.5.2"></script>
+<script src="/assets/arc-gateway.js?v=9.5.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->

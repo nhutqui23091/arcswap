@@ -719,7 +719,7 @@
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
     chainIcon,
-    version: '9.5.1',
+    version: '9.5.2',
   };
 
   // ───────── CHAIN ICONS ─────────
@@ -727,11 +727,12 @@
   // Inline so they always render (no CDN dependency, no CSP changes needed).
   // Keep them minimal but distinctive so users can scan the picker visually.
   const CHAIN_ICONS = {
-    // Brand-matched logos hosted locally (see /assets/logos/) so they always
-    // load and stay in sync with the official marks.
+    // Brand-matched logos hosted locally (see /assets/logos/). Avalanche +
+    // Arbitrum are the official PNGs from cryptologos.cc; Arc is a hand-built
+    // SVG that mirrors the arc.network brand mark.
     arc: "/assets/logos/arc.svg",
-    avalancheFuji: "/assets/logos/avalanche.svg",
-    arbitrumSepolia: "/assets/logos/arbitrum.svg",
+    avalancheFuji: "/assets/logos/avalanche.png",
+    arbitrumSepolia: "/assets/logos/arbitrum.png",
     sepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23627EEA'/%3E%3Cg fill='white'%3E%3Cpath opacity='0.6' d='M16 4v8.87l7.5 3.35z'/%3E%3Cpath d='M16 4l-7.5 12.22L16 12.87V4z'/%3E%3Cpath opacity='0.6' d='M16 21.97v6.03L23.5 17.62z'/%3E%3Cpath d='M16 28v-6.03L8.5 17.62 16 28z'/%3E%3Cpath opacity='0.2' d='M16 20.57l7.5-4.35L16 12.87v7.7z'/%3E%3Cpath opacity='0.6' d='M8.5 16.22L16 20.57v-7.7l-7.5 3.35z'/%3E%3C/g%3E%3C/svg%3E",
     baseSepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%230052FF'/%3E%3Cpath fill='white' d='M16 4a12 12 0 100 24 12 12 0 000-24zm0 4a8 8 0 110 16 8 8 0 010-16z' transform='translate(0 0)'/%3E%3Cpath fill='%230052FF' d='M16 24a8 8 0 100-16v16z'/%3E%3C/svg%3E",
     optimismSepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23FF0420'/%3E%3Cpath fill='white' d='M11 12c-2.5 0-4 1.5-4 4s1.5 4 4 4 4-1.5 4-4-1.5-4-4-4zm0 6c-1 0-2-1-2-2s1-2 2-2 2 1 2 2-1 2-2 2zm10-6h-3l-1 8h2l.3-2.5h.7c2 0 3.5-1 4-3 0-1.5-1-2.5-3-2.5zm-.5 4h-1l.3-2h1c.5 0 1 .3 1 1 0 .5-.5 1-1.3 1z'/%3E%3C/svg%3E",
