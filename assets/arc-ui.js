@@ -5,40 +5,60 @@
   const ARC = global.ARC;
 
   // ── NAVBAR ─────────────────────────────────────────────
-  function renderNav(active) {
-    // Central nav — top-level product pages.
-    // Balance moved to wallet dropdown (only relevant when connected).
-    // Points hidden — page disabled until incentive program ready.
-    const tabs = [
-      { id: 'trade', label: 'Trade', href: '/trade' },
-      { id: 'pool',  label: 'Pool',  href: '/pool'  },
-      { id: 'vault', label: 'Vault', href: '/vault' },
-      { id: 'token', label: 'Token', href: '/token' },
+  // Whitelist: addresses allowed to see Pool / Vault while those surfaces
+  // are still in development. Direct URLs (/pool, /vault) still resolve —
+  // gating is nav-only so bookmarks keep working for testers.
+  const TESTER_ADDRESSES = new Set([
+    '0x738722f22ef4fb6abc3ac69bbc30f77b2b6bc762',
+  ]);
+  function isTester(addr) {
+    return !!addr && TESTER_ADDRESSES.has(String(addr).toLowerCase());
+  }
+
+  function navTabs(active) {
+    const base = [
+      { id: 'balance', label: 'Balance',      href: '/balance' },
+      { id: 'trade',   label: 'Trade',        href: '/trade'   },
+      { id: 'token',   label: 'Create Token', href: '/token'   },
     ];
-    const html = `
-      <a class="nav-logo" href="/">
-        <span class="logo-name">ArcSwap</span>
-        <span class="logo-badge">TESTNET</span>
-      </a>
-      <div class="nav-tabs">
-        ${tabs.map(t => `<a class="nav-tab ${t.id===active?'active':''}" href="${t.href}">${t.label}</a>`).join('')}
-        <a class="nav-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
-      </div>
-      <div class="nav-right">
-        <span class="nav-pill"><span class="dot"></span>Arc Testnet</span>
-        <button id="arc-wallet-btn" class="wallet-btn disconnected">Connect Wallet</button>
-      </div>`;
+    const gated = isTester(ARC.wallet.address)
+      ? [
+          { id: 'pool',  label: 'Pool',  href: '/pool'  },
+          { id: 'vault', label: 'Vault', href: '/vault' },
+        ]
+      : [];
+    return [...base, ...gated];
+  }
+
+  function renderNav(active) {
     let nav = document.querySelector('nav.arc-nav');
     if (!nav) {
       nav = document.createElement('nav');
       nav.className = 'arc-nav';
       document.body.insertBefore(nav, document.body.firstChild);
     }
-    nav.innerHTML = html;
-    document.getElementById('arc-wallet-btn').onclick = onWalletClick;
+    const paint = () => {
+      const tabs = navTabs(active);
+      nav.innerHTML = `
+        <a class="nav-logo" href="/">
+          <span class="logo-name">ArcSwap</span>
+          <span class="logo-badge">TESTNET</span>
+        </a>
+        <div class="nav-tabs">
+          ${tabs.map(t => `<a class="nav-tab ${t.id===active?'active':''}" href="${t.href}">${t.label}</a>`).join('')}
+          <a class="nav-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
+        </div>
+        <div class="nav-right">
+          <span class="nav-pill"><span class="dot"></span>Arc Testnet</span>
+          <button id="arc-wallet-btn" class="wallet-btn disconnected">Connect Wallet</button>
+        </div>`;
+      document.getElementById('arc-wallet-btn').onclick = onWalletClick;
+      refreshWalletBtn();
+    };
+    paint();
     window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 10), { passive: true });
-    refreshWalletBtn();
-    ARC.wallet.on(refreshWalletBtn);
+    // Re-paint when wallet changes — gated tabs depend on the connected address
+    ARC.wallet.on(paint);
   }
 
   function refreshWalletBtn() {
