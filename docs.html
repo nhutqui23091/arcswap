@@ -116,8 +116,12 @@ nav{
 .docs-h4{font-size:14px;font-weight:600;margin:24px 0 8px;color:var(--arc1);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase}
 .docs-p{font-size:15px;color:#C8D1E0;line-height:1.75;margin-bottom:16px}
 .docs-p strong{color:var(--text);font-weight:600}
-.docs-p a{color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.3);transition:border-color .2s}
-.docs-p a:hover{border-bottom-color:var(--arc1)}
+.docs-main a:not(.qcard):not(.btn-primary):not(.btn-ghost):not(.nav-logo):not(.nav-link):not(.toc-link):not(.side-link){
+  color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.3);transition:border-color .2s,color .2s;
+}
+.docs-main a:not(.qcard):not(.btn-primary):not(.btn-ghost):not(.nav-logo):not(.nav-link):not(.toc-link):not(.side-link):hover{
+  color:var(--peach);border-bottom-color:var(--peach);
+}
 .docs-ul,.docs-ol{padding-left:22px;margin-bottom:18px}
 .docs-ul li,.docs-ol li{font-size:15px;color:#C8D1E0;line-height:1.75;margin-bottom:6px}
 .docs-ul li::marker{color:var(--arc1)}
