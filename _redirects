@@ -15,6 +15,15 @@
 /point   /trade   302
 /points  /trade   302
 
+# Old flat blog URLs → 301 redirect tới pretty nested URLs
+# (đặt TRƯỚC rule rewrite để 301 chạy trước, /blog/... rewrite sau)
+/blog-launch        /blog/launch-arc-testnet      301
+/blog-launch.html   /blog/launch-arc-testnet      301
+/blog-arcswap       /blog/what-is-arcswap         301
+/blog-arcswap.html  /blog/what-is-arcswap         301
+/blog-usyc          /blog/usyc-explained          301
+/blog-usyc.html     /blog/usyc-explained          301
+
 # Blog post pretty URLs (rewrite, không redirect — URL hiện vẫn là /blog/...)
 /blog/usyc-explained        /blog-usyc.html       200
 /blog/what-is-arcswap       /blog-arcswap.html    200

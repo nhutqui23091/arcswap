@@ -8,9 +8,11 @@
 <link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
 <meta name="description" content="ArcSwap is officially live on Arc Testnet — Unified Balance via Circle Gateway, native Trade with CCTP, and one-click token creation. Free testnet USDC, no signup."/>
+<link rel="canonical" href="https://arcswap.net/blog/launch-arc-testnet"/>
 <meta property="og:title" content="ArcSwap is officially live on Arc Testnet"/>
 <meta property="og:description" content="Three surfaces, one wallet — Unified Balance, Trade and Create Token. Live today on Arc Testnet."/>
 <meta property="og:image" content="https://arcswap.net/assets/social/blog-launch-banner.svg"/>
+<meta property="og:url" content="https://arcswap.net/blog/launch-arc-testnet"/>
 <meta property="og:type" content="article"/>
 <title>ArcSwap is officially live on Arc Testnet — ArcSwap Blog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -60,17 +62,18 @@ h1.title .grad{background:linear-gradient(90deg,var(--arc4),var(--arc1),var(--ar
 .byline-sep{color:var(--border2)}
 .banner{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--border);margin-bottom:48px;background:#0A1628}
 
-article{font-size:16.5px;line-height:1.78}
-article p{color:#C8D1E0;margin-bottom:20px}
+article{font-size:17px;line-height:1.78}
+article p{color:#D8DFEA;margin-bottom:22px}
 article p strong{color:var(--text);font-weight:600}
 article p em{color:var(--text);font-style:italic;background:rgba(123,228,149,0.08);padding:1px 4px;border-radius:3px}
-article p a{color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.3);transition:border-color .2s}
-article p a:hover{border-bottom-color:var(--arc1)}
-article h2{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:56px 0 18px;padding-top:28px;border-top:1px solid var(--border);line-height:1.2}
-article h2:first-of-type{border-top:none;padding-top:0}
-article h3{font-size:22px;font-weight:600;margin:36px 0 14px;letter-spacing:-.01em}
+article a{color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.3);transition:border-color .2s}
+article a:hover{border-bottom-color:var(--arc1)}
+article a:visited{color:var(--arc1)}
+article h2{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:72px 0 20px;line-height:1.2;color:var(--text)}
+article h2:first-of-type{margin-top:12px}
+article h3{font-size:22px;font-weight:600;margin:44px 0 14px;letter-spacing:-.01em;color:var(--text)}
 article ul,article ol{padding-left:24px;margin-bottom:24px}
-article li{color:#C8D1E0;margin-bottom:8px}
+article li{color:#D8DFEA;margin-bottom:8px}
 article li::marker{color:var(--arc4)}
 
 code{font-family:var(--mono);font-size:14px;background:rgba(123,228,149,0.08);border:1px solid rgba(123,228,149,0.16);padding:1px 6px;border-radius:5px;color:var(--arc4)}
@@ -85,17 +88,36 @@ code{font-family:var(--mono);font-size:14px;background:rgba(123,228,149,0.08);bo
 
 .inline-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--border);margin:32px 0;background:#0A1628}
 
+.surfaces-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:36px 0 44px}
+.surface-card{padding:22px 22px 24px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015));position:relative;overflow:hidden;transition:border-color .2s,transform .2s}
+.surface-card::before{content:'';position:absolute;top:0;left:0;right:0;height:120px;background:linear-gradient(180deg,var(--accent-glow,rgba(74,123,236,0.12)) 0%,transparent 100%);pointer-events:none}
+.surface-card:hover{border-color:var(--border2)}
+.surface-card.c-balance{--accent-glow:rgba(74,123,236,0.16);--accent:var(--arc2)}
+.surface-card.c-trade{--accent-glow:rgba(77,214,219,0.16);--accent:var(--arc1)}
+.surface-card.c-create{--accent-glow:rgba(244,200,154,0.13);--accent:var(--arc3)}
+.surface-card .scard-tag{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:block;position:relative}
+.surface-card .scard-name{font-size:20px;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-.015em;line-height:1.25;position:relative}
+.surface-card .scard-desc{font-size:14.5px;color:#D8DFEA;line-height:1.55;margin-bottom:16px;position:relative}
+.surface-card .scard-meta{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.14em;color:var(--accent);opacity:.9;text-transform:uppercase;position:relative;border-top:1px solid var(--border);padding-top:12px;margin-top:auto}
+@media(max-width:720px){.surfaces-grid{grid-template-columns:1fr}}
+
 table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .t th,.t td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border)}
 .t th{background:rgba(255,255,255,0.04);font-weight:600;color:var(--text);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono)}
 .t td{color:#C8D1E0}
 .t tr:last-child td{border-bottom:none}
 
-.steps{counter-reset:step;list-style:none;padding:0;margin:24px 0}
-.steps li{padding:18px 20px 18px 64px;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;position:relative;background:var(--surface)}
-.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:18px;top:18px;width:32px;height:32px;border-radius:8px;background:rgba(123,228,149,0.12);border:1px solid rgba(123,228,149,0.32);color:var(--arc4);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:14px}
-.steps li strong{color:var(--text);font-weight:600;display:block;margin-bottom:4px;font-size:15.5px}
-.steps li span{font-size:14.5px;color:#C8D1E0}
+.steps{counter-reset:step;list-style:none;padding:0;margin:28px 0}
+.steps li{padding:20px 22px 20px 68px;border:1px solid var(--border);border-radius:14px;margin-bottom:12px;position:relative;background:var(--surface)}
+.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:18px;top:20px;width:34px;height:34px;border-radius:9px;background:rgba(123,228,149,0.12);border:1px solid rgba(123,228,149,0.32);color:var(--arc4);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:14px}
+.steps li > strong:first-child{color:var(--text);font-weight:700;display:block;margin-bottom:6px;font-size:16.5px;letter-spacing:-.005em}
+.steps li > strong:first-child a{color:var(--text);border-bottom-color:rgba(255,255,255,0.25)}
+.steps li span{display:block;font-size:15px;color:#E2E8F0;line-height:1.65}
+.steps li span strong{color:var(--text);font-weight:600}
+.steps li span em{color:var(--text);font-style:italic}
+.steps li a{color:var(--arc1);text-decoration:none;border-bottom:1px solid rgba(77,214,219,0.35);transition:border-color .2s}
+.steps li a:hover{border-bottom-color:var(--arc1)}
+.steps li a:visited{color:var(--arc1)}
 
 .cta-card{border:1px solid var(--border);background:linear-gradient(180deg,rgba(123,228,149,0.08),rgba(255,255,255,0.02));border-radius:14px;padding:28px;margin:48px 0;text-align:center}
 .cta-card h3{font-size:22px;font-weight:700;margin-bottom:8px}
@@ -166,7 +188,28 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <h2>What's live today</h2>
 
-    <img class="inline-img" src="/assets/social/blog-launch-stack.svg" alt="The three public surfaces: Unified Balance, native Trade + CCTP, and Create Token"/>
+    <p>Three surfaces, one wallet. Unified Balance pulls USDC across six chains via Circle Gateway. Trade swaps USDC ↔ EURC on the Arc-native Uniswap V2 deployment, with CCTP V2 burn-and-mint baked into the same surface. Create Token deploys an ERC-20 in one wallet click.</p>
+
+    <div class="surfaces-grid">
+      <div class="surface-card c-balance">
+        <span class="scard-tag">// Balance</span>
+        <div class="scard-name">Unified Balance</div>
+        <p class="scard-desc">Spend USDC on Arc using funds sitting on 6+ chains. Powered by Circle Gateway. No manual bridge.</p>
+        <div class="scard-meta">ETH · BASE · ARB · AVAX · OP · POLY</div>
+      </div>
+      <div class="surface-card c-trade">
+        <span class="scard-tag">// Trade</span>
+        <div class="scard-name">Native Swap + CCTP</div>
+        <p class="scard-desc">USDC ↔ EURC via Uniswap V2. Burn-and-mint bridging native via CCTP V2. One surface.</p>
+        <div class="scard-meta">SWAP · BRIDGE · ONE TX</div>
+      </div>
+      <div class="surface-card c-create">
+        <span class="scard-tag">// Create Token</span>
+        <div class="scard-name">Token Launcher</div>
+        <p class="scard-desc">Deploy an ERC-20 on Arc with a wallet click. No Hardhat, no Foundry, no Solidity.</p>
+        <div class="scard-meta">PAY GAS IN USDC · MINT ON CONFIRM</div>
+      </div>
+    </div>
 
     <h3>Unified Balance — powered by Circle Gateway</h3>
     <p>The headline feature. <strong>Spend USDC on Arc using funds that live on a different chain</strong>, without a manual bridge step. Gateway aggregates your USDC across Ethereum, Base, Arbitrum, Avalanche, Optimism, and Polygon — and presents one balance, one approval, one transaction.</p>
