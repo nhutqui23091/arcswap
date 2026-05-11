@@ -1,8 +1,8 @@
 // Page-level access gate.
 //
-// Currently locks the Pool page so only the operator can view it.
-// Credentials come from Cloudflare Pages env vars (Settings → Environment
-// variables → Production):
+// Locks the Pool and Vault pages so only the operator can view them.
+// Both pages share the same credentials, which come from Cloudflare Pages
+// env vars (Settings → Environment variables → Production):
 //   POOL_AUTH_USER  — username (anything you want)
 //   POOL_AUTH_PASS  — password
 //
@@ -12,14 +12,18 @@
 // Note on logout: HTTP Basic Auth has no real logout. Close the browser /
 // use an incognito window if you need to clear credentials.
 
-const REALM = 'ArcSwap — Pool (private)';
+const REALM = 'ArcSwap — Private';
 
 function isProtected(pathname) {
   return (
     pathname === '/pool' ||
     pathname === '/pool/' ||
     pathname === '/pool.html' ||
-    pathname.startsWith('/pool/')
+    pathname.startsWith('/pool/') ||
+    pathname === '/vault' ||
+    pathname === '/vault/' ||
+    pathname === '/vault.html' ||
+    pathname.startsWith('/vault/')
   );
 }
 
