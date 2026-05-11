@@ -93,25 +93,26 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 .src-panel.open{display:flex}
 @keyframes srcOverlayFade{from{opacity:0}to{opacity:1}}
 
-/* Light "card" theme just for the source picker — pops against the dark
-   page so the user can scan balances quickly. Local color tokens. */
+/* Dark "card" theme for the source picker, matched to the trade page
+   surface so it doesn't feel like a separate webpage popping in. Local
+   color tokens scoped to the modal. */
 .src-modal{
-  --m-bg: #F6F8FB;
-  --m-bg-soft: #FFFFFF;
-  --m-border: #E1E6EE;
-  --m-border-strong: #C7CFDC;
-  --m-text: #0E1B2E;
-  --m-text-soft: #5A6A82;
-  --m-muted: #8392A8;
-  --m-wallet: #1FA8AE;
-  --m-gateway: #C77A1F;
-  --m-row-hover: #EEF2F8;
-  --m-row-active-wallet: #E0F6F7;
-  --m-row-active-gateway: #FFF1DC;
-  width:100%;max-width:780px;max-height:calc(100vh - 80px);
-  background:linear-gradient(180deg, var(--m-bg) 0%, #ECF1F7 100%);
+  --m-bg: #0F1E36;
+  --m-bg-soft: rgba(255,255,255,0.045);
+  --m-border: rgba(255,255,255,0.09);
+  --m-border-strong: rgba(255,255,255,0.18);
+  --m-text: #F5F7FB;
+  --m-text-soft: #B7C4D6;
+  --m-muted: #8CA0BD;
+  --m-wallet: #5BD3D9;
+  --m-gateway: #FFB454;
+  --m-row-hover: rgba(255,255,255,0.06);
+  --m-row-active-wallet: rgba(91,211,217,0.10);
+  --m-row-active-gateway: rgba(255,180,84,0.10);
+  width:100%;max-width:920px;max-height:calc(100vh - 80px);
+  background:linear-gradient(180deg, #16273F 0%, #0F1E36 100%);
   border:1px solid var(--m-border);border-radius:22px;
-  box-shadow:0 30px 90px rgba(4,9,20,.55),0 0 0 1px rgba(255,255,255,.08);
+  box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04);
   display:flex;flex-direction:column;overflow:hidden;
   animation:srcModalRise .18s cubic-bezier(.2,.9,.3,1);
 }
@@ -120,17 +121,17 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 .src-modal-head{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:20px 24px 16px;border-bottom:1px solid var(--m-border);
-  background:linear-gradient(180deg, #FBFCFE 0%, #F6F8FB 100%);
+  background:linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
 }
 .src-modal-title{font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--m-text)}
 .src-modal-sub{display:block;font-size:13px;color:var(--m-text-soft);font-weight:400;margin-top:4px;font-family:var(--font);letter-spacing:0}
 .src-modal-close{
   width:34px;height:34px;border-radius:10px;
-  background:#FFFFFF;border:1px solid var(--m-border);
+  background:rgba(255,255,255,0.04);border:1px solid var(--m-border);
   color:var(--m-text-soft);font-size:18px;line-height:1;cursor:pointer;
   display:flex;align-items:center;justify-content:center;transition:all .15s;
 }
-.src-modal-close:hover{color:var(--m-text);border-color:var(--m-border-strong);background:#F1F4F9}
+.src-modal-close:hover{color:var(--m-text);border-color:var(--m-border-strong);background:rgba(255,255,255,0.08)}
 
 .src-modal-body{padding:20px 24px 24px;overflow-y:auto;flex:1;background:transparent}
 
@@ -161,14 +162,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
   cursor:pointer;transition:all .14s;
   font-family:var(--font);width:100%;text-align:left;color:var(--m-text);
 }
-.src-row:hover{background:var(--m-row-hover);border-color:var(--m-border-strong);transform:translateY(-1px);box-shadow:0 4px 12px rgba(14,27,46,.06)}
-.src-row.active{background:var(--m-row-active-wallet);border-color:var(--m-wallet);box-shadow:0 0 0 2px rgba(31,168,174,.18)}
-.src-col.gateway .src-row.active{background:var(--m-row-active-gateway);border-color:var(--m-gateway);box-shadow:0 0 0 2px rgba(199,122,31,.18)}
+.src-row:hover{background:var(--m-row-hover);border-color:var(--m-border-strong);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.30)}
+.src-row.active{background:var(--m-row-active-wallet);border-color:var(--m-wallet);box-shadow:0 0 0 2px rgba(91,211,217,.22)}
+.src-col.gateway .src-row.active{background:var(--m-row-active-gateway);border-color:var(--m-gateway);box-shadow:0 0 0 2px rgba(255,180,84,.22)}
 .src-row-icon{
   width:38px;height:38px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   border-radius:50%;overflow:hidden;background:#fff;
-  box-shadow:0 0 0 1px rgba(14,27,46,.05);
+  box-shadow:0 0 0 1px rgba(255,255,255,.10);
 }
 .src-row-icon img{width:100%;height:100%;display:block;object-fit:cover}
 .src-row-dot{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff}
@@ -180,33 +181,33 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
 .src-row-bal-unit{font-size:10.5px;color:var(--m-muted);font-weight:500;letter-spacing:.02em}
 .src-row-pending{font-size:10.5px;color:var(--m-gateway);font-family:var(--mono);font-weight:500;white-space:nowrap}
 
-.src-empty{padding:28px 14px;font-size:12.5px;color:var(--m-text-soft);text-align:center;border:1px dashed var(--m-border-strong);border-radius:12px;background:#FBFCFE}
+.src-empty{padding:28px 14px;font-size:12.5px;color:var(--m-text-soft);text-align:center;border:1px dashed var(--m-border-strong);border-radius:12px;background:rgba(255,255,255,0.02)}
 
 /* "?" help icon next to each column header — toggles a small popover with
    the explanation. Replaces the old bottom-of-panel help block. */
 .src-help-btn{
   display:inline-flex;align-items:center;justify-content:center;
   width:20px;height:20px;border-radius:50%;
-  background:#FFFFFF;border:1px solid var(--m-border-strong);
+  background:rgba(255,255,255,0.06);border:1px solid var(--m-border-strong);
   color:var(--m-text-soft);font-size:11px;font-weight:700;
   cursor:pointer;margin-left:8px;
   transition:all .15s;font-family:var(--font);vertical-align:middle;
 }
-.src-help-btn:hover{color:var(--m-text);border-color:var(--m-text-soft);background:#F1F4F9}
+.src-help-btn:hover{color:var(--m-text);border-color:var(--m-text-soft);background:rgba(255,255,255,0.10)}
 .src-help-pop{
   position:absolute;top:36px;left:0;z-index:200;
   min-width:260px;max-width:320px;padding:13px 15px;
-  background:#FFFFFF;
+  background:#16273F;
   border:1px solid var(--m-border);border-radius:12px;
-  box-shadow:0 12px 32px rgba(14,27,46,.18);
+  box-shadow:0 12px 32px rgba(0,0,0,.45);
   font-size:12.5px;color:var(--m-text-soft);line-height:1.55;
   display:none;animation:srcHelpFade .12s ease-out;text-transform:none;letter-spacing:0;font-weight:400;
 }
 .src-help-pop.open{display:block}
 .src-help-pop strong{color:var(--m-text);font-weight:600}
 .src-help-pop .pill{display:inline-block;padding:1px 7px;border-radius:5px;font-family:var(--mono);font-weight:700;font-size:10.5px}
-.src-help-pop .pill.wl{background:rgba(31,168,174,.14);color:var(--m-wallet)}
-.src-help-pop .pill.gw{background:rgba(199,122,31,.14);color:var(--m-gateway)}
+.src-help-pop .pill.wl{background:rgba(91,211,217,.18);color:var(--m-wallet)}
+.src-help-pop .pill.gw{background:rgba(255,180,84,.18);color:var(--m-gateway)}
 @keyframes srcHelpFade{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
 
 .swap-flipbar{position:relative;height:14px;margin:4px 0}
@@ -618,7 +619,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     return `<button class="src-row ${active ? 'active' : ''}" type="button" data-src="${s.chainKey}:${s.kind}">
       <span class="src-row-icon"><img src="${iconUrl}" alt=""/></span>
       <span class="src-row-info">
-        <span class="src-row-name">${chainShort(s.chainKey)}</span>
+        <span class="src-row-name">${chainName(s.chainKey)}</span>
       </span>
       <span class="src-row-meta">
         <span class="src-row-bal ${balCls}">${s.display} <span class="src-row-bal-unit">USDC</span></span>
@@ -646,14 +647,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;paddi
     const gwFunded = gateway.filter(s => s.canonical > 0n);
     const unifiedTotal = gwFunded.reduce((acc, s) => acc + s.canonical, 0n);
     const unifiedRow = (gwFunded.length >= 2) ? `
-      <button class="src-row src-row-unified ${isUnifiedActive ? 'active' : ''}" type="button" data-src="unified:unified" style="background:linear-gradient(135deg,#FFF1DC 0%,#FFF8EC 100%);border-color:#F4C89A;margin-bottom:8px">
-        <span class="src-row-dot" style="background:linear-gradient(135deg,#FFB454,#F4C89A);box-shadow:0 4px 12px rgba(244,200,154,.4)">⚡</span>
+      <button class="src-row src-row-unified ${isUnifiedActive ? 'active' : ''}" type="button" data-src="unified:unified" style="background:linear-gradient(135deg,rgba(255,180,84,0.14) 0%,rgba(255,180,84,0.05) 100%);border-color:rgba(255,180,84,0.45);margin-bottom:8px">
+        <span class="src-row-dot" style="background:linear-gradient(135deg,#FFB454,#F4C89A);box-shadow:0 4px 12px rgba(244,200,154,.3)">⚡</span>
         <span class="src-row-info">
-          <span class="src-row-name" style="color:#A85F0E;font-weight:700">Unified Balance</span>
+          <span class="src-row-name" style="color:#FFB454;font-weight:700">Unified Balance</span>
         </span>
         <span class="src-row-meta">
-          <span class="src-row-bal" style="color:#A85F0E">${ARC.formatAmt(unifiedTotal, 6, 4)} <span class="src-row-bal-unit" style="color:rgba(168,95,14,.65)">USDC</span></span>
-          <span class="src-row-pending" style="color:#C77A1F">across ${gwFunded.length} chains</span>
+          <span class="src-row-bal" style="color:#FFB454">${ARC.formatAmt(unifiedTotal, 6, 4)} <span class="src-row-bal-unit" style="color:rgba(255,180,84,.65)">USDC</span></span>
+          <span class="src-row-pending" style="color:#FFB454">across ${gwFunded.length} chains</span>
         </span>
       </button>` : '';
 
