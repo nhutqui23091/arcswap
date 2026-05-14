@@ -5,9 +5,9 @@
   const ARC = global.ARC;
 
   // ── NAVBAR ─────────────────────────────────────────────
-  // Whitelist: addresses allowed to see Pool / Vault while those surfaces
-  // are still in development. Direct URLs (/pool, /vault) still resolve —
-  // gating is nav-only so bookmarks keep working for testers.
+  // Whitelist: addresses allowed to see Pool while it's still in development.
+  // Direct URL (/pool) still resolves — gating is nav-only so bookmarks keep
+  // working for testers.
   const TESTER_ADDRESSES = new Set([
     '0x738722f22ef4fb6abc3ac69bbc30f77b2b6bc762',
   ]);
@@ -19,12 +19,12 @@
     const base = [
       { id: 'trade',   label: 'Trade',        href: '/trade'   },
       { id: 'balance', label: 'Balance',      href: '/balance' },
+      { id: 'agent',   label: 'Agent',        href: '/agent', newBadge: true },
       { id: 'token',   label: 'Create Token', href: '/token'   },
     ];
     const gated = isTester(ARC.wallet.address)
       ? [
           { id: 'pool',  label: 'Pool',  href: '/pool'  },
-          { id: 'vault', label: 'Vault', href: '/vault' },
         ]
       : [];
     return [...base, ...gated];
@@ -45,7 +45,7 @@
           <span class="logo-badge">TESTNET</span>
         </a>
         <div class="nav-tabs">
-          ${tabs.map(t => `<a class="nav-tab ${t.id===active?'active':''}" href="${t.href}">${t.label}</a>`).join('')}
+          ${tabs.map(t => `<a class="nav-tab ${t.id===active?'active':''}${t.newBadge?' new-pill':''}" href="${t.href}">${t.label}</a>`).join('')}
           <a class="nav-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
           <a class="nav-tab ${active==='blog'?'active':''}" href="/blog">Blog</a>
         </div>

@@ -100,6 +100,8 @@ nav.scrolled{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bo
 .nav-links{display:flex;align-items:center;gap:4px}
 .nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none;background:none;border:none;font-family:var(--font)}
 .nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.new-pill{position:relative}
+.nav-link.new-pill::after{content:'NEW';position:absolute;top:-3px;right:-10px;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 5px;border-radius:6px}
 .nav-right{display:flex;align-items:center;gap:10px}
 .btn-ghost{padding:9px 18px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);font-family:var(--font);transition:all .2s}
 .btn-ghost:hover{color:var(--text);border-color:var(--border2)}
@@ -401,6 +403,7 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
   <div class="nav-links">
     <a class="nav-link" href="/trade">Trade</a>
     <a class="nav-link" href="/balance">Balance</a>
+    <a class="nav-link new-pill" href="/agent">Agent</a>
     <a class="nav-link" href="/token">Create Token</a>
     <a class="nav-link" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
     <a class="nav-link" href="/blog">Blog</a>
@@ -428,7 +431,7 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
       Spend Anywhere
     </a>
-    <button class="btn-secondary" onclick="document.getElementById('roadmap').scrollIntoView({behavior:'smooth'})">View Roadmap →</button>
+    <a class="btn-secondary" href="/agent" style="text-decoration:none">Try Agent Preview →</a>
   </div>
   <div class="hero-stats">
     <div class="stat-item">
@@ -506,15 +509,15 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
           <div class="feat-stat-label">Unified balance · spend anywhere</div>
         </div>
       </div>
-      <div class="feat-card">
+      <a class="feat-card" href="/agent" style="text-decoration:none;color:inherit;cursor:pointer">
         <div class="feat-icon fi-green">◇</div>
-        <div class="feat-name">Research · What's Next</div>
-        <p class="feat-desc">We're researching the next phase of ArcSwap around autonomous stablecoin operations and programmable payment flows — exploring how Agent Wallets, Unified Balance, native stablecoin conversion, and the emerging Circle Agent Stack can automate cross-chain routing, settlement, and execution on Arc.</p>
+        <div class="feat-name">Auto-Replenish Agent <span style="font-size:9px;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:middle">PREVIEW</span></div>
+        <p class="feat-desc">Set a floor on any wallet — your agent keeps it topped up automatically. One signature authorizes a Circle Programmable Wallet to pull USDC from your source chains via Gateway and CCTP V2 whenever the target balance dips below your threshold. Daily cap, revocable anytime.</p>
         <div class="feat-stat">
-          <div class="feat-stat-num grad-green">Active</div>
-          <div class="feat-stat-label">Live on Arc Testnet · evolving with feedback</div>
+          <div class="feat-stat-num grad-green">Try it →</div>
+          <div class="feat-stat-label">Dry-run preview · feedback-driven build</div>
         </div>
-      </div>
+      </a>
       <div class="feat-card">
         <div class="feat-icon fi-pink">◈</div>
         <div class="feat-name">Liquidity Pools</div>

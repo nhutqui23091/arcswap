@@ -78,6 +78,8 @@ nav.arc-nav.scrolled{background:rgba(3,1,10,.85);backdrop-filter:blur(20px);bord
 .nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s}
 .nav-tab:hover{color:var(--text);background:var(--surface)}
 .nav-tab.active{color:var(--text);background:var(--surface2)}
+.nav-tab.new-pill{position:relative}
+.nav-tab.new-pill::after{content:'NEW';position:absolute;top:-3px;right:-12px;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 5px;border-radius:6px}
 .nav-right{display:flex;align-items:center;gap:10px}
 .nav-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
 .nav-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);animation:pulse-dot 2s infinite}

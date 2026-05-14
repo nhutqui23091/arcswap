@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com https://gateway-api-testnet.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
+<link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
+<title>ArcSwap — Agent · Auto-Replenish</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628;--bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB;--muted:#8CA0BD;
+  --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
+  --peach:#F4C89A;--sand:#ECDCC4;--legacy-purple:#6C3FFF;
+  --gold:#F4C89A;--violet:#A78BFA;
+  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+}
+
+h1,h2,h3,h4,h5,h6{font-family:var(--font);font-weight:800;letter-spacing:-.035em;line-height:1.1}
+p,span,div,button,input,select,textarea,a{font-family:var(--font)}
+.arc-label{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;color:#FF9F4A;text-transform:uppercase;white-space:nowrap}
+.arc-label::before{content:'{\00a0';opacity:.75}
+.arc-label::after{content:'\00a0}';opacity:.75}
+
+html{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh;cursor:none}
+
+.cursor-dot{position:fixed;width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9999;mix-blend-mode:difference}
+.cursor-ring{position:fixed;width:36px;height:36px;border:1.5px solid rgba(255,255,255,.4);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9998;transition:all .12s ease}
+
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");opacity:.35;pointer-events:none;z-index:9997}
+
+.aurora{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 140% 60% at 50% 110%, rgba(244,200,154,0.28) 0%, rgba(244,200,154,0.08) 35%, transparent 60%),
+    radial-gradient(ellipse 120% 40% at 50% 90%, rgba(77,214,219,0.22) 0%, rgba(74,123,236,0.10) 35%, transparent 65%),
+    linear-gradient(180deg, #0A1628 0%, #0E1F39 40%, #133155 75%, #1E4A6E 100%);
+}
+.orb{position:absolute;border-radius:50%;filter:blur(150px);animation:orb-drift 40s ease-in-out infinite alternate;mix-blend-mode:screen}
+.o1{width:720px;height:500px;background:var(--arc1);opacity:.06;top:-240px;left:-200px;animation-duration:40s}
+.o2{width:620px;height:520px;background:var(--arc2);opacity:.05;top:-160px;right:-220px;animation-duration:46s;animation-delay:-10s}
+@keyframes orb-drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,20px) scale(1.06)}}
+
+/* NAVBAR */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .3s;gap:16px}
+nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-name{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.nav-tabs{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;text-decoration:none;border:none;background:none;cursor:pointer;font-family:var(--font)}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.nav-tab.active{color:var(--text);background:rgba(255,255,255,.07)}
+.nav-tab.faucet-tab{color:var(--muted);background:none;border:none}
+.nav-tab.faucet-tab:hover{color:var(--arc2);background:rgba(0,207,255,.06)}
+.nav-tab.new-pill{position:relative}
+.nav-tab.new-pill::after{content:'NEW';position:absolute;top:-4px;right:-14px;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 5px;border-radius:6px}
+.nav-right{display:flex;align-items:center;gap:10px}
+.testnet-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
+.tnet-dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#wallet-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font)}
+#wallet-btn:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.32)}
+#wallet-btn.connected{background:rgba(77,214,219,0.10);border-color:rgba(77,214,219,0.3);color:var(--text)}
+.w-dot{width:7px;height:7px;border-radius:50%;background:var(--arc4);flex-shrink:0;box-shadow:0 0 8px var(--arc4)}
+
+/* PAGE */
+.page{position:relative;z-index:1;min-height:100vh;padding:88px 24px 60px;max-width:1180px;margin:0 auto}
+
+/* HEADER */
+.page-header{margin-bottom:22px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-title{font-size:clamp(40px,5.5vw,68px);font-weight:900;letter-spacing:-.035em;line-height:1;margin-bottom:10px;text-transform:uppercase}
+.page-sub{font-size:14px;color:var(--muted);max-width:680px;line-height:1.6}
+.preview-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:100px;font-size:12px;font-weight:600;font-family:var(--mono);color:var(--violet);background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);text-transform:uppercase;letter-spacing:.08em}
+.preview-dot{width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 10px var(--violet)}
+
+/* PREVIEW BANNER */
+.preview-banner{margin:18px 0 28px;padding:16px 22px;border:1px solid rgba(167,139,250,0.3);border-radius:14px;background:linear-gradient(180deg,rgba(167,139,250,0.08),rgba(167,139,250,0.02));display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.preview-banner .pb-ico{font-size:28px;line-height:1}
+.preview-banner .pb-text{flex:1;min-width:260px}
+.preview-banner .pb-tag{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--violet);margin-bottom:6px}
+.preview-banner .pb-body{font-size:14px;color:var(--text);line-height:1.55}
+.preview-banner a{color:var(--violet);text-decoration:underline}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:rgba(10,6,28,.85);border:1px solid var(--border);border-radius:16px;padding:18px 20px}
+.stat-val{font-size:28px;font-weight:800;letter-spacing:-.035em;line-height:1.05;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-change{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+
+/* MAIN LAYOUT */
+.agent-layout{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:flex-start}
+@media(max-width:960px){.agent-layout{grid-template-columns:1fr}}
+
+/* CARD BASE */
+.card{background:rgba(10,6,28,.9);border:1px solid var(--border);border-radius:20px;padding:22px 24px;box-shadow:0 8px 60px rgba(0,0,0,.45)}
+.card-title{font-size:17px;font-weight:800;margin-bottom:4px;letter-spacing:-.01em}
+.card-sub{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.55}
+
+/* STEPS */
+.step{margin-bottom:18px}
+.step-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.step-num{width:22px;height:22px;border-radius:7px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);color:var(--violet);font-family:var(--mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-label{font-size:13px;font-weight:700;letter-spacing:-.005em}
+.step-hint{font-size:11.5px;color:var(--muted);margin-left:auto;font-family:var(--mono)}
+
+/* INPUT WIDGETS */
+.field{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
+.field:focus-within{border-color:rgba(167,139,250,.4)}
+.field-input{flex:1;background:none;border:none;outline:none;font-size:16px;font-weight:600;color:var(--text);font-family:var(--font);min-width:0}
+.field-input::placeholder{color:rgba(255,255,255,.18)}
+.field-suffix{font-size:13px;color:var(--muted);font-family:var(--mono);font-weight:600}
+.field-prefix{font-size:13px;color:var(--muted);font-family:var(--mono);font-weight:600}
+
+/* CHAIN SELECT (chip-style) */
+.chain-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:560px){.chain-grid{grid-template-columns:repeat(2,1fr)}}
+.chain-chip{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left}
+.chain-chip:hover{background:rgba(255,255,255,.06);border-color:var(--border2)}
+.chain-chip.selected{background:rgba(74,123,236,.12);border-color:rgba(74,123,236,.4)}
+.chain-chip-name{font-size:13px;font-weight:700;color:var(--text)}
+.chain-chip-bal{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.chain-chip.selected .chain-chip-bal{color:var(--arc1)}
+
+/* DUAL FIELD */
+.dual-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.dual-fields{grid-template-columns:1fr}}
+
+/* SUMMARY */
+.summary{margin-top:18px;padding:14px 16px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.18);border-radius:12px}
+.summary-h{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);margin-bottom:8px}
+.summary-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12.5px}
+.summary-row .k{color:var(--muted)}
+.summary-row .v{font-family:var(--mono);font-weight:600;text-align:right}
+
+/* DEPLOY BTN */
+.deploy-btn{width:100%;margin-top:18px;padding:16px;border-radius:14px;border:1px solid rgba(167,139,250,.35);font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,rgba(167,139,250,.18),rgba(74,123,236,.18));color:var(--text);transition:all .2s;letter-spacing:.02em}
+.deploy-btn:hover:not(:disabled){background:linear-gradient(135deg,rgba(167,139,250,.28),rgba(74,123,236,.28));border-color:rgba(167,139,250,.55);transform:translateY(-1px)}
+.deploy-btn:disabled{opacity:.4;cursor:not-allowed;background:var(--surface2);color:var(--muted);border-color:var(--border)}
+
+/* RIGHT PANEL */
+.agents-list{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.agent-empty{padding:32px 18px;text-align:center;background:rgba(255,255,255,.02);border:1px dashed var(--border2);border-radius:14px}
+.agent-empty .ae-ico{font-size:34px;margin-bottom:10px;opacity:.6}
+.agent-empty .ae-h{font-size:14px;font-weight:700;margin-bottom:4px}
+.agent-empty .ae-s{font-size:12.5px;color:var(--muted);line-height:1.5}
+
+.agent-row{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;padding:14px 16px;transition:all .15s;cursor:default}
+.agent-row:hover{background:rgba(255,255,255,.04);border-color:var(--border2)}
+.agent-row-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.agent-row-name{font-size:13.5px;font-weight:800;letter-spacing:-.005em}
+.agent-row-state{font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px}
+.state-active{background:rgba(123,228,149,.1);color:var(--arc4);border:1px solid rgba(123,228,149,.25)}
+.state-dryrun{background:rgba(167,139,250,.1);color:var(--violet);border:1px solid rgba(167,139,250,.25)}
+.state-paused{background:rgba(140,160,189,.08);color:var(--muted);border:1px solid rgba(140,160,189,.2)}
+.agent-row-flow{display:flex;align-items:center;gap:8px;font-size:12px;font-family:var(--mono);color:var(--muted);margin-bottom:10px;flex-wrap:wrap}
+.agent-row-flow .arr{opacity:.5}
+.agent-row-flow .chain-tag{padding:3px 7px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;color:var(--text);font-weight:600}
+.agent-row-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.06)}
+.agent-meta-k{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.agent-meta-v{font-size:12.5px;font-weight:700;font-family:var(--mono)}
+.agent-row-actions{display:flex;gap:6px;margin-top:12px}
+.agent-row-actions button{flex:1;padding:7px;font-size:11.5px;font-weight:600;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.agent-row-actions button:hover{background:rgba(255,255,255,.08);color:var(--text);border-color:var(--border2)}
+.agent-row-actions button.danger:hover{color:#FF8BA3;border-color:rgba(255,85,119,.3)}
+
+/* EXECUTION LOG */
+.exec-log{margin-top:16px}
+.exec-log-h{font-size:12px;font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.exec-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,.02);border-left:2px solid var(--arc4);border-radius:6px;margin-bottom:6px;font-size:12px;font-family:var(--mono)}
+.exec-row .er-time{color:var(--muted);min-width:54px}
+.exec-row .er-action{flex:1;color:var(--text)}
+.exec-row .er-amt{font-weight:700;color:var(--arc1)}
+
+/* HOW IT WORKS */
+.how-section{margin-top:36px;background:rgba(10,6,28,.7);border:1px solid var(--border);border-radius:20px;padding:28px 30px}
+.how-h{font-size:20px;font-weight:800;margin-bottom:6px;letter-spacing:-.01em}
+.how-sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.55;max-width:640px}
+.how-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:880px){.how-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.how-grid{grid-template-columns:1fr}}
+.how-step{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:14px;padding:18px 18px 20px;position:relative;display:flex;flex-direction:column;gap:8px}
+.how-step-num{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--violet);text-transform:uppercase}
+.how-step-h{font-size:14.5px;font-weight:700;margin-top:4px;letter-spacing:-.005em}
+.how-step-d{font-size:12.5px;color:var(--muted);line-height:1.6}
+.how-step-ico{position:absolute;top:14px;right:16px;font-size:20px;opacity:.45}
+
+/* TECH STACK */
+.tech-card{margin-top:24px;background:rgba(10,6,28,.7);border:1px solid var(--border);border-radius:18px;padding:22px 24px}
+.tech-title{font-size:16px;font-weight:800;margin-bottom:14px}
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.tech-item{display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.tech-ico{font-size:18px;line-height:1;flex-shrink:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:8px;color:var(--violet)}
+.tech-text{flex:1;min-width:0}
+.tech-h{font-size:12.5px;font-weight:700;margin-bottom:2px}
+.tech-d{font-size:11.5px;color:var(--muted);line-height:1.5}
+
+/* SIGN MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(5,10,20,.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:8000;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-card{background:rgba(13,9,32,.97);border:1px solid var(--border2);border-radius:20px;padding:30px 32px;max-width:440px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.modal-ico{font-size:42px;margin-bottom:14px;text-align:center}
+.modal-h{font-size:20px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-.01em}
+.modal-s{font-size:13px;color:var(--muted);text-align:center;line-height:1.55;margin-bottom:22px}
+.modal-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.modal-step{display:flex;align-items:center;gap:12px;padding:11px 14px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:10px;font-size:13px;transition:all .25s}
+.modal-step.active{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.3)}
+.modal-step.done{background:rgba(123,228,149,.06);border-color:rgba(123,228,149,.25)}
+.modal-step-ico{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-family:var(--mono);font-weight:700;color:var(--muted)}
+.modal-step.active .modal-step-ico{background:rgba(167,139,250,.18);border-color:var(--violet);color:var(--violet)}
+.modal-step.done .modal-step-ico{background:rgba(123,228,149,.18);border-color:var(--arc4);color:var(--arc4)}
+.modal-step.active .modal-step-ico::after{content:'';width:8px;height:8px;border:1.5px solid var(--violet);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;position:absolute}
+.modal-step.active .modal-step-ico{position:relative;color:transparent}
+.modal-step.done .modal-step-ico::after{content:'✓';color:var(--arc4);font-size:12px}
+.modal-step.done .modal-step-ico{color:transparent}
+@keyframes spin{to{transform:rotate(360deg)}}
+.modal-step-label{flex:1;color:var(--text);font-weight:600}
+.modal-actions{display:flex;gap:10px}
+.modal-actions button{flex:1;padding:13px;font-size:13.5px;font-weight:700;border-radius:11px;cursor:pointer;font-family:var(--font);border:1px solid var(--border)}
+.modal-actions .btn-cancel{background:rgba(255,255,255,.04);color:var(--muted)}
+.modal-actions .btn-cancel:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(13,9,32,.97);border:1px solid var(--border2);border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:12px;z-index:9000;transition:transform .3s cubic-bezier(.34,1.56,.64,1);min-width:260px;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast-icon{font-size:20px;flex-shrink:0}
+.toast-msg{font-size:14px;font-weight:700}
+.toast-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+@media(max-width:700px){
+  .stats-row{grid-template-columns:1fr}
+  .nav-tabs{display:none}
+  .testnet-pill{display:none}
+  .page-header{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+<div class="aurora"><div class="orb o1"></div><div class="orb o2"></div></div>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo-wrap" onclick="window.location.href='/'">
+    <span class="logo-name" style="font-size:20px;font-weight:800;letter-spacing:-.04em">ArcSwap</span>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="/trade">Trade</a>
+    <a class="nav-tab" href="/balance">Balance</a>
+    <button class="nav-tab active new-pill">Agent</button>
+    <a class="nav-tab" href="/token">Create Token</a>
+    <a class="nav-tab" href="/pool">Pool</a>
+    <a class="nav-tab faucet-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
+    <a class="nav-tab" href="/blog">Blog</a>
+  </div>
+  <div class="nav-right">
+    <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
+    <button id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</nav>
+
+<div class="page">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <div class="arc-label" style="margin-bottom:10px;color:var(--violet)">Agent · Auto-Replenish</div>
+      <h1 class="page-title">Keep wallets<br/>topped up — automatically.</h1>
+      <p class="page-sub">Set a floor on any wallet. Your agent watches the balance and refills it from your USDC sources via Circle Gateway and CCTP V2 — under your rules, with one signature.</p>
+    </div>
+    <div class="preview-pill">
+      <div class="preview-dot"></div>Preview · Dry-run
+    </div>
+  </div>
+
+  <!-- PREVIEW BANNER -->
+  <div class="preview-banner">
+    <div class="pb-ico">🤖</div>
+    <div class="pb-text">
+      <div class="pb-tag">// Preview Release · Feedback Welcome</div>
+      <div class="pb-body"><strong>This is an early UX preview.</strong> Agent execution currently runs in <strong>dry-run mode</strong> — rules are validated, signatures simulated, no funds move. We're integrating Circle Programmable Wallets + Gateway for live testnet refills next. Try the flow and tell us what's missing.</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px;color:var(--violet)">Mode</div>
+      <div class="stat-val">Dry-run</div>
+      <div class="stat-change">Live execution · soon</div>
+    </div>
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px;color:var(--violet)">Your Agents</div>
+      <div class="stat-val" id="stat-agents">0</div>
+      <div class="stat-change" id="stat-agents-sub">No agents deployed yet</div>
+    </div>
+    <div class="stat-card">
+      <div class="arc-label" style="margin-bottom:10px;color:var(--violet)">Simulated Refills</div>
+      <div class="stat-val" id="stat-refills">$0.00</div>
+      <div class="stat-change">Dry-run · cumulative</div>
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="agent-layout">
+
+    <!-- LEFT: SETUP -->
+    <div class="card">
+      <div class="card-title">Create your agent</div>
+      <div class="card-sub">Configure the rule once. Agent runs continuously and refills only when conditions are met.</div>
+
+      <!-- STEP 1: SOURCE CHAIN -->
+      <div class="step">
+        <div class="step-h">
+          <div class="step-num">1</div>
+          <div class="step-label">Pick source chain</div>
+          <div class="step-hint">where your USDC lives</div>
+        </div>
+        <div class="chain-grid" id="chain-grid">
+          <div class="chain-chip" data-chain="sepolia" onclick="selectChain('sepolia')">
+            <div class="chain-chip-name">Sepolia</div>
+            <div class="chain-chip-bal">— USDC</div>
+          </div>
+          <div class="chain-chip" data-chain="base" onclick="selectChain('base')">
+            <div class="chain-chip-name">Base</div>
+            <div class="chain-chip-bal">— USDC</div>
+          </div>
+          <div class="chain-chip" data-chain="arbitrum" onclick="selectChain('arbitrum')">
+            <div class="chain-chip-name">Arbitrum</div>
+            <div class="chain-chip-bal">— USDC</div>
+          </div>
+          <div class="chain-chip" data-chain="optimism" onclick="selectChain('optimism')">
+            <div class="chain-chip-name">Optimism</div>
+            <div class="chain-chip-bal">— USDC</div>
+          </div>
+          <div class="chain-chip" data-chain="polygon" onclick="selectChain('polygon')">
+            <div class="chain-chip-name">Polygon</div>
+            <div class="chain-chip-bal">— USDC</div>
+          </div>
+          <div class="chain-chip" data-chain="unichain" onclick="selectChain('unichain')">
+            <div class="chain-chip-name">Unichain</div>
+            <div class="chain-chip-bal">— USDC</div>
+          </div>
+          <div class="chain-chip" data-chain="fuji" onclick="selectChain('fuji')">
+            <div class="chain-chip-name">Fuji</div>
+            <div class="chain-chip-bal">— USDC</div>
+          </div>
+          <div class="chain-chip selected" data-chain="arc" onclick="selectChain('arc')">
+            <div class="chain-chip-name">Arc</div>
+            <div class="chain-chip-bal">— USDC</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: TARGET WALLET -->
+      <div class="step">
+        <div class="step-h">
+          <div class="step-num">2</div>
+          <div class="step-label">Target wallet on Arc</div>
+          <div class="step-hint">the wallet to keep topped up</div>
+        </div>
+        <div class="field">
+          <span class="field-prefix">0x</span>
+          <input class="field-input" id="target-addr" type="text" placeholder="abcd…1234 (paste any address or use connected)" oninput="onFormChange()"/>
+          <button onclick="useConnected()" style="padding:6px 10px;border-radius:8px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25);color:var(--violet);font-size:11px;font-weight:700;font-family:var(--mono);cursor:pointer">USE MINE</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: RULES -->
+      <div class="step">
+        <div class="step-h">
+          <div class="step-num">3</div>
+          <div class="step-label">Set refill rules</div>
+          <div class="step-hint">all values in USDC</div>
+        </div>
+        <div class="dual-fields">
+          <div>
+            <div style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Floor (refill when below)</div>
+            <div class="field">
+              <span class="field-prefix">$</span>
+              <input class="field-input" id="floor-amt" type="number" placeholder="50" value="50" oninput="onFormChange()"/>
+              <span class="field-suffix">USDC</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Refill amount</div>
+            <div class="field">
+              <span class="field-prefix">$</span>
+              <input class="field-input" id="refill-amt" type="number" placeholder="100" value="100" oninput="onFormChange()"/>
+              <span class="field-suffix">USDC</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <div style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Daily cap (safety limit)</div>
+          <div class="field">
+            <span class="field-prefix">$</span>
+            <input class="field-input" id="cap-amt" type="number" placeholder="500" value="500" oninput="onFormChange()"/>
+            <span class="field-suffix">USDC / day</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="summary">
+        <div class="summary-h">// What the agent will do</div>
+        <div class="summary-row"><span class="k">When</span><span class="v" id="sum-when">Target balance &lt; $50</span></div>
+        <div class="summary-row"><span class="k">Pull from</span><span class="v" id="sum-pull">Arc (source)</span></div>
+        <div class="summary-row"><span class="k">Bridge via</span><span class="v">Circle Gateway + CCTP V2</span></div>
+        <div class="summary-row"><span class="k">Deliver to</span><span class="v" id="sum-deliver">Arc · target wallet</span></div>
+        <div class="summary-row"><span class="k">Refill</span><span class="v" id="sum-refill">$100 per trigger</span></div>
+        <div class="summary-row"><span class="k">Hard limit</span><span class="v" id="sum-cap">$500 / 24h</span></div>
+        <div class="summary-row"><span class="k">Expires</span><span class="v">30 days · revocable anytime</span></div>
+      </div>
+
+      <button class="deploy-btn" id="deploy-btn" onclick="deployAgent()">
+        Sign &amp; Deploy Agent
+      </button>
+
+      <div style="margin-top:12px;font-size:11px;color:var(--muted);font-family:var(--mono);text-align:center">
+        1 EIP-712 signature · no on-chain tx · revoke anytime
+      </div>
+    </div>
+
+    <!-- RIGHT: ACTIVE AGENTS -->
+    <div>
+      <div class="card">
+        <div class="card-title">Your Agents</div>
+        <div class="card-sub">Active rules running in the background.</div>
+        <div class="agents-list" id="agents-list">
+          <div class="agent-empty" id="agent-empty">
+            <div class="ae-ico">◇</div>
+            <div class="ae-h">No agents yet</div>
+            <div class="ae-s">Configure a rule on the left and click <strong>Deploy</strong>. It'll show up here.</div>
+          </div>
+        </div>
+
+        <div class="exec-log" id="exec-log" style="display:none">
+          <div class="exec-log-h">// Recent activity</div>
+          <div id="exec-log-rows"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-section">
+    <h2 class="how-h">How Auto-Replenish works</h2>
+    <p class="how-sub">A single signature authorizes a Circle Programmable Wallet to act as your agent. The agent then operates within your declared rules — no further interaction needed.</p>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-step-num">// Step 01</div>
+        <div class="how-step-h">You sign once</div>
+        <div class="how-step-d">An EIP-712 message declares: source chain, target wallet, floor, refill amount, daily cap, expiry. No gas, no on-chain tx — just a signature.</div>
+        <div class="how-step-ico">✍</div>
+      </div>
+      <div class="how-step">
+        <div class="how-step-num">// Step 02</div>
+        <div class="how-step-h">Agent watches</div>
+        <div class="how-step-d">A Circle Programmable Wallet polls your target balance. When it drops below the floor, the trigger fires. Polling adapts to wallet activity — faster when busy, idle otherwise.</div>
+        <div class="how-step-ico">👁</div>
+      </div>
+      <div class="how-step">
+        <div class="how-step-num">// Step 03</div>
+        <div class="how-step-h">Funds move</div>
+        <div class="how-step-d">Agent pulls USDC from your source via EIP-3009 transferAuthorization, deposits to Gateway, and mints to the target chain via CCTP V2 Fast Transfer. Total latency: ~10–20 seconds.</div>
+        <div class="how-step-ico">⟶</div>
+      </div>
+      <div class="how-step">
+        <div class="how-step-num">// Step 04</div>
+        <div class="how-step-h">You stay in control</div>
+        <div class="how-step-d">Hit the daily cap? Agent stops until tomorrow. Want out? Revoke instantly — one click invalidates the signature on-chain. Every execution is logged with tx hashes.</div>
+        <div class="how-step-ico">⚑</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TECH STACK -->
+  <div class="tech-card">
+    <h3 class="tech-title">Built on Circle's Agent Stack</h3>
+    <div class="tech-grid">
+      <div class="tech-item">
+        <div class="tech-ico">◈</div>
+        <div class="tech-text">
+          <div class="tech-h">Programmable Wallets</div>
+          <div class="tech-d">MPC-managed wallets with built-in policy engine — your agent's identity.</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-ico">◆</div>
+        <div class="tech-text">
+          <div class="tech-h">Circle Gateway</div>
+          <div class="tech-d">Unified balance abstraction — issues attestations for near-instant cross-chain mint.</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-ico">◇</div>
+        <div class="tech-text">
+          <div class="tech-h">CCTP V2 Fast Transfer</div>
+          <div class="tech-d">8–20 second native USDC burn-and-mint between supported chains.</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-ico">⌬</div>
+        <div class="tech-text">
+          <div class="tech-h">EIP-3009 / EIP-2612</div>
+          <div class="tech-d">Off-chain signed authorizations — no upfront approve tx, no gas on source chain.</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-ico">⬡</div>
+        <div class="tech-text">
+          <div class="tech-h">Arc L1</div>
+          <div class="tech-d">USDC-native gas, sub-second blocks — purpose-built settlement for agentic flows.</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-ico">▴</div>
+        <div class="tech-text">
+          <div class="tech-h">x402 (roadmap)</div>
+          <div class="tech-d">HTTP 402 payment negotiation — let your agent pay any x402-aware service autonomously.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIGN MODAL -->
+<div class="modal-overlay" id="sign-modal">
+  <div class="modal-card">
+    <div class="modal-ico">🔐</div>
+    <div class="modal-h">Sign to deploy</div>
+    <div class="modal-s">In dry-run preview, signatures are simulated locally. No funds move and no on-chain tx is sent.</div>
+    <div class="modal-steps" id="modal-steps">
+      <div class="modal-step" data-step="0"><div class="modal-step-ico">1</div><div class="modal-step-label">Build EIP-712 typed data</div></div>
+      <div class="modal-step" data-step="1"><div class="modal-step-ico">2</div><div class="modal-step-label">Simulate wallet signature</div></div>
+      <div class="modal-step" data-step="2"><div class="modal-step-ico">3</div><div class="modal-step-label">Register agent rule</div></div>
+      <div class="modal-step" data-step="3"><div class="modal-step-ico">4</div><div class="modal-step-label">Start watch loop</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toast-icon">✓</div>
+  <div>
+    <div class="toast-msg" id="toast-msg">—</div>
+    <div class="toast-sub" id="toast-sub"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ARC TESTNET CONFIG
+============================================================ */
+const ARC_CHAIN = {
+  chainId: '0xeefb',
+  chainName: 'Arc Testnet',
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 },
+  rpcUrls: ['https://rpc.testnet.arc.network'],
+  blockExplorerUrls: ['https://explorer.testnet.arc.network'],
+};
+
+/* ============================================================
+   STATE
+============================================================ */
+let walletAddr = null;
+let currentProvider = null;
+let selectedChain = 'arc';
+let agents = JSON.parse(localStorage.getItem('arcswap_agents') || '[]');
+let executions = JSON.parse(localStorage.getItem('arcswap_execs') || '[]');
+let simulatedRefills = parseFloat(localStorage.getItem('arcswap_sim_refills') || '0');
+
+const CHAIN_LABELS = {
+  sepolia: 'Sepolia',
+  base: 'Base Sepolia',
+  arbitrum: 'Arbitrum Sepolia',
+  optimism: 'Optimism Sepolia',
+  polygon: 'Polygon Amoy',
+  unichain: 'Unichain Sepolia',
+  fuji: 'Fuji (Avalanche)',
+  arc: 'Arc Testnet',
+};
+
+/* ============================================================
+   CURSOR
+============================================================ */
+const dot = document.getElementById('cdot');
+const ring = document.getElementById('cring');
+document.addEventListener('mousemove', e => {
+  dot.style.left = e.clientX + 'px';
+  dot.style.top = e.clientY + 'px';
+  ring.style.left = e.clientX + 'px';
+  ring.style.top = e.clientY + 'px';
+});
+
+/* ============================================================
+   NAV SCROLL
+============================================================ */
+window.addEventListener('scroll', () => {
+  document.querySelector('nav').classList.toggle('scrolled', window.scrollY > 8);
+});
+
+/* ============================================================
+   WALLET
+============================================================ */
+function shortAddr(a) {
+  return a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
+}
+
+async function connectWallet() {
+  if (walletAddr) {
+    walletAddr = null;
+    currentProvider = null;
+    const btn = document.getElementById('wallet-btn');
+    btn.textContent = 'Connect Wallet';
+    btn.className = '';
+    return;
+  }
+  if (!window.ethereum) {
+    showToast('❌', 'No wallet', 'Install MetaMask first.');
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts.length) return;
+    walletAddr = accounts[0];
+    currentProvider = window.ethereum;
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== ARC_CHAIN.chainId) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: ARC_CHAIN.chainId }],
+        });
+      } catch (e) {
+        if (e.code === 4902 || e.code === -32603) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [ARC_CHAIN],
+          });
+        }
+      }
+    }
+    const btn = document.getElementById('wallet-btn');
+    btn.innerHTML = `<div class="w-dot"></div>${shortAddr(walletAddr)}`;
+    btn.className = 'connected';
+    showToast('✅', 'Wallet connected', shortAddr(walletAddr));
+    window.ethereum.on('accountsChanged', a => {
+      if (!a.length) {
+        walletAddr = null;
+        btn.textContent = 'Connect Wallet';
+        btn.className = '';
+      } else {
+        walletAddr = a[0];
+        btn.innerHTML = `<div class="w-dot"></div>${shortAddr(walletAddr)}`;
+      }
+    });
+    window.ethereum.on('chainChanged', () => window.location.reload());
+  } catch (e) {
+    showToast('❌', 'Rejected', 'Connection cancelled.');
+  }
+}
+
+function useConnected() {
+  if (!walletAddr) {
+    connectWallet();
+    return;
+  }
+  document.getElementById('target-addr').value = walletAddr.slice(2);
+  onFormChange();
+  showToast('✓', 'Address filled', shortAddr(walletAddr));
+}
+
+/* ============================================================
+   FORM
+============================================================ */
+function selectChain(c) {
+  selectedChain = c;
+  document.querySelectorAll('.chain-chip').forEach(el => {
+    el.classList.toggle('selected', el.dataset.chain === c);
+  });
+  onFormChange();
+}
+
+function onFormChange() {
+  const floor = parseFloat(document.getElementById('floor-amt').value) || 0;
+  const refill = parseFloat(document.getElementById('refill-amt').value) || 0;
+  const cap = parseFloat(document.getElementById('cap-amt').value) || 0;
+  const target = document.getElementById('target-addr').value.trim();
+
+  document.getElementById('sum-when').textContent = `Target balance < $${floor.toFixed(2)}`;
+  document.getElementById('sum-pull').textContent = `${CHAIN_LABELS[selectedChain]} (source)`;
+  document.getElementById('sum-deliver').textContent = target
+    ? `Arc · 0x${target.slice(0, 6)}…${target.slice(-4)}`
+    : 'Arc · target wallet';
+  document.getElementById('sum-refill').textContent = `$${refill.toFixed(2)} per trigger`;
+  document.getElementById('sum-cap').textContent = `$${cap.toFixed(2)} / 24h`;
+
+  // Validate
+  const btn = document.getElementById('deploy-btn');
+  const valid = floor > 0 && refill > 0 && cap >= refill && target.length >= 4;
+  btn.disabled = !valid;
+  if (!valid) {
+    if (cap < refill) btn.textContent = 'Daily cap must be ≥ refill';
+    else if (!target) btn.textContent = 'Enter a target address';
+    else btn.textContent = 'Fill all fields';
+  } else {
+    btn.innerHTML = 'Sign &amp; Deploy Agent';
+  }
+}
+
+/* ============================================================
+   DEPLOY FLOW (dry-run simulation)
+============================================================ */
+let modalTimer = null;
+
+function deployAgent() {
+  const floor = parseFloat(document.getElementById('floor-amt').value);
+  const refill = parseFloat(document.getElementById('refill-amt').value);
+  const cap = parseFloat(document.getElementById('cap-amt').value);
+  const target = document.getElementById('target-addr').value.trim();
+
+  const modal = document.getElementById('sign-modal');
+  modal.classList.add('show');
+  document.querySelectorAll('.modal-step').forEach(el => {
+    el.classList.remove('active', 'done');
+  });
+
+  const steps = ['build', 'sign', 'register', 'watch'];
+  let i = 0;
+  const advance = () => {
+    if (i > 0) document.querySelector(`.modal-step[data-step="${i - 1}"]`).classList.add('done');
+    if (i < steps.length) {
+      document.querySelector(`.modal-step[data-step="${i}"]`).classList.add('active');
+      i++;
+      modalTimer = setTimeout(advance, 700 + Math.random() * 400);
+    } else {
+      finishDeploy({ floor, refill, cap, target });
+    }
+  };
+  advance();
+}
+
+function finishDeploy({ floor, refill, cap, target }) {
+  const agent = {
+    id: 'agent_' + Math.random().toString(36).slice(2, 9),
+    source: selectedChain,
+    targetChain: 'arc',
+    targetAddr: '0x' + target,
+    floor,
+    refill,
+    cap,
+    state: 'dryrun',
+    created: Date.now(),
+    expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+    totalRefilled: 0,
+  };
+  agents.push(agent);
+  localStorage.setItem('arcswap_agents', JSON.stringify(agents));
+
+  // Simulate first activity event
+  executions.unshift({
+    agentId: agent.id,
+    time: Date.now(),
+    type: 'deployed',
+    detail: `Watching ${CHAIN_LABELS.arc} target · floor $${floor}`,
+  });
+  localStorage.setItem('arcswap_execs', JSON.stringify(executions));
+
+  setTimeout(() => {
+    closeModal();
+    showToast('🤖', 'Agent deployed', `Watching ${CHAIN_LABELS.arc} target`);
+    renderAgents();
+    renderExecLog();
+    updateStats();
+
+    // After a short delay, simulate a refill trigger
+    setTimeout(() => simulateRefill(agent), 4000);
+  }, 600);
+}
+
+function closeModal() {
+  if (modalTimer) clearTimeout(modalTimer);
+  document.getElementById('sign-modal').classList.remove('show');
+}
+
+function simulateRefill(agent) {
+  const a = agents.find(x => x.id === agent.id);
+  if (!a) return;
+  a.totalRefilled += a.refill;
+  simulatedRefills += a.refill;
+  localStorage.setItem('arcswap_agents', JSON.stringify(agents));
+  localStorage.setItem('arcswap_sim_refills', String(simulatedRefills));
+
+  executions.unshift({
+    agentId: a.id,
+    time: Date.now(),
+    type: 'refill',
+    detail: `Refilled $${a.refill.toFixed(2)} from ${CHAIN_LABELS[a.source]} → Arc`,
+    amount: a.refill,
+  });
+  localStorage.setItem('arcswap_execs', JSON.stringify(executions));
+
+  renderAgents();
+  renderExecLog();
+  updateStats();
+  showToast('⟶', 'Simulated refill', `+$${a.refill.toFixed(2)} to target`);
+}
+
+/* ============================================================
+   RENDER
+============================================================ */
+function renderAgents() {
+  const list = document.getElementById('agents-list');
+  if (!agents.length) {
+    list.innerHTML = `<div class="agent-empty" id="agent-empty">
+      <div class="ae-ico">◇</div>
+      <div class="ae-h">No agents yet</div>
+      <div class="ae-s">Configure a rule on the left and click <strong>Deploy</strong>. It'll show up here.</div>
+    </div>`;
+    return;
+  }
+  list.innerHTML = agents
+    .map(a => {
+      const stateClass = a.state === 'paused' ? 'state-paused' : 'state-dryrun';
+      const stateLabel = a.state === 'paused' ? 'Paused' : 'Dry-run';
+      return `
+      <div class="agent-row">
+        <div class="agent-row-top">
+          <div class="agent-row-name">Auto-Replenish · ${shortAddr(a.targetAddr)}</div>
+          <div class="agent-row-state ${stateClass}">${stateLabel}</div>
+        </div>
+        <div class="agent-row-flow">
+          <span class="chain-tag">${CHAIN_LABELS[a.source]}</span>
+          <span class="arr">→</span>
+          <span>Gateway</span>
+          <span class="arr">→</span>
+          <span class="chain-tag">Arc</span>
+        </div>
+        <div class="agent-row-meta">
+          <div>
+            <div class="agent-meta-k">Floor</div>
+            <div class="agent-meta-v">$${a.floor.toFixed(2)}</div>
+          </div>
+          <div>
+            <div class="agent-meta-k">Refill</div>
+            <div class="agent-meta-v">$${a.refill.toFixed(2)}</div>
+          </div>
+          <div>
+            <div class="agent-meta-k">Refilled</div>
+            <div class="agent-meta-v" style="color:var(--arc1)">$${a.totalRefilled.toFixed(2)}</div>
+          </div>
+        </div>
+        <div class="agent-row-actions">
+          <button onclick="toggleAgent('${a.id}')">${a.state === 'paused' ? 'Resume' : 'Pause'}</button>
+          <button onclick="triggerRefill('${a.id}')">Test refill</button>
+          <button class="danger" onclick="revokeAgent('${a.id}')">Revoke</button>
+        </div>
+      </div>`;
+    })
+    .join('');
+}
+
+function renderExecLog() {
+  const wrap = document.getElementById('exec-log');
+  const rows = document.getElementById('exec-log-rows');
+  if (!executions.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  const recent = executions.slice(0, 6);
+  rows.innerHTML = recent
+    .map(e => {
+      const t = new Date(e.time);
+      const hh = String(t.getHours()).padStart(2, '0');
+      const mm = String(t.getMinutes()).padStart(2, '0');
+      const ss = String(t.getSeconds()).padStart(2, '0');
+      const amt = e.amount ? `<span class="er-amt">+$${e.amount.toFixed(2)}</span>` : '';
+      return `<div class="exec-row">
+        <div class="er-time">${hh}:${mm}:${ss}</div>
+        <div class="er-action">${e.detail}</div>
+        ${amt}
+      </div>`;
+    })
+    .join('');
+}
+
+function updateStats() {
+  document.getElementById('stat-agents').textContent = agents.length;
+  document.getElementById('stat-agents-sub').textContent = agents.length
+    ? `${agents.length} active · dry-run`
+    : 'No agents deployed yet';
+  document.getElementById('stat-refills').textContent = '$' + simulatedRefills.toFixed(2);
+}
+
+function toggleAgent(id) {
+  const a = agents.find(x => x.id === id);
+  if (!a) return;
+  a.state = a.state === 'paused' ? 'dryrun' : 'paused';
+  localStorage.setItem('arcswap_agents', JSON.stringify(agents));
+  renderAgents();
+  showToast(a.state === 'paused' ? '⏸' : '▶', a.state === 'paused' ? 'Paused' : 'Resumed', shortAddr(a.targetAddr));
+}
+
+function triggerRefill(id) {
+  const a = agents.find(x => x.id === id);
+  if (!a) return;
+  if (a.state === 'paused') {
+    showToast('⚠', 'Agent paused', 'Resume to refill.');
+    return;
+  }
+  simulateRefill(a);
+}
+
+function revokeAgent(id) {
+  if (!confirm('Revoke this agent? Its signature will be invalidated and it stops watching.')) return;
+  agents = agents.filter(x => x.id !== id);
+  executions.unshift({
+    agentId: id,
+    time: Date.now(),
+    type: 'revoked',
+    detail: `Agent revoked · signature invalidated`,
+  });
+  localStorage.setItem('arcswap_agents', JSON.stringify(agents));
+  localStorage.setItem('arcswap_execs', JSON.stringify(executions));
+  renderAgents();
+  renderExecLog();
+  updateStats();
+  showToast('🗑', 'Revoked', 'Agent removed.');
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+let toastTimer = null;
+function showToast(icon, msg, sub) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-sub').textContent = sub || '';
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+renderAgents();
+renderExecLog();
+updateStats();
+onFormChange();
+</script>
+</body>
+</html>

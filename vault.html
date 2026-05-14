@@ -60,6 +60,8 @@ nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bot
 .nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;text-decoration:none;border:none;background:none;cursor:pointer;font-family:var(--font)}
 .nav-tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
 .nav-tab.active{color:var(--text);background:rgba(255,255,255,.07)}
+.nav-tab.new-pill{position:relative}
+.nav-tab.new-pill::after{content:'NEW';position:absolute;top:-3px;right:-12px;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 5px;border-radius:6px}
 .nav-tab.faucet-tab{color:var(--muted);background:none;border:none}
 .nav-tab.faucet-tab:hover{color:var(--arc2);background:rgba(0,207,255,.06)}
 .nav-right{display:flex;align-items:center;gap:10px}
@@ -189,6 +191,7 @@ nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bot
   <div class="nav-tabs">
     <a class="nav-tab" href="/trade">Trade</a>
     <a class="nav-tab" href="/balance">Balance</a>
+    <a class="nav-tab new-pill" href="/agent">Agent</a>
     <a class="nav-tab" href="/token">Create Token</a>
     <a class="nav-tab" href="/pool">Pool</a>
     <button class="nav-tab active">Vault</button>
