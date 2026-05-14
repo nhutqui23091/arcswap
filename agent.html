@@ -269,42 +269,42 @@
       <div class="step">
         <div class="step-h">
           <div class="step-num">1</div>
-          <div class="step-label">Where to pull USDC from</div>
-          <div class="step-hint">pick one or more</div>
+          <div class="step-label">Pull USDC from your wallet on these chains</div>
+          <div class="step-hint" id="balances-hint">connect wallet to load balances</div>
         </div>
-        <p class="step-desc">Agent will pull funds from any of these chains when triggered. Pick the chains where your USDC actually lives.</p>
+        <p class="step-desc">Agent pulls USDC directly from <strong>your wallet</strong> via gasless EIP-3009 authorization — not from a pre-funded Unified Balance. Pick the chains where your USDC actually lives.</p>
         <div class="chain-grid" id="chain-grid">
           <div class="chain-chip selected" data-chain="base" onclick="toggleChain('base')">
             <div class="chain-chip-name">Base</div>
-            <div class="chain-chip-meta">Sepolia testnet</div>
+            <div class="chain-chip-meta" data-bal="base">— USDC</div>
           </div>
           <div class="chain-chip" data-chain="arc" onclick="toggleChain('arc')">
             <div class="chain-chip-name">Arc</div>
-            <div class="chain-chip-meta">Arc testnet</div>
+            <div class="chain-chip-meta" data-bal="arc">— USDC</div>
           </div>
           <div class="chain-chip" data-chain="sepolia" onclick="toggleChain('sepolia')">
             <div class="chain-chip-name">Ethereum</div>
-            <div class="chain-chip-meta">Sepolia testnet</div>
+            <div class="chain-chip-meta" data-bal="sepolia">— USDC</div>
           </div>
           <div class="chain-chip" data-chain="arbitrum" onclick="toggleChain('arbitrum')">
             <div class="chain-chip-name">Arbitrum</div>
-            <div class="chain-chip-meta">Sepolia testnet</div>
+            <div class="chain-chip-meta" data-bal="arbitrum">— USDC</div>
           </div>
           <div class="chain-chip" data-chain="optimism" onclick="toggleChain('optimism')">
             <div class="chain-chip-name">Optimism</div>
-            <div class="chain-chip-meta">Sepolia testnet</div>
+            <div class="chain-chip-meta" data-bal="optimism">— USDC</div>
           </div>
           <div class="chain-chip" data-chain="polygon" onclick="toggleChain('polygon')">
             <div class="chain-chip-name">Polygon</div>
-            <div class="chain-chip-meta">Amoy testnet</div>
+            <div class="chain-chip-meta" data-bal="polygon">— USDC</div>
           </div>
           <div class="chain-chip" data-chain="unichain" onclick="toggleChain('unichain')">
             <div class="chain-chip-name">Unichain</div>
-            <div class="chain-chip-meta">Sepolia testnet</div>
+            <div class="chain-chip-meta" data-bal="unichain">— USDC</div>
           </div>
           <div class="chain-chip" data-chain="fuji" onclick="toggleChain('fuji')">
             <div class="chain-chip-name">Avalanche</div>
-            <div class="chain-chip-meta">Fuji testnet</div>
+            <div class="chain-chip-meta" data-bal="fuji">— USDC</div>
           </div>
         </div>
       </div>
@@ -526,16 +526,84 @@
     arc: 'Arc Testnet',
   };
 
+  // Map the chip-id (used in our UI) → ARC.CHAINS canonical key. This lets us
+  // reuse the shared chain/token registry from arc-core.js without renaming
+  // everything on the UI side.
+  const CHIP_TO_ARC = {
+    base:     'baseSepolia',
+    arc:      'arc',
+    sepolia:  'sepolia',
+    arbitrum: 'arbitrumSepolia',
+    optimism: 'optimismSepolia',
+    polygon:  'polygonAmoy',
+    unichain: 'unichainSepolia',
+    fuji:     'avalancheFuji',
+  };
+
   const state = {
     mode: 'topup',                    // 'topup' | 'schedule'
     sources: new Set(['base']),       // multi-select
     targets: [''],                    // array of addresses (without 0x prefix is OK, normalized)
     dist: 'each',                     // 'each' | 'split' (schedule mode only)
+    balances: {},                     // chip-id → formatted string ("12.34" or "0")
   };
 
   let agents = JSON.parse(localStorage.getItem('arcswap_agents') || '[]');
   let executions = JSON.parse(localStorage.getItem('arcswap_execs') || '[]');
   let totalSent = parseFloat(localStorage.getItem('arcswap_total_sent') || '0');
+
+  /* ============================================================
+     BALANCE LOADING — fetch real USDC wallet balance per chain
+  ============================================================ */
+  function fmtUsdc(raw, decimals) {
+    if (raw === 0n) return '0';
+    // Convert BigInt → human readable with up to 2 decimals
+    const d = BigInt(decimals);
+    const whole = raw / (10n ** d);
+    const frac  = raw % (10n ** d);
+    if (frac === 0n) return whole.toString();
+    // Take 2 most significant decimal digits
+    const scaledFrac = frac * 100n / (10n ** d);
+    return `${whole}.${String(scaledFrac).padStart(2, '0')}`;
+  }
+
+  async function loadBalances() {
+    const addr = ARC.wallet.address;
+    const hint = document.getElementById('balances-hint');
+    if (!addr) {
+      hint.textContent = 'connect wallet to load balances';
+      document.querySelectorAll('.chain-chip-meta[data-bal]').forEach(el => {
+        el.textContent = '— USDC';
+      });
+      return;
+    }
+    hint.textContent = 'loading balances…';
+    const chipIds = Object.keys(CHIP_TO_ARC);
+    await Promise.all(chipIds.map(async chipId => {
+      const arcKey = CHIP_TO_ARC[chipId];
+      const tok = ARC.TOKENS[arcKey]?.USDC;
+      const el = document.querySelector(`.chain-chip-meta[data-bal="${chipId}"]`);
+      if (!tok || !el) return;
+      try {
+        const raw = await ARC.tokenBalance(arcKey, tok, addr);
+        const human = fmtUsdc(raw, tok.decimals);
+        state.balances[chipId] = human;
+        el.textContent = `$${human} USDC`;
+        el.style.color = raw > 0n ? 'var(--arc4)' : '';
+        // Grey out chip if zero (but still clickable — user might fund it later)
+        const chip = el.closest('.chain-chip');
+        if (chip) chip.style.opacity = raw > 0n ? '' : '0.55';
+      } catch (e) {
+        el.textContent = 'unavailable';
+      }
+    }));
+    hint.textContent = 'wallet balances · live';
+  }
+
+  // Load when wallet connects/changes
+  ARC.wallet.on(() => loadBalances());
+  // First load (in case auto-connect already happened during boot)
+  setTimeout(loadBalances, 100);
 
   /* ============================================================
      MODE / FORM
