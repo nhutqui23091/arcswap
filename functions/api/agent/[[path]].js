@@ -127,7 +127,7 @@ async function handleCreate(req, kv, env) {
   let body;
   try { body = await req.json(); } catch { return json(400, { error: 'bad_json' }); }
 
-  const { owner, mode, sources, targets, params, signature, expiresAt } = body || {};
+  const { owner, mode, sources, targets, params, signature, expiresAt, nextRun: bodyNextRun } = body || {};
 
   if (!isValidAddr(owner))          return json(400, { error: 'owner_required' });
   if (mode !== 'topup' && mode !== 'schedule')
@@ -172,7 +172,12 @@ async function handleCreate(req, kv, env) {
     expiresAt: expiresAt || (now + 30 * 24 * 60 * 60 * 1000),
     totalSent: 0,
     lastTrigger: null,
-    nextRun: computeNextRun(mode, params, now),
+    // Prefer the nextRun computed by the frontend (correct in user's
+    // local timezone). Fall back to backend computeNextRun if the
+    // frontend didn't send one — legacy clients or non-schedule modes.
+    nextRun: typeof bodyNextRun === 'number' || bodyNextRun === null
+      ? bodyNextRun
+      : computeNextRun(mode, params, now),
     circleWalletSetId: null,
     circleWallets: [], // [{source, walletId, address, blockchain}]
     provisioning: 'pending',
@@ -235,6 +240,27 @@ function computeNextRun(mode, params, fromTs) {
     if (cadence === 'monthly') base.setMonth(base.getMonth() + 1);
   }
   return base.getTime();
+}
+
+/**
+ * Given a previous `nextRun` (UTC millisecond timestamp) and a cadence,
+ * return the timestamp for the next firing. Uses plain UTC arithmetic on
+ * the existing nextRun so the time-of-day stays anchored to whatever
+ * timezone the user picked at deploy time — no need to know the user's
+ * tz on the backend.
+ *
+ *   advanceNextRun(prev, 'daily')   → prev + 1 calendar day, same HH:MM
+ *   advanceNextRun(prev, 'weekly')  → prev + 7 calendar days
+ *   advanceNextRun(prev, 'monthly') → prev + 1 calendar month
+ *   advanceNextRun(prev, 'once')    → null (one-time, done after fire)
+ */
+function advanceNextRun(prev, cadence) {
+  if (cadence === 'once' || !prev) return null;
+  const d = new Date(prev);
+  if (cadence === 'daily')   d.setUTCDate(d.getUTCDate() + 1);
+  if (cadence === 'weekly')  d.setUTCDate(d.getUTCDate() + 7);
+  if (cadence === 'monthly') d.setUTCMonth(d.getUTCMonth() + 1);
+  return d.getTime();
 }
 
 async function handleList(req, kv) {
@@ -421,7 +447,7 @@ async function handleRunNow(req, kv, env, id) {
 
     agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
     agent.lastTrigger = Date.now();
-    if (agent.mode === 'schedule') agent.nextRun = computeNextRun('schedule', agent.params, Date.now());
+    if (agent.mode === 'schedule') agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
     await putJSON(kv, `agent:${id}`, agent);
 
     return json(202, {
@@ -440,7 +466,7 @@ async function handleRunNow(req, kv, env, id) {
         : agent.params.sendAmount);
   agent.totalSent = (agent.totalSent || 0) + total;
   agent.lastTrigger = Date.now();
-  if (agent.mode === 'schedule') agent.nextRun = computeNextRun('schedule', agent.params, Date.now());
+  if (agent.mode === 'schedule') agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
   await putJSON(kv, `agent:${id}`, agent);
   const reason = !isCircleConfigured(env)
     ? 'Circle not configured'
@@ -543,7 +569,7 @@ async function handleCronTick(req, kv, env) {
         }
         agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
         agent.lastTrigger = now;
-        if (agent.mode === 'schedule') agent.nextRun = computeNextRun('schedule', agent.params, now);
+        if (agent.mode === 'schedule') agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
         await putJSON(kv, k.name, agent);
 
         summary.fired++;

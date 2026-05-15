@@ -1141,6 +1141,35 @@
       expiresAt,
     };
 
+    // For schedule mode, compute the FIRST nextRun timestamp here in the
+    // user's local browser timezone. Sending a millisecond UTC value lets
+    // the backend skip the timezone gymnastics (Cloudflare Workers run in
+    // UTC so any "HH:MM" string parsed there ends up wrong by the user's
+    // tz offset).
+    let nextRun = null;
+    if (state.mode === 'schedule') {
+      const [hh, mm] = (params.time || '00:00').split(':').map(Number);
+      const start = params.startDate
+        ? new Date(params.startDate + 'T00:00:00')   // local midnight
+        : new Date();
+      start.setHours(hh, mm, 0, 0);                  // local hh:mm
+      let next = start.getTime();
+      // If chosen slot is already in the past, advance to next slot.
+      if (next <= Date.now()) {
+        const d = new Date(next);
+        if (params.cadence === 'once') {
+          next = null;                                // past one-time = won't fire
+        } else if (params.cadence === 'daily') {
+          d.setDate(d.getDate() + 1);    next = d.getTime();
+        } else if (params.cadence === 'weekly') {
+          d.setDate(d.getDate() + 7);    next = d.getTime();
+        } else if (params.cadence === 'monthly') {
+          d.setMonth(d.getMonth() + 1);  next = d.getTime();
+        }
+      }
+      nextRun = next;
+    }
+
     openSignModal();
     setModalStep(0, 'active'); // Sign in wallet
 
@@ -1171,6 +1200,7 @@
           signature: sig,
           nonce,
           expiresAt: rule.expiresAt,
+          nextRun, // pre-computed in user's local timezone; null for non-schedule or past one-time
         },
       });
       if (res && res._fallback) {
