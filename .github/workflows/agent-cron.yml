@@ -53,12 +53,19 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           # NOTE: do NOT use -f here. With -f, curl returns exit 22 on HTTP
-          # 4xx/5xx and swallows the response body — we lose the actual error
-          # message. Use -sS instead, capture both body and status, then
-          # decide success manually.
+          # 4xx/5xx and swallows the response body.
+          #
+          # User-Agent + Accept headers: Cloudflare's bot challenge is more
+          # likely to serve a JS interstitial (HTTP 403 with challenge HTML)
+          # if the request looks like raw curl. A real-looking UA usually
+          # passes through. If 403 persists, add a WAF Skip rule for this
+          # path in Cloudflare → Security → WAF → Custom Rules.
           response=$(curl -sS -X POST \
             https://arcswap.net/api/agent/cron-tick \
             -H "Authorization: Bearer $CRON_SECRET" \
+            -H "User-Agent: arcswap-agent-cron/1.0 (+https://github.com/nhutqui23091/arcswap)" \
+            -H "Accept: application/json" \
+            -H "Cache-Control: no-cache" \
             -w "\n__HTTP_STATUS__%{http_code}")
 
           http_status=$(echo "$response" | grep -o "__HTTP_STATUS__[0-9]*" | sed 's/__HTTP_STATUS__//')
