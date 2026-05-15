@@ -191,8 +191,20 @@ export async function circleFetch(env, path, opts = {}) {
   let json;
   try { json = text ? JSON.parse(text) : null; } catch { json = { raw: text }; }
   if (!r.ok) {
-    const msg = json?.message || json?.error?.message || text;
-    const err = new Error(`Circle ${path} → HTTP ${r.status}: ${String(msg).slice(0, 200)}`);
+    // Circle's error responses have two flavors:
+    //   { code: N, message: "API parameter invalid", errors: [{message, location, constraint, error}, …] }
+    //   { code: N, message: "human-readable" }
+    // The `errors` array has the real details — surface them.
+    let msg = json?.message || json?.error?.message || text;
+    if (Array.isArray(json?.errors) && json.errors.length) {
+      const details = json.errors.map(e => {
+        const loc = e.location ? `[${e.location}]` : '';
+        const txt = e.message || e.error || JSON.stringify(e);
+        return `${loc} ${txt}`.trim();
+      }).join(' · ');
+      msg = `${msg} :: ${details}`;
+    }
+    const err = new Error(`Circle ${path} → HTTP ${r.status}: ${String(msg).slice(0, 500)}`);
     err.status = r.status;
     err.body = json;
     throw err;
@@ -319,14 +331,16 @@ export async function transferUSDC(env, params) {
   if (!amount)              throw new Error('amount required');
 
   const entitySecretCiphertext = await entityCiphertext(env);
+  // Circle's API expects all-lowercase token addresses for EVM chains.
+  // EIP-55 checksummed format causes "API parameter invalid" responses.
   const res = await circleFetch(env, '/v1/w3s/developer/transactions/transfer', {
     method: 'POST',
     body: {
       idempotencyKey: crypto.randomUUID(),
       entitySecretCiphertext,
       walletId,
-      tokenAddress,
-      destinationAddress,
+      tokenAddress: tokenAddress.toLowerCase(),
+      destinationAddress: destinationAddress.toLowerCase(),
       amounts: [String(amount)],
       feeLevel: 'MEDIUM',
     },
@@ -381,6 +395,10 @@ export async function executeRefill(env, agent) {
 
   const txs = [];
 
+  // wallet.source is chip-id ('base'). Map to ARC canonical key
+  // ('baseSepolia') so USDC_ADDRESS lookup works.
+  const arcKey = CHIP_TO_ARC[wallet.source] || wallet.source;
+
   if (agent.mode === 'topup') {
     // Refill the FIRST target wallet (proper version: check each target's
     // balance and refill only those below floor)
@@ -389,7 +407,7 @@ export async function executeRefill(env, agent) {
     try {
       const tx = await transferUSDC(env, {
         walletId: wallet.walletId,
-        sourceChain: wallet.source === 'base' ? 'baseSepolia' : wallet.source,
+        sourceChain: arcKey,
         destinationAddress: target,
         amount,
       });
@@ -402,7 +420,6 @@ export async function executeRefill(env, agent) {
     const perTarget = p.dist === 'split'
       ? Number(p.sendAmount || 0) / agent.targets.length
       : Number(p.sendAmount || 0);
-    const arcKey = CHIP_TO_ARC[wallet.source] || wallet.source;
 
     for (const target of agent.targets) {
       try {
