@@ -117,3 +117,21 @@ export function usdcRawToHuman(raw) {
   if (raw == null) return null;
   return Number(raw) / 1e6;
 }
+
+/**
+ * Whether this chain has both (a) an RPC endpoint we can hit, and (b) a
+ * known USDC contract address. Used to distinguish:
+ *
+ *   - "We have config but RPC is flaky" → caller should fire as a safe
+ *     fallback so an outage doesn't strand users (existing behavior).
+ *   - "We don't even know how to talk to this chain" → caller should
+ *     SKIP firing entirely. Firing blind on an unsupported chain leads
+ *     to infinite loops, e.g. Arc target where Circle Programmable
+ *     Wallets can't actually deliver USDC on Arc — every cron tick
+ *     sees "Arc balance still $0" and re-fires until daily cap.
+ */
+export function isChainConfigured(env, arcChainKey) {
+  const rpcUrl = getRpcUrl(env, arcChainKey);
+  const usdc   = USDC_ADDRESS[arcChainKey];
+  return !!(rpcUrl && usdc);
+}

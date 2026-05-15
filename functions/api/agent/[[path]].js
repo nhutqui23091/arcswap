@@ -41,7 +41,7 @@ import {
   submitPermit,
   CHIP_TO_ARC,
 } from './_circle.js';
-import { getUSDCBalance } from './_balance.js';
+import { getUSDCBalance, isChainConfigured } from './_balance.js';
 
 const HEADERS_JSON = { 'Content-Type': 'application/json' };
 
@@ -680,12 +680,26 @@ async function topupTargetBelowFloor(env, agent) {
   const target = agent.targets[0];
   const chip   = (agent.targetChains || [])[0] || agent.sources?.[0];
   const arcKey = CHIP_TO_ARC[chip] || chip;
-  if (!arcKey) return true;            // unknown chain — fire to be safe
+  if (!arcKey) {
+    console.warn(`[cron] ${agent.id} no resolved chain (chip=${chip}) — skipping`);
+    return false;                      // unknown chain — SKIP, don't loop-fire
+  }
+
+  // If this chain has no RPC/USDC config at all, we can't even read the
+  // balance — and crucially, executeRefill may not be able to deliver
+  // USDC there either (e.g. Arc target: Circle PW has no Arc wallet, so
+  // transfer falls back to source chain and never reaches Arc). Firing
+  // anyway would cause an infinite loop every cron tick. SKIP instead.
+  if (!isChainConfigured(env, arcKey)) {
+    console.warn(`[cron] ${agent.id} target chain "${arcKey}" not configured for balance check — skipping (revoke or migrate this agent to a supported chain)`);
+    return false;
+  }
 
   const raw = await getUSDCBalance(env, arcKey, target);
   if (raw === null) {
-    // RPC error / timeout. Fire anyway — better to over-refill once
-    // during an RPC blip than to leave a wallet stranded.
+    // Chain IS configured but RPC is currently flaky (network/timeout).
+    // Fire anyway — better to over-refill once during an RPC blip than
+    // to leave a wallet stranded.
     console.warn(`[cron] balance check failed for ${target.slice(0,10)} on ${arcKey} — firing as fallback`);
     return true;
   }
