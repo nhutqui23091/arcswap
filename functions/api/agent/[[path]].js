@@ -127,7 +127,7 @@ async function handleCreate(req, kv, env) {
   let body;
   try { body = await req.json(); } catch { return json(400, { error: 'bad_json' }); }
 
-  const { owner, mode, sources, targets, params, signature, expiresAt, nextRun: bodyNextRun } = body || {};
+  const { owner, mode, sources, targets, targetChains, params, signature, expiresAt, nextRun: bodyNextRun } = body || {};
 
   if (!isValidAddr(owner))          return json(400, { error: 'owner_required' });
   if (mode !== 'topup' && mode !== 'schedule')
@@ -140,6 +140,21 @@ async function handleCreate(req, kv, env) {
                                     return json(400, { error: 'params_required' });
   if (!verifySignature(owner, signature))
                                     return json(400, { error: 'signature_invalid' });
+
+  // targetChains is a parallel array — same length as targets — naming the
+  // destination chain for each one. Optional for back-compat with older
+  // clients; we default to sources[0] for any missing entry, which mirrors
+  // the previous "send on first source chain" behavior.
+  let resolvedTargetChains;
+  if (Array.isArray(targetChains) && targetChains.length === targets.length) {
+    // Each entry must be one of the agent's declared source chains —
+    // otherwise we have no Circle wallet / permit to route through.
+    const badIdx = targetChains.findIndex(c => !sources.includes(c));
+    if (badIdx >= 0) return json(400, { error: 'target_chain_not_in_sources', index: badIdx });
+    resolvedTargetChains = targetChains;
+  } else {
+    resolvedTargetChains = targets.map(() => sources[0]);
+  }
 
   // Validate mode-specific params
   if (mode === 'topup') {
@@ -165,6 +180,7 @@ async function handleCreate(req, kv, env) {
     mode,
     sources,
     targets: targets.map(lower),
+    targetChains: resolvedTargetChains,
     params,
     signature,
     state: 'active',

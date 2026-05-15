@@ -482,16 +482,19 @@ export async function getWalletBalance(env, walletId) {
 /**
  * Execute one refill / scheduled-send tick for an agent.
  *
- * Strategy (MVP simplification):
- *  - Pick the FIRST circle wallet attached to the agent.
- *  - For top-up mode: transfer `refillAmount` to first target.
- *  - For schedule mode: for each target, transfer `sendAmount` (if dist=each)
- *    or `sendAmount / N` (if dist=split).
+ * Strategy:
+ *  - For each target, route via the Circle wallet on the target's destination
+ *    chain (agent.targetChains[i]). This gives users per-target chain choice.
+ *  - If a target has no chain field (older agent records pre-targetChains), or
+ *    the chosen chain has no provisioned wallet, fall back to the first
+ *    available Circle wallet so old agents keep working.
+ *  - If the wallet for that chain has a submitted EIP-2612 permit, pull USDC
+ *    from the user's external wallet via transferFrom() (Phase 2). Otherwise
+ *    transfer FROM the agent's own funded SCA wallet (Phase 1).
  *
- * NOTE: This is "first working slice". Real version should:
- *  - Pick the source wallet with sufficient balance, lowest gas
- *  - For top-up: only refill targets actually below the floor (poll balance first)
- *  - For multi-chain destinations: use CCTP V2 burn → mint instead of direct transfer
+ * NOTE: We still don't bridge cross-chain — target's chain must match a
+ * source chain the user authorized. Cross-chain via CCTP V2 is a future
+ * upgrade.
  *
  * @returns { ok, txs: [{ source, target, amount, circleTxId, error? }] }
  */
@@ -499,76 +502,73 @@ export async function executeRefill(env, agent) {
   if (!agent.circleWallets?.length) {
     return { ok: false, error: 'No Circle wallets provisioned for this agent', txs: [] };
   }
-  const wallet = agent.circleWallets[0]; // simplistic — just use first
   const p = agent.params || {};
-
   const txs = [];
 
-  // wallet.source is chip-id ('base'). Map to ARC canonical key
-  // ('baseSepolia') so USDC_ADDRESS lookup works.
-  const arcKey = CHIP_TO_ARC[wallet.source] || wallet.source;
+  // Build a map: chip-id ('base') → wallet, so we can pick a wallet by the
+  // target's chain. Also keeps the first wallet as a generic fallback.
+  const walletByChip = {};
+  for (const w of agent.circleWallets) {
+    if (!walletByChip[w.source]) walletByChip[w.source] = w;
+  }
+  const fallbackWallet = agent.circleWallets[0];
 
-  // Phase 2: if agent has a submitted permit for this chain, pull from
-  // user's wallet directly via transferFrom. Otherwise fall back to Phase 1
-  // (transfer FROM the agent's own funded SCA wallet).
-  const hasPermit = !!(agent.permits || []).find(
-    pm => pm.sourceChain === arcKey && pm.state === 'submitted',
-  );
+  /** Resolve which Circle wallet should handle a target at index `i`. */
+  function pickWalletForTarget(i) {
+    const chip = (agent.targetChains || [])[i];
+    return (chip && walletByChip[chip]) || fallbackWallet;
+  }
 
-  async function moveFunds(target, amount) {
+  /** Move USDC from a source wallet/permit to `target`. */
+  async function moveFunds(wallet, target, amount) {
+    const arcKey = CHIP_TO_ARC[wallet.source] || wallet.source;
+    const hasPermit = !!(agent.permits || []).find(
+      pm => pm.sourceChain === arcKey && pm.state === 'submitted',
+    );
     if (hasPermit) {
-      return await transferFromUser(env, {
+      const tx = await transferFromUser(env, {
         wallet,
         sourceChain: arcKey,
         owner: agent.owner,
         target,
         amount,
       });
+      return { tx, flow: 'permit', source: wallet.source };
     }
-    return await transferUSDC(env, {
+    const tx = await transferUSDC(env, {
       walletId: wallet.walletId,
       sourceChain: arcKey,
       blockchain: wallet.blockchain,
       destinationAddress: target,
       amount,
     });
+    return { tx, flow: 'wallet', source: wallet.source };
   }
 
   if (agent.mode === 'topup') {
-    // Refill the FIRST target wallet (proper version: check each target's
-    // balance and refill only those below floor)
+    // Refill the FIRST target wallet on its chosen chain. (Proper version:
+    // poll balance of each target and refill only those below floor.)
     const target = agent.targets[0];
+    const wallet = pickWalletForTarget(0);
     const amount = String(p.refillAmount || 0);
     try {
-      const tx = await moveFunds(target, amount);
-      txs.push({
-        source: wallet.source,
-        target,
-        amount,
-        circleTxId: tx.id,
-        state: tx.state,
-        flow: hasPermit ? 'permit' : 'wallet',
-      });
+      const { tx, flow, source } = await moveFunds(wallet, target, amount);
+      txs.push({ source, target, amount, circleTxId: tx.id, state: tx.state, flow });
     } catch (e) {
       txs.push({ source: wallet.source, target, amount, error: e.message });
     }
   } else {
-    // schedule mode: send to each target
+    // schedule mode: one transfer per target, on its chosen destination chain
     const perTarget = p.dist === 'split'
       ? Number(p.sendAmount || 0) / agent.targets.length
       : Number(p.sendAmount || 0);
 
-    for (const target of agent.targets) {
+    for (let i = 0; i < agent.targets.length; i++) {
+      const target = agent.targets[i];
+      const wallet = pickWalletForTarget(i);
       try {
-        const tx = await moveFunds(target, perTarget.toFixed(6));
-        txs.push({
-          source: wallet.source,
-          target,
-          amount: perTarget.toFixed(6),
-          circleTxId: tx.id,
-          state: tx.state,
-          flow: hasPermit ? 'permit' : 'wallet',
-        });
+        const { tx, flow, source } = await moveFunds(wallet, target, perTarget.toFixed(6));
+        txs.push({ source, target, amount: perTarget.toFixed(6), circleTxId: tx.id, state: tx.state, flow });
       } catch (e) {
         txs.push({ source: wallet.source, target, error: e.message });
       }

@@ -95,6 +95,40 @@ select option:checked{background:#1a2c4a;color:#fff}
   background-repeat:no-repeat;background-position:right 4px center;
 }
 
+/* Custom time picker — 3 inline selects (HH | MM | AM/PM) styled to
+   look like one unified control. Locale-independent: we control the
+   AM/PM labels in English, so no more "CH/SA" Vietnamese markers
+   appearing for users on a Vietnamese OS regardless of browser. */
+.time-picker{display:flex;align-items:center}
+.time-sel{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  color:var(--text);font-family:var(--font);font-weight:700;
+  font-size:14px;font-variant-numeric:tabular-nums;
+  padding:6px 8px;border-radius:8px;cursor:pointer;outline:none;
+  text-align:center;text-align-last:center;
+  transition:border-color .15s,background .15s;
+}
+.time-sel:hover{border-color:var(--border2);background:rgba(255,255,255,.06)}
+.time-sel:focus{border-color:rgba(77,214,219,.5);background:rgba(77,214,219,.06)}
+.time-sel-ampm{margin-left:6px;letter-spacing:.04em;min-width:54px}
+.time-colon{color:var(--muted);font-weight:700;font-size:14px;padding:0 2px;user-select:none}
+
+/* Per-target chain selector — sits next to the address input. Matches
+   .select-styled but kept compact so the row stays one line. */
+.target-chain-sel{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  color:var(--text);font-size:12px;font-weight:600;font-family:var(--font);
+  padding:8px 26px 8px 10px;border-radius:9px;cursor:pointer;outline:none;
+  flex-shrink:0;min-width:96px;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%238CA0BD' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;
+  transition:border-color .15s,background-color .15s;
+}
+.target-chain-sel:hover{border-color:var(--border2)}
+.target-chain-sel:focus{border-color:rgba(77,214,219,.5)}
+
 /* LABELED FIELD GROUP */
 .lbl-field{margin-bottom:14px}
 .lbl-field-label{font-size:11.5px;font-family:var(--mono);color:var(--text);letter-spacing:.04em;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
@@ -327,7 +361,7 @@ select option:checked{background:#1a2c4a;color:#fff}
           <div class="step-label">Who receives USDC</div>
           <div class="step-hint">add one or more wallets</div>
         </div>
-        <p class="step-desc">All target wallets receive USDC on <strong>Arc</strong>. Use your connected address or paste any other.</p>
+        <p class="step-desc">Each wallet receives USDC on whichever chain you pick (limited to chains you authorized as a source above). Use your connected address or paste any other.</p>
         <div id="targets-list">
           <!-- target rows injected by JS -->
         </div>
@@ -410,8 +444,21 @@ select option:checked{background:#1a2c4a;color:#fff}
             </div>
             <div class="lbl-field" style="margin-bottom:0">
               <div class="lbl-field-label">At time <span id="sched-time-tz" style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0">(your local time)</span></div>
-              <div class="field" style="padding:10px 14px">
-                <input class="field-input" id="sched-time" type="time" value="19:00" lang="en-US" step="60" oninput="updateSummary()" style="font-size:14px;font-variant-numeric:tabular-nums"/>
+              <!-- Custom 3-select time picker. Native <input type="time"> renders
+                   AM/PM markers in the OS locale (e.g. "CH/SA" in Vietnamese)
+                   and Chrome ignores `lang` reliably enough across platforms,
+                   so we build our own with English AM/PM. The hidden #sched-time
+                   keeps the value in 24h "HH:MM" so the rest of the page stays
+                   the same. -->
+              <div class="field time-picker" style="padding:8px 12px;gap:6px">
+                <select id="sched-hour" class="time-sel" onchange="updateSchedTime()" aria-label="Hour"></select>
+                <span class="time-colon">:</span>
+                <select id="sched-min" class="time-sel" onchange="updateSchedTime()" aria-label="Minute"></select>
+                <select id="sched-ampm" class="time-sel time-sel-ampm" onchange="updateSchedTime()" aria-label="AM or PM">
+                  <option value="AM">AM</option>
+                  <option value="PM" selected>PM</option>
+                </select>
+                <input type="hidden" id="sched-time" value="19:00"/>
               </div>
             </div>
           </div>
@@ -554,6 +601,7 @@ select option:checked{background:#1a2c4a;color:#fff}
     mode: 'topup',                    // 'topup' | 'schedule'
     sources: new Set(['base']),       // multi-select
     targets: [''],                    // array of addresses (without 0x prefix is OK, normalized)
+    targetChains: ['base'],           // parallel array — each target's destination chain
     dist: 'each',                     // 'each' | 'split' (schedule mode only)
     balances: {},                     // chip-id → formatted string ("12.34" or "0")
   };
@@ -903,18 +951,30 @@ select option:checked{background:#1a2c4a;color:#fff}
   //   { id, owner, mode, sources, targets, params, signature, state, created,
   //     expiresAt, totalSent, lastTrigger, nextRun }
   function normalizeAgent(raw) {
-    if (raw.params) return raw; // already canonical (from API)
+    // Backfill targetChains for older agents that predate per-target chain
+    // selection. Default each target to the first source the user authorized
+    // — same chain the backend used to send on before this feature.
+    const ensureChains = (a) => {
+      if (Array.isArray(a.targetChains) && a.targetChains.length === a.targets?.length) {
+        return a;
+      }
+      const fallback = (a.sources && a.sources[0]) || 'base';
+      a.targetChains = (a.targets || []).map(() => fallback);
+      return a;
+    };
+    if (raw.params) return ensureChains(raw); // already canonical (from API)
     // Legacy local shape with flat fields
     const params = raw.mode === 'topup'
       ? { floor: raw.floor, refillAmount: raw.refillAmount, dailyCap: raw.dailyCap }
       : { sendAmount: raw.sendAmount, cadence: raw.cadence, time: raw.time,
           startDate: raw.startDate, dist: raw.dist };
-    return {
+    return ensureChains({
       id: raw.id,
       owner: raw.owner || (ARC.wallet.address || '').toLowerCase(),
       mode: raw.mode,
       sources: raw.sources,
       targets: raw.targets,
+      targetChains: raw.targetChains,
       params,
       signature: raw.signature || '0x0',
       state: raw.state || 'active',
@@ -923,7 +983,7 @@ select option:checked{background:#1a2c4a;color:#fff}
       totalSent: raw.totalSent || 0,
       lastTrigger: raw.lastTrigger || null,
       nextRun: raw.nextRun || null,
-    };
+    });
   }
 
   function saveLocalAgents() {
@@ -958,6 +1018,14 @@ select option:checked{background:#1a2c4a;color:#fff}
     document.querySelectorAll('.chain-chip').forEach(el => {
       el.classList.toggle('selected', state.sources.has(el.dataset.chain));
     });
+    // Snap any orphaned target chains to the first remaining source. Otherwise
+    // the per-target dropdown would point at a chain we no longer have a
+    // Circle wallet / permit for.
+    const firstSource = Array.from(state.sources)[0];
+    state.targetChains = state.targetChains.map(tc =>
+      state.sources.has(tc) ? tc : firstSource
+    );
+    renderTargets();
     updateSummary();
   }
   window.toggleChain = toggleChain;
@@ -976,21 +1044,37 @@ select option:checked{background:#1a2c4a;color:#fff}
 
   /* ============================================================
      TARGET WALLETS (dynamic rows)
+
+     Each row = one (address, chain) pair. The chain dropdown is limited
+     to currently-selected source chains because the backend can only
+     route a target to a chain where we have a Circle wallet + permit.
   ============================================================ */
   function renderTargets() {
     const list = document.getElementById('targets-list');
-    list.innerHTML = state.targets.map((addr, i) => `
+    const chainOpts = Array.from(state.sources)
+      .map(s => `<option value="${s}">${CHAIN_LABELS[s] || s}</option>`)
+      .join('');
+    list.innerHTML = state.targets.map((addr, i) => {
+      const tc = state.targetChains[i] || Array.from(state.sources)[0];
+      // Selected attribute on the chosen option so the dropdown reflects state
+      const opts = Array.from(state.sources).map(s =>
+        `<option value="${s}"${s === tc ? ' selected' : ''}>${CHAIN_LABELS[s] || s}</option>`
+      ).join('');
+      return `
       <div class="target-row">
         <div class="field">
           <span class="field-prefix">0x</span>
           <input class="field-input" type="text" placeholder="paste an address" value="${escapeHtml(addr)}" oninput="updateTarget(${i}, this.value)"/>
           <button class="target-mini" onclick="useMyAddress(${i})">USE MINE</button>
         </div>
+        <select class="target-chain-sel" onchange="updateTargetChain(${i}, this.value)" title="Chain this wallet receives USDC on">
+          ${opts}
+        </select>
         ${state.targets.length > 1
           ? `<button class="target-remove" title="Remove" onclick="removeTarget(${i})">×</button>`
           : ''}
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   function escapeHtml(s) {
@@ -999,6 +1083,8 @@ select option:checked{background:#1a2c4a;color:#fff}
 
   function addTargetRow(addr) {
     state.targets.push(addr || '');
+    // New row defaults to the first selected source chain
+    state.targetChains.push(Array.from(state.sources)[0]);
     renderTargets();
     updateSummary();
   }
@@ -1006,7 +1092,8 @@ select option:checked{background:#1a2c4a;color:#fff}
 
   function removeTarget(i) {
     state.targets.splice(i, 1);
-    if (!state.targets.length) state.targets = [''];
+    state.targetChains.splice(i, 1);
+    if (!state.targets.length) { state.targets = ['']; state.targetChains = [Array.from(state.sources)[0]]; }
     renderTargets();
     updateSummary();
   }
@@ -1019,6 +1106,14 @@ select option:checked{background:#1a2c4a;color:#fff}
     updateSummary();
   }
   window.updateTarget = updateTarget;
+
+  /** Per-target chain selection. Updates the parallel array and re-renders
+   *  the summary so the user sees the destination chain reflected immediately. */
+  function updateTargetChain(i, chain) {
+    state.targetChains[i] = chain;
+    updateSummary();
+  }
+  window.updateTargetChain = updateTargetChain;
 
   function useMyAddress(i) {
     const addr = ARC.wallet.address;
@@ -1063,8 +1158,18 @@ select option:checked{background:#1a2c4a;color:#fff}
   function fmtTargets() {
     const valid = getValidTargets();
     if (!valid.length) return 'no valid wallet yet';
-    if (valid.length === 1) return shortFmt(valid[0]);
-    return `${valid.length} wallets`;
+    // Tally chains used by valid targets so the summary can say
+    // "0xab…cd → Base" or "3 wallets → Base, Sepolia".
+    const chains = new Set();
+    state.targets.forEach((t, i) => {
+      const norm = String(t || '').trim().replace(/^0x/i, '');
+      if (/^[a-fA-F0-9]{40}$/.test(norm)) {
+        chains.add(state.targetChains[i] || Array.from(state.sources)[0]);
+      }
+    });
+    const chainList = Array.from(chains).map(c => CHAIN_LABELS[c] || c).join(', ');
+    if (valid.length === 1) return `${shortFmt(valid[0])} → ${chainList}`;
+    return `${valid.length} wallets → ${chainList}`;
   }
 
   function shortFmt(hex) {
@@ -1187,10 +1292,21 @@ select option:checked{background:#1a2c4a;color:#fff}
           startDate:  document.getElementById('sched-start').value || null,
           dist:       state.dist,
         };
+    // Collect the chain for each *valid* target so the backend can route
+    // per-target. We re-walk state.targets so the indices stay aligned with
+    // state.targetChains, then drop the invalid rows alongside.
+    const firstSource = Array.from(state.sources)[0];
+    const targetsWithChains = state.targets
+      .map((addr, i) => ({
+        address: String(addr || '').trim().replace(/^0x/i, ''),
+        chain:   state.targetChains[i] || firstSource,
+      }))
+      .filter(x => /^[a-fA-F0-9]{40}$/.test(x.address));
     const rule = {
-      mode:      state.mode,
-      sources:   Array.from(state.sources),
-      targets:   validTargets.map(t => '0x' + t),
+      mode:         state.mode,
+      sources:      Array.from(state.sources),
+      targets:      targetsWithChains.map(x => '0x' + x.address),
+      targetChains: targetsWithChains.map(x => x.chain),
       params,
       expiresAt,
     };
@@ -1250,6 +1366,7 @@ select option:checked{background:#1a2c4a;color:#fff}
           mode: rule.mode,
           sources: rule.sources,
           targets: rule.targets,
+          targetChains: rule.targetChains,  // parallel array — per-target destination chain
           params: rule.params,
           signature: sig,
           nonce,
@@ -1265,6 +1382,7 @@ select option:checked{background:#1a2c4a;color:#fff}
           mode: rule.mode,
           sources: rule.sources,
           targets: rule.targets.map(t => t.toLowerCase()),
+          targetChains: rule.targetChains,
           params: rule.params,
           signature: sig,
           state: 'active',
@@ -1498,9 +1616,21 @@ select option:checked{background:#1a2c4a;color:#fff}
       const stateLabel = a.state === 'paused' ? 'Paused' : 'Active';
       const title = a.mode === 'topup' ? 'Auto Top-Up' : 'Scheduled Send';
       const sourcesHtml = a.sources.map(s => `<span class="chain-tag">${CHAIN_LABELS[s] || s}</span>`).join('<span class="arr">·</span>');
+      // Build the targets line. We append the destination chain for each
+      // target so the user sees where USDC actually lands ("0xAB…CD on Base").
+      // The chain pill uses a subtle teal background so it visually echoes
+      // the source chips at the top of the form.
+      const tcArr = a.targetChains || [];
+      const targetWithChain = (addr, idx) => {
+        const c = tcArr[idx] || (a.sources && a.sources[0]) || '';
+        const chainPill = c
+          ? `<span style="margin-left:6px;padding:1px 6px;border-radius:5px;background:rgba(77,214,219,.10);border:1px solid rgba(77,214,219,.28);color:var(--arc1);font-size:10px;font-family:var(--mono);font-weight:600;letter-spacing:.02em">${CHAIN_LABELS[c] || c}</span>`
+          : '';
+        return `${ARC.shortAddr(addr)}${chainPill}`;
+      };
       const targetsHtml = a.targets.length === 1
-        ? ARC.shortAddr(a.targets[0])
-        : `${a.targets.length} wallets · ${a.targets.map(t => ARC.shortAddr(t)).slice(0, 2).join(', ')}${a.targets.length > 2 ? '…' : ''}`;
+        ? targetWithChain(a.targets[0], 0)
+        : `${a.targets.length} wallets · ${a.targets.slice(0, 2).map((t, i) => targetWithChain(t, i)).join(', ')}${a.targets.length > 2 ? '…' : ''}`;
 
       let metaHtml;
       if (a.mode === 'topup') {
@@ -1566,6 +1696,13 @@ select option:checked{background:#1a2c4a;color:#fff}
           </div>`;
       }
 
+      // Destination chain summary — show unique chains across all targets.
+      // Was previously hard-coded to "Arc", which was misleading because the
+      // backend actually sends on each target's chain (which is now picked
+      // per-target in the form).
+      const destChains = Array.from(new Set(tcArr.length ? tcArr : a.sources));
+      const destHtml = destChains.map(c => `<span class="chain-tag">${CHAIN_LABELS[c] || c}</span>`).join('<span class="arr">·</span>');
+
       return `
         <div class="agent-row">
           <div class="agent-row-top">
@@ -1575,9 +1712,7 @@ select option:checked{background:#1a2c4a;color:#fff}
           <div class="agent-row-flow">
             ${sourcesHtml}
             <span class="arr">→</span>
-            <span>Gateway</span>
-            <span class="arr">→</span>
-            <span class="chain-tag">Arc</span>
+            ${destHtml}
           </div>
           <div class="agent-row-targets">→ ${targetsHtml}</div>
           <div class="agent-row-meta">${metaHtml}</div>
@@ -1644,6 +1779,54 @@ select option:checked{background:#1a2c4a;color:#fff}
       document.getElementById('stat-last-sub').textContent = 'Nothing yet';
     }
   }
+
+  /* ============================================================
+     CUSTOM TIME PICKER — three <select>s (hour, minute, AM/PM) feeding
+     a hidden #sched-time that holds canonical 24h "HH:MM". Built this
+     because Chrome on Vietnamese Windows ignores `lang="en-US"` and
+     renders the native time picker's AM/PM column as "CH/SA", which
+     confuses users (and international users).
+  ============================================================ */
+  function populateTimePicker() {
+    const hSel = document.getElementById('sched-hour');
+    const mSel = document.getElementById('sched-min');
+    let hOpts = '';
+    for (let i = 1; i <= 12; i++) {
+      hOpts += `<option value="${i}">${String(i).padStart(2,'0')}</option>`;
+    }
+    hSel.innerHTML = hOpts;
+    let mOpts = '';
+    for (let i = 0; i < 60; i++) {
+      mOpts += `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`;
+    }
+    mSel.innerHTML = mOpts;
+  }
+  /** Read the 3 selects and write canonical 24h "HH:MM" into #sched-time. */
+  function updateSchedTime() {
+    let h = parseInt(document.getElementById('sched-hour').value, 10);
+    const m = document.getElementById('sched-min').value;
+    const ampm = document.getElementById('sched-ampm').value;
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    document.getElementById('sched-time').value =
+      `${String(h).padStart(2,'0')}:${m}`;
+    updateSummary();
+  }
+  window.updateSchedTime = updateSchedTime;
+  /** Reverse of updateSchedTime — given "HH:MM" 24h, set the 3 selects.
+   *  Used by INIT to honor the default value="19:00" on #sched-time. */
+  function setTimePicker(hhmm) {
+    const [h24, m] = String(hhmm).split(':');
+    let h = parseInt(h24, 10) || 0;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    document.getElementById('sched-hour').value = String(h);
+    document.getElementById('sched-min').value = String(m || '00').padStart(2,'0');
+    document.getElementById('sched-ampm').value = ampm;
+  }
+
+  populateTimePicker();
+  setTimePicker(document.getElementById('sched-time').value);
 
   /* ============================================================
      INIT
