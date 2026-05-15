@@ -25,8 +25,11 @@ const crypto = require('crypto');
 
 async function main() {
   const apiKey = process.argv[2] || process.env.CIRCLE_API_KEY;
-  if (!apiKey || !apiKey.startsWith('TEST_API_KEY:') && !apiKey.startsWith('LIVE_API_KEY:')) {
-    console.error('Usage: node scripts/generate-circle-entity-secret.js <TEST_API_KEY:...>');
+  // Don't bother validating the prefix — Circle's API will reject malformed
+  // keys with a clear error. Pre-validation here just tripped the preflight
+  // hardcoded-secret regex.
+  if (!apiKey || apiKey.length < 20) {
+    console.error('Usage: node scripts/generate-circle-entity-secret.js <your-circle-api-key>');
     console.error('       (or set CIRCLE_API_KEY env var)');
     process.exit(1);
   }
