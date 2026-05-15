@@ -52,7 +52,11 @@ jobs:
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          response=$(curl -fsS -X POST \
+          # NOTE: do NOT use -f here. With -f, curl returns exit 22 on HTTP
+          # 4xx/5xx and swallows the response body — we lose the actual error
+          # message. Use -sS instead, capture both body and status, then
+          # decide success manually.
+          response=$(curl -sS -X POST \
             https://arcswap.net/api/agent/cron-tick \
             -H "Authorization: Bearer $CRON_SECRET" \
             -w "\n__HTTP_STATUS__%{http_code}")
@@ -61,9 +65,16 @@ jobs:
           body=$(echo "$response" | sed '/__HTTP_STATUS__/d')
 
           echo "HTTP $http_status"
+          echo "Response body:"
           echo "$body"
 
           if [ "$http_status" != "200" ]; then
-            echo "::error::Endpoint returned $http_status — expected 200"
+            echo ""
+            echo "::error::Endpoint returned HTTP $http_status — expected 200"
+            echo ""
+            echo "Common causes:"
+            echo "  401 unauthorized   → CRON_SECRET in this workflow's secrets does NOT match the value set in Cloudflare Pages env vars."
+            echo "  503 not_configured → CRON_SECRET env var is missing in Cloudflare Pages, or the Pages project hasn't been redeployed since adding it."
+            echo "  404 not_found     → /api/agent/cron-tick route hasn't shipped yet (check latest Cloudflare deployment for the cron-tick commit)."
             exit 1
           fi
