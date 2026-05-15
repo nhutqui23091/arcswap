@@ -1240,6 +1240,32 @@
           <div><div class="agent-meta-k">Sent</div><div class="agent-meta-v" style="color:var(--arc1)">$${(a.totalSent || 0).toFixed(2)}</div></div>`;
       }
 
+      // Circle agent wallets (one per source chain, if provisioned)
+      let walletsHtml = '';
+      if (a.circleWallets && a.circleWallets.length) {
+        walletsHtml = `
+          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.06)">
+            <div style="font-size:9.5px;font-family:var(--mono);color:var(--violet);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">// Agent wallets · fund these to enable runs</div>
+            ${a.circleWallets.map(w => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;font-family:var(--mono);gap:8px">
+                <span style="color:var(--muted)">${CHAIN_LABELS[w.source] || w.source}</span>
+                <span style="color:var(--text);user-select:all" title="${w.address}">${w.address.slice(0,6)}…${w.address.slice(-4)}</span>
+              </div>
+            `).join('')}
+          </div>`;
+      } else if (a.provisioning === 'failed') {
+        walletsHtml = `
+          <div style="margin-top:10px;padding:8px 10px;background:rgba(255,85,119,.06);border:1px solid rgba(255,85,119,.22);border-radius:8px;font-size:11px;color:#FF8BA3;line-height:1.5">
+            ⚠ Circle wallet provisioning failed. Runs will fall back to simulation.
+            ${a.provisioningError ? `<div style="margin-top:4px;font-family:var(--mono);font-size:10px;opacity:.85">${escapeHtml(a.provisioningError)}</div>` : ''}
+          </div>`;
+      } else if (a.provisioning === 'circle_not_configured') {
+        walletsHtml = `
+          <div style="margin-top:10px;padding:8px 10px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.22);border-radius:8px;font-size:11px;color:#FFD580;line-height:1.5">
+            ℹ Circle not configured yet — runs are simulated. See SETUP-AGENT.md.
+          </div>`;
+      }
+
       return `
         <div class="agent-row">
           <div class="agent-row-top">
@@ -1255,6 +1281,7 @@
           </div>
           <div class="agent-row-targets">→ ${targetsHtml}</div>
           <div class="agent-row-meta">${metaHtml}</div>
+          ${walletsHtml}
           <div class="agent-row-actions">
             <button onclick="window.toggleAgent('${a.id}')">${a.state === 'paused' ? 'Resume' : 'Pause'}</button>
             <button onclick="window.runOnce('${a.id}')">Run now</button>
@@ -1274,10 +1301,21 @@
       const hh = String(t.getHours()).padStart(2, '0');
       const mm = String(t.getMinutes()).padStart(2, '0');
       const ss = String(t.getSeconds()).padStart(2, '0');
-      const amt = e.amount ? `<span class="er-amt">+$${e.amount.toFixed(2)}</span>` : '';
-      return `<div class="exec-row">
+      const amt = e.amount ? `<span class="er-amt">+$${Number(e.amount).toFixed(2)}</span>` : '';
+      // Error rows use red left border; success uses green (default)
+      const isError = e.type === 'error';
+      const borderColor = isError ? '#FF5577' : 'var(--arc4)';
+      // Append Circle tx state if present
+      let stateBadge = '';
+      if (e.state) {
+        stateBadge = `<span style="margin-left:6px;padding:1px 5px;border-radius:4px;background:rgba(167,139,250,.12);color:var(--violet);font-size:10px;letter-spacing:.04em">${e.state}</span>`;
+      }
+      if (e.simulated) {
+        stateBadge += `<span style="margin-left:6px;padding:1px 5px;border-radius:4px;background:rgba(255,184,0,.1);color:#FFD580;font-size:10px;letter-spacing:.04em">SIM</span>`;
+      }
+      return `<div class="exec-row" style="border-left-color:${borderColor}">
         <div class="er-time">${hh}:${mm}:${ss}</div>
-        <div class="er-action">${escapeHtml(e.detail)}</div>
+        <div class="er-action">${escapeHtml(e.detail)}${stateBadge}</div>
         ${amt}
       </div>`;
     }).join('');

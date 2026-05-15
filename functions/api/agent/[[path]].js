@@ -34,10 +34,20 @@
  * falls back to localStorage transparently. See SETUP-AGENT.md.
  */
 
+import {
+  provisionWalletsForAgent,
+  executeRefill,
+  getTransaction,
+} from './_circle.js';
+
 const HEADERS_JSON = { 'Content-Type': 'application/json' };
 
 function json(status, body) {
   return new Response(JSON.stringify(body), { status, headers: HEADERS_JSON });
+}
+
+function isCircleConfigured(env) {
+  return !!(env.CIRCLE_API_KEY && env.CIRCLE_ENTITY_SECRET);
 }
 
 function notReady() {
@@ -111,7 +121,7 @@ function verifySignature(_owner, sig) {
    HANDLERS
    ──────────────────────────────────────────────────────────── */
 
-async function handleCreate(req, kv) {
+async function handleCreate(req, kv, env) {
   let body;
   try { body = await req.json(); } catch { return json(400, { error: 'bad_json' }); }
 
@@ -161,8 +171,12 @@ async function handleCreate(req, kv) {
     totalSent: 0,
     lastTrigger: null,
     nextRun: computeNextRun(mode, params, now),
+    circleWalletSetId: null,
+    circleWallets: [], // [{source, walletId, address, blockchain}]
+    provisioning: 'pending',
   };
 
+  // Persist first so the agent exists even if Circle provisioning fails.
   await putJSON(kv, `agent:${id}`, agent);
   await addOwnerAgent(kv, owner, id);
   await appendExecution(kv, id, {
@@ -171,6 +185,34 @@ async function handleCreate(req, kv) {
       ? `Watching ${targets.length} wallet(s) · floor $${params.floor}`
       : `Scheduled ${params.cadence} · ${targets.length} wallet(s) @ ${params.time}`,
   });
+
+  // Try to provision Circle wallets synchronously. If Circle isn't configured
+  // or the call fails, the agent still exists but in 'no-wallets' state.
+  if (isCircleConfigured(env)) {
+    try {
+      const result = await provisionWalletsForAgent(env, agent);
+      agent.circleWalletSetId = result.walletSetId;
+      agent.circleWallets = result.wallets;
+      agent.provisioning = result.wallets.length ? 'ready' : 'failed';
+      await putJSON(kv, `agent:${id}`, agent);
+      await appendExecution(kv, id, {
+        type: 'provisioned',
+        detail: `Created ${result.wallets.length} Circle wallet(s): ${result.wallets.map(w => w.source).join(', ')}`,
+      });
+    } catch (e) {
+      console.error('[handleCreate] provisioning failed:', e?.message || e);
+      agent.provisioning = 'failed';
+      agent.provisioningError = String(e?.message || e).slice(0, 300);
+      await putJSON(kv, `agent:${id}`, agent);
+      await appendExecution(kv, id, {
+        type: 'error',
+        detail: `Circle provisioning failed: ${agent.provisioningError}`,
+      });
+    }
+  } else {
+    agent.provisioning = 'circle_not_configured';
+    await putJSON(kv, `agent:${id}`, agent);
+  }
 
   return json(201, agent);
 }
@@ -241,7 +283,7 @@ async function handleRevoke(req, kv, id) {
   return json(204, {});
 }
 
-async function handleRunNow(req, kv, id) {
+async function handleRunNow(req, kv, env, id) {
   let body;
   try { body = await req.json(); } catch { body = {}; }
   const agent = await getJSON(kv, `agent:${id}`, null);
@@ -250,26 +292,82 @@ async function handleRunNow(req, kv, id) {
     return json(401, { error: 'signature_invalid' });
   if (agent.state !== 'active') return json(409, { error: 'agent_not_active' });
 
-  // TODO(circle): replace simulation below with real execution via Circle
-  // Programmable Wallet API + Gateway. See functions/api/agent/_circle.js.
+  // Two execution paths:
+  //   1. REAL: Circle is configured AND agent has provisioned wallets →
+  //      call Circle's Transfer API on one of those wallets.
+  //   2. SIMULATED: no Circle, or no wallets → just record an entry and
+  //      bump totalSent so the UX still shows progress.
+  const realMode = isCircleConfigured(env) && agent.circleWallets?.length > 0;
+
+  if (realMode) {
+    let result;
+    try {
+      result = await executeRefill(env, agent);
+    } catch (e) {
+      await appendExecution(kv, id, {
+        type: 'error',
+        detail: `Run-now failed: ${String(e?.message || e).slice(0, 200)}`,
+      });
+      return json(502, { error: 'execution_failed', detail: String(e?.message || e) });
+    }
+
+    // Record each transfer attempt
+    for (const t of (result.txs || [])) {
+      if (t.error) {
+        await appendExecution(kv, id, {
+          type: 'error',
+          detail: `Transfer failed (${t.source}→${shortAddr(t.target)}): ${t.error.slice(0, 160)}`,
+        });
+      } else {
+        await appendExecution(kv, id, {
+          type: 'sent',
+          detail: `Sent $${t.amount} ${t.source} → ${shortAddr(t.target)}`,
+          amount: Number(t.amount),
+          circleTxId: t.circleTxId,
+          state: t.state,
+        });
+      }
+    }
+
+    agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
+    agent.lastTrigger = Date.now();
+    if (agent.mode === 'schedule') agent.nextRun = computeNextRun('schedule', agent.params, Date.now());
+    await putJSON(kv, `agent:${id}`, agent);
+
+    return json(202, {
+      agentId: id,
+      status: result.ok ? 'sent' : 'failed',
+      amount: result.totalSent || 0,
+      txs: result.txs,
+    });
+  }
+
+  // Simulated fallback
   const total = agent.mode === 'topup'
     ? agent.params.refillAmount
     : (agent.params.dist === 'each'
         ? agent.params.sendAmount * agent.targets.length
         : agent.params.sendAmount);
-  agent.totalSent += total;
+  agent.totalSent = (agent.totalSent || 0) + total;
   agent.lastTrigger = Date.now();
   if (agent.mode === 'schedule') agent.nextRun = computeNextRun('schedule', agent.params, Date.now());
   await putJSON(kv, `agent:${id}`, agent);
+  const reason = !isCircleConfigured(env)
+    ? 'Circle not configured'
+    : (!agent.circleWallets?.length ? 'no wallets provisioned' : 'unknown');
   await appendExecution(kv, id, {
     type: 'sent',
     detail: agent.mode === 'topup'
-      ? `Refilled (simulated) — wire Circle PW to execute`
-      : `Scheduled send (simulated) · ${agent.targets.length} wallet(s)`,
+      ? `Refilled (simulated · ${reason})`
+      : `Scheduled send (simulated · ${reason}) · ${agent.targets.length} wallet(s)`,
     amount: total,
     simulated: true,
   });
-  return json(202, { agentId: id, status: 'simulated', amount: total });
+  return json(202, { agentId: id, status: 'simulated', amount: total, reason });
+}
+
+function shortAddr(a) {
+  return a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
 }
 
 async function handleExecutions(_req, kv, id) {
@@ -312,7 +410,7 @@ export async function onRequest(context) {
   try {
     // POST /api/agent/create
     if (parts[0] === 'create' && parts.length === 1 && request.method === 'POST') {
-      return await handleCreate(request, kv);
+      return await handleCreate(request, kv, env);
     }
     // GET /api/agent/list
     if (parts[0] === 'list' && parts.length === 1 && request.method === 'GET') {
@@ -332,7 +430,7 @@ export async function onRequest(context) {
         if (parts[1] === 'resume'     && request.method === 'POST')
           return await handlePauseResume(request, kv, id, 'active');
         if (parts[1] === 'run-now'    && request.method === 'POST')
-          return await handleRunNow(request, kv, id);
+          return await handleRunNow(request, kv, env, id);
         if (parts[1] === 'executions' && request.method === 'GET')
           return await handleExecutions(request, kv, id);
       }
