@@ -795,7 +795,12 @@ select option:checked{background:#1a2c4a;color:#fff}
       { name: 'deadline', type: 'uint256' },
     ],
   };
-  // USDC token addresses per chain (same map as backend _circle.js)
+  // USDC token addresses per chain (same map as backend _circle.js).
+  // Arc is deliberately omitted: on Arc, USDC is the L1 native gas token, NOT
+  // an ERC-20. EIP-2612 permit + transferFrom don't work against the native
+  // balance, so the permit flow doesn't apply. Agent on Arc uses the SCA
+  // wallet's own balance via Circle's transferUSDC API — user must pre-fund
+  // that SCA wallet by sending USDC to it manually on Arc.
   const USDC_ADDRESS = {
     sepolia:         '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
     baseSepolia:     '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
@@ -805,6 +810,17 @@ select option:checked{background:#1a2c4a;color:#fff}
     avalancheFuji:   '0x5425890298aed601595a70AB815c96711a31Bc65',
     unichainSepolia: '0x31d0220469e10c4E71834a79b1f276d740d3768F',
   };
+
+  // Chains where USDC is the native gas token. Permit/transferFrom don't
+  // apply — agent uses its own SCA wallet balance via Circle's direct
+  // transfer API. UI must show "PREFUND" (send USDC to SCA wallet) instead
+  // of the standard "SETUP" (sign permit) flow.
+  const NATIVE_USDC_CHAINS = new Set(['arc']);
+
+  /** Whether this chain supports the EIP-2612 permit pull flow. */
+  function chainSupportsPermit(arcKey) {
+    return !NATIVE_USDC_CHAINS.has(arcKey) && !!USDC_ADDRESS[arcKey];
+  }
 
   /**
    * Fetch the user's current USDC nonce on a given chain. Required to build a
@@ -892,6 +908,10 @@ select option:checked{background:#1a2c4a;color:#fff}
 
     const permits = [];
     for (const [arcKey, spender] of Object.entries(spenderByChain)) {
+      if (NATIVE_USDC_CHAINS.has(arcKey)) {
+        console.log(`[permits] skipping ${arcKey} — native USDC chain, agent uses its own SCA balance (pre-fund required)`);
+        continue;
+      }
       if (!USDC_ADDRESS[arcKey]) {
         console.log(`[permits] skipping ${arcKey} — no USDC mapping`);
         continue;
@@ -1651,37 +1671,78 @@ select option:checked{background:#1a2c4a;color:#fff}
 
       // Circle agent wallets (one per source chain, if provisioned).
       // Renders as a quiet "Permission" sub-section — small muted header,
-      // one tidy row per chain. The auth state is conveyed by a single inline
-      // pill, not a giant green banner above.
+      // one tidy row per chain. Each chain shows one of three pills:
+      //   AUTH    — permit submitted, agent can pull from user's wallet
+      //   SETUP   — permit-capable chain but not yet permitted
+      //   PREFUND — native USDC chain (Arc) — permit doesn't apply, user
+      //             must send USDC to the SCA wallet for runs to execute
       let walletsHtml = '';
-      const hasAnyPermit = !!(a.permits || []).find(p => p.state === 'submitted');
+      const chipToArcKey = (chip) => ({ base: 'baseSepolia', arc: 'arc',
+        sepolia: 'sepolia', arbitrum: 'arbitrumSepolia',
+        optimism: 'optimismSepolia', polygon: 'polygonAmoy',
+        unichain: 'unichainSepolia', fuji: 'avalancheFuji' })[chip] || chip;
       if (a.circleWallets && a.circleWallets.length) {
+        // Header status: "ready" if every permit-required chain has a
+        // submitted permit. Native-USDC chains (Arc) don't count against
+        // the "setup needed" warning — they need pre-funding instead, which
+        // is communicated per-row.
+        const isPermitRequired = (w) => chainSupportsPermit(chipToArcKey(w.source));
+        const permitRequiredWallets = a.circleWallets.filter(isPermitRequired);
+        const hasAllRequiredPermits = permitRequiredWallets.every(w => {
+          const ak = chipToArcKey(w.source);
+          return (a.permits || []).some(p => p.sourceChain === ak && p.state === 'submitted');
+        });
+        const hasAnyNativeChain = a.circleWallets.some(w => !isPermitRequired(w));
+        let headerLabel;
+        if (permitRequiredWallets.length === 0) {
+          headerLabel = hasAnyNativeChain
+            ? '<span style="color:#FFD580;letter-spacing:.04em;text-transform:none;font-size:10.5px">prefund agent wallet</span>'
+            : '<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ ready</span>';
+        } else if (hasAllRequiredPermits) {
+          headerLabel = hasAnyNativeChain
+            ? '<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ pulls from your wallet · prefund Arc</span>'
+            : '<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ pulls from your wallet</span>';
+        } else {
+          headerLabel = '<span style="color:#FFD580;letter-spacing:.04em;text-transform:none;font-size:10.5px">setup needed</span>';
+        }
+
         walletsHtml = `
           <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.06)">
             <div style="font-size:9.5px;font-family:var(--mono);color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px">
               <span>Permission</span>
-              ${hasAnyPermit
-                ? '<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ pulls from your wallet</span>'
-                : '<span style="color:#FFD580;letter-spacing:.04em;text-transform:none;font-size:10.5px">setup needed</span>'}
+              ${headerLabel}
             </div>
             ${a.circleWallets.map(w => {
-              const arcKey = ({ base: 'baseSepolia', arc: 'arc', sepolia: 'sepolia',
-                arbitrum: 'arbitrumSepolia', optimism: 'optimismSepolia',
-                polygon: 'polygonAmoy', unichain: 'unichainSepolia', fuji: 'avalancheFuji' })[w.source] || w.source;
+              const arcKey = chipToArcKey(w.source);
+              const needsPermit = chainSupportsPermit(arcKey);
               const permit = (a.permits || []).find(p => p.sourceChain === arcKey && p.state === 'submitted');
-              const stateLabel = permit
-                ? '<span style="padding:2px 6px;border-radius:5px;background:rgba(123,228,149,.10);border:1px solid rgba(123,228,149,.28);color:var(--arc4);font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em">AUTH</span>'
-                : '<span style="padding:2px 6px;border-radius:5px;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.25);color:#FFD580;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em">SETUP</span>';
+              let stateLabel;
+              if (!needsPermit) {
+                // Native USDC chain — show PREFUND pill with explainer tooltip
+                stateLabel = '<span title="Send USDC from your wallet to this address on Arc. Agent runs will draw from this balance." style="padding:2px 6px;border-radius:5px;background:rgba(108,63,255,.10);border:1px solid rgba(108,63,255,.32);color:#9D7BFF;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;cursor:help">PREFUND</span>';
+              } else {
+                stateLabel = permit
+                  ? '<span style="padding:2px 6px;border-radius:5px;background:rgba(123,228,149,.10);border:1px solid rgba(123,228,149,.28);color:var(--arc4);font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em">AUTH</span>'
+                  : '<span style="padding:2px 6px;border-radius:5px;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.25);color:#FFD580;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em">SETUP</span>';
+              }
               const shortAddr = `${w.address.slice(0,6)}…${w.address.slice(-4)}`;
+              // Explorer link respects the chain — Arc has its own explorer.
+              const explorerBase = arcKey === 'arc'
+                ? 'https://testnet.arcscan.app/address/'
+                : 'https://sepolia.basescan.org/address/';
               return `
               <div style="display:flex;align-items:center;padding:4px 0;font-size:11px;font-family:var(--mono);gap:6px">
                 <span style="color:var(--muted);min-width:84px;flex-shrink:0">${CHAIN_LABELS[w.source] || w.source}</span>
                 ${stateLabel}
                 <span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" title="${w.address} (click to copy)" onclick="window.copyAddr('${w.address}')">${shortAddr}</span>
                 <button onclick="window.copyAddr('${w.address}')" title="Copy address" style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0">⎘</button>
-                <a href="https://sepolia.basescan.org/address/${w.address}" target="_blank" rel="noopener" title="View on Basescan" style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);text-decoration:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px">↗</a>
+                <a href="${explorerBase}${w.address}" target="_blank" rel="noopener" title="View on explorer" style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);text-decoration:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px">↗</a>
               </div>`;
             }).join('')}
+            ${hasAnyNativeChain ? `
+              <div style="margin-top:6px;padding:6px 8px;background:rgba(108,63,255,.05);border:1px solid rgba(108,63,255,.18);border-radius:6px;font-size:10.5px;color:#B8A1FF;line-height:1.4">
+                ⓘ <strong style="color:#D4C5FF">PREFUND</strong> required on Arc: USDC is the native gas token there, so the agent can't pull from your wallet via permit. Send USDC to the agent wallet address shown above to enable runs.
+              </div>` : ''}
           </div>`;
       } else if (a.provisioning === 'failed') {
         walletsHtml = `
