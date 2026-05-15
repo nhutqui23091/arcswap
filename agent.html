@@ -26,13 +26,6 @@
 .preview-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:100px;font-size:12px;font-weight:600;font-family:var(--mono);color:var(--violet);background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);text-transform:uppercase;letter-spacing:.08em}
 .preview-dot{width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 10px var(--violet)}
 
-/* PREVIEW BANNER */
-.preview-banner{margin:18px 0 28px;padding:16px 22px;border:1px solid rgba(167,139,250,0.3);border-radius:14px;background:linear-gradient(180deg,rgba(167,139,250,0.08),rgba(167,139,250,0.02));display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.preview-banner .pb-ico{font-size:28px;line-height:1}
-.preview-banner .pb-text{flex:1;min-width:260px}
-.preview-banner .pb-tag{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--violet);margin-bottom:6px}
-.preview-banner .pb-body{font-size:14px;color:var(--text);line-height:1.55}
-
 /* STATS */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
 .stat-card{background:rgba(10,6,28,.85);border:1px solid var(--border);border-radius:16px;padding:18px 20px}
@@ -85,13 +78,13 @@
 @media(max-width:560px){.chain-grid{grid-template-columns:repeat(2,1fr)}}
 .chain-chip{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:10px;padding:10px 12px 10px 34px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;position:relative;user-select:none}
 .chain-chip:hover{background:rgba(255,255,255,.06);border-color:var(--border2)}
-.chain-chip.selected{background:rgba(74,123,236,.12);border-color:rgba(74,123,236,.4)}
+.chain-chip.selected{background:rgba(167,139,250,.10);border-color:rgba(167,139,250,.38)}
 .chain-chip::before{content:'';position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;border:1.5px solid var(--border2);border-radius:4px;background:rgba(255,255,255,.02);transition:all .15s}
-.chain-chip.selected::before{background:var(--arc2);border-color:var(--arc2)}
-.chain-chip.selected::after{content:'';position:absolute;left:14.5px;top:50%;transform:translateY(-60%) rotate(45deg);width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0}
+.chain-chip.selected::before{background:var(--violet);border-color:var(--violet)}
+.chain-chip.selected::after{content:'';position:absolute;left:14.5px;top:50%;transform:translateY(-60%) rotate(45deg);width:4px;height:8px;border:solid #0b0820;border-width:0 2px 2px 0}
 .chain-chip-name{font-size:13px;font-weight:700;color:var(--text);line-height:1.1}
 .chain-chip-meta{font-size:10.5px;color:var(--muted);font-family:var(--mono);line-height:1.1}
-.chain-chip.selected .chain-chip-meta{color:var(--arc1)}
+.chain-chip.selected .chain-chip-meta{color:var(--violet)}
 
 /* TARGET WALLET ROWS */
 .target-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -217,15 +210,6 @@
     </div>
   </div>
 
-  <!-- PREVIEW BANNER -->
-  <div class="preview-banner">
-    <div class="pb-ico">🤖</div>
-    <div class="pb-text">
-      <div class="pb-tag">// Preview Release · Feedback Welcome</div>
-      <div class="pb-body"><strong>This is an early UX preview.</strong> Rules and signatures are simulated locally so we can validate the flow before wiring Circle Programmable Wallets + Gateway live on testnet. Try it and tell us what's missing.</div>
-    </div>
-  </div>
-
   <!-- STATS -->
   <div class="stats-row">
     <div class="stat-card">
@@ -272,7 +256,7 @@
           <div class="step-label">Pull USDC from your wallet on these chains</div>
           <div class="step-hint" id="balances-hint">connect wallet to load balances</div>
         </div>
-        <p class="step-desc">Agent pulls USDC directly from <strong>your wallet</strong> via gasless EIP-3009 authorization — not from a pre-funded Unified Balance. Pick the chains where your USDC actually lives.</p>
+        <p class="step-desc">Agent pulls USDC directly from <strong>your wallet</strong> via a one-time gasless EIP-2612 permit signature — no pre-funded balance required. Pick the chains where your USDC actually lives.</p>
         <div class="chain-grid" id="chain-grid">
           <div class="chain-chip selected" data-chain="base" onclick="toggleChain('base')">
             <div class="chain-chip-name">Base</div>
@@ -398,9 +382,9 @@
               </div>
             </div>
             <div class="lbl-field" style="margin-bottom:0">
-              <div class="lbl-field-label">At time (local)</div>
+              <div class="lbl-field-label">At time <span id="sched-time-tz" style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0">(24h · your local time)</span></div>
               <div class="field" style="padding:8px 14px">
-                <input class="field-input" id="sched-time" type="time" value="19:00" oninput="updateSummary()" style="font-size:14px"/>
+                <input class="field-input" id="sched-time" type="time" value="19:00" lang="en-GB" step="60" oninput="updateSummary()" style="font-size:14px;font-variant-numeric:tabular-nums"/>
               </div>
             </div>
           </div>
@@ -471,7 +455,7 @@
       <div class="how-step">
         <div class="how-step-num">// Step 03</div>
         <div class="how-step-h">Funds move</div>
-        <div class="how-step-d">When triggered, the agent pulls USDC from a source chain via EIP-3009, routes through Circle Gateway, and lands on Arc via CCTP V2 Fast Transfer. Total latency: ~10–20 seconds.</div>
+        <div class="how-step-d">When triggered, the agent's Circle Smart Account uses your EIP-2612 permit to <code style="font-family:var(--mono);font-size:11px;color:var(--violet)">transferFrom()</code> USDC directly out of your wallet to the targets. Gas is sponsored by Circle Paymaster — you pay nothing.</div>
         <div class="how-step-ico">⟶</div>
       </div>
       <div class="how-step">
@@ -550,6 +534,39 @@
   let agents = JSON.parse(localStorage.getItem('arcswap_agents') || '[]');
   let executions = JSON.parse(localStorage.getItem('arcswap_execs') || '[]');
   let totalSent = parseFloat(localStorage.getItem('arcswap_total_sent') || '0');
+
+  /* ============================================================
+     TIMEZONE — show the user their UTC offset so 19:00 means 19:00
+     in *their* local zone, not someone else's. Computed once at boot
+     and reused in the time label, summary row, and agent card.
+  ============================================================ */
+  const TZ_LABEL = (() => {
+    // getTimezoneOffset returns minutes BEHIND UTC, so flip the sign.
+    const off = -new Date().getTimezoneOffset();
+    const sign = off >= 0 ? '+' : '-';
+    const abs = Math.abs(off);
+    const hh = Math.floor(abs / 60);
+    const mm = abs % 60;
+    return `UTC${sign}${hh}${mm ? ':' + String(mm).padStart(2, '0') : ''}`;
+  })();
+
+  // Inject the UTC offset into the time-field label so the user sees
+  // "At time (24h · UTC+7)" — no more guessing what "19:00" resolves to.
+  {
+    const tzEl = document.getElementById('sched-time-tz');
+    if (tzEl) tzEl.textContent = `(24h · ${TZ_LABEL})`;
+  }
+
+  /** Always format a wall-clock time string as 24h "HH:MM" — never AM/PM. */
+  function fmt24(timeStr) {
+    if (!timeStr) return '';
+    const [h, m] = String(timeStr).split(':');
+    return `${String(h).padStart(2, '0')}:${String(m || '00').padStart(2, '0')}`;
+  }
+  /** Format a Date as 24h HH:MM:SS in user's local tz. */
+  function fmtClock(d) {
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+  }
 
   /* ============================================================
      BALANCE LOADING — fetch real USDC wallet balance per chain
@@ -1038,7 +1055,8 @@
     } else {
       const amt = parseFloat(document.getElementById('send-amt').value) || 0;
       const cadence = document.getElementById('sched-cadence').value;
-      const time = document.getElementById('sched-time').value || '—';
+      const timeRaw = document.getElementById('sched-time').value || '';
+      const time = timeRaw ? `${fmt24(timeRaw)} ${TZ_LABEL}` : '—';
       const startVal = document.getElementById('sched-start').value;
       const cadenceLabel = {
         once: 'One-time send',
@@ -1455,38 +1473,47 @@
           <div><div class="agent-meta-k">Refill</div><div class="agent-meta-v">$${(p.refillAmount || 0).toFixed(2)}</div></div>
           <div><div class="agent-meta-k">Sent</div><div class="agent-meta-v" style="color:var(--arc1)">$${(a.totalSent || 0).toFixed(2)}</div></div>`;
       } else {
+        // Show schedule cadence + 24h time + the user's UTC offset so it's
+        // unambiguous across locales (no Vietnamese CH/SA, no guessing what
+        // tz a "19:00" was authored in).
+        const tFmt = p.time ? `${fmt24(p.time)} ${TZ_LABEL}` : '';
         metaHtml = `
           <div><div class="agent-meta-k">Amount</div><div class="agent-meta-v">$${(p.sendAmount || 0).toFixed(2)}</div></div>
-          <div><div class="agent-meta-k">Cadence</div><div class="agent-meta-v" style="font-size:11.5px">${p.cadence || ''} · ${p.time || ''}</div></div>
+          <div><div class="agent-meta-k">Cadence</div><div class="agent-meta-v" style="font-size:11px">${p.cadence || ''}${tFmt ? ' · ' + tFmt : ''}</div></div>
           <div><div class="agent-meta-k">Sent</div><div class="agent-meta-v" style="color:var(--arc1)">$${(a.totalSent || 0).toFixed(2)}</div></div>`;
       }
 
-      // Circle agent wallets (one per source chain, if provisioned)
+      // Circle agent wallets (one per source chain, if provisioned).
+      // Renders as a quiet "Permission" sub-section — small muted header,
+      // one tidy row per chain. The auth state is conveyed by a single inline
+      // pill, not a giant green banner above.
       let walletsHtml = '';
       const hasAnyPermit = !!(a.permits || []).find(p => p.state === 'submitted');
       if (a.circleWallets && a.circleWallets.length) {
-        const headerText = hasAnyPermit
-          ? '// Authorized · agent pulls from your wallet via EIP-2612 permit'
-          : '// Agent wallets · fund these or authorize EIP-2612 permit';
-        const headerColor = hasAnyPermit ? 'var(--arc4)' : 'var(--violet)';
         walletsHtml = `
           <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.06)">
-            <div style="font-size:9.5px;font-family:var(--mono);color:${headerColor};letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">${headerText}</div>
+            <div style="font-size:9.5px;font-family:var(--mono);color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+              <span>Permission</span>
+              ${hasAnyPermit
+                ? '<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ pulls from your wallet</span>'
+                : '<span style="color:#FFD580;letter-spacing:.04em;text-transform:none;font-size:10.5px">setup needed</span>'}
+            </div>
             ${a.circleWallets.map(w => {
               const arcKey = ({ base: 'baseSepolia', arc: 'arc', sepolia: 'sepolia',
                 arbitrum: 'arbitrumSepolia', optimism: 'optimismSepolia',
                 polygon: 'polygonAmoy', unichain: 'unichainSepolia', fuji: 'avalancheFuji' })[w.source] || w.source;
               const permit = (a.permits || []).find(p => p.sourceChain === arcKey && p.state === 'submitted');
               const stateLabel = permit
-                ? '<span style="padding:2px 6px;border-radius:5px;background:rgba(123,228,149,.12);border:1px solid rgba(123,228,149,.3);color:var(--arc4);font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.04em">AUTHORIZED</span>'
-                : '<span style="padding:2px 6px;border-radius:5px;background:rgba(255,184,0,.10);border:1px solid rgba(255,184,0,.28);color:#FFD580;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.04em">FUND OR AUTH</span>';
+                ? '<span style="padding:2px 6px;border-radius:5px;background:rgba(123,228,149,.10);border:1px solid rgba(123,228,149,.28);color:var(--arc4);font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em">AUTH</span>'
+                : '<span style="padding:2px 6px;border-radius:5px;background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.25);color:#FFD580;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em">SETUP</span>';
+              const shortAddr = `${w.address.slice(0,6)}…${w.address.slice(-4)}`;
               return `
-              <div style="display:flex;align-items:center;padding:5px 0;font-size:11px;font-family:var(--mono);gap:6px;flex-wrap:wrap">
-                <span style="color:var(--muted);min-width:88px;flex-shrink:0">${CHAIN_LABELS[w.source] || w.source}</span>
+              <div style="display:flex;align-items:center;padding:4px 0;font-size:11px;font-family:var(--mono);gap:6px">
+                <span style="color:var(--muted);min-width:84px;flex-shrink:0">${CHAIN_LABELS[w.source] || w.source}</span>
                 ${stateLabel}
-                <span style="color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:3px 7px;border-radius:6px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;user-select:all" title="${w.address} (click to copy)" onclick="window.copyAddr('${w.address}')">${w.address}</span>
-                <button onclick="window.copyAddr('${w.address}')" title="Copy address" style="padding:4px 8px;border-radius:6px;background:rgba(167,139,250,.10);border:1px solid rgba(167,139,250,.25);color:var(--violet);font-size:10px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.06em;flex-shrink:0">COPY</button>
-                <a href="https://sepolia.basescan.org/address/${w.address}" target="_blank" rel="noopener" title="View on Basescan" style="padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);font-size:10px;font-weight:700;text-decoration:none;font-family:var(--mono);letter-spacing:.06em;flex-shrink:0">SCAN ↗</a>
+                <span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" title="${w.address} (click to copy)" onclick="window.copyAddr('${w.address}')">${shortAddr}</span>
+                <button onclick="window.copyAddr('${w.address}')" title="Copy address" style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0">⎘</button>
+                <a href="https://sepolia.basescan.org/address/${w.address}" target="_blank" rel="noopener" title="View on Basescan" style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);text-decoration:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px">↗</a>
               </div>`;
             }).join('')}
           </div>`;
@@ -1535,9 +1562,7 @@
     wrap.style.display = 'block';
     rows.innerHTML = executions.slice(0, 6).map(e => {
       const t = new Date(e.time);
-      const hh = String(t.getHours()).padStart(2, '0');
-      const mm = String(t.getMinutes()).padStart(2, '0');
-      const ss = String(t.getSeconds()).padStart(2, '0');
+      const clock = fmtClock(t);
       const amt = e.amount ? `<span class="er-amt">+$${Number(e.amount).toFixed(2)}</span>` : '';
       // Error rows use red left border; success uses green (default)
       const isError = e.type === 'error';
@@ -1551,7 +1576,7 @@
         stateBadge += `<span style="margin-left:6px;padding:1px 5px;border-radius:4px;background:rgba(255,184,0,.1);color:#FFD580;font-size:10px;letter-spacing:.04em">SIM</span>`;
       }
       return `<div class="exec-row" style="border-left-color:${borderColor}">
-        <div class="er-time">${hh}:${mm}:${ss}</div>
+        <div class="er-time">${clock}</div>
         <div class="er-action">${escapeHtml(e.detail)}${stateBadge}</div>
         ${amt}
       </div>`;
@@ -1567,8 +1592,12 @@
     const last = executions[0];
     if (last) {
       const t = new Date(last.time);
-      document.getElementById('stat-last').textContent = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
-      document.getElementById('stat-last-sub').textContent = last.detail.length > 40 ? last.detail.slice(0, 40) + '…' : last.detail;
+      const hhmm = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('stat-last').textContent = hhmm;
+      // Sub-line: tz + truncated detail. The tz makes it obvious whose clock
+      // this refers to (the viewer's local zone — same as the time display).
+      const detailShort = last.detail.length > 32 ? last.detail.slice(0, 32) + '…' : last.detail;
+      document.getElementById('stat-last-sub').textContent = `${TZ_LABEL} · ${detailShort}`;
     } else {
       document.getElementById('stat-last').textContent = '—';
       document.getElementById('stat-last-sub').textContent = 'Nothing yet';

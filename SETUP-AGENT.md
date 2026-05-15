@@ -122,25 +122,30 @@ Files live at `workers/agent-cron/` in this repo.
 
 ### Deploy steps (one-time)
 
+Wrangler 4.x requires Node.js 22+. If you're on Node 18-20, use the
+`@3` tag to pin to the last 3.x release (still actively supported, all
+features we need).
+
 ```bash
-# 1. Install Wrangler CLI globally (skip if already installed)
-npm install -g wrangler
+# 1. Authenticate with Cloudflare (opens browser, OAuth)
+npx wrangler@3 login
 
-# 2. Authenticate with Cloudflare (opens browser, OAuth)
-wrangler login
-
-# 3. Deploy the Worker
+# 2. Deploy the Worker
 cd workers/agent-cron
-wrangler deploy
+npx wrangler@3 deploy
 
-# 4. Set the secret on the Worker (must match CRON_SECRET on the
+# 3. Set the secret on the Worker (must match CRON_SECRET on the
 #    Pages project — same 64-hex value)
-wrangler secret put CRON_SECRET
+npx wrangler@3 secret put CRON_SECRET
 # (paste value when prompted, press Enter)
 
-# 5. Optional — stream live invocation logs to verify
-wrangler tail
+# 4. Optional — stream live invocation logs to verify
+npx wrangler@3 tail
 ```
+
+If you're on Node 22+, drop the `@3` and use `npx wrangler` directly,
+or install globally with `npm install -g wrangler` and just run
+`wrangler …`.
 
 After step 3, Cloudflare Dashboard → Workers & Pages →
 `arcswap-agent-cron` shows the new Worker. After step 4, the Worker
