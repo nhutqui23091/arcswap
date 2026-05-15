@@ -796,11 +796,15 @@ select option:checked{background:#1a2c4a;color:#fff}
     ],
   };
   // USDC token addresses per chain (same map as backend _circle.js).
-  // Arc is deliberately omitted: on Arc, USDC is the L1 native gas token, NOT
-  // an ERC-20. EIP-2612 permit + transferFrom don't work against the native
-  // balance, so the permit flow doesn't apply. Agent on Arc uses the SCA
-  // wallet's own balance via Circle's transferUSDC API — user must pre-fund
-  // that SCA wallet by sending USDC to it manually on Arc.
+  //
+  // Arc: 0x3600...0000 is the ERC-20 interface for USDC on Arc. Per Arc's
+  // docs (https://docs.arc.io/arc/references/contract-addresses): "An
+  // optional ERC-20 interface is available at this address and supports
+  // transferFrom, approve, and allowance management" and "both native and
+  // ERC-20 interfaces share the same underlying balance." So standard
+  // permit + transferFrom works on Arc the same as any other EVM chain —
+  // the earlier "GatewayWallet.deposit can't move native balance" comment
+  // in arc-core.js applies only to that specific Gateway deposit flow.
   const USDC_ADDRESS = {
     sepolia:         '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
     baseSepolia:     '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
@@ -809,13 +813,19 @@ select option:checked{background:#1a2c4a;color:#fff}
     polygonAmoy:     '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582',
     avalancheFuji:   '0x5425890298aed601595a70AB815c96711a31Bc65',
     unichainSepolia: '0x31d0220469e10c4E71834a79b1f276d740d3768F',
+    arc:             '0x3600000000000000000000000000000000000000',
   };
 
-  // Chains where USDC is the native gas token. Permit/transferFrom don't
-  // apply — agent uses its own SCA wallet balance via Circle's direct
-  // transfer API. UI must show "PREFUND" (send USDC to SCA wallet) instead
-  // of the standard "SETUP" (sign permit) flow.
-  const NATIVE_USDC_CHAINS = new Set(['arc']);
+  // Chains where USDC truly cannot be permit-pulled (would force the user
+  // to pre-fund the SCA wallet). Currently EMPTY — Arc was previously
+  // assumed to be in this category but Arc's docs confirm the ERC-20
+  // interface at 0x3600... supports the full allowance + transferFrom +
+  // permit lifecycle, so the permit pull flow works there too.
+  //
+  // Kept as an empty set for forward compatibility: if a future chain
+  // exposes USDC without permit support, add its key here and the UI will
+  // automatically switch to the PREFUND flow (see chainSupportsPermit).
+  const NATIVE_USDC_CHAINS = new Set();
 
   /** Whether this chain supports the EIP-2612 permit pull flow. */
   function chainSupportsPermit(arcKey) {
