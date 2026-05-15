@@ -21,6 +21,9 @@ const CIRCLE_BASE = 'https://api.circle.com';
 // Map our internal chain key (matches ARC.CHAINS) → Circle blockchain identifier.
 // Circle uses ALL-CAPS hyphenated names. Mainnet would be 'ETH' / 'BASE' etc.
 // We're on testnet across the board.
+//
+// Source: https://developers.circle.com/w3s/supported-blockchains-and-currencies
+// Verified May 2026 — ARC-TESTNET is now a first-class PW-supported chain.
 export const CIRCLE_BLOCKCHAIN = {
   sepolia:         'ETH-SEPOLIA',
   baseSepolia:     'BASE-SEPOLIA',
@@ -29,13 +32,18 @@ export const CIRCLE_BLOCKCHAIN = {
   polygonAmoy:     'MATIC-AMOY',
   avalancheFuji:   'AVAX-FUJI',
   unichainSepolia: 'UNI-SEPOLIA',
-  // Arc Testnet — Circle's own L1. Not yet documented as a PW-supported
-  // blockchain identifier. Filter out when provisioning. We can still RECEIVE
-  // USDC on Arc as a target, just don't create agent wallets there.
+  arc:             'ARC-TESTNET',  // Circle's own L1 — USDC is native gas
 };
 
 // Native testnet USDC contract addresses (Circle published). Source:
 // https://developers.circle.com/stablecoins/usdc-on-test-networks
+//
+// Arc is special: USDC is the NATIVE gas token (not a regular ERC-20). The
+// contract lives at a system address `0x3600...0000` and exposes the
+// standard ERC-20 interface (balanceOf returns 6-decimal units). Native
+// USDC gas internally uses 18 decimals; the ERC-20 interface still
+// presents 6 decimals so our existing balance / transfer code works
+// without changes.
 export const USDC_ADDRESS = {
   sepolia:         '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
   baseSepolia:     '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
@@ -44,6 +52,7 @@ export const USDC_ADDRESS = {
   polygonAmoy:     '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582',
   avalancheFuji:   '0x5425890298aed601595a70AB815c96711a31Bc65',
   unichainSepolia: '0x31d0220469e10c4E71834a79b1f276d740d3768F',
+  arc:             '0x3600000000000000000000000000000000000000', // native USDC system contract
 };
 
 // Map chip-id (frontend) → ARC chain key (canonical). Same mapping as

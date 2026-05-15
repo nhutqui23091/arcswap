@@ -33,6 +33,7 @@ const PUBLIC_RPC = {
   polygonAmoy:     'https://rpc-amoy.polygon.technology',
   avalancheFuji:   'https://api.avax-test.network/ext/bc/C/rpc',
   unichainSepolia: 'https://sepolia.unichain.org',
+  arc:             'https://rpc.testnet.arc.network',
 };
 
 // Map ARC canonical chain key → env var that holds an optional override.
@@ -48,6 +49,7 @@ const ENV_KEY = {
   polygonAmoy:     'RPC_POLYGON_AMOY',
   avalancheFuji:   'RPC_AVAX_FUJI',
   unichainSepolia: 'RPC_UNI_SEPOLIA',
+  arc:             'RPC_ARC',
 };
 
 /**
