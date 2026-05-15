@@ -1,0 +1,33 @@
+# ArcSwap Agent Cron — Cloudflare Worker config.
+#
+# Deploy with:
+#   cd workers/agent-cron
+#   wrangler deploy
+#
+# Set the secret (one-time):
+#   wrangler secret put CRON_SECRET
+#   (paste the same 64-hex value you set on the Pages project)
+
+name = "arcswap-agent-cron"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Fire every minute. Cloudflare cron is precise to the minute.
+[triggers]
+crons = ["* * * * *"]
+
+# Service binding to the arcswap Pages project. This lets the Worker
+# call the Pages function directly via env.PAGES.fetch(req) — bypasses
+# the public edge entirely, so no bot challenge / WAF interference.
+#
+# IMPORTANT: the `service` name must match the Pages project name in
+# the Cloudflare dashboard exactly. If your Pages project is named
+# something other than "arcswap" (e.g. "arcswap-prod"), update this
+# field accordingly.
+[[services]]
+binding = "PAGES"
+service = "arcswap"
+
+# Logging: keep observability on so we can stream tail
+[observability]
+enabled = true

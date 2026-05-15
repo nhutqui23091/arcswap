@@ -99,73 +99,76 @@ cron is a no-op (safe default).
   the floor)
 - Returns a summary JSON: `{ scanned, fired, skipped, errors, details }`
 
-### Wire up an external scheduler
+### Wire up the cron trigger — Cloudflare Worker
 
-Pick whichever you prefer; all work fine with the endpoint as-is.
+**Why a Worker?** External HTTP cron services (GitHub Actions,
+cron-job.org, EasyCron, etc.) all hit `https://arcswap.net/api/agent/
+cron-tick` from outside Cloudflare. On the **Free plan**, Cloudflare's
+basic Bot Fight Mode intercepts non-browser User-Agents and serves a
+JavaScript challenge — which means our cron sees HTTP 403 instead of
+the function. WAF Custom Rules on Free can't skip the basic Bot Fight
+Mode (only Super Bot Fight Mode on Pro+ is skippable). The Worker
+approach sidesteps this entirely.
 
-**Option A — Cloudflare Cron Worker** (cleanest, no third-party):
+The Worker:
+- Runs **inside** Cloudflare's network, never goes through the public
+  edge for its own requests
+- Uses a **service binding** to talk directly to the Pages project
+- Fires every minute via Cloudflare's native cron trigger (more precise
+  than GitHub Actions schedule)
+- Free plan allowance: 100k req/day — a per-minute cron uses ~1.5k
 
-Create a separate Worker (not Pages) with cron triggers:
+Files live at `workers/agent-cron/` in this repo.
 
-```toml
-# wrangler.toml
-name = "arcswap-agent-cron"
-main = "src/index.js"
-compatibility_date = "2025-01-01"
+### Deploy steps (one-time)
 
-[triggers]
-crons = ["* * * * *"]  # every minute
+```bash
+# 1. Install Wrangler CLI globally (skip if already installed)
+npm install -g wrangler
+
+# 2. Authenticate with Cloudflare (opens browser, OAuth)
+wrangler login
+
+# 3. Deploy the Worker
+cd workers/agent-cron
+wrangler deploy
+
+# 4. Set the secret on the Worker (must match CRON_SECRET on the
+#    Pages project — same 64-hex value)
+wrangler secret put CRON_SECRET
+# (paste value when prompted, press Enter)
+
+# 5. Optional — stream live invocation logs to verify
+wrangler tail
 ```
 
-```js
-// src/index.js
-export default {
-  async scheduled(event, env, ctx) {
-    await fetch('https://arcswap.net/api/agent/cron-tick', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${env.CRON_SECRET}` },
-    });
-  },
-};
-```
-
-Deploy with `wrangler deploy`. Bind `CRON_SECRET` as a secret on the
-Worker too.
-
-**Option B — GitHub Actions** (zero infra):
-
-`.github/workflows/agent-cron.yml`:
-
-```yaml
-on:
-  schedule:
-    - cron: '* * * * *'  # every minute
-jobs:
-  tick:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          curl -X POST https://arcswap.net/api/agent/cron-tick \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-```
-
-GitHub Actions free tier covers a per-minute cron easily.
-
-**Option C — EasyCron / cron-job.org** (free third-party):
-
-Add a job pointed at `POST https://arcswap.net/api/agent/cron-tick`
-with the bearer header. Simplest to set up.
+After step 3, Cloudflare Dashboard → Workers & Pages →
+`arcswap-agent-cron` shows the new Worker. After step 4, the Worker
+has everything it needs and starts firing on the schedule defined in
+`wrangler.toml`.
 
 ### Verify
 
-```bash
-# Should return 401 without secret
-curl -X POST https://arcswap.net/api/agent/cron-tick
+Check the Worker dashboard "Last invocation" timestamp — should update
+every minute. Or run a smoke test manually via the HTTP handler:
 
-# Should return summary JSON
-curl -X POST https://arcswap.net/api/agent/cron-tick \
-  -H "Authorization: Bearer <CRON_SECRET>"
-# → { "scanned": 3, "fired": 1, "skipped": 2, "errors": 0, "details": [...] }
+```bash
+curl "https://arcswap-agent-cron.<your-subdomain>.workers.dev/?secret=<CRON_SECRET>"
+# → { "status": 200, "body": { "scanned": N, "fired": 0, ... } }
+```
+
+(Your subdomain is shown in Cloudflare Workers dashboard after the
+first deploy.)
+
+You can also call `/api/agent/cron-tick` directly from a browser
+console (no bot challenge for browsers) to confirm the endpoint works
+independent of the Worker:
+
+```js
+fetch('/api/agent/cron-tick', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer <CRON_SECRET>' },
+}).then(r => r.json()).then(console.log)
 ```
 
 ## 4. EIP-2612 permit flow (Phase 2)
