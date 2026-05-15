@@ -12,9 +12,14 @@ name = "arcswap-agent-cron"
 main = "src/index.js"
 compatibility_date = "2025-01-01"
 
-# Fire every minute. Cloudflare cron is precise to the minute.
+# Fire every 5 minutes. We previously ran every minute, but that pushed us
+# toward the Workers KV free-tier daily caps (especially the 1k/day list cap,
+# since handleCronTick used to kv.list() every tick). 5-minute resolution is
+# fine for our use cases:
+#   - topup mode is throttled to fire at most once per 6 hours per agent
+#   - schedule mode fires at user-chosen HH:MM with at most 5 min trigger lag
 [triggers]
-crons = ["* * * * *"]
+crons = ["*/5 * * * *"]
 
 # NOTE on architecture:
 # We do NOT use a service binding here. Wrangler v3 doesn't fully support

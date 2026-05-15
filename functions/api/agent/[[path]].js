@@ -97,6 +97,58 @@ async function removeOwnerAgent(kv, owner, id) {
   await putJSON(kv, `owner:${lower(owner)}:agents`, ids.filter(x => x !== id));
 }
 
+/* ────────────────────────────────────────────────────────────
+   GLOBAL AGENT INDEX
+   ────────────────────────────────────────────────────────────
+   `agents:index` is a single KV key containing a JSON array of every
+   agent ID ever created (minus revoked ones). The cron tick reads this
+   one key instead of doing `kv.list({ prefix: 'agent:' })` every minute.
+
+   Why: kv.list() counts against the daily LIST cap (1,000/day on free
+   tier). At 1-minute cron resolution that meant 1,440 lists/day — over
+   cap. With the index, we read 1 key per tick (a cheap READ op against
+   the much higher 100k/day read cap).
+
+   Migration: on first read after deploy the index may not exist yet.
+   `getAllAgentIds` falls back to one kv.list() to seed the index, then
+   uses it thereafter. So existing agents are picked up automatically. */
+const AGENT_INDEX_KEY = 'agents:index';
+
+async function getAllAgentIds(kv) {
+  const existing = await getJSON(kv, AGENT_INDEX_KEY, null);
+  if (Array.isArray(existing)) return existing;
+
+  // Cold start: seed the index from kv.list() one time.
+  const ids = [];
+  let cursor = undefined;
+  do {
+    const page = await kv.list({ prefix: 'agent:', limit: 100, cursor });
+    for (const k of page.keys) {
+      const m = k.name.match(/^agent:(ag_[a-z0-9_]+)$/i);
+      if (m) ids.push(m[1]);
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+  await putJSON(kv, AGENT_INDEX_KEY, ids);
+  return ids;
+}
+
+async function addToAgentIndex(kv, id) {
+  const ids = await getAllAgentIds(kv);
+  if (!ids.includes(id)) {
+    ids.push(id);
+    await putJSON(kv, AGENT_INDEX_KEY, ids);
+  }
+}
+
+async function removeFromAgentIndex(kv, id) {
+  const ids = await getAllAgentIds(kv);
+  const filtered = ids.filter(x => x !== id);
+  if (filtered.length !== ids.length) {
+    await putJSON(kv, AGENT_INDEX_KEY, filtered);
+  }
+}
+
 async function appendExecution(kv, agentId, event) {
   const key = `agent:${agentId}:executions`;
   const arr = await getJSON(kv, key, []);
@@ -202,6 +254,7 @@ async function handleCreate(req, kv, env) {
   // Persist first so the agent exists even if Circle provisioning fails.
   await putJSON(kv, `agent:${id}`, agent);
   await addOwnerAgent(kv, owner, id);
+  await addToAgentIndex(kv, id);
   await appendExecution(kv, id, {
     type: 'deployed',
     detail: mode === 'topup'
@@ -323,6 +376,7 @@ async function handleRevoke(req, kv, id) {
   agent.revokedAt = Date.now();
   await putJSON(kv, `agent:${id}`, agent);
   await removeOwnerAgent(kv, agent.owner, id);
+  await removeFromAgentIndex(kv, id);
   await appendExecution(kv, id, { type: 'revoked', detail: 'Agent revoked · signature invalidated' });
   return json(204, {});
 }
@@ -534,73 +588,72 @@ async function handleCronTick(req, kv, env) {
   const now = Date.now();
   const summary = { scanned: 0, fired: 0, skipped: 0, errors: 0, details: [] };
 
-  // List all keys with prefix "agent:". Filter to those that match a bare
-  // agent record (agent:ag_xxx) — exclude `agent:ag_xxx:executions`.
-  let cursor = undefined;
-  do {
-    const page = await kv.list({ prefix: 'agent:', limit: 100, cursor });
-    for (const k of page.keys) {
-      if (!/^agent:ag_[a-z0-9_]+$/i.test(k.name)) continue;
-      summary.scanned++;
-      const agent = await getJSON(kv, k.name, null);
-      if (!agent) continue;
-      if (agent.state !== 'active') { summary.skipped++; continue; }
-      if (agent.expiresAt && agent.expiresAt < now) { summary.skipped++; continue; }
+  // Pull agent IDs from the global index. This replaces the previous
+  // `kv.list({ prefix: 'agent:' })` sweep, which counted against the
+  // 1k/day LIST cap on the KV free tier. One get vs one list per tick.
+  const agentIds = await getAllAgentIds(kv);
+  for (const id of agentIds) {
+    summary.scanned++;
+    const agent = await getJSON(kv, `agent:${id}`, null);
+    if (!agent) continue;
+    if (agent.state !== 'active') { summary.skipped++; continue; }
+    if (agent.expiresAt && agent.expiresAt < now) { summary.skipped++; continue; }
 
-      // Decide whether to fire
-      let shouldFire = false;
-      if (agent.mode === 'schedule') {
-        if (agent.nextRun && agent.nextRun <= now) shouldFire = true;
-      } else if (agent.mode === 'topup') {
-        // Naive: fire every tick (effectively once per minute). Proper version
-        // polls target balances via RPC and only fires when below floor.
-        // For now, throttle to "at most once per hour" via lastTrigger gap.
-        const ONE_HOUR = 60 * 60 * 1000;
-        if (!agent.lastTrigger || now - agent.lastTrigger > ONE_HOUR) {
-          shouldFire = true;
-        }
-      }
-
-      if (!shouldFire) { summary.skipped++; continue; }
-
-      // Fire
-      try {
-        const result = await executeRefill(env, agent);
-        for (const t of (result.txs || [])) {
-          if (t.error) {
-            await appendExecution(kv, agent.id, {
-              type: 'error',
-              detail: `[cron] ${t.source}→${t.target?.slice(0,10) || '?'}: ${String(t.error).slice(0, 160)}`,
-            });
-          } else {
-            await appendExecution(kv, agent.id, {
-              type: 'sent',
-              detail: `[cron] sent $${t.amount} ${t.source}→${t.target?.slice(0,10) || '?'}`,
-              amount: Number(t.amount),
-              circleTxId: t.circleTxId,
-              state: t.state,
-              flow: t.flow,
-            });
-          }
-        }
-        agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
-        agent.lastTrigger = now;
-        if (agent.mode === 'schedule') agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
-        await putJSON(kv, k.name, agent);
-
-        summary.fired++;
-        summary.details.push({ id: agent.id, mode: agent.mode, sent: result.totalSent });
-      } catch (e) {
-        summary.errors++;
-        summary.details.push({ id: agent.id, error: String(e?.message || e).slice(0, 200) });
-        await appendExecution(kv, agent.id, {
-          type: 'error',
-          detail: `[cron] executeRefill threw: ${String(e?.message || e).slice(0, 200)}`,
-        });
+    // Decide whether to fire
+    let shouldFire = false;
+    if (agent.mode === 'schedule') {
+      if (agent.nextRun && agent.nextRun <= now) shouldFire = true;
+    } else if (agent.mode === 'topup') {
+      // Naive: fire on the throttle interval, regardless of whether the
+      // target wallet's balance is actually below the floor. Proper
+      // version polls target balances via RPC and only fires when below
+      // floor — deferred (needs per-chain RPC config). For now, throttle
+      // hard at 6 hours so we don't burn write ops re-funding already-
+      // funded wallets.
+      const SIX_HOURS = 6 * 60 * 60 * 1000;
+      if (!agent.lastTrigger || now - agent.lastTrigger > SIX_HOURS) {
+        shouldFire = true;
       }
     }
-    cursor = page.list_complete ? undefined : page.cursor;
-  } while (cursor);
+
+    if (!shouldFire) { summary.skipped++; continue; }
+
+    // Fire
+    try {
+      const result = await executeRefill(env, agent);
+      for (const t of (result.txs || [])) {
+        if (t.error) {
+          await appendExecution(kv, agent.id, {
+            type: 'error',
+            detail: `[cron] ${t.source}→${t.target?.slice(0,10) || '?'}: ${String(t.error).slice(0, 160)}`,
+          });
+        } else {
+          await appendExecution(kv, agent.id, {
+            type: 'sent',
+            detail: `[cron] sent $${t.amount} ${t.source}→${t.target?.slice(0,10) || '?'}`,
+            amount: Number(t.amount),
+            circleTxId: t.circleTxId,
+            state: t.state,
+            flow: t.flow,
+          });
+        }
+      }
+      agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
+      agent.lastTrigger = now;
+      if (agent.mode === 'schedule') agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
+      await putJSON(kv, `agent:${id}`, agent);
+
+      summary.fired++;
+      summary.details.push({ id: agent.id, mode: agent.mode, sent: result.totalSent });
+    } catch (e) {
+      summary.errors++;
+      summary.details.push({ id: agent.id, error: String(e?.message || e).slice(0, 200) });
+      await appendExecution(kv, agent.id, {
+        type: 'error',
+        detail: `[cron] executeRefill threw: ${String(e?.message || e).slice(0, 200)}`,
+      });
+    }
+  }
 
   return json(200, summary);
 }
