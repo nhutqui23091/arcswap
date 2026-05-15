@@ -310,8 +310,8 @@ export async function provisionWalletsForAgent(env, agent) {
  * @param env
  * @param params {
  *   walletId,            // Circle wallet id (source)
- *   blockchain,          // 'BASE-SEPOLIA' etc — used to pick tokenAddress
- *   sourceChain,         // 'baseSepolia' etc — internal key
+ *   blockchain,          // Circle's blockchain id, e.g. 'BASE-SEPOLIA' — REQUIRED when sending tokenAddress
+ *   sourceChain,         // our canonical ARC key 'baseSepolia' — used to pick USDC_ADDRESS
  *   destinationAddress,
  *   amount,              // human-readable USDC, e.g. "0.01"
  * }
@@ -321,24 +321,27 @@ export async function provisionWalletsForAgent(env, agent) {
  * poll GET /transactions/:id if it needs the hash.
  */
 export async function transferUSDC(env, params) {
-  const { walletId, sourceChain, destinationAddress, amount } = params;
+  const { walletId, sourceChain, blockchain, destinationAddress, amount } = params;
   const tokenAddress = USDC_ADDRESS[sourceChain];
   if (!tokenAddress) {
     throw new Error(`No USDC address mapped for source chain "${sourceChain}"`);
   }
   if (!walletId)            throw new Error('walletId required');
+  if (!blockchain)          throw new Error('blockchain required (e.g. BASE-SEPOLIA)');
   if (!destinationAddress)  throw new Error('destinationAddress required');
   if (!amount)              throw new Error('amount required');
 
   const entitySecretCiphertext = await entityCiphertext(env);
-  // Circle's API expects all-lowercase token addresses for EVM chains.
-  // EIP-55 checksummed format causes "API parameter invalid" responses.
+  // Circle requires EITHER tokenId OR (blockchain + tokenAddress). We use the
+  // latter so we don't have to maintain a separate Circle-tokenId mapping.
+  // Addresses must be lowercase — EIP-55 checksummed casing was failing 400.
   const res = await circleFetch(env, '/v1/w3s/developer/transactions/transfer', {
     method: 'POST',
     body: {
       idempotencyKey: crypto.randomUUID(),
       entitySecretCiphertext,
       walletId,
+      blockchain,
       tokenAddress: tokenAddress.toLowerCase(),
       destinationAddress: destinationAddress.toLowerCase(),
       amounts: [String(amount)],
@@ -408,6 +411,7 @@ export async function executeRefill(env, agent) {
       const tx = await transferUSDC(env, {
         walletId: wallet.walletId,
         sourceChain: arcKey,
+        blockchain: wallet.blockchain,
         destinationAddress: target,
         amount,
       });
@@ -426,6 +430,7 @@ export async function executeRefill(env, agent) {
         const tx = await transferUSDC(env, {
           walletId: wallet.walletId,
           sourceChain: arcKey,
+          blockchain: wallet.blockchain,
           destinationAddress: target,
           amount: perTarget.toFixed(6),
         });
