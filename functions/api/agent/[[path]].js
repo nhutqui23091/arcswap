@@ -150,6 +150,102 @@ async function removeFromAgentIndex(kv, id) {
   }
 }
 
+/* ────────────────────────────────────────────────────────────
+   MODE-SPECIFIC SHARDED INDEXES
+   ────────────────────────────────────────────────────────────
+   The plain `agents:index` above works fine until the count grows past
+   ~15-20 active topup agents — at which point one cron tick has to issue
+   too many KV reads + RPC balance calls and blows the Pages Functions
+   "50 subrequests per invocation" free-tier cap.
+
+   Two mitigations stacked together:
+
+   1. SPLIT BY MODE — keep `agents:topup` and `agents:schedule` as
+      separate lists. Cron can decide whether to scan an agent without
+      loading it from KV (saving a read).
+
+   2. SHARD TOPUP — partition topup agents into N_SHARDS buckets by a
+      deterministic hash of their ID. Each cron tick processes ONLY the
+      bucket whose index matches `Math.floor(now/5min) % N_SHARDS`.
+      With N=12 and tick=5min, every topup agent is checked once per
+      hour instead of once per 5 min. Schedule agents are NOT sharded —
+      they need precise HH:MM firing.
+
+   Capacity (free tier subrequest cap = 50/invocation):
+     before sharding: ~15 topup agents
+     after sharding:  ~300 topup agents (20× headroom)
+
+   Migration: getModeIndexes seeds the mode lists from the legacy
+   `agents:index` (or kv.list as a last resort) on first run. Subsequent
+   create/revoke maintain both legacy and mode indexes so we have a
+   recoverable backup. */
+const N_SHARDS = 12;
+const SHARD_DURATION_MS = 5 * 60 * 1000; // matches cron cadence
+const TOPUP_INDEX_KEY = 'agents:topup';
+const SCHEDULE_INDEX_KEY = 'agents:schedule';
+
+/** Deterministic ID → shard index. djb2-style hash, even distribution. */
+function shardOf(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+  }
+  return ((h % N_SHARDS) + N_SHARDS) % N_SHARDS;
+}
+
+/** Which shard does THIS tick own. Rotates every SHARD_DURATION_MS. */
+function currentShard() {
+  return Math.floor(Date.now() / SHARD_DURATION_MS) % N_SHARDS;
+}
+
+/**
+ * Return { schedule, topup } id lists. Seeds them from the legacy
+ * `agents:index` once if they don't exist yet (or from kv.list as final
+ * fallback). One-time migration cost; cheap forever after.
+ */
+async function getModeIndexes(kv) {
+  let schedule = await getJSON(kv, SCHEDULE_INDEX_KEY, null);
+  let topup    = await getJSON(kv, TOPUP_INDEX_KEY, null);
+  if (Array.isArray(schedule) && Array.isArray(topup)) {
+    return { schedule, topup };
+  }
+
+  // Migration: walk the legacy index, classify each by mode.
+  const allIds = await getAllAgentIds(kv);
+  schedule = [];
+  topup    = [];
+  for (const id of allIds) {
+    const agent = await getJSON(kv, `agent:${id}`, null);
+    if (!agent) continue;
+    if (agent.mode === 'schedule')   schedule.push(id);
+    else if (agent.mode === 'topup') topup.push(id);
+  }
+  await putJSON(kv, SCHEDULE_INDEX_KEY, schedule);
+  await putJSON(kv, TOPUP_INDEX_KEY, topup);
+  console.log(`[migration] seeded mode indexes: ${schedule.length} schedule, ${topup.length} topup`);
+  return { schedule, topup };
+}
+
+async function addToModeIndex(kv, agent) {
+  if (!agent?.id || !agent?.mode) return;
+  const key = agent.mode === 'schedule' ? SCHEDULE_INDEX_KEY : TOPUP_INDEX_KEY;
+  const ids = await getJSON(kv, key, []);
+  if (!ids.includes(agent.id)) {
+    ids.push(agent.id);
+    await putJSON(kv, key, ids);
+  }
+}
+
+async function removeFromModeIndex(kv, agent) {
+  if (!agent?.id || !agent?.mode) return;
+  const key = agent.mode === 'schedule' ? SCHEDULE_INDEX_KEY : TOPUP_INDEX_KEY;
+  const ids = await getJSON(kv, key, []);
+  const filtered = ids.filter(x => x !== agent.id);
+  if (filtered.length !== ids.length) {
+    await putJSON(kv, key, filtered);
+  }
+}
+
 async function appendExecution(kv, agentId, event) {
   const key = `agent:${agentId}:executions`;
   const arr = await getJSON(kv, key, []);
@@ -255,7 +351,8 @@ async function handleCreate(req, kv, env) {
   // Persist first so the agent exists even if Circle provisioning fails.
   await putJSON(kv, `agent:${id}`, agent);
   await addOwnerAgent(kv, owner, id);
-  await addToAgentIndex(kv, id);
+  await addToAgentIndex(kv, id);    // legacy global index — kept as safety backup for migration recovery
+  await addToModeIndex(kv, agent);  // sharded mode index — what cron actually reads
   await appendExecution(kv, id, {
     type: 'deployed',
     detail: mode === 'topup'
@@ -377,7 +474,8 @@ async function handleRevoke(req, kv, id) {
   agent.revokedAt = Date.now();
   await putJSON(kv, `agent:${id}`, agent);
   await removeOwnerAgent(kv, agent.owner, id);
-  await removeFromAgentIndex(kv, id);
+  await removeFromAgentIndex(kv, id);    // legacy global index
+  await removeFromModeIndex(kv, agent);  // sharded mode index (read by cron)
   await appendExecution(kv, id, { type: 'revoked', detail: 'Agent revoked · signature invalidated' });
   return json(204, {});
 }
@@ -622,83 +720,102 @@ async function handleCronTick(req, kv, env) {
   }
 
   const now = Date.now();
-  const summary = { scanned: 0, fired: 0, skipped: 0, errors: 0, details: [] };
+  const shard = currentShard();
+  const summary = {
+    shard,
+    scanned: 0, fired: 0, skipped: 0, errors: 0,
+    details: [],
+  };
 
-  // Pull agent IDs from the global index. This replaces the previous
-  // `kv.list({ prefix: 'agent:' })` sweep, which counted against the
-  // 1k/day LIST cap on the KV free tier. One get vs one list per tick.
-  const agentIds = await getAllAgentIds(kv);
-  for (const id of agentIds) {
+  // Load both mode indexes (one read each). Topup agents are sharded so
+  // each tick only touches 1/N_SHARDS of them; schedule agents are
+  // scanned every tick for HH:MM precision.
+  const { schedule: scheduleIds, topup: topupIds } = await getModeIndexes(kv);
+
+  // ── SCHEDULE pass: every tick, every active schedule agent ───────────
+  for (const id of scheduleIds) {
+    summary.scanned++;
+    const agent = await getJSON(kv, `agent:${id}`, null);
+    if (!agent) continue;
+    if (agent.state !== 'active') { summary.skipped++; continue; }
+    if (agent.expiresAt && agent.expiresAt < now) { summary.skipped++; continue; }
+    if (!(agent.nextRun && agent.nextRun <= now)) { summary.skipped++; continue; }
+    await fireAgentInCron(kv, env, agent, summary, now);
+  }
+
+  // ── TOPUP pass: only this tick's shard ───────────────────────────────
+  for (const id of topupIds) {
+    if (shardOf(id) !== shard) continue;
     summary.scanned++;
     const agent = await getJSON(kv, `agent:${id}`, null);
     if (!agent) continue;
     if (agent.state !== 'active') { summary.skipped++; continue; }
     if (agent.expiresAt && agent.expiresAt < now) { summary.skipped++; continue; }
 
-    // Decide whether to fire
-    let shouldFire = false;
-    if (agent.mode === 'schedule') {
-      if (agent.nextRun && agent.nextRun <= now) shouldFire = true;
-    } else if (agent.mode === 'topup') {
-      // Two gates:
-      //   1. THROTTLE — minimum gap between fires (safety net against a
-      //      buggy balance check or a target that's spending out faster
-      //      than we can refill).
-      //   2. BALANCE — RPC-check the target's actual on-chain USDC. Only
-      //      fire when balance is below the configured floor. Saves both
-      //      Circle gas and KV writes on every "wallet still funded" tick.
-      // If the RPC fails, balance check returns true (fire-safe default).
-      const THROTTLE_MS = 30 * 60 * 1000; // 30 min — balance check is the
-                                          // real gate; throttle is a safety
-                                          // net so a balance-check bug can't
-                                          // cause runaway firing.
-      const throttleOK = !agent.lastTrigger || now - agent.lastTrigger > THROTTLE_MS;
-      if (throttleOK) {
-        const needs = await topupTargetBelowFloor(env, agent);
-        if (needs) shouldFire = true;
-      }
-    }
+    // Two gates:
+    //   1. THROTTLE — minimum gap between fires (safety net against a
+    //      buggy balance check or a target spending out faster than we
+    //      can refill).
+    //   2. BALANCE — RPC-check the target's actual on-chain USDC. Only
+    //      fire when balance < floor. Saves Circle gas + KV writes on
+    //      every "wallet still funded" tick.
+    // RPC error → returns true (fire-safe default).
+    const THROTTLE_MS = 30 * 60 * 1000;
+    const throttleOK = !agent.lastTrigger || now - agent.lastTrigger > THROTTLE_MS;
+    if (!throttleOK) { summary.skipped++; continue; }
 
-    if (!shouldFire) { summary.skipped++; continue; }
+    const needs = await topupTargetBelowFloor(env, agent);
+    if (!needs) { summary.skipped++; continue; }
 
-    // Fire
-    try {
-      const result = await executeRefill(env, agent);
-      for (const t of (result.txs || [])) {
-        if (t.error) {
-          await appendExecution(kv, agent.id, {
-            type: 'error',
-            detail: `[cron] ${t.source}→${t.target?.slice(0,10) || '?'}: ${String(t.error).slice(0, 160)}`,
-          });
-        } else {
-          await appendExecution(kv, agent.id, {
-            type: 'sent',
-            detail: `[cron] sent $${t.amount} ${t.source}→${t.target?.slice(0,10) || '?'}`,
-            amount: Number(t.amount),
-            circleTxId: t.circleTxId,
-            state: t.state,
-            flow: t.flow,
-          });
-        }
-      }
-      agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
-      agent.lastTrigger = now;
-      if (agent.mode === 'schedule') agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
-      await putJSON(kv, `agent:${id}`, agent);
-
-      summary.fired++;
-      summary.details.push({ id: agent.id, mode: agent.mode, sent: result.totalSent });
-    } catch (e) {
-      summary.errors++;
-      summary.details.push({ id: agent.id, error: String(e?.message || e).slice(0, 200) });
-      await appendExecution(kv, agent.id, {
-        type: 'error',
-        detail: `[cron] executeRefill threw: ${String(e?.message || e).slice(0, 200)}`,
-      });
-    }
+    await fireAgentInCron(kv, env, agent, summary, now);
   }
 
   return json(200, summary);
+}
+
+/**
+ * Execute one agent's refill within the cron loop. Wraps executeRefill
+ * + execution logging + state update. Updates `summary` in place so the
+ * caller's accounting stays consistent. Never throws — errors are caught,
+ * logged to the agent's execution feed, and surfaced via summary.errors.
+ */
+async function fireAgentInCron(kv, env, agent, summary, now) {
+  try {
+    const result = await executeRefill(env, agent);
+    for (const t of (result.txs || [])) {
+      if (t.error) {
+        await appendExecution(kv, agent.id, {
+          type: 'error',
+          detail: `[cron] ${t.source}→${t.target?.slice(0,10) || '?'}: ${String(t.error).slice(0, 160)}`,
+        });
+      } else {
+        await appendExecution(kv, agent.id, {
+          type: 'sent',
+          detail: `[cron] sent $${t.amount} ${t.source}→${t.target?.slice(0,10) || '?'}`,
+          amount: Number(t.amount),
+          circleTxId: t.circleTxId,
+          state: t.state,
+          flow: t.flow,
+        });
+      }
+    }
+    agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
+    agent.lastTrigger = now;
+    if (agent.mode === 'schedule') {
+      agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
+    }
+    await putJSON(kv, `agent:${agent.id}`, agent);
+
+    summary.fired++;
+    summary.details.push({ id: agent.id, mode: agent.mode, sent: result.totalSent });
+  } catch (e) {
+    summary.errors++;
+    summary.details.push({ id: agent.id, error: String(e?.message || e).slice(0, 200) });
+    await appendExecution(kv, agent.id, {
+      type: 'error',
+      detail: `[cron] executeRefill threw: ${String(e?.message || e).slice(0, 200)}`,
+    });
+  }
 }
 
 /* ────────────────────────────────────────────────────────────
