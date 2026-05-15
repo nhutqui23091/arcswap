@@ -48,31 +48,28 @@ export default {
 };
 
 async function tick(env) {
-  if (!env.PAGES) {
-    console.error('[cron] PAGES service binding missing');
-    return { status: 500, error: 'service_binding_missing' };
-  }
   if (!env.CRON_SECRET) {
     console.error('[cron] CRON_SECRET secret missing');
     return { status: 500, error: 'cron_secret_missing' };
   }
 
-  // Internal request via service binding — bypasses public edge,
-  // skips bot detection, no DNS/TLS handshake.
-  const req = new Request('https://arcswap.net/api/agent/cron-tick', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.CRON_SECRET}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'arcswap-agent-cron-worker/1.0',
-    },
-  });
-
+  // Direct fetch to public URL. Workers running inside Cloudflare's
+  // network typically pass Bot Fight Mode without challenge (unlike
+  // external clients like GitHub Actions). If a challenge does come
+  // back, the WAF Custom Rule "Allow agent cron-tick" with Skip action
+  // on /api/agent/cron-tick is the safety net.
   let res;
   try {
-    res = await env.PAGES.fetch(req);
+    res = await fetch('https://arcswap.net/api/agent/cron-tick', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.CRON_SECRET}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'arcswap-agent-cron-worker/1.0',
+      },
+    });
   } catch (e) {
-    console.error('[cron] service binding fetch threw:', e?.message || e);
+    console.error('[cron] fetch threw:', e?.message || e);
     return { status: 502, error: String(e?.message || e) };
   }
 

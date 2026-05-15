@@ -16,17 +16,19 @@ compatibility_date = "2025-01-01"
 [triggers]
 crons = ["* * * * *"]
 
-# Service binding to the arcswap Pages project. This lets the Worker
-# call the Pages function directly via env.PAGES.fetch(req) — bypasses
-# the public edge entirely, so no bot challenge / WAF interference.
+# NOTE on architecture:
+# We do NOT use a service binding here. Wrangler v3 doesn't fully support
+# Worker→Pages-project service bindings (the API returns "Worker not found"
+# even when the Pages project exists with that name). Instead the Worker
+# fetches the public URL https://arcswap.net/api/agent/cron-tick directly.
 #
-# IMPORTANT: the `service` name must match the Pages project name in
-# the Cloudflare dashboard exactly. If your Pages project is named
-# something other than "arcswap" (e.g. "arcswap-prod"), update this
-# field accordingly.
-[[services]]
-binding = "PAGES"
-service = "arcswap"
+# Why this still works (vs GitHub Actions hitting the same URL):
+# Cloudflare Workers running inside the CF network are NOT subject to
+# basic Bot Fight Mode the same way external clients are. Internal
+# traffic from a Worker in the same account gets routed differently and
+# typically passes Bot Fight Mode without challenge. If it does get
+# challenged, we have the WAF Custom Rule "Allow agent cron-tick" with
+# Skip action on /api/agent/cron-tick as backup.
 
 # Logging: keep observability on so we can stream tail
 [observability]
