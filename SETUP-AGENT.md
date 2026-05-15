@@ -68,34 +68,120 @@ After saving, **trigger a redeploy** (Pages → Deployments → ⋯ → Retry).
 
 ---
 
-## 3. (Optional) Cron Trigger for autonomous execution
+## 3. Cron Trigger for autonomous execution
 
-Without a cron, the agent only fires when a user clicks **Run now** on the UI.
-A cron lets it run truly in the background:
+Without a cron, the agent only fires when a user clicks **Run now**. A
+scheduler hitting `/api/agent/cron-tick` every minute makes it truly
+autonomous.
 
-- For threshold mode: poll each target wallet's balance every minute
-- For schedule mode: fire when `nextRun <= now`
+### Set the shared secret
 
-### Add the cron
+```
+Cloudflare Pages → Settings → Environment variables → Production
+  → Add variable:
+    Name:  CRON_SECRET
+    Value: <generate a random 32-char string — `openssl rand -hex 32`>
+    Type:  🔒 Encrypted
+```
 
-Cloudflare doesn't yet support cron triggers in Pages Functions directly. Two
-options:
+Without this var, the endpoint returns `503 cron_not_configured` and the
+cron is a no-op (safe default).
 
-**Option A — Convert to Worker** (recommended once cron is needed):
+### How `/api/agent/cron-tick` works
 
-1. Move agent execution logic from `functions/api/agent/[[path]].js` into a
-   dedicated Worker (`workers/agent-cron/`)
-2. Schedule with `wrangler.toml` → `[triggers] crons = ["* * * * *"]`
-3. Have the cron handler enumerate all `agent:*` keys, check trigger conditions
+- Auth: requires `Authorization: Bearer <CRON_SECRET>` header
+- Scans all `agent:*` KV keys (filters to bare agent records, skips
+  execution-log keys)
+- For schedule mode: fires when `nextRun <= now`, then advances nextRun
+  based on cadence (daily / weekly / monthly)
+- For topup mode: fires at most once per hour (placeholder — real
+  version polls each target balance via RPC and fires only those below
+  the floor)
+- Returns a summary JSON: `{ scanned, fired, skipped, errors, details }`
 
-**Option B — External trigger** (cheap and fast):
+### Wire up an external scheduler
 
-1. Use any cron service (GitHub Actions, EasyCron, Cloudflare Workflows) to
-   hit `POST /api/agent/cron-tick` every minute
-2. Add a handler that loops over active agents and decides what to fire
-3. Protect the endpoint with a shared secret (`CRON_SECRET` env var)
+Pick whichever you prefer; all work fine with the endpoint as-is.
 
-Both ship later — for now manual **Run now** is enough for demos.
+**Option A — Cloudflare Cron Worker** (cleanest, no third-party):
+
+Create a separate Worker (not Pages) with cron triggers:
+
+```toml
+# wrangler.toml
+name = "arcswap-agent-cron"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[triggers]
+crons = ["* * * * *"]  # every minute
+```
+
+```js
+// src/index.js
+export default {
+  async scheduled(event, env, ctx) {
+    await fetch('https://arcswap.net/api/agent/cron-tick', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.CRON_SECRET}` },
+    });
+  },
+};
+```
+
+Deploy with `wrangler deploy`. Bind `CRON_SECRET` as a secret on the
+Worker too.
+
+**Option B — GitHub Actions** (zero infra):
+
+`.github/workflows/agent-cron.yml`:
+
+```yaml
+on:
+  schedule:
+    - cron: '* * * * *'  # every minute
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -X POST https://arcswap.net/api/agent/cron-tick \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+```
+
+GitHub Actions free tier covers a per-minute cron easily.
+
+**Option C — EasyCron / cron-job.org** (free third-party):
+
+Add a job pointed at `POST https://arcswap.net/api/agent/cron-tick`
+with the bearer header. Simplest to set up.
+
+### Verify
+
+```bash
+# Should return 401 without secret
+curl -X POST https://arcswap.net/api/agent/cron-tick
+
+# Should return summary JSON
+curl -X POST https://arcswap.net/api/agent/cron-tick \
+  -H "Authorization: Bearer <CRON_SECRET>"
+# → { "scanned": 3, "fired": 1, "skipped": 2, "errors": 0, "details": [...] }
+```
+
+## 4. EIP-2612 permit flow (Phase 2)
+
+When a user deploys an agent, the frontend now ALSO signs EIP-2612
+permit signatures — one per source chain. The backend submits each
+`USDC.permit(...)` on-chain via the agent's SCA wallet (Paymaster
+covers gas, free on testnet).
+
+After permits are submitted, the agent pulls USDC directly from the
+user's external wallet via `transferFrom()` whenever it fires. No
+faucetting of the Circle wallet required.
+
+If permit signing is skipped or fails, the agent falls back to Phase 1
+behavior (user must fund the Circle SCA wallet manually). The agent
+record's `permits[].state` indicates which chains are authorized.
 
 ---
 

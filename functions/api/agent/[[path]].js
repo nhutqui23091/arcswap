@@ -38,6 +38,8 @@ import {
   provisionWalletsForAgent,
   executeRefill,
   getTransaction,
+  submitPermit,
+  CHIP_TO_ARC,
 } from './_circle.js';
 
 const HEADERS_JSON = { 'Content-Type': 'application/json' };
@@ -283,6 +285,94 @@ async function handleRevoke(req, kv, id) {
   return json(204, {});
 }
 
+/**
+ * Accept EIP-2612 permit signatures from the frontend and submit them
+ * on-chain via each agent's SCA wallet. This authorizes the agent to pull
+ * USDC directly from the user's external wallet (e.g. MetaMask) — no need
+ * for the user to fund the Circle SCA wallet themselves.
+ *
+ * Body: {
+ *   signature,  // ownership proof — agent's master EIP-712 sig
+ *   permits: [
+ *     { sourceChain: 'baseSepolia', value: '1000000000', deadline: 17xxxxxxxx,
+ *       v: 28, r: '0x...', s: '0x...' },
+ *     ...
+ *   ]
+ * }
+ */
+async function handleSubmitPermits(req, kv, env, id) {
+  let body;
+  try { body = await req.json(); } catch { return json(400, { error: 'bad_json' }); }
+  const agent = await getJSON(kv, `agent:${id}`, null);
+  if (!agent) return json(404, { error: 'not_found' });
+  if (!verifySignature(agent.owner, body.signature))
+    return json(401, { error: 'signature_invalid' });
+  if (!Array.isArray(body.permits) || !body.permits.length)
+    return json(400, { error: 'permits_required' });
+  if (!agent.circleWallets?.length)
+    return json(409, { error: 'no_circle_wallets', message: 'Agent has no provisioned wallets to authorize against.' });
+
+  // Build wallet-lookup by sourceChain (canonical ARC key)
+  const walletByChain = {};
+  for (const w of agent.circleWallets) {
+    const arcKey = CHIP_TO_ARC[w.source] || w.source;
+    walletByChain[arcKey] = w;
+  }
+
+  const results = [];
+  for (const p of body.permits) {
+    const { sourceChain, value, deadline, v, r, s } = p;
+    const wallet = walletByChain[sourceChain];
+    if (!wallet) {
+      results.push({ sourceChain, error: `No agent wallet for ${sourceChain}` });
+      continue;
+    }
+    if (!value || !deadline || v == null || !r || !s) {
+      results.push({ sourceChain, error: 'missing permit fields' });
+      continue;
+    }
+    try {
+      const tx = await submitPermit(env, {
+        wallet,
+        sourceChain,
+        owner: agent.owner,
+        spender: wallet.address,
+        value,
+        deadline,
+        v, r, s,
+      });
+      results.push({ sourceChain, circleTxId: tx.id, state: tx.state || 'submitted' });
+    } catch (e) {
+      results.push({ sourceChain, error: String(e?.message || e).slice(0, 300) });
+    }
+  }
+
+  // Store permits on the agent record (so executeRefill can pick them up)
+  agent.permits = (agent.permits || []).concat(
+    results.map((r, i) => ({
+      ...body.permits[i],
+      sourceChain: body.permits[i].sourceChain,
+      state: r.error ? 'failed' : 'submitted',
+      circleTxId: r.circleTxId,
+      error: r.error,
+      submittedAt: Date.now(),
+    })),
+  );
+  await putJSON(kv, `agent:${id}`, agent);
+
+  // Log to executions
+  for (const r of results) {
+    await appendExecution(kv, id, {
+      type: r.error ? 'error' : 'permit',
+      detail: r.error
+        ? `Permit ${r.sourceChain} failed: ${r.error}`
+        : `Permit submitted on ${r.sourceChain} · agent can pull from user wallet`,
+    });
+  }
+
+  return json(200, { agentId: id, results });
+}
+
 async function handleRunNow(req, kv, env, id) {
   let body;
   try { body = await req.json(); } catch { body = {}; }
@@ -375,6 +465,104 @@ async function handleExecutions(_req, kv, id) {
   return json(200, arr);
 }
 
+/**
+ * Cron tick — sweep all active agents, fire those that are due.
+ *
+ * Called by an external scheduler (or a Cloudflare Worker with `crons =
+ * ["* * * * *"]`) once per minute. Protected by Bearer token in
+ * Authorization header matching env.CRON_SECRET.
+ *
+ * For schedule mode: fires when `nextRun <= now`, then advances nextRun.
+ * For topup mode: fires unconditionally for now (proper version polls
+ * each target's balance via RPC and fires only those below the floor —
+ * deferred to a follow-up since it requires per-chain RPC config).
+ *
+ * Returns a summary so the cron worker can log progress.
+ */
+async function handleCronTick(req, kv, env) {
+  // Auth check — bearer secret must match env.CRON_SECRET
+  const auth = req.headers.get('Authorization') || '';
+  if (!env.CRON_SECRET) {
+    return json(503, { error: 'cron_not_configured', message: 'Set CRON_SECRET env var to enable cron-tick.' });
+  }
+  if (auth !== `Bearer ${env.CRON_SECRET}`) {
+    return json(401, { error: 'unauthorized' });
+  }
+
+  const now = Date.now();
+  const summary = { scanned: 0, fired: 0, skipped: 0, errors: 0, details: [] };
+
+  // List all keys with prefix "agent:". Filter to those that match a bare
+  // agent record (agent:ag_xxx) — exclude `agent:ag_xxx:executions`.
+  let cursor = undefined;
+  do {
+    const page = await kv.list({ prefix: 'agent:', limit: 100, cursor });
+    for (const k of page.keys) {
+      if (!/^agent:ag_[a-z0-9_]+$/i.test(k.name)) continue;
+      summary.scanned++;
+      const agent = await getJSON(kv, k.name, null);
+      if (!agent) continue;
+      if (agent.state !== 'active') { summary.skipped++; continue; }
+      if (agent.expiresAt && agent.expiresAt < now) { summary.skipped++; continue; }
+
+      // Decide whether to fire
+      let shouldFire = false;
+      if (agent.mode === 'schedule') {
+        if (agent.nextRun && agent.nextRun <= now) shouldFire = true;
+      } else if (agent.mode === 'topup') {
+        // Naive: fire every tick (effectively once per minute). Proper version
+        // polls target balances via RPC and only fires when below floor.
+        // For now, throttle to "at most once per hour" via lastTrigger gap.
+        const ONE_HOUR = 60 * 60 * 1000;
+        if (!agent.lastTrigger || now - agent.lastTrigger > ONE_HOUR) {
+          shouldFire = true;
+        }
+      }
+
+      if (!shouldFire) { summary.skipped++; continue; }
+
+      // Fire
+      try {
+        const result = await executeRefill(env, agent);
+        for (const t of (result.txs || [])) {
+          if (t.error) {
+            await appendExecution(kv, agent.id, {
+              type: 'error',
+              detail: `[cron] ${t.source}→${t.target?.slice(0,10) || '?'}: ${String(t.error).slice(0, 160)}`,
+            });
+          } else {
+            await appendExecution(kv, agent.id, {
+              type: 'sent',
+              detail: `[cron] sent $${t.amount} ${t.source}→${t.target?.slice(0,10) || '?'}`,
+              amount: Number(t.amount),
+              circleTxId: t.circleTxId,
+              state: t.state,
+              flow: t.flow,
+            });
+          }
+        }
+        agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
+        agent.lastTrigger = now;
+        if (agent.mode === 'schedule') agent.nextRun = computeNextRun('schedule', agent.params, now);
+        await putJSON(kv, k.name, agent);
+
+        summary.fired++;
+        summary.details.push({ id: agent.id, mode: agent.mode, sent: result.totalSent });
+      } catch (e) {
+        summary.errors++;
+        summary.details.push({ id: agent.id, error: String(e?.message || e).slice(0, 200) });
+        await appendExecution(kv, agent.id, {
+          type: 'error',
+          detail: `[cron] executeRefill threw: ${String(e?.message || e).slice(0, 200)}`,
+        });
+      }
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+
+  return json(200, summary);
+}
+
 /* ────────────────────────────────────────────────────────────
    ROUTER
    ──────────────────────────────────────────────────────────── */
@@ -416,6 +604,11 @@ export async function onRequest(context) {
     if (parts[0] === 'list' && parts.length === 1 && request.method === 'GET') {
       return await handleList(request, kv);
     }
+    // POST /api/agent/cron-tick — fired by external scheduler every minute.
+    // Auth: Authorization: Bearer ${env.CRON_SECRET}
+    if (parts[0] === 'cron-tick' && parts.length === 1 && request.method === 'POST') {
+      return await handleCronTick(request, kv, env);
+    }
     // /api/agent/:id and subroutes
     if (parts.length >= 1 && parts[0] !== 'create' && parts[0] !== 'list') {
       const id = parts[0];
@@ -433,6 +626,8 @@ export async function onRequest(context) {
           return await handleRunNow(request, kv, env, id);
         if (parts[1] === 'executions' && request.method === 'GET')
           return await handleExecutions(request, kv, id);
+        if (parts[1] === 'permits'    && request.method === 'POST')
+          return await handleSubmitPermits(request, kv, env, id);
       }
     }
     return json(404, { error: 'not_found' });

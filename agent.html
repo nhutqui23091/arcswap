@@ -491,9 +491,9 @@
     <div class="modal-h" id="modal-h">Sign the rule in your wallet</div>
     <div class="modal-s" id="modal-s">Your wallet will pop up asking you to sign an EIP-712 message. No gas, no on-chain transaction — just a signature that authorizes this rule.</div>
     <div class="modal-steps" id="modal-steps">
-      <div class="modal-step" data-step="0"><div class="modal-step-ico">1</div><div class="modal-step-label">Sign in wallet</div></div>
-      <div class="modal-step" data-step="1"><div class="modal-step-ico">2</div><div class="modal-step-label">Register rule</div></div>
-      <div class="modal-step" data-step="2"><div class="modal-step-ico">3</div><div class="modal-step-label">Start watcher</div></div>
+      <div class="modal-step" data-step="0"><div class="modal-step-ico">1</div><div class="modal-step-label">Sign agent rule</div></div>
+      <div class="modal-step" data-step="1"><div class="modal-step-ico">2</div><div class="modal-step-label">Register on server</div></div>
+      <div class="modal-step" data-step="2"><div class="modal-step-ico">3</div><div class="modal-step-label">Authorize USDC pull</div></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeSignModal()">Cancel</button>
@@ -677,6 +677,173 @@
     };
     const sig = await ARC.wallet.signer.signTypedData(EIP712_DOMAIN, EIP712_TYPES, value);
     return { sig, nonce };
+  }
+
+  // USDC EIP-2612 permit() typed data per source chain. Most native-USDC
+  // deployments use { name: 'USDC', version: '2' } in the domain.
+  const USDC_PERMIT_DOMAIN = {
+    name: 'USDC',
+    version: '2',
+  };
+  const USDC_PERMIT_TYPES = {
+    Permit: [
+      { name: 'owner',    type: 'address' },
+      { name: 'spender',  type: 'address' },
+      { name: 'value',    type: 'uint256' },
+      { name: 'nonce',    type: 'uint256' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+  };
+  // USDC token addresses per chain (same map as backend _circle.js)
+  const USDC_ADDRESS = {
+    sepolia:         '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+    baseSepolia:     '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+    arbitrumSepolia: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
+    optimismSepolia: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7',
+    polygonAmoy:     '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582',
+    avalancheFuji:   '0x5425890298aed601595a70AB815c96711a31Bc65',
+    unichainSepolia: '0x31d0220469e10c4E71834a79b1f276d740d3768F',
+  };
+
+  /**
+   * Fetch the user's current USDC nonce on a given chain. Required to build a
+   * valid EIP-2612 permit. Uses arc-core's rpcProvider — no extra network setup.
+   */
+  async function fetchUsdcNonce(arcKey, userAddress) {
+    const usdc = USDC_ADDRESS[arcKey];
+    if (!usdc) throw new Error(`no USDC for ${arcKey}`);
+    const provider = ARC.rpcProvider(arcKey);
+    const contract = new ethers.Contract(
+      usdc,
+      ['function nonces(address) view returns (uint256)'],
+      provider,
+    );
+    const n = await contract.nonces(userAddress);
+    return BigInt(n).toString();
+  }
+
+  /**
+   * Sign one EIP-2612 permit for a (chain, spender, value) triple.
+   * Returns the components ready for on-chain submission.
+   */
+  async function signOnePermit({ arcKey, spender, value, deadline }) {
+    const usdc = USDC_ADDRESS[arcKey];
+    const chainId = ARC.CHAINS[arcKey]?.id;
+    if (!usdc || !chainId) throw new Error(`unsupported chain ${arcKey}`);
+
+    const nonce = await fetchUsdcNonce(arcKey, ARC.wallet.address);
+
+    const domain = {
+      ...USDC_PERMIT_DOMAIN,
+      chainId,
+      verifyingContract: usdc,
+    };
+    const message = {
+      owner:    ARC.wallet.address,
+      spender,
+      value:    BigInt(value),
+      nonce:    BigInt(nonce),
+      deadline: BigInt(deadline),
+    };
+    const sig = await ARC.wallet.signer.signTypedData(domain, USDC_PERMIT_TYPES, message);
+    // Split signature into v/r/s for the on-chain permit() call
+    const { v, r, s } = ethers.Signature.from(sig);
+    return {
+      sourceChain: arcKey,
+      value: String(message.value),
+      deadline: String(message.deadline),
+      v, r, s,
+    };
+  }
+
+  /**
+   * After agent is provisioned, ask the user to sign EIP-2612 permits — one
+   * per source chain. Then POST them to the backend which submits each
+   * permit() on-chain via the agent's SCA wallet (Paymaster sponsors gas).
+   *
+   * Permits authorize the agent to pull `dailyCap × N` USDC for top-up mode
+   * or `sendAmount × N targets × N runs` for schedule mode (with headroom).
+   * After permits are submitted, the agent never needs its own USDC balance.
+   */
+  async function authorizeAgentPermits(agent, rule) {
+    if (!ARC.wallet.signer) throw new Error('wallet not connected');
+    if (!agent.circleWallets?.length) return; // nothing to authorize
+
+    // Build per-chain spender map: ARC key → SCA wallet address
+    const spenderByChain = {};
+    for (const w of agent.circleWallets) {
+      const arcKey = CHIP_TO_ARC[w.source] || w.source;
+      spenderByChain[arcKey] = w.address;
+    }
+
+    // Headroom: authorize 10× refillAmount or sendAmount, capped at a sane max.
+    // This lets the agent run multiple times without re-permitting.
+    const HEADROOM_MULT = 10n;
+    let perChainValue;
+    if (rule.mode === 'topup') {
+      // dailyCap is in USDC; convert to 6-decimal raw and multiply
+      perChainValue = toRawUsdc(rule.params.dailyCap) * HEADROOM_MULT;
+    } else {
+      const targetsCount = BigInt(rule.targets.length);
+      perChainValue = toRawUsdc(rule.params.sendAmount) * targetsCount * HEADROOM_MULT;
+    }
+    const deadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
+
+    const permits = [];
+    for (const [arcKey, spender] of Object.entries(spenderByChain)) {
+      if (!USDC_ADDRESS[arcKey]) {
+        console.log(`[permits] skipping ${arcKey} — no USDC mapping`);
+        continue;
+      }
+      // Update modal copy so user knows which chain they're signing for
+      const msgEl = document.getElementById('modal-s');
+      if (msgEl) msgEl.textContent = `Authorize agent to pull USDC from your wallet on ${CHAIN_LABELS[arcKey] || arcKey}. One signature, no gas, no on-chain transaction yet.`;
+      try {
+        const permit = await signOnePermit({
+          arcKey,
+          spender,
+          value: perChainValue.toString(),
+          deadline,
+        });
+        permits.push(permit);
+      } catch (e) {
+        const msg = (e?.message || String(e));
+        if (/user rejected|denied|reject|cancel/i.test(msg)) {
+          throw new Error('Authorization cancelled');
+        }
+        throw e;
+      }
+    }
+
+    if (!permits.length) {
+      console.log('[permits] no permits signed (no supported chains)');
+      return;
+    }
+
+    // POST to backend so it can submit on-chain
+    const res = await api(`/${agent.id}/permits`, {
+      method: 'POST',
+      body: {
+        signature: agent.signature || '0x0',
+        permits,
+      },
+    });
+    if (res && res._fallback) {
+      // Backend offline — store permits locally so we don't lose them
+      agent.permits = permits;
+      saveLocalAgents();
+      return;
+    }
+    // Backend will return per-permit results; refresh agent from backend to
+    // pick up the new state on its record
+    return res;
+  }
+
+  /** Convert human USDC ("1.50") to 6-decimal BigInt ("1500000") for permit value. */
+  function toRawUsdc(human) {
+    const [whole, frac = ''] = String(human).split('.');
+    const fracPad = (frac + '000000').slice(0, 6);
+    return BigInt(whole) * 1000000n + BigInt(fracPad);
   }
 
   // Normalize an agent to the canonical shape used by both API and localStorage:
@@ -1043,8 +1210,22 @@
       return;
     }
     setModalStep(1, 'done');
-    setModalStep(2, 'active'); // Start watcher
-    await new Promise(r => setTimeout(r, 400));
+    setModalStep(2, 'active'); // Authorize pull from user wallet
+
+    // PHASE 2: if backend provisioned Circle SCA wallets, ask user to sign
+    // EIP-2612 permits authorizing those wallets to pull USDC from the user's
+    // external wallet. This eliminates the need for the user to fund the
+    // Circle agent wallet manually. Skip silently if no wallets (fallback mode).
+    if (agent.circleWallets && agent.circleWallets.length) {
+      try {
+        await authorizeAgentPermits(agent, rule);
+      } catch (e) {
+        // Don't fail the whole deploy if permits are skipped — agent still
+        // works in "funded wallet" mode (Phase 1 fallback).
+        console.warn('[agent] permit signing skipped:', e?.message || e);
+        ArcUI.toast('warn', 'Authorization skipped', e?.message?.slice(0, 80) || 'You can still fund the agent wallet manually.');
+      }
+    }
     setModalStep(2, 'done');
 
     // Settle modal + refresh UI
@@ -1252,19 +1433,32 @@
 
       // Circle agent wallets (one per source chain, if provisioned)
       let walletsHtml = '';
+      const hasAnyPermit = !!(a.permits || []).find(p => p.state === 'submitted');
       if (a.circleWallets && a.circleWallets.length) {
+        const headerText = hasAnyPermit
+          ? '// Authorized · agent pulls from your wallet via EIP-2612 permit'
+          : '// Agent wallets · fund these or authorize EIP-2612 permit';
+        const headerColor = hasAnyPermit ? 'var(--arc4)' : 'var(--violet)';
         walletsHtml = `
           <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.06)">
-            <div style="font-size:9.5px;font-family:var(--mono);color:var(--violet);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">// Agent wallets · fund these to enable runs</div>
-            ${a.circleWallets.map(w => `
+            <div style="font-size:9.5px;font-family:var(--mono);color:${headerColor};letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">${headerText}</div>
+            ${a.circleWallets.map(w => {
+              const arcKey = ({ base: 'baseSepolia', arc: 'arc', sepolia: 'sepolia',
+                arbitrum: 'arbitrumSepolia', optimism: 'optimismSepolia',
+                polygon: 'polygonAmoy', unichain: 'unichainSepolia', fuji: 'avalancheFuji' })[w.source] || w.source;
+              const permit = (a.permits || []).find(p => p.sourceChain === arcKey && p.state === 'submitted');
+              const stateLabel = permit
+                ? '<span style="padding:2px 6px;border-radius:5px;background:rgba(123,228,149,.12);border:1px solid rgba(123,228,149,.3);color:var(--arc4);font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.04em">AUTHORIZED</span>'
+                : '<span style="padding:2px 6px;border-radius:5px;background:rgba(255,184,0,.10);border:1px solid rgba(255,184,0,.28);color:#FFD580;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.04em">FUND OR AUTH</span>';
+              return `
               <div style="display:flex;align-items:center;padding:5px 0;font-size:11px;font-family:var(--mono);gap:6px;flex-wrap:wrap">
                 <span style="color:var(--muted);min-width:88px;flex-shrink:0">${CHAIN_LABELS[w.source] || w.source}</span>
+                ${stateLabel}
                 <span style="color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:3px 7px;border-radius:6px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;user-select:all" title="${w.address} (click to copy)" onclick="window.copyAddr('${w.address}')">${w.address}</span>
                 <button onclick="window.copyAddr('${w.address}')" title="Copy address" style="padding:4px 8px;border-radius:6px;background:rgba(167,139,250,.10);border:1px solid rgba(167,139,250,.25);color:var(--violet);font-size:10px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.06em;flex-shrink:0">COPY</button>
-                <a href="https://faucet.circle.com" target="_blank" rel="noopener" title="Open Circle faucet" style="padding:4px 8px;border-radius:6px;background:rgba(123,228,149,.10);border:1px solid rgba(123,228,149,.25);color:var(--arc4);font-size:10px;font-weight:700;text-decoration:none;font-family:var(--mono);letter-spacing:.06em;flex-shrink:0">FUND ↗</a>
                 <a href="https://sepolia.basescan.org/address/${w.address}" target="_blank" rel="noopener" title="View on Basescan" style="padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);font-size:10px;font-weight:700;text-decoration:none;font-family:var(--mono);letter-spacing:.06em;flex-shrink:0">SCAN ↗</a>
-              </div>
-            `).join('')}
+              </div>`;
+            }).join('')}
           </div>`;
       } else if (a.provisioning === 'failed') {
         walletsHtml = `
