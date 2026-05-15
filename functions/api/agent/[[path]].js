@@ -41,6 +41,7 @@ import {
   submitPermit,
   CHIP_TO_ARC,
 } from './_circle.js';
+import { getUSDCBalance } from './_balance.js';
 
 const HEADERS_JSON = { 'Content-Type': 'application/json' };
 
@@ -562,6 +563,41 @@ async function handleExecutions(_req, kv, id) {
 }
 
 /**
+ * Decide whether a topup agent's target wallet is below its configured
+ * floor. Reads USDC balance on-chain via public RPC (or env override).
+ *
+ *   true  → balance < floor → fire (or RPC failed — fire to be safe)
+ *   false → balance >= floor → skip (saves a Circle gas+KV write cycle)
+ *
+ * Note: `executeRefill` (topup branch in _circle.js) only refills
+ * `agent.targets[0]`. We check that same target here. If/when topup is
+ * extended to multiple targets, change this to a loop and return true
+ * if ANY target is below floor.
+ */
+async function topupTargetBelowFloor(env, agent) {
+  const floor = Number(agent.params?.floor || 0);
+  if (!(floor > 0)) return true;       // bad config — fire to be safe
+  if (!agent.targets?.length) return false;
+
+  const target = agent.targets[0];
+  const chip   = (agent.targetChains || [])[0] || agent.sources?.[0];
+  const arcKey = CHIP_TO_ARC[chip] || chip;
+  if (!arcKey) return true;            // unknown chain — fire to be safe
+
+  const raw = await getUSDCBalance(env, arcKey, target);
+  if (raw === null) {
+    // RPC error / timeout. Fire anyway — better to over-refill once
+    // during an RPC blip than to leave a wallet stranded.
+    console.warn(`[cron] balance check failed for ${target.slice(0,10)} on ${arcKey} — firing as fallback`);
+    return true;
+  }
+  const balance = Number(raw) / 1e6;
+  const below   = balance < floor;
+  console.log(`[cron] ${agent.id} ${arcKey} ${target.slice(0,10)} balance=$${balance.toFixed(2)} floor=$${floor} below=${below}`);
+  return below;
+}
+
+/**
  * Cron tick — sweep all active agents, fire those that are due.
  *
  * Called by an external scheduler (or a Cloudflare Worker with `crons =
@@ -604,15 +640,22 @@ async function handleCronTick(req, kv, env) {
     if (agent.mode === 'schedule') {
       if (agent.nextRun && agent.nextRun <= now) shouldFire = true;
     } else if (agent.mode === 'topup') {
-      // Naive: fire on the throttle interval, regardless of whether the
-      // target wallet's balance is actually below the floor. Proper
-      // version polls target balances via RPC and only fires when below
-      // floor — deferred (needs per-chain RPC config). For now, throttle
-      // hard at 6 hours so we don't burn write ops re-funding already-
-      // funded wallets.
-      const SIX_HOURS = 6 * 60 * 60 * 1000;
-      if (!agent.lastTrigger || now - agent.lastTrigger > SIX_HOURS) {
-        shouldFire = true;
+      // Two gates:
+      //   1. THROTTLE — minimum gap between fires (safety net against a
+      //      buggy balance check or a target that's spending out faster
+      //      than we can refill).
+      //   2. BALANCE — RPC-check the target's actual on-chain USDC. Only
+      //      fire when balance is below the configured floor. Saves both
+      //      Circle gas and KV writes on every "wallet still funded" tick.
+      // If the RPC fails, balance check returns true (fire-safe default).
+      const THROTTLE_MS = 30 * 60 * 1000; // 30 min — balance check is the
+                                          // real gate; throttle is a safety
+                                          // net so a balance-check bug can't
+                                          // cause runaway firing.
+      const throttleOK = !agent.lastTrigger || now - agent.lastTrigger > THROTTLE_MS;
+      if (throttleOK) {
+        const needs = await topupTargetBelowFloor(env, agent);
+        if (needs) shouldFire = true;
       }
     }
 
