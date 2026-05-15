@@ -239,10 +239,16 @@ export async function createWalletSet(env, name) {
  * Returns: { id, address, blockchain, ... }
  *
  * `accountType`:
- *   - 'EOA' (default) — externally owned account, cheapest
- *   - 'SCA' — smart contract account, supports gas sponsorship + batch
+ *   - 'SCA' (default) — smart contract account. Required for Circle's Gas
+ *     Station (auto gas sponsorship on testnet, paid on mainnet). User only
+ *     needs to fund the wallet with the token they want to spend (USDC),
+ *     not native gas.
+ *   - 'EOA' — externally owned account. Cheaper to create but requires the
+ *     user to also fund the wallet with native gas (ETH on Base, AVAX on
+ *     Fuji, etc) which is friction-heavy and confusing.
  *
- * We start with EOA for simplicity. Can switch to SCA later for gas sponsorship.
+ * SCA is the right default for an agent product where the user only thinks
+ * in USDC and never wants to think about gas.
  */
 export async function createAgentWallet(env, walletSetId, blockchain, opts = {}) {
   const entitySecretCiphertext = await entityCiphertext(env);
@@ -254,7 +260,7 @@ export async function createAgentWallet(env, walletSetId, blockchain, opts = {})
       walletSetId,
       blockchains: [blockchain],
       count: 1,
-      accountType: opts.accountType || 'EOA',
+      accountType: opts.accountType || 'SCA',
     },
   });
   // Response shape: { data: { wallets: [{id, address, blockchain, ...}] } }
