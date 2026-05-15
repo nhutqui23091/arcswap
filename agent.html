@@ -487,14 +487,13 @@
 <!-- SIGN MODAL -->
 <div class="modal-overlay" id="sign-modal">
   <div class="modal-card">
-    <div class="modal-ico">🔐</div>
-    <div class="modal-h">Sign to deploy</div>
-    <div class="modal-s">In preview, signatures are simulated locally. No funds move and no on-chain transaction is sent.</div>
+    <div class="modal-ico" id="modal-ico">🔐</div>
+    <div class="modal-h" id="modal-h">Sign the rule in your wallet</div>
+    <div class="modal-s" id="modal-s">Your wallet will pop up asking you to sign an EIP-712 message. No gas, no on-chain transaction — just a signature that authorizes this rule.</div>
     <div class="modal-steps" id="modal-steps">
-      <div class="modal-step" data-step="0"><div class="modal-step-ico">1</div><div class="modal-step-label">Build EIP-712 typed data</div></div>
-      <div class="modal-step" data-step="1"><div class="modal-step-ico">2</div><div class="modal-step-label">Simulate wallet signature</div></div>
-      <div class="modal-step" data-step="2"><div class="modal-step-ico">3</div><div class="modal-step-label">Register agent rule</div></div>
-      <div class="modal-step" data-step="3"><div class="modal-step-ico">4</div><div class="modal-step-label">Start watch loop</div></div>
+      <div class="modal-step" data-step="0"><div class="modal-step-ico">1</div><div class="modal-step-label">Sign in wallet</div></div>
+      <div class="modal-step" data-step="1"><div class="modal-step-ico">2</div><div class="modal-step-label">Register rule</div></div>
+      <div class="modal-step" data-step="2"><div class="modal-step-ico">3</div><div class="modal-step-label">Start watcher</div></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeSignModal()">Cancel</button>
@@ -604,6 +603,115 @@
   ARC.wallet.on(() => loadBalances());
   // First load (in case auto-connect already happened during boot)
   setTimeout(loadBalances, 100);
+
+  /* ============================================================
+     BACKEND API + EIP-712 SIGNING
+  ============================================================ */
+  // Tri-state cache: null = unknown, 'ok' = backend live, 'fallback' = use localStorage.
+  // First successful call flips this to 'ok'; a 503 unconfigured response flips to
+  // 'fallback' so subsequent ops skip the round-trip.
+  let backendStatus = null;
+
+  async function api(path, opts = {}) {
+    if (backendStatus === 'fallback') return { _fallback: true };
+    try {
+      const r = await fetch('/api/agent' + path, {
+        method: opts.method || 'GET',
+        headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+        body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      });
+      if (r.status === 503) {
+        const b = await r.json().catch(() => ({}));
+        if (b.error === 'agent_storage_unconfigured') {
+          backendStatus = 'fallback';
+          console.info('[agent] backend unconfigured — using localStorage fallback');
+          return { _fallback: true };
+        }
+      }
+      backendStatus = 'ok';
+      if (r.status === 204) return {};
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || body.message || ('HTTP ' + r.status));
+      return body;
+    } catch (e) {
+      if (backendStatus === 'fallback') return { _fallback: true };
+      throw e;
+    }
+  }
+
+  // EIP-712 domain — namespace only, not a chain commitment.
+  const EIP712_DOMAIN = {
+    name: 'ArcSwap Agent',
+    version: '1',
+    chainId: 5042002, // Arc Testnet
+  };
+  const EIP712_TYPES = {
+    AgentRule: [
+      { name: 'owner',     type: 'address' },
+      { name: 'mode',      type: 'string'  },
+      { name: 'sources',   type: 'string'  }, // comma-joined chain ids
+      { name: 'targets',   type: 'string'  }, // comma-joined target addresses
+      { name: 'params',    type: 'string'  }, // JSON-stringified rule params
+      { name: 'nonce',     type: 'string'  }, // random 16-byte hex to prevent replay
+      { name: 'expiresAt', type: 'uint256' },
+    ],
+  };
+
+  function randomNonce() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function signRule(rule) {
+    if (!ARC.wallet.signer) throw new Error('wallet not connected');
+    const nonce = randomNonce();
+    const value = {
+      owner: ARC.wallet.address,
+      mode: rule.mode,
+      sources: rule.sources.join(','),
+      targets: rule.targets.join(','),
+      params: JSON.stringify(rule.params),
+      nonce,
+      expiresAt: BigInt(rule.expiresAt),
+    };
+    const sig = await ARC.wallet.signer.signTypedData(EIP712_DOMAIN, EIP712_TYPES, value);
+    return { sig, nonce };
+  }
+
+  // Normalize an agent to the canonical shape used by both API and localStorage:
+  //   { id, owner, mode, sources, targets, params, signature, state, created,
+  //     expiresAt, totalSent, lastTrigger, nextRun }
+  function normalizeAgent(raw) {
+    if (raw.params) return raw; // already canonical (from API)
+    // Legacy local shape with flat fields
+    const params = raw.mode === 'topup'
+      ? { floor: raw.floor, refillAmount: raw.refillAmount, dailyCap: raw.dailyCap }
+      : { sendAmount: raw.sendAmount, cadence: raw.cadence, time: raw.time,
+          startDate: raw.startDate, dist: raw.dist };
+    return {
+      id: raw.id,
+      owner: raw.owner || (ARC.wallet.address || '').toLowerCase(),
+      mode: raw.mode,
+      sources: raw.sources,
+      targets: raw.targets,
+      params,
+      signature: raw.signature || '0x0',
+      state: raw.state || 'active',
+      created: raw.created || Date.now(),
+      expiresAt: raw.expiresAt || (Date.now() + 30 * 24 * 60 * 60 * 1000),
+      totalSent: raw.totalSent || 0,
+      lastTrigger: raw.lastTrigger || null,
+      nextRun: raw.nextRun || null,
+    };
+  }
+
+  function saveLocalAgents() {
+    localStorage.setItem('arcswap_agents', JSON.stringify(agents));
+  }
+  function saveLocalExecs() {
+    localStorage.setItem('arcswap_execs', JSON.stringify(executions));
+  }
 
   /* ============================================================
      MODE / FORM
@@ -810,133 +918,294 @@
   window.updateSummary = updateSummary;
 
   /* ============================================================
-     DEPLOY FLOW
+     DEPLOY FLOW — real EIP-712 sign + POST /api/agent/create
   ============================================================ */
-  let modalTimer = null;
-
-  function deployAgent() {
-    const validTargets = getValidTargets();
-    if (!validTargets.length) return;
-
-    let agentData;
-    if (state.mode === 'topup') {
-      agentData = {
-        mode: 'topup',
-        floor: parseFloat(document.getElementById('floor-amt').value),
-        refillAmount: parseFloat(document.getElementById('refill-amt').value),
-        dailyCap: parseFloat(document.getElementById('cap-amt').value),
-      };
-    } else {
-      agentData = {
-        mode: 'schedule',
-        sendAmount: parseFloat(document.getElementById('send-amt').value),
-        cadence: document.getElementById('sched-cadence').value,
-        time: document.getElementById('sched-time').value,
-        startDate: document.getElementById('sched-start').value || null,
-        dist: state.dist,
-      };
-    }
-    agentData.sources = Array.from(state.sources);
-    agentData.targets = validTargets.map(t => '0x' + t);
-
-    const modal = document.getElementById('sign-modal');
-    modal.classList.add('show');
+  function setModalStep(idx, klass) {
+    const el = document.querySelector(`.modal-step[data-step="${idx}"]`);
+    if (el) el.classList.add(klass);
+  }
+  function clearModalSteps() {
     document.querySelectorAll('.modal-step').forEach(el => el.classList.remove('active', 'done'));
-
-    let i = 0;
-    const advance = () => {
-      if (i > 0) document.querySelector(`.modal-step[data-step="${i - 1}"]`).classList.add('done');
-      if (i < 4) {
-        document.querySelector(`.modal-step[data-step="${i}"]`).classList.add('active');
-        i++;
-        modalTimer = setTimeout(advance, 700 + Math.random() * 400);
-      } else {
-        finishDeploy(agentData);
-      }
-    };
-    advance();
   }
-  window.deployAgent = deployAgent;
-
-  function finishDeploy(d) {
-    const agent = {
-      id: 'agent_' + Math.random().toString(36).slice(2, 9),
-      ...d,
-      state: 'active',
-      created: Date.now(),
-      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-      totalSent: 0,
-    };
-    agents.push(agent);
-    localStorage.setItem('arcswap_agents', JSON.stringify(agents));
-
-    executions.unshift({
-      agentId: agent.id,
-      time: Date.now(),
-      type: 'deployed',
-      detail: d.mode === 'topup'
-        ? `Watching ${d.targets.length} wallet${d.targets.length > 1 ? 's' : ''} · floor $${d.floor}`
-        : `Scheduled ${d.cadence} · ${d.targets.length} wallet${d.targets.length > 1 ? 's' : ''} at ${d.time}`,
-    });
-    localStorage.setItem('arcswap_execs', JSON.stringify(executions));
-
-    setTimeout(() => {
-      closeSignModal();
-      ArcUI.toast('success', 'Agent deployed', d.mode === 'topup' ? 'Auto Top-Up active' : `Scheduled · ${d.cadence}`);
-      renderAgents();
-      renderExecLog();
-      updateStats();
-      // simulate first execution after 4s for demo feel
-      setTimeout(() => simulateExecution(agent), 4000);
-    }, 600);
+  function openSignModal() {
+    document.getElementById('modal-ico').textContent = '🔐';
+    document.getElementById('modal-h').textContent = 'Sign the rule in your wallet';
+    document.getElementById('modal-s').textContent = 'Your wallet will pop up asking you to sign an EIP-712 message. No gas, no on-chain transaction — just a signature.';
+    clearModalSteps();
+    document.getElementById('sign-modal').classList.add('show');
   }
-
   function closeSignModal() {
-    if (modalTimer) clearTimeout(modalTimer);
     document.getElementById('sign-modal').classList.remove('show');
   }
   window.closeSignModal = closeSignModal;
 
-  function simulateExecution(agent) {
-    const a = agents.find(x => x.id === agent.id);
-    if (!a || a.state === 'paused') return;
+  async function deployAgent() {
+    const validTargets = getValidTargets();
+    if (!validTargets.length) return;
 
-    let total = 0;
-    let detail = '';
-    if (a.mode === 'topup') {
-      // pick a random target to refill
-      const target = a.targets[Math.floor(Math.random() * a.targets.length)];
-      total = a.refillAmount;
-      const src = a.sources[Math.floor(Math.random() * a.sources.length)];
-      detail = `Refilled ${ARC.shortAddr(target)} from ${CHAIN_LABELS[src]}`;
-    } else {
-      // schedule: send to all targets
-      total = a.dist === 'each' ? a.sendAmount * a.targets.length : a.sendAmount;
-      detail = `Scheduled send · ${a.targets.length} wallet${a.targets.length > 1 ? 's' : ''} (${a.dist})`;
+    // Wallet must be connected to sign
+    if (!ARC.wallet.signer) {
+      const btn = document.getElementById('arc-wallet-btn');
+      if (btn) btn.click();
+      ArcUI.toast('warn', 'Connect wallet first', 'Pick a wallet to sign the agent rule.');
+      return;
     }
 
-    a.totalSent += total;
-    totalSent += total;
-    localStorage.setItem('arcswap_agents', JSON.stringify(agents));
-    localStorage.setItem('arcswap_total_sent', String(totalSent));
+    // Build the rule payload
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    const params = state.mode === 'topup'
+      ? {
+          floor:        parseFloat(document.getElementById('floor-amt').value),
+          refillAmount: parseFloat(document.getElementById('refill-amt').value),
+          dailyCap:     parseFloat(document.getElementById('cap-amt').value),
+        }
+      : {
+          sendAmount: parseFloat(document.getElementById('send-amt').value),
+          cadence:    document.getElementById('sched-cadence').value,
+          time:       document.getElementById('sched-time').value,
+          startDate:  document.getElementById('sched-start').value || null,
+          dist:       state.dist,
+        };
+    const rule = {
+      mode:      state.mode,
+      sources:   Array.from(state.sources),
+      targets:   validTargets.map(t => '0x' + t),
+      params,
+      expiresAt,
+    };
 
-    executions.unshift({
-      agentId: a.id,
-      time: Date.now(),
-      type: 'sent',
-      detail,
-      amount: total,
-    });
-    localStorage.setItem('arcswap_execs', JSON.stringify(executions));
+    openSignModal();
+    setModalStep(0, 'active'); // Sign in wallet
 
+    let sig, nonce;
+    try {
+      ({ sig, nonce } = await signRule(rule));
+    } catch (e) {
+      closeSignModal();
+      const msg = (e && e.message) || String(e);
+      const friendly = /user rejected|denied|reject|cancel/i.test(msg) ? 'Signature cancelled' : msg;
+      ArcUI.toast('error', 'Signing failed', friendly);
+      return;
+    }
+    setModalStep(0, 'done');
+    setModalStep(1, 'active'); // Register rule
+
+    // POST to backend (with localStorage fallback)
+    let agent;
+    try {
+      const res = await api('/create', {
+        method: 'POST',
+        body: {
+          owner: ARC.wallet.address,
+          mode: rule.mode,
+          sources: rule.sources,
+          targets: rule.targets,
+          params: rule.params,
+          signature: sig,
+          nonce,
+          expiresAt: rule.expiresAt,
+        },
+      });
+      if (res && res._fallback) {
+        // Backend unconfigured — synthesize local agent record
+        agent = normalizeAgent({
+          id: 'agent_' + Math.random().toString(36).slice(2, 11),
+          owner: ARC.wallet.address.toLowerCase(),
+          mode: rule.mode,
+          sources: rule.sources,
+          targets: rule.targets.map(t => t.toLowerCase()),
+          params: rule.params,
+          signature: sig,
+          state: 'active',
+          created: Date.now(),
+          expiresAt: rule.expiresAt,
+          totalSent: 0,
+        });
+        agents.push(agent);
+        saveLocalAgents();
+        executions.unshift({
+          agentId: agent.id,
+          time: Date.now(),
+          type: 'deployed',
+          detail: rule.mode === 'topup'
+            ? `Watching ${rule.targets.length} wallet${rule.targets.length > 1 ? 's' : ''} · floor $${rule.params.floor}`
+            : `Scheduled ${rule.params.cadence} · ${rule.targets.length} wallet${rule.targets.length > 1 ? 's' : ''} @ ${rule.params.time}`,
+        });
+        saveLocalExecs();
+      } else {
+        // API success — use returned shape
+        agent = normalizeAgent(res);
+        agents.push(agent);
+      }
+    } catch (e) {
+      closeSignModal();
+      ArcUI.toast('error', 'Save failed', (e && e.message) || String(e));
+      return;
+    }
+    setModalStep(1, 'done');
+    setModalStep(2, 'active'); // Start watcher
+    await new Promise(r => setTimeout(r, 400));
+    setModalStep(2, 'done');
+
+    // Settle modal + refresh UI
+    setTimeout(async () => {
+      closeSignModal();
+      const subLine = backendStatus === 'fallback'
+        ? 'Saved locally · enable backend to persist'
+        : (rule.mode === 'topup' ? 'Auto Top-Up active' : `Scheduled · ${rule.params.cadence}`);
+      ArcUI.toast('success', 'Agent deployed', subLine);
+      await refreshAgentsFromBackend();
+      renderAgents();
+      renderExecLog();
+      updateStats();
+    }, 400);
+  }
+  window.deployAgent = deployAgent;
+
+  /* ============================================================
+     OPS: pause / resume / run-now / revoke
+  ============================================================ */
+  // Each mutation requires a signature. For pause/resume/revoke/run-now we
+  // reuse the agent's stored signature as "proof of ownership" (preview-level
+  // auth — production should sign a fresh per-action message).
+  function ownershipProof(agent) {
+    return agent.signature || '0x0';
+  }
+
+  window.toggleAgent = async function(id) {
+    const a = agents.find(x => x.id === id);
+    if (!a) return;
+    const goingPaused = a.state !== 'paused';
+    const endpoint = goingPaused ? 'pause' : 'resume';
+    try {
+      const res = await api(`/${id}/${endpoint}`, {
+        method: 'POST',
+        body: { signature: ownershipProof(a) },
+      });
+      if (res && res._fallback) {
+        a.state = goingPaused ? 'paused' : 'active';
+        saveLocalAgents();
+      } else {
+        Object.assign(a, normalizeAgent(res));
+      }
+    } catch (e) {
+      ArcUI.toast('error', 'Update failed', e.message);
+      return;
+    }
+    renderAgents();
+    updateStats();
+    ArcUI.toast(goingPaused ? 'warn' : 'success', goingPaused ? 'Paused' : 'Resumed');
+  };
+
+  window.runOnce = async function(id) {
+    const a = agents.find(x => x.id === id);
+    if (!a) return;
+    if (a.state === 'paused') { ArcUI.toast('warn', 'Agent paused', 'Resume to run.'); return; }
+    try {
+      const res = await api(`/${id}/run-now`, {
+        method: 'POST',
+        body: { signature: ownershipProof(a) },
+      });
+      if (res && res._fallback) {
+        // Fallback: simulate locally with same logic as before
+        const p = a.params;
+        let total, detail;
+        if (a.mode === 'topup') {
+          const target = a.targets[Math.floor(Math.random() * a.targets.length)];
+          const src = a.sources[Math.floor(Math.random() * a.sources.length)];
+          total = p.refillAmount;
+          detail = `Refilled ${ARC.shortAddr(target)} from ${CHAIN_LABELS[src]} (local)`;
+        } else {
+          total = p.dist === 'each' ? p.sendAmount * a.targets.length : p.sendAmount;
+          detail = `Scheduled send · ${a.targets.length} wallet${a.targets.length > 1 ? 's' : ''} (local)`;
+        }
+        a.totalSent += total;
+        totalSent += total;
+        executions.unshift({ agentId: a.id, time: Date.now(), type: 'sent', detail, amount: total });
+        saveLocalAgents();
+        saveLocalExecs();
+        localStorage.setItem('arcswap_total_sent', String(totalSent));
+        ArcUI.toast('success', 'Triggered (local)', `+$${total.toFixed(2)}`);
+      } else {
+        // Backend ran — refresh agent + executions from API
+        await refreshAgentsFromBackend();
+        ArcUI.toast('success', 'Triggered', `+$${(res.amount || 0).toFixed(2)} (simulated)`);
+      }
+    } catch (e) {
+      ArcUI.toast('error', 'Trigger failed', e.message);
+      return;
+    }
     renderAgents();
     renderExecLog();
     updateStats();
-    ArcUI.toast('success', 'Triggered', `+$${total.toFixed(2)} sent`);
+  };
+
+  window.revokeAgent = async function(id) {
+    if (!confirm('Revoke this agent? Its signature will be invalidated and it stops running.')) return;
+    const a = agents.find(x => x.id === id);
+    if (!a) return;
+    try {
+      const res = await api(`/${id}`, {
+        method: 'DELETE',
+        body: { signature: ownershipProof(a) },
+      });
+      if (res && res._fallback) {
+        agents = agents.filter(x => x.id !== id);
+        executions.unshift({ agentId: id, time: Date.now(), type: 'revoked', detail: 'Agent revoked · signature invalidated' });
+        saveLocalAgents();
+        saveLocalExecs();
+      } else {
+        agents = agents.filter(x => x.id !== id);
+      }
+    } catch (e) {
+      ArcUI.toast('error', 'Revoke failed', e.message);
+      return;
+    }
+    renderAgents();
+    renderExecLog();
+    updateStats();
+    ArcUI.toast('', 'Revoked');
+  };
+
+  /* ============================================================
+     LOAD FROM BACKEND (or fall back to localStorage)
+  ============================================================ */
+  async function refreshAgentsFromBackend() {
+    const addr = ARC.wallet.address;
+    if (!addr) {
+      // No wallet → can only show whatever's in localStorage
+      return;
+    }
+    try {
+      const res = await api(`/list?owner=${addr}`);
+      if (res && res._fallback) {
+        // Use cached local agents — no-op (they're already loaded)
+        return;
+      }
+      // Backend authoritative — replace local set
+      if (Array.isArray(res)) {
+        agents = res.map(normalizeAgent);
+        // Also fetch executions for the most recent agent (good enough for stats)
+        executions = [];
+        for (const a of agents.slice(0, 5)) {
+          try {
+            const ex = await api(`/${a.id}/executions`);
+            if (Array.isArray(ex)) {
+              for (const e of ex) executions.push(e);
+            }
+          } catch { /* skip */ }
+        }
+        executions.sort((a, b) => b.time - a.time);
+        // Recompute totalSent from agents
+        totalSent = agents.reduce((s, a) => s + (a.totalSent || 0), 0);
+      }
+    } catch (e) {
+      console.warn('[agent] backend list failed, using local:', e.message);
+    }
   }
 
   /* ============================================================
-     RENDER AGENTS
+     RENDER
   ============================================================ */
   function renderAgents() {
     const list = document.getElementById('agents-list');
@@ -949,10 +1218,11 @@
       return;
     }
     list.innerHTML = agents.map(a => {
+      const p = a.params || {};
       const stateClass = a.state === 'paused' ? 'state-paused' : 'state-active';
       const stateLabel = a.state === 'paused' ? 'Paused' : 'Active';
       const title = a.mode === 'topup' ? 'Auto Top-Up' : 'Scheduled Send';
-      const sourcesHtml = a.sources.map(s => `<span class="chain-tag">${CHAIN_LABELS[s]}</span>`).join('<span class="arr">·</span>');
+      const sourcesHtml = a.sources.map(s => `<span class="chain-tag">${CHAIN_LABELS[s] || s}</span>`).join('<span class="arr">·</span>');
       const targetsHtml = a.targets.length === 1
         ? ARC.shortAddr(a.targets[0])
         : `${a.targets.length} wallets · ${a.targets.map(t => ARC.shortAddr(t)).slice(0, 2).join(', ')}${a.targets.length > 2 ? '…' : ''}`;
@@ -960,14 +1230,14 @@
       let metaHtml;
       if (a.mode === 'topup') {
         metaHtml = `
-          <div><div class="agent-meta-k">Floor</div><div class="agent-meta-v">$${a.floor.toFixed(2)}</div></div>
-          <div><div class="agent-meta-k">Refill</div><div class="agent-meta-v">$${a.refillAmount.toFixed(2)}</div></div>
-          <div><div class="agent-meta-k">Sent</div><div class="agent-meta-v" style="color:var(--arc1)">$${a.totalSent.toFixed(2)}</div></div>`;
+          <div><div class="agent-meta-k">Floor</div><div class="agent-meta-v">$${(p.floor || 0).toFixed(2)}</div></div>
+          <div><div class="agent-meta-k">Refill</div><div class="agent-meta-v">$${(p.refillAmount || 0).toFixed(2)}</div></div>
+          <div><div class="agent-meta-k">Sent</div><div class="agent-meta-v" style="color:var(--arc1)">$${(a.totalSent || 0).toFixed(2)}</div></div>`;
       } else {
         metaHtml = `
-          <div><div class="agent-meta-k">Amount</div><div class="agent-meta-v">$${a.sendAmount.toFixed(2)}</div></div>
-          <div><div class="agent-meta-k">Cadence</div><div class="agent-meta-v" style="font-size:11.5px">${a.cadence} · ${a.time}</div></div>
-          <div><div class="agent-meta-k">Sent</div><div class="agent-meta-v" style="color:var(--arc1)">$${a.totalSent.toFixed(2)}</div></div>`;
+          <div><div class="agent-meta-k">Amount</div><div class="agent-meta-v">$${(p.sendAmount || 0).toFixed(2)}</div></div>
+          <div><div class="agent-meta-k">Cadence</div><div class="agent-meta-v" style="font-size:11.5px">${p.cadence || ''} · ${p.time || ''}</div></div>
+          <div><div class="agent-meta-k">Sent</div><div class="agent-meta-v" style="color:var(--arc1)">$${(a.totalSent || 0).toFixed(2)}</div></div>`;
       }
 
       return `
@@ -1030,35 +1300,6 @@
     }
   }
 
-  window.toggleAgent = function(id) {
-    const a = agents.find(x => x.id === id);
-    if (!a) return;
-    a.state = a.state === 'paused' ? 'active' : 'paused';
-    localStorage.setItem('arcswap_agents', JSON.stringify(agents));
-    renderAgents();
-    updateStats();
-    ArcUI.toast(a.state === 'paused' ? 'warn' : 'success', a.state === 'paused' ? 'Paused' : 'Resumed');
-  };
-
-  window.runOnce = function(id) {
-    const a = agents.find(x => x.id === id);
-    if (!a) return;
-    if (a.state === 'paused') { ArcUI.toast('warn', 'Agent paused', 'Resume to run.'); return; }
-    simulateExecution(a);
-  };
-
-  window.revokeAgent = function(id) {
-    if (!confirm('Revoke this agent? Its signature will be invalidated and it stops running.')) return;
-    agents = agents.filter(x => x.id !== id);
-    executions.unshift({ agentId: id, time: Date.now(), type: 'revoked', detail: 'Agent revoked · signature invalidated' });
-    localStorage.setItem('arcswap_agents', JSON.stringify(agents));
-    localStorage.setItem('arcswap_execs', JSON.stringify(executions));
-    renderAgents();
-    renderExecLog();
-    updateStats();
-    ArcUI.toast('', 'Revoked');
-  };
-
   /* ============================================================
      INIT
   ============================================================ */
@@ -1067,11 +1308,33 @@
   document.getElementById('sched-start').value =
     `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
+  // Normalize anything already in localStorage to the canonical shape
+  agents = agents.map(normalizeAgent);
+
   renderTargets();
   renderAgents();
   renderExecLog();
   updateStats();
   updateSummary();
+
+  // After the wallet snapshot stabilizes (autoConnect runs during ArcUI.boot),
+  // refresh from backend. This swaps localStorage cache → server truth.
+  ARC.wallet.on(async (s) => {
+    if (s.connected) {
+      await refreshAgentsFromBackend();
+      renderAgents();
+      renderExecLog();
+      updateStats();
+    }
+  });
+  // If wallet is already connected at boot, kick a refresh
+  if (ARC.wallet.address) {
+    refreshAgentsFromBackend().then(() => {
+      renderAgents();
+      renderExecLog();
+      updateStats();
+    });
+  }
 })();
 </script>
 </body>
