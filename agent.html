@@ -13,7 +13,12 @@
 <link rel="stylesheet" href="/assets/arc-ui.css?v=9.6.3"/>
 <style>
 :root{
-  --violet:#A78BFA;
+  /* /agent used to ship a violet primary that clashed with the rest of the
+     app's arc.network horizon palette (teal + blue + peach). Re-alias the
+     existing --violet token to arc1 teal so we don't have to touch every
+     rule, and switch the rgba mid-tones to teal too. */
+  --violet:#4DD6DB;     /* now teal (was #A78BFA) — alias for arc1 */
+  --accent-rgb: 77,214,219;
 }
 
 /* PAGE */
@@ -23,12 +28,12 @@
 .page-header{margin-bottom:22px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .page-title{font-size:clamp(40px,5.5vw,68px);font-weight:900;letter-spacing:-.035em;line-height:1;margin-bottom:10px;text-transform:uppercase}
 .page-sub{font-size:14px;color:var(--muted);max-width:680px;line-height:1.6}
-.preview-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:100px;font-size:12px;font-weight:600;font-family:var(--mono);color:var(--violet);background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);text-transform:uppercase;letter-spacing:.08em}
+.preview-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:100px;font-size:12px;font-weight:600;font-family:var(--mono);color:var(--violet);background:rgba(77,214,219,.08);border:1px solid rgba(77,214,219,.25);text-transform:uppercase;letter-spacing:.08em}
 .preview-dot{width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 10px var(--violet)}
 
 /* STATS */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
-.stat-card{background:rgba(10,6,28,.85);border:1px solid var(--border);border-radius:16px;padding:18px 20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 20px;backdrop-filter:blur(20px)}
 .stat-val{font-size:28px;font-weight:800;letter-spacing:-.035em;line-height:1.05;color:var(--text);font-variant-numeric:tabular-nums}
 .stat-change{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
 
@@ -36,8 +41,9 @@
 .agent-layout{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:flex-start}
 @media(max-width:960px){.agent-layout{grid-template-columns:1fr}}
 
-/* CARD BASE */
-.card{background:rgba(10,6,28,.9);border:1px solid var(--border);border-radius:20px;padding:22px 24px;box-shadow:0 8px 60px rgba(0,0,0,.45)}
+/* CARD BASE — same surface tokens as /trade so the two pages feel like
+   one app. Light translucent fill + soft border + blur backdrop. */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:22px 24px;backdrop-filter:blur(20px);position:relative}
 .card-title{font-size:17px;font-weight:800;margin-bottom:4px;letter-spacing:-.01em}
 .card-sub{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.55}
 
@@ -45,7 +51,7 @@
 .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;padding:6px;margin-bottom:22px}
 .mode-tab{padding:14px 16px;border-radius:10px;background:none;border:1px solid transparent;cursor:pointer;font-family:var(--font);text-align:left;transition:all .15s;color:var(--muted)}
 .mode-tab:hover{background:rgba(255,255,255,.03)}
-.mode-tab.active{background:rgba(167,139,250,.10);border-color:rgba(167,139,250,.3);color:var(--text)}
+.mode-tab.active{background:rgba(77,214,219,.10);border-color:rgba(77,214,219,.3);color:var(--text)}
 .mode-tab-h{font-size:14px;font-weight:700;letter-spacing:-.005em;margin-bottom:3px;display:flex;align-items:center;gap:7px}
 .mode-tab-d{font-size:11.5px;color:var(--muted);line-height:1.45}
 .mode-tab.active .mode-tab-h{color:var(--text)}
@@ -54,19 +60,40 @@
 /* STEPS */
 .step{margin-bottom:18px}
 .step-h{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.step-num{width:22px;height:22px;border-radius:7px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);color:var(--violet);font-family:var(--mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-num{width:22px;height:22px;border-radius:7px;background:rgba(77,214,219,.12);border:1px solid rgba(77,214,219,.3);color:var(--violet);font-family:var(--mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .step-label{font-size:13.5px;font-weight:700;letter-spacing:-.005em}
 .step-hint{font-size:11.5px;color:var(--muted);margin-left:auto;font-family:var(--mono)}
 .step-desc{font-size:12px;color:var(--muted);margin:0 0 10px 32px;line-height:1.5}
 
 /* INPUT */
 .field{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
-.field:focus-within{border-color:rgba(167,139,250,.4)}
+.field:focus-within{border-color:rgba(77,214,219,.4)}
 .field-input{flex:1;background:none;border:none;outline:none;font-size:16px;font-weight:600;color:var(--text);font-family:var(--font);min-width:0}
 .field-input::placeholder{color:rgba(255,255,255,.18)}
 .field-suffix{font-size:13px;color:var(--muted);font-family:var(--mono);font-weight:600}
 .field-prefix{font-size:13px;color:var(--muted);font-family:var(--mono);font-weight:600}
 .field-help{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;padding-left:2px}
+
+/* Native <select> styling — without this the dropdown popup renders
+   with the OS's default white background, making options invisible on
+   our dark theme. color-scheme:dark asks the browser for dark widget
+   chrome where supported; the `option` rules style the popup items
+   themselves (works on Chrome/Edge/Firefox; Safari ignores option bg). */
+select{color-scheme:dark}
+select option{background:#0F1E36;color:var(--text);padding:8px}
+select option:checked{background:#1a2c4a;color:#fff}
+
+/* Custom-styled select trigger — matches Trade's .dst-select pattern.
+   We hide the native arrow with appearance:none and draw our own caret
+   via background-image so the closed state matches our field design. */
+.select-styled{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background:none;border:none;outline:none;
+  font-size:14px;font-weight:600;color:var(--text);font-family:var(--font);
+  cursor:pointer;flex:1;padding-right:24px;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238CA0BD' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 4px center;
+}
 
 /* LABELED FIELD GROUP */
 .lbl-field{margin-bottom:14px}
@@ -78,7 +105,7 @@
 @media(max-width:560px){.chain-grid{grid-template-columns:repeat(2,1fr)}}
 .chain-chip{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:10px;padding:10px 12px 10px 34px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;position:relative;user-select:none}
 .chain-chip:hover{background:rgba(255,255,255,.06);border-color:var(--border2)}
-.chain-chip.selected{background:rgba(167,139,250,.10);border-color:rgba(167,139,250,.38)}
+.chain-chip.selected{background:rgba(77,214,219,.10);border-color:rgba(77,214,219,.38)}
 .chain-chip::before{content:'';position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;border:1.5px solid var(--border2);border-radius:4px;background:rgba(255,255,255,.02);transition:all .15s}
 .chain-chip.selected::before{background:var(--violet);border-color:var(--violet)}
 .chain-chip.selected::after{content:'';position:absolute;left:14.5px;top:50%;transform:translateY(-60%) rotate(45deg);width:4px;height:8px;border:solid #0b0820;border-width:0 2px 2px 0}
@@ -90,12 +117,12 @@
 .target-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .target-row .field{flex:1;padding:10px 12px}
 .target-row .field-input{font-size:14px;font-family:var(--mono)}
-.target-mini{padding:6px 10px;border-radius:8px;background:rgba(167,139,250,.10);border:1px solid rgba(167,139,250,.25);color:var(--violet);font-size:10.5px;font-weight:700;font-family:var(--mono);cursor:pointer;letter-spacing:.06em}
-.target-mini:hover{background:rgba(167,139,250,.18)}
+.target-mini{padding:6px 10px;border-radius:8px;background:rgba(77,214,219,.10);border:1px solid rgba(77,214,219,.25);color:var(--violet);font-size:10.5px;font-weight:700;font-family:var(--mono);cursor:pointer;letter-spacing:.06em}
+.target-mini:hover{background:rgba(77,214,219,.18)}
 .target-remove{width:34px;height:34px;flex-shrink:0;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .target-remove:hover{color:#FF8BA3;border-color:rgba(255,85,119,.3);background:rgba(255,85,119,.08)}
 .add-target{margin-top:4px;padding:9px 14px;border-radius:10px;border:1px dashed var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;width:100%}
-.add-target:hover{color:var(--violet);border-color:var(--violet);background:rgba(167,139,250,.04)}
+.add-target:hover{color:var(--violet);border-color:var(--violet);background:rgba(77,214,219,.04)}
 
 /* DUAL FIELD */
 .dual-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -108,15 +135,15 @@
 .seg-btn:hover:not(.active){color:var(--text)}
 
 /* SUMMARY */
-.summary{margin-top:18px;padding:14px 16px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.18);border-radius:12px}
+.summary{margin-top:18px;padding:14px 16px;background:rgba(77,214,219,.06);border:1px solid rgba(77,214,219,.18);border-radius:12px}
 .summary-h{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);margin-bottom:8px}
 .summary-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12.5px;gap:12px}
 .summary-row .k{color:var(--muted);flex-shrink:0}
 .summary-row .v{font-family:var(--mono);font-weight:600;text-align:right;color:var(--text);min-width:0;word-break:break-word}
 
 /* DEPLOY BTN */
-.deploy-btn{width:100%;margin-top:18px;padding:16px;border-radius:14px;border:1px solid rgba(167,139,250,.35);font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,rgba(167,139,250,.18),rgba(74,123,236,.18));color:var(--text);transition:all .2s;letter-spacing:.02em}
-.deploy-btn:hover:not(:disabled){background:linear-gradient(135deg,rgba(167,139,250,.28),rgba(74,123,236,.28));border-color:rgba(167,139,250,.55);transform:translateY(-1px)}
+.deploy-btn{width:100%;margin-top:18px;padding:16px;border-radius:14px;border:1px solid rgba(77,214,219,.35);font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,rgba(77,214,219,.18),rgba(74,123,236,.18));color:var(--text);transition:all .2s;letter-spacing:.02em}
+.deploy-btn:hover:not(:disabled){background:linear-gradient(135deg,rgba(77,214,219,.28),rgba(74,123,236,.28));border-color:rgba(77,214,219,.55);transform:translateY(-1px)}
 .deploy-btn:disabled{opacity:.4;cursor:not-allowed;background:var(--surface2);color:var(--muted);border-color:var(--border)}
 
 /* RIGHT PANEL */
@@ -154,7 +181,7 @@
 .exec-row .er-amt{font-weight:700;color:var(--arc1);flex-shrink:0}
 
 /* HOW IT WORKS */
-.how-section{margin-top:36px;background:rgba(10,6,28,.7);border:1px solid var(--border);border-radius:20px;padding:28px 30px}
+.how-section{margin-top:36px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px 30px;backdrop-filter:blur(20px)}
 .how-h{font-size:20px;font-weight:800;margin-bottom:6px;letter-spacing:-.01em}
 .how-sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.55;max-width:640px}
 .how-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
@@ -169,16 +196,16 @@
 /* SIGN MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(5,10,20,.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:8000;padding:20px}
 .modal-overlay.show{display:flex}
-.modal-card{background:rgba(13,9,32,.97);border:1px solid var(--border2);border-radius:20px;padding:30px 32px;max-width:440px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.modal-card{background:linear-gradient(180deg,#16273F 0%,#0F1E36 100%);border:1px solid var(--border2);border-radius:22px;padding:30px 32px;max-width:440px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 .modal-ico{font-size:42px;margin-bottom:14px;text-align:center}
 .modal-h{font-size:20px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-.01em}
 .modal-s{font-size:13px;color:var(--muted);text-align:center;line-height:1.55;margin-bottom:22px}
 .modal-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
 .modal-step{display:flex;align-items:center;gap:12px;padding:11px 14px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:10px;font-size:13px;transition:all .25s}
-.modal-step.active{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.3)}
+.modal-step.active{background:rgba(77,214,219,.08);border-color:rgba(77,214,219,.3)}
 .modal-step.done{background:rgba(123,228,149,.06);border-color:rgba(123,228,149,.25)}
 .modal-step-ico{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-family:var(--mono);font-weight:700;color:var(--muted);position:relative}
-.modal-step.active .modal-step-ico{background:rgba(167,139,250,.18);border-color:var(--violet);color:transparent}
+.modal-step.active .modal-step-ico{background:rgba(77,214,219,.18);border-color:var(--violet);color:transparent}
 .modal-step.active .modal-step-ico::after{content:'';width:8px;height:8px;border:1.5px solid var(--violet);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;position:absolute}
 .modal-step.done .modal-step-ico{background:rgba(123,228,149,.18);border-color:var(--arc4);color:transparent}
 .modal-step.done .modal-step-ico::after{content:'✓';color:var(--arc4);font-size:12px;position:absolute}
@@ -201,7 +228,7 @@
   <!-- HEADER -->
   <div class="page-header">
     <div>
-      <div class="arc-label" style="margin-bottom:10px;color:var(--violet)">Agent</div>
+      <div class="arc-label" style="margin-bottom:10px">Agent</div>
       <h1 class="page-title">Move USDC<br/>automatically.</h1>
       <p class="page-sub">Keep wallets topped up when they run low, or schedule recurring USDC transfers — across multiple chains, to multiple wallets, with a single signature. Powered by Circle Programmable Wallets and Gateway.</p>
     </div>
@@ -213,17 +240,17 @@
   <!-- STATS -->
   <div class="stats-row">
     <div class="stat-card">
-      <div class="arc-label" style="margin-bottom:10px;color:var(--violet)">Your Agents</div>
+      <div class="arc-label" style="margin-bottom:10px">Your Agents</div>
       <div class="stat-val" id="stat-agents">0</div>
       <div class="stat-change" id="stat-agents-sub">No agents yet</div>
     </div>
     <div class="stat-card">
-      <div class="arc-label" style="margin-bottom:10px;color:var(--violet)">Total Sent</div>
+      <div class="arc-label" style="margin-bottom:10px">Total Sent</div>
       <div class="stat-val" id="stat-sent">$0.00</div>
       <div class="stat-change">Cumulative · preview</div>
     </div>
     <div class="stat-card">
-      <div class="arc-label" style="margin-bottom:10px;color:var(--violet)">Last Trigger</div>
+      <div class="arc-label" style="margin-bottom:10px">Last Trigger</div>
       <div class="stat-val" id="stat-last">—</div>
       <div class="stat-change" id="stat-last-sub">Nothing yet</div>
     </div>
@@ -372,8 +399,8 @@
           <div class="dual-fields">
             <div class="lbl-field" style="margin-bottom:0">
               <div class="lbl-field-label">Frequency</div>
-              <div class="field" style="padding:8px 14px">
-                <select id="sched-cadence" onchange="updateSummary()" style="flex:1;background:none;border:none;outline:none;font-size:14px;font-weight:600;color:var(--text);font-family:var(--font);cursor:pointer">
+              <div class="field" style="padding:10px 14px">
+                <select id="sched-cadence" class="select-styled" onchange="updateSummary()">
                   <option value="once">Once · one-time send</option>
                   <option value="daily">Every day</option>
                   <option value="weekly" selected>Every week</option>
@@ -382,9 +409,9 @@
               </div>
             </div>
             <div class="lbl-field" style="margin-bottom:0">
-              <div class="lbl-field-label">At time <span id="sched-time-tz" style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0">(24h · your local time)</span></div>
-              <div class="field" style="padding:8px 14px">
-                <input class="field-input" id="sched-time" type="time" value="19:00" lang="en-GB" step="60" oninput="updateSummary()" style="font-size:14px;font-variant-numeric:tabular-nums"/>
+              <div class="lbl-field-label">At time <span id="sched-time-tz" style="color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0">(your local time)</span></div>
+              <div class="field" style="padding:10px 14px">
+                <input class="field-input" id="sched-time" type="time" value="19:00" lang="en-US" step="60" oninput="updateSummary()" style="font-size:14px;font-variant-numeric:tabular-nums"/>
               </div>
             </div>
           </div>
@@ -551,21 +578,30 @@
   })();
 
   // Inject the UTC offset into the time-field label so the user sees
-  // "At time (24h · UTC+7)" — no more guessing what "19:00" resolves to.
+  // "At time (UTC+7)" — no more guessing what "7:00 PM" resolves to.
   {
     const tzEl = document.getElementById('sched-time-tz');
-    if (tzEl) tzEl.textContent = `(24h · ${TZ_LABEL})`;
+    if (tzEl) tzEl.textContent = `(your local time · ${TZ_LABEL})`;
   }
 
-  /** Always format a wall-clock time string as 24h "HH:MM" — never AM/PM. */
-  function fmt24(timeStr) {
+  /** Format an "HH:MM" 24h wall-clock string as "h:MM AM/PM" 12h.
+   *  Input always comes from <input type="time"> which returns 24h
+   *  ("19:00") regardless of the picker's display locale, so this is
+   *  safe to call from any browser. */
+  function fmt12(timeStr) {
     if (!timeStr) return '';
-    const [h, m] = String(timeStr).split(':');
-    return `${String(h).padStart(2, '0')}:${String(m || '00').padStart(2, '0')}`;
+    let [h, m] = String(timeStr).split(':').map(Number);
+    if (isNaN(h)) return '';
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${String(m || 0).padStart(2, '0')} ${ampm}`;
   }
-  /** Format a Date as 24h HH:MM:SS in user's local tz. */
+  /** Format a Date as "h:MM:SS AM/PM" in user's local tz. */
   function fmtClock(d) {
-    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+    let h = d.getHours();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')} ${ampm}`;
   }
 
   /* ============================================================
@@ -1056,7 +1092,7 @@
       const amt = parseFloat(document.getElementById('send-amt').value) || 0;
       const cadence = document.getElementById('sched-cadence').value;
       const timeRaw = document.getElementById('sched-time').value || '';
-      const time = timeRaw ? `${fmt24(timeRaw)} ${TZ_LABEL}` : '—';
+      const time = timeRaw ? `${fmt12(timeRaw)} ${TZ_LABEL}` : '—';
       const startVal = document.getElementById('sched-start').value;
       const cadenceLabel = {
         once: 'One-time send',
@@ -1473,10 +1509,10 @@
           <div><div class="agent-meta-k">Refill</div><div class="agent-meta-v">$${(p.refillAmount || 0).toFixed(2)}</div></div>
           <div><div class="agent-meta-k">Sent</div><div class="agent-meta-v" style="color:var(--arc1)">$${(a.totalSent || 0).toFixed(2)}</div></div>`;
       } else {
-        // Show schedule cadence + 24h time + the user's UTC offset so it's
-        // unambiguous across locales (no Vietnamese CH/SA, no guessing what
-        // tz a "19:00" was authored in).
-        const tFmt = p.time ? `${fmt24(p.time)} ${TZ_LABEL}` : '';
+        // Show schedule cadence + 12h AM/PM time + the user's UTC offset so
+        // it's unambiguous across locales (no Vietnamese CH/SA, no guessing
+        // what tz a "7:00 PM" was authored in).
+        const tFmt = p.time ? `${fmt12(p.time)} ${TZ_LABEL}` : '';
         metaHtml = `
           <div><div class="agent-meta-k">Amount</div><div class="agent-meta-v">$${(p.sendAmount || 0).toFixed(2)}</div></div>
           <div><div class="agent-meta-k">Cadence</div><div class="agent-meta-v" style="font-size:11px">${p.cadence || ''}${tFmt ? ' · ' + tFmt : ''}</div></div>
@@ -1570,7 +1606,7 @@
       // Append Circle tx state if present
       let stateBadge = '';
       if (e.state) {
-        stateBadge = `<span style="margin-left:6px;padding:1px 5px;border-radius:4px;background:rgba(167,139,250,.12);color:var(--violet);font-size:10px;letter-spacing:.04em">${e.state}</span>`;
+        stateBadge = `<span style="margin-left:6px;padding:1px 5px;border-radius:4px;background:rgba(77,214,219,.12);color:var(--violet);font-size:10px;letter-spacing:.04em">${e.state}</span>`;
       }
       if (e.simulated) {
         stateBadge += `<span style="margin-left:6px;padding:1px 5px;border-radius:4px;background:rgba(255,184,0,.1);color:#FFD580;font-size:10px;letter-spacing:.04em">SIM</span>`;
@@ -1592,10 +1628,15 @@
     const last = executions[0];
     if (last) {
       const t = new Date(last.time);
-      const hhmm = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
-      document.getElementById('stat-last').textContent = hhmm;
-      // Sub-line: tz + truncated detail. The tz makes it obvious whose clock
-      // this refers to (the viewer's local zone — same as the time display).
+      // 12h with AM/PM — matches the time picker locale (en-US) and the
+      // rest of the page's clock displays. No more "CH/SA" confusion.
+      let h = t.getHours();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      const stamp = `${h}:${String(t.getMinutes()).padStart(2,'0')} ${ampm}`;
+      document.getElementById('stat-last').textContent = stamp;
+      // Sub-line: tz + truncated detail. The tz makes it obvious whose
+      // clock this refers to (the viewer's local zone).
       const detailShort = last.detail.length > 32 ? last.detail.slice(0, 32) + '…' : last.detail;
       document.getElementById('stat-last-sub').textContent = `${TZ_LABEL} · ${detailShort}`;
     } else {
