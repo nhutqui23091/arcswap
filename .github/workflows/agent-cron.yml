@@ -1,0 +1,69 @@
+name: Agent Cron Tick
+
+# Hit /api/agent/cron-tick once per minute so scheduled agents fire
+# automatically without needing a user to click "Run now".
+#
+# Setup (one-time):
+#   1. Generate a random 32-byte hex secret:
+#        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+#   2. Set it in TWO places, value must match exactly:
+#        a. Cloudflare Pages → Settings → Environment Variables (Production)
+#             Name: CRON_SECRET  · Type: Encrypted  · Value: <hex from step 1>
+#        b. GitHub → repo → Settings → Secrets and variables → Actions
+#             Name: CRON_SECRET  · Value: <same hex>
+#   3. Redeploy the Cloudflare Pages project.
+#   4. Trigger this workflow once manually (Run workflow button below) to
+#      confirm everything is wired up. After that the schedule takes over.
+#
+# Limitations:
+#   - GitHub Actions cron is not real-time. Runs may be delayed 1-5 minutes
+#     during peak hours. Fine for agent use case (top-up / weekly schedule),
+#     not fine for second-precision tasks.
+#   - GitHub deletes scheduled runs from inactive repos after ~60 days.
+#     If the repo goes quiet, push any commit to re-enable.
+
+on:
+  schedule:
+    - cron: '* * * * *'   # every minute, UTC
+  workflow_dispatch:       # manual trigger via Actions tab
+
+# Cancel duplicate ticks if a previous run is still going.
+concurrency:
+  group: agent-cron
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    name: POST /api/agent/cron-tick
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verify secret is set
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repository secret is not set."
+            echo "Add it under: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+      - name: Hit cron-tick endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          response=$(curl -fsS -X POST \
+            https://arcswap.net/api/agent/cron-tick \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -w "\n__HTTP_STATUS__%{http_code}")
+
+          http_status=$(echo "$response" | grep -o "__HTTP_STATUS__[0-9]*" | sed 's/__HTTP_STATUS__//')
+          body=$(echo "$response" | sed '/__HTTP_STATUS__/d')
+
+          echo "HTTP $http_status"
+          echo "$body"
+
+          if [ "$http_status" != "200" ]; then
+            echo "::error::Endpoint returned $http_status — expected 200"
+            exit 1
+          fi
