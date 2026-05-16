@@ -278,22 +278,44 @@ export async function createAgentWallet(env, walletSetId, blockchain, opts = {})
 
 /**
  * Provision Circle wallets for every selected source chain on an agent.
- * Returns array of { source, walletId, address, blockchain } — one per chain
- * that Circle supports. Chains we can't provision (e.g. Arc) are skipped.
+ *
+ * Returns:
+ *   {
+ *     walletSetId,
+ *     wallets: [{ source, walletId, address, blockchain }, ...] — successes,
+ *     failedChains: [{ source, blockchain, error }, ...]        — per-chain
+ *       failures that the caller should persist on the agent record so the
+ *       UI can show "FAILED — retry" instead of pretending the chain is OK.
+ *   }
+ *
+ * Why this matters: previously a per-chain failure was caught & swallowed,
+ * leaving `wallets` short by one. Schedule send then fell back to a
+ * different chain's wallet via pickWalletForTarget, silently moving USDC
+ * on the wrong chain. Tracking failures lets us (a) error loudly at fire
+ * time and (b) offer a retry path. See the bug fix in executeRefill below
+ * for the loud-error half of this pair.
  */
-export async function provisionWalletsForAgent(env, agent) {
-  // Create the wallet set first (one per agent for isolation)
-  const setName = `arcswap-${agent.id}`;
-  const ws = await createWalletSet(env, setName);
-  if (!ws?.id) throw new Error('createWalletSet returned no id');
-  const walletSetId = ws.id;
+export async function provisionWalletsForAgent(env, agent, options = {}) {
+  const sources = options.sources || agent.sources;
+
+  // For initial provisioning we create a wallet set; for retries
+  // (reprovision) we reuse the existing one — caller passes it via options.
+  let walletSetId = options.walletSetId || agent.circleWalletSetId;
+  if (!walletSetId) {
+    const setName = `arcswap-${agent.id}`;
+    const ws = await createWalletSet(env, setName);
+    if (!ws?.id) throw new Error('createWalletSet returned no id');
+    walletSetId = ws.id;
+  }
 
   const wallets = [];
-  for (const source of agent.sources) {
+  const failedChains = [];
+  for (const source of sources) {
     const arcKey = CHIP_TO_ARC[source];
     const blockchain = CIRCLE_BLOCKCHAIN[arcKey];
     if (!blockchain) {
       console.log(`[circle] skipping unsupported source chain: ${source}`);
+      failedChains.push({ source, blockchain: null, error: 'chain not supported by Circle' });
       continue;
     }
     try {
@@ -305,14 +327,18 @@ export async function provisionWalletsForAgent(env, agent) {
           address: w.address,
           blockchain,
         });
+      } else {
+        failedChains.push({ source, blockchain, error: 'Circle returned no wallet' });
       }
     } catch (e) {
-      console.error(`[circle] createAgentWallet failed for ${source}/${blockchain}:`, e.message);
-      // Don't throw — provision what we can, skip what we can't.
+      const msg = String(e?.message || e).slice(0, 300);
+      console.error(`[circle] createAgentWallet failed for ${source}/${blockchain}:`, msg);
+      failedChains.push({ source, blockchain, error: msg });
+      // Don't throw — provision what we can, surface failures via failedChains.
     }
   }
 
-  return { walletSetId, wallets };
+  return { walletSetId, wallets, failedChains };
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -491,21 +517,29 @@ export async function getWalletBalance(env, walletId) {
 /**
  * Execute one refill / scheduled-send tick for an agent.
  *
- * Strategy:
- *  - For each target, route via the Circle wallet on the target's destination
- *    chain (agent.targetChains[i]). This gives users per-target chain choice.
- *  - If a target has no chain field (older agent records pre-targetChains), or
- *    the chosen chain has no provisioned wallet, fall back to the first
- *    available Circle wallet so old agents keep working.
- *  - If the wallet for that chain has a submitted EIP-2612 permit, pull USDC
- *    from the user's external wallet via transferFrom() (Phase 2). Otherwise
- *    transfer FROM the agent's own funded SCA wallet (Phase 1).
+ * Three flows:
  *
- * NOTE: We still don't bridge cross-chain — target's chain must match a
- * source chain the user authorized. Cross-chain via CCTP V2 is a future
- * upgrade.
+ *   A. SAME-CHAIN (legacy, default)
+ *      Target chain is one of the user's authorized sources. We transferFrom
+ *      user wallet → target on that same chain. Single tx, instant.
  *
- * @returns { ok, txs: [{ source, target, amount, circleTxId, error? }] }
+ *   B. CROSS-CHAIN via CCTP V2 (new)
+ *      Target chain ≠ any source chain. We pull USDC from one of the user's
+ *      source chains (via permit transferFrom into the agent SCA), then burn
+ *      it via TokenMessengerV2.depositForBurn with mintRecipient = user
+ *      target. IRIS attests the burn, and a later cron tick claims via
+ *      MessageTransmitterV2.receiveMessage on the dest chain. Saves a
+ *      `pendingCctp` entry on the agent for the cron to advance.
+ *
+ *   C. SIMULATED
+ *      Caller fallback when Circle isn't configured. Handled in
+ *      [[path]].js handleRunNow, not here.
+ *
+ * @returns {
+ *   ok, totalSent,
+ *   txs:        [{ source, target, amount, circleTxId, error?, flow }],
+ *   pendingCctp:[{ ...cctp state objects to append to agent.pendingCctp }]
+ * }
  */
 export async function executeRefill(env, agent) {
   if (!agent.circleWallets?.length) {
@@ -513,22 +547,65 @@ export async function executeRefill(env, agent) {
   }
   const p = agent.params || {};
   const txs = [];
+  const pendingCctp = []; // CCTP transfers initiated this tick (caller persists on agent)
+
+  // Lazy-import CCTP module — only loaded when a cross-chain transfer is
+  // detected, to keep the same-chain hot path cheap.
+  let cctpMod = null;
+  async function cctp() {
+    if (cctpMod) return cctpMod;
+    cctpMod = await import('./_cctp.js');
+    return cctpMod;
+  }
 
   // Build a map: chip-id ('base') → wallet, so we can pick a wallet by the
-  // target's chain. Also keeps the first wallet as a generic fallback.
+  // target's chain.
   const walletByChip = {};
   for (const w of agent.circleWallets) {
     if (!walletByChip[w.source]) walletByChip[w.source] = w;
   }
   const fallbackWallet = agent.circleWallets[0];
 
-  /** Resolve which Circle wallet should handle a target at index `i`. */
+  /**
+   * Resolve which Circle wallet should handle a target at index `i`.
+   *
+   * If the user explicitly chose a destination chain via `targetChains[i]`,
+   * we MUST honor that. Returning a wallet on a different chain silently
+   * moves USDC to the wrong chain — same EVM address resolves on every
+   * chain so the transfer "succeeds" but lands somewhere the user doesn't
+   * expect. Real bug observed in prod: agent with sources [base, arc,
+   * sepolia] and target on Arc → Arc wallet provisioning failed silently
+   * → fallbackWallet was the Sepolia wallet → $10 USDC landed on Sepolia
+   * instead of Arc.
+   *
+   * Returns `null` for "no wallet for this explicit chain" so the caller
+   * can surface a clear error instead of routing the wrong way. We keep
+   * the fallback ONLY for legacy agents that pre-date `targetChains` —
+   * those genuinely had no per-target chain choice, so picking wallets[0]
+   * matches their original deploy-time behavior.
+   */
   function pickWalletForTarget(i) {
     const chip = (agent.targetChains || [])[i];
-    return (chip && walletByChip[chip]) || fallbackWallet;
+    if (!chip) return fallbackWallet;        // legacy agents, no chain field
+    return walletByChip[chip] || null;       // explicit chain — must match
   }
 
-  /** Move USDC from a source wallet/permit to `target`. */
+  /** Find a source wallet with submitted permit, for cross-chain transfers.
+   *  We pull USDC from the user via permit on THIS source chain, then burn
+   *  it via CCTP to the dest chain. Returns null if no usable source. */
+  function pickCrossChainSourceWallet() {
+    for (const w of agent.circleWallets) {
+      const arcKey = CHIP_TO_ARC[w.source] || w.source;
+      const hasPermit = (agent.permits || []).some(
+        pm => pm.sourceChain === arcKey && pm.state === 'submitted',
+      );
+      if (hasPermit) return w;
+    }
+    return null;
+  }
+
+  /** Same-chain transfer: USDC moves on a single chain via permit transferFrom
+   *  (preferred) or direct SCA wallet transfer (legacy / pre-fund pattern). */
   async function moveFunds(wallet, target, amount) {
     const arcKey = CHIP_TO_ARC[wallet.source] || wallet.source;
     const hasPermit = !!(agent.permits || []).find(
@@ -554,18 +631,123 @@ export async function executeRefill(env, agent) {
     return { tx, flow: 'wallet', source: wallet.source };
   }
 
-  if (agent.mode === 'topup') {
-    // Refill the FIRST target wallet on its chosen chain. (Proper version:
-    // poll balance of each target and refill only those below floor.)
-    const target = agent.targets[0];
-    const wallet = pickWalletForTarget(0);
-    const amount = String(p.refillAmount || 0);
+  /**
+   * Cross-chain transfer via CCTP V2:
+   *   1. transferFrom(user → srcSCA, amount) — pulls user USDC into agent SCA
+   *      on source chain. Requires submitted permit on source chain.
+   *   2. depositForBurn(amount, destDomain, mintRecipient=userTarget) — burns
+   *      srcSCA's USDC, emits CCTP message.
+   *   3. (async, cron-driven) IRIS attestation + receiveMessage on dest →
+   *      mints native USDC at userTarget.
+   *
+   * Returns the same shape as moveFunds + a `pending` field with the CCTP
+   * state object the caller persists on agent.pendingCctp.
+   */
+  async function moveFundsCrossChain(srcWallet, destWallet, destChip, target, amount) {
+    const srcArcKey = CHIP_TO_ARC[srcWallet.source] || srcWallet.source;
+    const destArcKey = CHIP_TO_ARC[destChip] || destChip;
+    const C = await cctp();
+    if (!C.chainSupportsCctp(srcArcKey) || !C.chainSupportsCctp(destArcKey)) {
+      throw new Error(`CCTP not supported on ${srcArcKey} → ${destArcKey}`);
+    }
+
+    // We do NOT submit any Circle ops here. The cron-driven state machine
+    // handles the whole flow:
+    //   permit_pending → pull_pending → burn_pending → burn_confirmed
+    //   → attested → mint_pending → done
+    //
+    // permit_pending is the initial state — it waits for the EIP-2612
+    // permit submission on this source chain to finalize on-chain before
+    // attempting the pull. Without this delay, pull's pre-flight simulates
+    // with allowance=0 (permit not yet mined) and Circle rejects with
+    // INSUFFICIENT_TOKEN. Skipping the wait was the bug behind two earlier
+    // failed test runs.
+    const permit = (agent.permits || []).find(
+      pm => pm.sourceChain === srcArcKey && pm.state === 'submitted',
+    );
+    const pending = await C.initiateCrossChainTransfer(env, {
+      srcWallet,
+      destWallet,
+      srcChainKey: srcArcKey,
+      destChainKey: destArcKey,
+      amountHuman: String(amount),
+      recipient: target,
+      permitCircleTxId: permit?.circleTxId || null,
+      pullOwner: agent.owner,
+      fastMode: true,
+    });
+    pending.target = target;
+
+    return {
+      // No on-chain tx submitted yet — return placeholder. The first real
+      // Circle tx (pull) fires from the cron tick once permit COMPLETEs.
+      tx: { id: null, state: pending.state },
+      flow: 'cctp',
+      source: srcWallet.source,
+      pending,
+    };
+  }
+
+  // Same routing for both modes: pickWalletForTarget returns null when the
+  // user picked a target chain whose Circle wallet failed to provision. In
+  // that case we surface a clear, recoverable error per-tx — NEVER silently
+  // route to a different chain (see pickWalletForTarget for the why).
+  function noWalletError(chip) {
+    return `No Circle wallet for chain "${chip}" — provisioning may have ` +
+           `failed. Retry via POST /api/agent/${agent.id}/reprovision or ` +
+           `recreate the agent without this chain.`;
+  }
+
+  /** Decide whether target i is cross-chain (target chain ∉ agent.sources). */
+  function isCrossChainTarget(i) {
+    const chip = (agent.targetChains || [])[i];
+    if (!chip) return false;
+    return !(agent.sources || []).includes(chip);
+  }
+
+  /** Execute one logical transfer (same-chain or CCTP cross-chain) and
+   *  push result to `txs` + optional pendingCctp entry. */
+  async function doOneTransfer(i, target, amount) {
+    const chip = (agent.targetChains || [])[i];
+    if (isCrossChainTarget(i)) {
+      const destWallet = walletByChip[chip];
+      if (!destWallet) {
+        txs.push({ source: chip || '?', target, amount, error: `Cross-chain target "${chip}" needs a dest wallet — ${noWalletError(chip)}` });
+        return;
+      }
+      const srcWallet = pickCrossChainSourceWallet();
+      if (!srcWallet) {
+        txs.push({ source: '?', target, amount, error: 'Cross-chain: no source wallet with permit available' });
+        return;
+      }
+      try {
+        const { tx, flow, source, pending } = await moveFundsCrossChain(srcWallet, destWallet, chip, target, amount);
+        txs.push({ source, target, amount, circleTxId: tx.id, state: tx.state, flow });
+        if (pending) pendingCctp.push(pending);
+      } catch (e) {
+        txs.push({ source: srcWallet.source, target, amount, error: e.message });
+      }
+      return;
+    }
+
+    // Same-chain path (existing behavior)
+    const wallet = pickWalletForTarget(i);
+    if (!wallet) {
+      txs.push({ source: chip || '?', target, amount, error: noWalletError(chip) });
+      return;
+    }
     try {
       const { tx, flow, source } = await moveFunds(wallet, target, amount);
       txs.push({ source, target, amount, circleTxId: tx.id, state: tx.state, flow });
     } catch (e) {
       txs.push({ source: wallet.source, target, amount, error: e.message });
     }
+  }
+
+  if (agent.mode === 'topup') {
+    const target = agent.targets[0];
+    const amount = String(p.refillAmount || 0);
+    await doOneTransfer(0, target, amount);
   } else {
     // schedule mode: one transfer per target, on its chosen destination chain
     const perTarget = p.dist === 'split'
@@ -573,19 +755,20 @@ export async function executeRefill(env, agent) {
       : Number(p.sendAmount || 0);
 
     for (let i = 0; i < agent.targets.length; i++) {
-      const target = agent.targets[i];
-      const wallet = pickWalletForTarget(i);
-      try {
-        const { tx, flow, source } = await moveFunds(wallet, target, perTarget.toFixed(6));
-        txs.push({ source, target, amount: perTarget.toFixed(6), circleTxId: tx.id, state: tx.state, flow });
-      } catch (e) {
-        txs.push({ source: wallet.source, target, error: e.message });
-      }
+      await doOneTransfer(i, agent.targets[i], perTarget.toFixed(6));
     }
   }
 
+  // For cross-chain transfers we don't count the amount toward totalSent
+  // yet — the burn has fired but the dest mint won't confirm for ~30+s.
+  // Cron will bump totalSent when the pendingCctp entry reaches `done`.
   const total = txs
-    .filter(t => !t.error)
+    .filter(t => !t.error && t.flow !== 'cctp')
     .reduce((s, t) => s + Number(t.amount), 0);
-  return { ok: txs.some(t => !t.error), totalSent: total, txs };
+  return {
+    ok: txs.some(t => !t.error),
+    totalSent: total,
+    txs,
+    pendingCctp,  // caller (handleRunNow / handleCronTick) persists onto agent
+  };
 }

@@ -166,10 +166,11 @@ async function removeFromAgentIndex(kv, id) {
 
    2. SHARD TOPUP — partition topup agents into N_SHARDS buckets by a
       deterministic hash of their ID. Each cron tick processes ONLY the
-      bucket whose index matches `Math.floor(now/5min) % N_SHARDS`.
-      With N=12 and tick=5min, every topup agent is checked once per
-      hour instead of once per 5 min. Schedule agents are NOT sharded —
-      they need precise HH:MM firing.
+      bucket whose index matches `Math.floor(now/SHARD_DURATION_MS) % N_SHARDS`.
+      With N=12 and tick=1min, every topup agent is checked once per
+      12 minutes. Schedule agents are NOT sharded — they need precise
+      HH:MM firing AND they own the CCTP state-machine advance, which
+      benefits from running every tick.
 
    Capacity (free tier subrequest cap = 50/invocation):
      before sharding: ~15 topup agents
@@ -180,7 +181,9 @@ async function removeFromAgentIndex(kv, id) {
    create/revoke maintain both legacy and mode indexes so we have a
    recoverable backup. */
 const N_SHARDS = 12;
-const SHARD_DURATION_MS = 5 * 60 * 1000; // matches cron cadence
+// Matches cron cadence (1 min) — bumped from 5 min when cron tightened
+// so shards rotate per-tick instead of repeating the same shard 5×.
+const SHARD_DURATION_MS = 60 * 1000;
 const TOPUP_INDEX_KEY = 'agents:topup';
 const SCHEDULE_INDEX_KEY = 'agents:schedule';
 
@@ -294,16 +297,34 @@ async function handleCreate(req, kv, env) {
   // destination chain for each one. Optional for back-compat with older
   // clients; we default to sources[0] for any missing entry, which mirrors
   // the previous "send on first source chain" behavior.
+  //
+  // Same-chain targets (chip in sources) → direct transferFrom via permit.
+  // Cross-chain targets (chip NOT in sources) → CCTP V2 burn-and-mint. Both
+  // are valid now; previous validation rejected the latter as
+  // "target_chain_not_in_sources" but with CCTP we can route across.
   let resolvedTargetChains;
   if (Array.isArray(targetChains) && targetChains.length === targets.length) {
-    // Each entry must be one of the agent's declared source chains —
-    // otherwise we have no Circle wallet / permit to route through.
-    const badIdx = targetChains.findIndex(c => !sources.includes(c));
-    if (badIdx >= 0) return json(400, { error: 'target_chain_not_in_sources', index: badIdx });
+    // Cross-chain targets must be CCTP-supported. We do a coarse check here
+    // (CCTP_DOMAIN map mirrored from frontend); the actual burn/mint happens
+    // later in executeRefill where _cctp.js does the real work.
+    const CCTP_OK = new Set([
+      'sepolia', 'baseSepolia', 'arbitrumSepolia', 'optimismSepolia',
+      'polygonAmoy', 'avalancheFuji', 'unichainSepolia', 'arc',
+    ]);
+    const badIdx = targetChains.findIndex(c => !CCTP_OK.has(c));
+    if (badIdx >= 0) return json(400, { error: 'target_chain_not_cctp_supported', index: badIdx, chain: targetChains[badIdx] });
     resolvedTargetChains = targetChains;
   } else {
     resolvedTargetChains = targets.map(() => sources[0]);
   }
+
+  // For cross-chain CCTP we need a Circle SCA wallet on the DEST chain too
+  // (to call MessageTransmitterV2.receiveMessage gas-free via Paymaster).
+  // Build the full set of chains needing wallets = sources ∪ targetChains.
+  const allChainsNeedingWallets = Array.from(new Set([
+    ...sources,
+    ...resolvedTargetChains,
+  ]));
 
   // Validate mode-specific params
   if (mode === 'topup') {
@@ -346,6 +367,10 @@ async function handleCreate(req, kv, env) {
     circleWalletSetId: null,
     circleWallets: [], // [{source, walletId, address, blockchain}]
     provisioning: 'pending',
+    // CCTP V2 cross-chain pending transfers — each entry is a state-machine
+    // record that the cron tick advances (burn → attest → mint). Empty for
+    // agents that never fire a cross-chain transfer.
+    pendingCctp: [],
   };
 
   // Persist first so the agent exists even if Circle provisioning fails.
@@ -362,17 +387,68 @@ async function handleCreate(req, kv, env) {
 
   // Try to provision Circle wallets synchronously. If Circle isn't configured
   // or the call fails, the agent still exists but in 'no-wallets' state.
+  //
+  // Pass `sources: allChainsNeedingWallets` so we also provision wallets on
+  // any cross-chain target chains that aren't in agent.sources. CCTP V2
+  // needs a Circle SCA on the DEST chain to claim (receiveMessage) gas-free
+  // via Paymaster — without it the cron can't complete the cross-chain
+  // transfer.
   if (isCircleConfigured(env)) {
     try {
-      const result = await provisionWalletsForAgent(env, agent);
+      const result = await provisionWalletsForAgent(env, agent, { sources: allChainsNeedingWallets });
       agent.circleWalletSetId = result.walletSetId;
       agent.circleWallets = result.wallets;
-      agent.provisioning = result.wallets.length ? 'ready' : 'failed';
+      // Persist per-chain failures so the UI can show a FAILED pill and
+      // offer a retry button. Without this, the user sees a perfectly
+      // healthy-looking agent that silently can't route to one of the
+      // chains they selected — and (pre-fix) would silently move funds
+      // on the wrong chain at fire time.
+      agent.failedChains = result.failedChains || [];
+      agent.provisioning = result.wallets.length
+        ? (agent.failedChains.length ? 'partial' : 'ready')
+        : 'failed';
       await putJSON(kv, `agent:${id}`, agent);
       await appendExecution(kv, id, {
         type: 'provisioned',
         detail: `Created ${result.wallets.length} Circle wallet(s): ${result.wallets.map(w => w.source).join(', ')}`,
       });
+      if (agent.failedChains.length) {
+        await appendExecution(kv, id, {
+          type: 'error',
+          detail: `Provisioning failed on ${agent.failedChains.length} chain(s): ${
+            agent.failedChains.map(f => `${f.source} (${(f.error || '').slice(0, 60)})`).join(' · ')
+          }`,
+        });
+      }
+
+      // Pre-approve TokenMessenger on every SOURCE wallet that's
+      // CCTP-supported. Done ONCE here so per-transfer flow only has 2
+      // Circle ops (pull + burn) instead of 3 (pull + approve + burn) —
+      // removes one race-condition surface. Fire-and-forget; by the time
+      // any cross-chain transfer fires, the approve has long confirmed.
+      // Only matters for cross-chain agents but harmless for same-chain.
+      try {
+        const { preApproveTokenMessenger } = await import('./_cctp.js');
+        const sourceWallets = result.wallets.filter(w => sources.includes(w.source));
+        for (const w of sourceWallets) {
+          const arcKey = w.source === 'base' ? 'baseSepolia'
+                       : w.source === 'arbitrum' ? 'arbitrumSepolia'
+                       : w.source === 'optimism' ? 'optimismSepolia'
+                       : w.source === 'polygon' ? 'polygonAmoy'
+                       : w.source === 'unichain' ? 'unichainSepolia'
+                       : w.source === 'fuji' ? 'avalancheFuji'
+                       : w.source;
+          const tx = await preApproveTokenMessenger(env, w, arcKey);
+          if (tx) {
+            console.log(`[handleCreate] pre-approved TokenMessenger on ${w.source}: circleTxId=${tx.id}`);
+          }
+        }
+      } catch (e) {
+        console.warn('[handleCreate] pre-approve loop failed:', e?.message || e);
+        // Non-fatal: the per-transfer code can still approve if needed
+        // (would just hit the original race condition, but at least the
+        // agent is usable for same-chain transfers).
+      }
     } catch (e) {
       console.error('[handleCreate] provisioning failed:', e?.message || e);
       agent.provisioning = 'failed';
@@ -568,6 +644,119 @@ async function handleSubmitPermits(req, kv, env, id) {
   return json(200, { agentId: id, results });
 }
 
+/**
+ * Retry Circle wallet provisioning for chains that failed during initial
+ * `handleCreate`. Common transient causes: Circle rate limit, a newly-added
+ * chain (e.g. ARC-TESTNET) that the API briefly rejected, network blip.
+ *
+ * Behavior:
+ *   - Re-runs `provisionWalletsForAgent` for ONLY the chains in
+ *     agent.failedChains (not the ones that succeeded — we don't want to
+ *     double-provision wallets and waste a wallet-set slot).
+ *   - Reuses the existing wallet set (agent.circleWalletSetId) so the
+ *     retried wallets share the same set as the originals.
+ *   - Successes get appended to agent.circleWallets; failures stay on
+ *     agent.failedChains (overwritten with the new error).
+ *
+ * Note: a successful retry does NOT auto-submit permits for the new chain.
+ * The frontend should detect new wallets without permits and prompt the
+ * user for an additional EIP-2612 signature on those chains.
+ */
+async function handleReprovision(req, kv, env, id) {
+  if (!isCircleConfigured(env)) {
+    return json(503, { error: 'circle_not_configured' });
+  }
+  let body;
+  try { body = await req.json(); } catch { body = {}; }
+  const agent = await getJSON(kv, `agent:${id}`, null);
+  if (!agent) return json(404, { error: 'not_found' });
+  if (!verifySignature(agent.owner, body.signature))
+    return json(401, { error: 'signature_invalid' });
+  if (agent.state === 'revoked') return json(409, { error: 'agent_revoked' });
+
+  const failed = Array.isArray(agent.failedChains) ? agent.failedChains : [];
+  if (!failed.length) {
+    return json(200, { agentId: id, message: 'no failed chains to retry', agent });
+  }
+
+  let result;
+  try {
+    result = await provisionWalletsForAgent(env, agent, {
+      sources: failed.map(f => f.source),
+      walletSetId: agent.circleWalletSetId || undefined,
+    });
+  } catch (e) {
+    return json(502, { error: 'provisioning_failed', detail: String(e?.message || e) });
+  }
+
+  // Merge: new successful wallets append to circleWallets; replace
+  // failedChains with whatever this retry round couldn't fix.
+  agent.circleWalletSetId = agent.circleWalletSetId || result.walletSetId;
+  agent.circleWallets = [...(agent.circleWallets || []), ...result.wallets];
+  agent.failedChains = result.failedChains || [];
+  agent.provisioning = agent.failedChains.length
+    ? (agent.circleWallets.length ? 'partial' : 'failed')
+    : 'ready';
+  await putJSON(kv, `agent:${id}`, agent);
+
+  if (result.wallets.length) {
+    await appendExecution(kv, id, {
+      type: 'provisioned',
+      detail: `Retry: created ${result.wallets.length} wallet(s): ${result.wallets.map(w => w.source).join(', ')}`,
+    });
+  }
+  if (agent.failedChains.length) {
+    await appendExecution(kv, id, {
+      type: 'error',
+      detail: `Retry: still failing on ${agent.failedChains.map(f => f.source).join(', ')}`,
+    });
+  }
+
+  return json(200, agent);
+}
+
+/**
+ * Mark a stuck CCTP transfer as `done` manually. Used as an escape hatch
+ * when the user verified the mint landed on-chain (e.g. via the dest
+ * chain explorer) but our state machine is stuck waiting for IRIS to
+ * report `complete`. Common when Circle's testnet auto-relayer claims
+ * Fast Transfers — IRIS public API stays in `pending_confirmations`
+ * but the USDC has already arrived.
+ *
+ * Body: { signature, cctpIndex: <0..N-1> }
+ */
+async function handleForceCompleteCctp(req, kv, _env, id) {
+  let body;
+  try { body = await req.json(); } catch { return json(400, { error: 'bad_json' }); }
+  const agent = await getJSON(kv, `agent:${id}`, null);
+  if (!agent) return json(404, { error: 'not_found' });
+  if (!verifySignature(agent.owner, body.signature))
+    return json(401, { error: 'signature_invalid' });
+
+  const idx = Number(body.cctpIndex);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= (agent.pendingCctp || []).length) {
+    return json(400, { error: 'cctpIndex_out_of_range' });
+  }
+  const p = agent.pendingCctp[idx];
+  if (p.state === 'done' || p.state === 'failed') {
+    return json(200, { agentId: id, message: 'already terminal', state: p.state });
+  }
+
+  const prevState = p.state;
+  p.state = 'done';
+  p.manuallyCompleted = true;
+  p.updatedAt = Date.now();
+  agent.totalSent = (agent.totalSent || 0) + Number(p.amountHuman || 0);
+  await putJSON(kv, `agent:${id}`, agent);
+  await appendExecution(kv, id, {
+    type: 'cctp_mint',
+    detail: `[manual] forced CCTP transfer from ${prevState} → done — $${p.amountHuman} ${p.srcChainKey}→${p.destChainKey}`,
+    flow: 'cctp',
+    amount: Number(p.amountHuman),
+  });
+  return json(200, agent);
+}
+
 async function handleRunNow(req, kv, env, id) {
   let body;
   try { body = await req.json(); } catch { body = {}; }
@@ -603,6 +792,15 @@ async function handleRunNow(req, kv, env, id) {
           type: 'error',
           detail: `Transfer failed (${t.source}→${shortAddr(t.target)}): ${t.error.slice(0, 160)}`,
         });
+      } else if (t.flow === 'cctp') {
+        await appendExecution(kv, id, {
+          type: 'cctp_burn',
+          detail: `CCTP burn $${t.amount} ${t.source} → ${shortAddr(t.target)} (mint lands in ~30s after attestation)`,
+          amount: Number(t.amount),
+          circleTxId: t.circleTxId,
+          state: t.state,
+          flow: t.flow,
+        });
       } else {
         await appendExecution(kv, id, {
           type: 'sent',
@@ -616,7 +814,22 @@ async function handleRunNow(req, kv, env, id) {
 
     agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
     agent.lastTrigger = Date.now();
+    if (result.pendingCctp?.length) {
+      agent.pendingCctp = [...(agent.pendingCctp || []), ...result.pendingCctp];
+    }
     if (agent.mode === 'schedule') agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
+
+    // Eager advance: if the user waited long enough between agent create
+    // and Run now (>30s), the permit Circle tx is already COMPLETE. Try
+    // to advance newly-added CCTP transfers right here so the user sees
+    // immediate progress instead of waiting up to 5 min for cron.
+    if (result.pendingCctp?.length) {
+      try {
+        await advancePendingCctpForAgent(kv, env, agent);
+      } catch (e) {
+        console.warn(`[run-now] eager CCTP advance failed: ${e?.message || e}`);
+      }
+    }
     await putJSON(kv, `agent:${id}`, agent);
 
     return json(202, {
@@ -624,6 +837,7 @@ async function handleRunNow(req, kv, env, id) {
       status: result.ok ? 'sent' : 'failed',
       amount: result.totalSent || 0,
       txs: result.txs,
+      pendingCctp: agent.pendingCctp || [],
     });
   }
 
@@ -753,7 +967,21 @@ async function handleCronTick(req, kv, env) {
     if (!agent) continue;
     if (agent.state !== 'active') { summary.skipped++; continue; }
     if (agent.expiresAt && agent.expiresAt < now) { summary.skipped++; continue; }
-    if (!(agent.nextRun && agent.nextRun <= now)) { summary.skipped++; continue; }
+
+    // Always advance any in-flight CCTP transfers BEFORE deciding whether
+    // to fire — even paused/expired agents finish their cross-chain
+    // transfers, and advancing is cheap (1-2 subrequests). Persists only
+    // if state changed.
+    const cctpBefore = JSON.stringify(agent.pendingCctp || []);
+    await advancePendingCctpForAgent(kv, env, agent);
+    const cctpDirty = JSON.stringify(agent.pendingCctp || []) !== cctpBefore;
+
+    const shouldFire = (agent.nextRun && agent.nextRun <= now);
+    if (!shouldFire) {
+      if (cctpDirty) await putJSON(kv, `agent:${id}`, agent);
+      summary.skipped++;
+      continue;
+    }
     await fireAgentInCron(kv, env, agent, summary, now);
   }
 
@@ -766,6 +994,11 @@ async function handleCronTick(req, kv, env) {
     if (agent.state !== 'active') { summary.skipped++; continue; }
     if (agent.expiresAt && agent.expiresAt < now) { summary.skipped++; continue; }
 
+    // Advance CCTP state first (same reason as schedule pass).
+    const cctpBefore = JSON.stringify(agent.pendingCctp || []);
+    await advancePendingCctpForAgent(kv, env, agent);
+    const cctpDirty = JSON.stringify(agent.pendingCctp || []) !== cctpBefore;
+
     // Two gates:
     //   1. THROTTLE — minimum gap between fires (safety net against a
     //      buggy balance check or a target spending out faster than we
@@ -776,10 +1009,18 @@ async function handleCronTick(req, kv, env) {
     // RPC error → returns true (fire-safe default).
     const THROTTLE_MS = 30 * 60 * 1000;
     const throttleOK = !agent.lastTrigger || now - agent.lastTrigger > THROTTLE_MS;
-    if (!throttleOK) { summary.skipped++; continue; }
+    if (!throttleOK) {
+      if (cctpDirty) await putJSON(kv, `agent:${id}`, agent);
+      summary.skipped++;
+      continue;
+    }
 
     const needs = await topupTargetBelowFloor(env, agent);
-    if (!needs) { summary.skipped++; continue; }
+    if (!needs) {
+      if (cctpDirty) await putJSON(kv, `agent:${id}`, agent);
+      summary.skipped++;
+      continue;
+    }
 
     await fireAgentInCron(kv, env, agent, summary, now);
   }
@@ -802,6 +1043,15 @@ async function fireAgentInCron(kv, env, agent, summary, now) {
           type: 'error',
           detail: `[cron] ${t.source}→${t.target?.slice(0,10) || '?'}: ${String(t.error).slice(0, 160)}`,
         });
+      } else if (t.flow === 'cctp') {
+        await appendExecution(kv, agent.id, {
+          type: 'cctp_burn',
+          detail: `[cron] CCTP burn $${t.amount} ${t.source}→${t.target?.slice(0,10) || '?'} (awaiting attestation ~30s)`,
+          amount: Number(t.amount),
+          circleTxId: t.circleTxId,
+          state: t.state,
+          flow: t.flow,
+        });
       } else {
         await appendExecution(kv, agent.id, {
           type: 'sent',
@@ -815,6 +1065,10 @@ async function fireAgentInCron(kv, env, agent, summary, now) {
     }
     agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
     agent.lastTrigger = now;
+    // Append new CCTP pending records (cron tick advances them next time).
+    if (result.pendingCctp?.length) {
+      agent.pendingCctp = [...(agent.pendingCctp || []), ...result.pendingCctp];
+    }
     if (agent.mode === 'schedule') {
       agent.nextRun = advanceNextRun(agent.nextRun, agent.params.cadence);
     }
@@ -830,6 +1084,62 @@ async function fireAgentInCron(kv, env, agent, summary, now) {
       detail: `[cron] executeRefill threw: ${String(e?.message || e).slice(0, 200)}`,
     });
   }
+}
+
+/**
+ * Advance one CCTP state-machine step for each pending cross-chain transfer
+ * on an agent. Called from handleCronTick before the regular schedule/topup
+ * scan so transfers progress on every tick regardless of agent mode/throttle.
+ *
+ * Each tick advances each pending transfer by AT MOST one step. The full
+ * happy path (initiated → burn_confirmed → attested → mint_initiated → done)
+ * takes ~4 ticks ≈ 20 minutes worst case at 5-min cadence — usually faster
+ * since IRIS attestation lands in ~30s and Circle settles within a tick.
+ *
+ * Done/failed records stay on agent.pendingCctp for audit (capped at 50
+ * most recent) — that lets the UI show the full cross-chain history.
+ */
+async function advancePendingCctpForAgent(kv, env, agent) {
+  if (!agent.pendingCctp?.length) return;
+  // Surface to tail logs: how many we're checking. This makes "is the cron
+  // even seeing my CCTP transfer?" debuggable without round-tripping to KV.
+  const inFlight = agent.pendingCctp.filter(p => p.state !== 'done' && p.state !== 'failed').length;
+  console.log(`[cron] ${agent.id}: ${inFlight} in-flight CCTP transfer(s) of ${agent.pendingCctp.length} total`);
+  const C = await import('./_cctp.js');
+  const updated = [];
+  for (const p of agent.pendingCctp) {
+    if (p.state === 'done' || p.state === 'failed') {
+      updated.push(p);
+      continue;
+    }
+    const prevState = p.state;
+    try {
+      const advanced = await C.advanceCctpState(env, p);
+      updated.push(advanced);
+      // Log state transitions to the agent's execution feed
+      if (advanced.state !== prevState) {
+        await appendExecution(kv, agent.id, {
+          type: advanced.state === 'done' ? 'cctp_mint' : (advanced.state === 'failed' ? 'error' : 'cctp_step'),
+          detail: advanced.state === 'done'
+            ? `[cron] CCTP minted $${advanced.amountHuman} on ${advanced.destChainKey} → ${advanced.recipient?.slice(0,10)}`
+            : (advanced.state === 'failed'
+                ? `[cron] CCTP failed (${advanced.error || 'unknown'})`
+                : `[cron] CCTP ${prevState} → ${advanced.state}`),
+          flow: 'cctp',
+        });
+        // On completion, retroactively bump totalSent now that the dest mint
+        // is confirmed. We deferred this from fireAgentInCron because at burn
+        // time the funds hadn't actually landed yet.
+        if (advanced.state === 'done') {
+          agent.totalSent = (agent.totalSent || 0) + Number(advanced.amountHuman || 0);
+        }
+      }
+    } catch (e) {
+      console.warn(`[cron] CCTP advance threw for ${agent.id}:`, e?.message || e);
+      updated.push(p);
+    }
+  }
+  agent.pendingCctp = updated.slice(-50); // cap audit history
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -897,6 +1207,10 @@ export async function onRequest(context) {
           return await handleExecutions(request, kv, id);
         if (parts[1] === 'permits'    && request.method === 'POST')
           return await handleSubmitPermits(request, kv, env, id);
+        if (parts[1] === 'reprovision' && request.method === 'POST')
+          return await handleReprovision(request, kv, env, id);
+        if (parts[1] === 'cctp-force-complete' && request.method === 'POST')
+          return await handleForceCompleteCctp(request, kv, env, id);
       }
     }
     return json(404, { error: 'not_found' });

@@ -12,14 +12,22 @@ name = "arcswap-agent-cron"
 main = "src/index.js"
 compatibility_date = "2025-01-01"
 
-# Fire every 5 minutes. We previously ran every minute, but that pushed us
-# toward the Workers KV free-tier daily caps (especially the 1k/day list cap,
-# since handleCronTick used to kv.list() every tick). 5-minute resolution is
-# fine for our use cases:
-#   - topup mode is throttled to fire at most once per 6 hours per agent
-#   - schedule mode fires at user-chosen HH:MM with at most 5 min trigger lag
+# Fire every minute. We migrated from 5-min back to 1-min when CCTP V2
+# cross-chain support landed — each tick advances a CCTP state machine
+# step, so a 5-min cron meant cross-chain transfers took 15-25 min
+# end-to-end. 1-min cron brings it to 3-5 min while still staying well
+# under KV free-tier caps (we no longer kv.list() — replaced by the
+# mode-sharded `agents:topup` / `agents:schedule` indexes — so the old
+# concern is gone).
+#
+# Budget at 1-min cron (per Cloudflare free tier 100k reads / 1k writes / 1k lists per day):
+#   - 1,440 ticks/day × ~3 KV reads (mode indexes + per-agent fetch) = ~5k reads
+#   - User-facing reads (UI list/get): ~10k
+#   - Total: ~15k reads/day (15% of cap)
+#   - Writes: agent state updates fire only when something changes — ~50/day
+#   - Lists: 0 (mode-sharded indexes replaced kv.list)
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["* * * * *"]
 
 # NOTE on architecture:
 # We do NOT use a service binding here. Wrangler v3 doesn't fully support

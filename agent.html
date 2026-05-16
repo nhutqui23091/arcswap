@@ -254,6 +254,79 @@ select option:checked{background:#1a2c4a;color:#fff}
   .stats-row{grid-template-columns:1fr}
   .page-header{flex-direction:column;align-items:flex-start}
 }
+
+/* HELP TOOLTIP (? button + popover) — mirrors trade.html src-help pattern.
+   Used to hide long explanatory text behind a ? icon next to step / field
+   labels, so the form stays scan-friendly. Click toggles `.open` on the
+   sibling .help-pop; clicking outside the popover closes it (wired in JS). */
+.help-host{position:relative;display:inline-flex;align-items:center}
+.help-btn{
+  width:18px;height:18px;border-radius:50%;
+  border:1px solid var(--border2);background:rgba(255,255,255,.04);
+  color:var(--muted);font-size:11px;font-weight:700;font-family:var(--mono);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  line-height:1;padding:0;margin-left:6px;transition:all .15s;flex-shrink:0
+}
+.help-btn:hover{color:var(--violet);border-color:var(--violet);background:rgba(77,214,219,.10)}
+.help-btn.open{color:var(--violet);border-color:var(--violet);background:rgba(77,214,219,.14)}
+.help-pop{
+  display:none;position:absolute;top:24px;left:0;z-index:50;width:300px;
+  background:linear-gradient(180deg,#16273F 0%,#0F1E36 100%);
+  border:1px solid var(--border2);border-radius:12px;padding:12px 14px;
+  font-size:11.5px;color:var(--muted);line-height:1.55;
+  font-family:var(--font);font-weight:400;letter-spacing:0;text-transform:none;
+  box-shadow:0 20px 50px rgba(0,0,0,.5)
+}
+.help-pop.open{display:block}
+.help-pop strong{color:var(--text);font-weight:600}
+.help-pop code{font-family:var(--mono);font-size:10.5px;color:var(--violet);background:rgba(77,214,219,.08);padding:1px 5px;border-radius:4px}
+
+/* COMPACT AGENT ROW — replaces the verbose card in the side panel. One row
+   per agent so 10+ agents stay scannable. Click anywhere on the row opens
+   the detail drawer (.drawer-overlay) with the full info + actions. */
+.agent-row-compact{
+  background:rgba(255,255,255,.025);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;display:flex;align-items:center;
+  gap:12px;cursor:pointer;transition:all .15s;text-align:left;width:100%;
+  font-family:var(--font);color:var(--text)
+}
+.agent-row-compact:hover{background:rgba(255,255,255,.05);border-color:var(--border2);transform:translateY(-1px)}
+.arc-row-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.arc-row-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.arc-row-name{font-size:13px;font-weight:700;letter-spacing:-.005em;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arc-row-flow{font-size:10.5px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.arc-row-flow .chain-tag{padding:1px 6px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:5px;color:var(--text);font-weight:600;font-size:10px}
+.arc-row-flow .arr{opacity:.4}
+.arc-row-meta-line{font-size:10.5px;color:var(--muted);font-family:var(--mono)}
+.arc-row-meta-line strong{color:var(--arc1);font-weight:700}
+.arc-row-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.arc-manage{font-size:10.5px;color:var(--violet);font-family:var(--mono);font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:2px}
+.cctp-pulse{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;color:#FFD580;font-family:var(--mono);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.cctp-pulse::before{content:'';width:6px;height:6px;border-radius:50%;background:#FFD580;animation:cctpPulse 1.5s ease-in-out infinite}
+@keyframes cctpPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
+
+/* DETAIL DRAWER — full agent info + actions. Opens when user clicks a row. */
+.drawer-overlay{position:fixed;inset:0;background:rgba(5,10,20,.65);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:9000;padding:20px;animation:drawerFade .15s ease}
+.drawer-overlay.open{display:flex}
+@keyframes drawerFade{from{opacity:0}to{opacity:1}}
+.drawer-card{background:linear-gradient(180deg,#16273F 0%,#0F1E36 100%);border:1px solid var(--border2);border-radius:22px;width:100%;max-width:640px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.drawer-head{padding:22px 26px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border)}
+.drawer-h-l{flex:1;min-width:0}
+.drawer-h-title{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.drawer-h-sub{font-size:11.5px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.drawer-close{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;flex-shrink:0;font-family:var(--font)}
+.drawer-close:hover{color:var(--text);background:rgba(255,255,255,.08)}
+.drawer-body{padding:18px 26px 22px;overflow-y:auto;flex:1}
+.drawer-section{margin-bottom:18px}
+.drawer-section:last-child{margin-bottom:0}
+.drawer-section-h{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.drawer-foot{padding:14px 26px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
+.drawer-foot button{flex:1;min-width:80px;padding:11px;font-size:12.5px;font-weight:700;border-radius:11px;cursor:pointer;font-family:var(--font);border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);transition:all .15s}
+.drawer-foot button:hover{background:rgba(255,255,255,.08);border-color:var(--border2)}
+.drawer-foot button.danger{color:#FF8BA3;border-color:rgba(255,85,119,.25);background:rgba(255,85,119,.06)}
+.drawer-foot button.danger:hover{background:rgba(255,85,119,.12);border-color:rgba(255,85,119,.45)}
+.drawer-foot button.primary{color:var(--violet);border-color:rgba(77,214,219,.32);background:rgba(77,214,219,.08)}
+.drawer-foot button.primary:hover{background:rgba(77,214,219,.16);border-color:rgba(77,214,219,.5)}
 </style>
 </head>
 <body>
@@ -295,8 +368,16 @@ select option:checked{background:#1a2c4a;color:#fff}
 
     <!-- LEFT: SETUP -->
     <div class="card">
-      <div class="card-title">Create your agent</div>
-      <div class="card-sub">Configure the rule once. Sign one EIP-712 message. Agent runs in the background.</div>
+      <div class="card-title" style="display:flex;align-items:center">
+        Create your agent
+        <span class="help-host">
+          <button class="help-btn" type="button" data-help="create" aria-label="What is this?">?</button>
+          <div class="help-pop" id="help-create">
+            Configure the rule once. Sign one <strong>EIP-712</strong> message. Agent then runs in the background on Cloudflare cron — no servers to manage, no keys to hold.
+            <br><br>You can pause, run on demand, or revoke at any time.
+          </div>
+        </span>
+      </div>
 
       <!-- MODE TABS -->
       <div class="mode-tabs">
@@ -314,10 +395,18 @@ select option:checked{background:#1a2c4a;color:#fff}
       <div class="step">
         <div class="step-h">
           <div class="step-num">1</div>
-          <div class="step-label">Pull USDC from your wallet on these chains</div>
+          <div class="step-label" style="display:flex;align-items:center">
+            Pull USDC from your wallet on these chains
+            <span class="help-host">
+              <button class="help-btn" type="button" data-help="step1" aria-label="More about source chains">?</button>
+              <div class="help-pop" id="help-step1">
+                Agent pulls USDC directly from <strong>your wallet</strong> via a one-time gasless <strong>EIP-2612 permit</strong> signature — no pre-funded balance required.
+                <br><br>Pick the chains where your USDC actually lives. Chains without permit support (like Arc) ask you to pre-fund the agent wallet instead.
+              </div>
+            </span>
+          </div>
           <div class="step-hint" id="balances-hint">connect wallet to load balances</div>
         </div>
-        <p class="step-desc">Agent pulls USDC directly from <strong>your wallet</strong> via a one-time gasless EIP-2612 permit signature — no pre-funded balance required. Pick the chains where your USDC actually lives.</p>
         <div class="chain-grid" id="chain-grid">
           <div class="chain-chip selected" data-chain="base" onclick="toggleChain('base')">
             <div class="chain-chip-name">Base</div>
@@ -358,10 +447,19 @@ select option:checked{background:#1a2c4a;color:#fff}
       <div class="step">
         <div class="step-h">
           <div class="step-num">2</div>
-          <div class="step-label">Who receives USDC</div>
+          <div class="step-label" style="display:flex;align-items:center">
+            Who receives USDC
+            <span class="help-host">
+              <button class="help-btn" type="button" data-help="step2" aria-label="More about target wallets">?</button>
+              <div class="help-pop" id="help-step2">
+                Each wallet receives USDC on the chain you pick beside it.
+                <br><br>Same-chain delivery (chain is in your sources) uses direct <code>transferFrom</code> via permit.
+                <br><br>Cross-chain delivery (different chain) routes through <strong>Circle CCTP V2</strong> burn-and-mint (~30s in fast mode).
+              </div>
+            </span>
+          </div>
           <div class="step-hint">add one or more wallets</div>
         </div>
-        <p class="step-desc">Each wallet receives USDC on whichever chain you pick (limited to chains you authorized as a source above). Use your connected address or paste any other.</p>
         <div id="targets-list">
           <!-- target rows injected by JS -->
         </div>
@@ -379,55 +477,101 @@ select option:checked{background:#1a2c4a;color:#fff}
         <!-- TOPUP RULES -->
         <div id="rules-topup">
           <div class="lbl-field">
-            <div class="lbl-field-label">Refill when wallet balance drops below</div>
+            <div class="lbl-field-label">
+              <span style="display:flex;align-items:center">
+                Refill when wallet balance drops below
+                <span class="help-host">
+                  <button class="help-btn" type="button" data-help="floor" aria-label="More about floor">?</button>
+                  <div class="help-pop" id="help-floor">
+                    Agent checks each target wallet on every cron tick. If any has less than this amount, it triggers a refill for that wallet.
+                  </div>
+                </span>
+              </span>
+            </div>
             <div class="field">
               <span class="field-prefix">$</span>
               <input class="field-input" id="floor-amt" type="number" placeholder="50" value="50" oninput="updateSummary()"/>
               <span class="field-suffix">USDC</span>
             </div>
-            <div class="field-help">Agent checks each target wallet. If any has less than this amount, it triggers a refill for that wallet.</div>
           </div>
 
           <div class="lbl-field">
-            <div class="lbl-field-label">How much to send each refill</div>
+            <div class="lbl-field-label">
+              <span style="display:flex;align-items:center">
+                How much to send each refill
+                <span class="help-host">
+                  <button class="help-btn" type="button" data-help="refill" aria-label="More about refill amount">?</button>
+                  <div class="help-pop" id="help-refill">
+                    The amount of USDC delivered to a wallet when it dips below the threshold above.
+                  </div>
+                </span>
+              </span>
+            </div>
             <div class="field">
               <span class="field-prefix">$</span>
               <input class="field-input" id="refill-amt" type="number" placeholder="100" value="100" oninput="updateSummary()"/>
               <span class="field-suffix">USDC</span>
             </div>
-            <div class="field-help">The amount of USDC delivered to a wallet when it dips below the threshold above.</div>
           </div>
 
           <div class="lbl-field">
-            <div class="lbl-field-label">Safety limit — max total per 24 hours</div>
+            <div class="lbl-field-label">
+              <span style="display:flex;align-items:center">
+                Safety limit — max total per 24 hours
+                <span class="help-host">
+                  <button class="help-btn" type="button" data-help="cap" aria-label="More about daily cap">?</button>
+                  <div class="help-pop" id="help-cap">
+                    Agent stops if it tries to send more than this total in any rolling 24-hour window. Protects against bugs and runaway loops.
+                  </div>
+                </span>
+              </span>
+            </div>
             <div class="field">
               <span class="field-prefix">$</span>
               <input class="field-input" id="cap-amt" type="number" placeholder="500" value="500" oninput="updateSummary()"/>
               <span class="field-suffix">USDC / day</span>
             </div>
-            <div class="field-help">Agent stops if it tries to send more than this total in any rolling 24-hour window. Protects against bugs and runaway loops.</div>
           </div>
         </div>
 
         <!-- SCHEDULE RULES -->
         <div id="rules-schedule" style="display:none">
           <div class="lbl-field">
-            <div class="lbl-field-label">How much to send each time</div>
+            <div class="lbl-field-label">
+              <span style="display:flex;align-items:center">
+                How much to send each time
+                <span class="help-host">
+                  <button class="help-btn" type="button" data-help="sendamt" aria-label="More about send amount">?</button>
+                  <div class="help-pop" id="help-sendamt">
+                    <span id="help-sendamt-body">Sent to each target wallet on the schedule below.</span>
+                  </div>
+                </span>
+              </span>
+            </div>
             <div class="field">
               <span class="field-prefix">$</span>
               <input class="field-input" id="send-amt" type="number" placeholder="100" value="100" oninput="updateSummary()"/>
               <span class="field-suffix">USDC</span>
             </div>
-            <div class="field-help" id="send-amt-help">Sent to each target wallet on the schedule below.</div>
           </div>
 
           <div class="lbl-field">
-            <div class="lbl-field-label">Distribution</div>
+            <div class="lbl-field-label">
+              <span style="display:flex;align-items:center">
+                Distribution
+                <span class="help-host">
+                  <button class="help-btn" type="button" data-help="dist" aria-label="More about distribution">?</button>
+                  <div class="help-pop" id="help-dist">
+                    <strong>Send to each</strong> — every wallet gets the full amount.
+                    <br><br><strong>Split between</strong> — amount is divided equally across wallets.
+                  </div>
+                </span>
+              </span>
+            </div>
             <div class="seg" id="seg-dist">
               <button class="seg-btn active" data-val="each" onclick="setDist('each')">Send to each</button>
               <button class="seg-btn" data-val="split" onclick="setDist('split')">Split between</button>
             </div>
-            <div class="field-help" id="dist-help"><strong>Send to each</strong> — every wallet gets the full amount. <strong>Split between</strong> — amount is divided equally across wallets.</div>
           </div>
 
           <div class="dual-fields">
@@ -464,11 +608,20 @@ select option:checked{background:#1a2c4a;color:#fff}
           </div>
 
           <div class="lbl-field" style="margin-top:14px">
-            <div class="lbl-field-label">First send · starting on</div>
+            <div class="lbl-field-label">
+              <span style="display:flex;align-items:center">
+                First send · starting on
+                <span class="help-host">
+                  <button class="help-btn" type="button" data-help="start" aria-label="More about start date">?</button>
+                  <div class="help-pop" id="help-start">
+                    Leave blank to start at the next available slot today.
+                  </div>
+                </span>
+              </span>
+            </div>
             <div class="field" style="padding:8px 14px">
               <input class="field-input" id="sched-start" type="date" oninput="updateSummary()" style="font-size:14px"/>
             </div>
-            <div class="field-help">Leave blank to start at the next available slot today.</div>
           </div>
         </div>
       </div>
@@ -491,8 +644,15 @@ select option:checked{background:#1a2c4a;color:#fff}
     <!-- RIGHT: ACTIVE AGENTS -->
     <div>
       <div class="card">
-        <div class="card-title">Your Agents</div>
-        <div class="card-sub">Active rules running in the background.</div>
+        <div class="card-title" style="display:flex;align-items:center;margin-bottom:14px">
+          Your Agents
+          <span class="help-host">
+            <button class="help-btn" type="button" data-help="agents" aria-label="More about Your Agents">?</button>
+            <div class="help-pop" id="help-agents">
+              Active rules running in the background. Click any row to <strong>Manage</strong> — see full details, pause, run on demand, or revoke.
+            </div>
+          </span>
+        </div>
         <div class="agents-list" id="agents-list">
           <div class="agent-empty">
             <div class="ae-ico">◇</div>
@@ -542,6 +702,24 @@ select option:checked{background:#1a2c4a;color:#fff}
   </div>
 </div>
 
+<!-- AGENT DETAIL DRAWER — opens when a compact row is clicked. Body is
+     rendered by renderAgentDrawer(id) so it stays in sync with the agent
+     list. Same actions as the old verbose card (pause/run/revoke + Circle
+     wallets, CCTP transfers, retry-failed-provision). -->
+<div class="drawer-overlay" id="agent-drawer">
+  <div class="drawer-card">
+    <div class="drawer-head">
+      <div class="drawer-h-l">
+        <div class="drawer-h-title" id="drawer-title">Agent</div>
+        <div class="drawer-h-sub" id="drawer-sub"></div>
+      </div>
+      <button class="drawer-close" type="button" onclick="window.closeAgentDrawer()" aria-label="Close">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+    <div class="drawer-foot" id="drawer-foot"></div>
+  </div>
+</div>
+
 <!-- SIGN MODAL -->
 <div class="modal-overlay" id="sign-modal">
   <div class="modal-card">
@@ -582,6 +760,11 @@ select option:checked{background:#1a2c4a;color:#fff}
     fuji: 'Avalanche Fuji',
     arc: 'Arc Testnet',
   };
+
+  // All CCTP V2-supported chains (chip-ids). Target chain dropdowns include
+  // every entry — same-chain options route via permit transferFrom, cross-
+  // chain options route via Circle CCTP V2 burn-and-mint (~30s fast finality).
+  const ALL_CCTP_CHAINS = ['base', 'arc', 'sepolia', 'arbitrum', 'optimism', 'polygon', 'unichain', 'fuji'];
 
   // Map the chip-id (used in our UI) → ARC.CHAINS canonical key. This lets us
   // reuse the shared chain/token registry from arc-core.js without renaming
@@ -896,9 +1079,15 @@ select option:checked{background:#1a2c4a;color:#fff}
     if (!ARC.wallet.signer) throw new Error('wallet not connected');
     if (!agent.circleWallets?.length) return; // nothing to authorize
 
-    // Build per-chain spender map: ARC key → SCA wallet address
+    // Build per-chain spender map: ARC key → SCA wallet address.
+    // Only wallets on SOURCE chains need permits (we pull USDC from those).
+    // Wallets that exist only because they're cross-chain CCTP destinations
+    // do not need permits — they only call receiveMessage on the dest chain
+    // to claim already-burned USDC.
+    const sourceChips = new Set(rule.sources || []);
     const spenderByChain = {};
     for (const w of agent.circleWallets) {
+      if (!sourceChips.has(w.source)) continue;  // dest-only CCTP wallet → skip
       const arcKey = CHIP_TO_ARC[w.source] || w.source;
       spenderByChain[arcKey] = w.address;
     }
@@ -1048,12 +1237,14 @@ select option:checked{background:#1a2c4a;color:#fff}
     document.querySelectorAll('.chain-chip').forEach(el => {
       el.classList.toggle('selected', state.sources.has(el.dataset.chain));
     });
-    // Snap any orphaned target chains to the first remaining source. Otherwise
-    // the per-target dropdown would point at a chain we no longer have a
-    // Circle wallet / permit for.
+    // Target chains can now be EITHER same-chain (in sources) OR cross-chain
+    // (any other CCTP-supported chain). Only snap if a target chain is
+    // neither — which can only happen if we somehow get a non-CCTP chain
+    // in state (shouldn't with the current ALL_CCTP_CHAINS gating, but
+    // defensive in case future chains are added).
     const firstSource = Array.from(state.sources)[0];
     state.targetChains = state.targetChains.map(tc =>
-      state.sources.has(tc) ? tc : firstSource
+      ALL_CCTP_CHAINS.includes(tc) ? tc : firstSource
     );
     renderTargets();
     updateSummary();
@@ -1065,9 +1256,15 @@ select option:checked{background:#1a2c4a;color:#fff}
     document.querySelectorAll('#seg-dist .seg-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.val === v);
     });
-    document.getElementById('send-amt-help').textContent = v === 'each'
-      ? 'Sent to each target wallet, so total moved = amount × number of wallets.'
-      : 'Total amount split equally across all target wallets.';
+    // Send-amount help text now lives inside the ? tooltip popover (refactored
+    // from inline `.field-help`). Update the popover body so the explanation
+    // still reflects the current distribution mode.
+    const sendAmtBody = document.getElementById('help-sendamt-body');
+    if (sendAmtBody) {
+      sendAmtBody.textContent = v === 'each'
+        ? 'Sent to each target wallet, so total moved = amount × number of wallets.'
+        : 'Total amount split equally across all target wallets.';
+    }
     updateSummary();
   }
   window.setDist = setDist;
@@ -1075,21 +1272,31 @@ select option:checked{background:#1a2c4a;color:#fff}
   /* ============================================================
      TARGET WALLETS (dynamic rows)
 
-     Each row = one (address, chain) pair. The chain dropdown is limited
-     to currently-selected source chains because the backend can only
-     route a target to a chain where we have a Circle wallet + permit.
+     Each row = one (address, chain) pair. The chain dropdown shows ALL
+     CCTP-supported chains, grouped:
+       - "Same-chain (instant)" — chain is in agent.sources → direct
+         transferFrom via permit, ~1 block confirmation.
+       - "Cross-chain via CCTP V2 (~30s)" — chain is NOT in sources →
+         backend pulls from one of the sources, burns via TokenMessengerV2,
+         IRIS attests, dest SCA wallet mints to target. ~30s fast mode.
   ============================================================ */
   function renderTargets() {
     const list = document.getElementById('targets-list');
-    const chainOpts = Array.from(state.sources)
-      .map(s => `<option value="${s}">${CHAIN_LABELS[s] || s}</option>`)
-      .join('');
     list.innerHTML = state.targets.map((addr, i) => {
       const tc = state.targetChains[i] || Array.from(state.sources)[0];
-      // Selected attribute on the chosen option so the dropdown reflects state
-      const opts = Array.from(state.sources).map(s =>
-        `<option value="${s}"${s === tc ? ' selected' : ''}>${CHAIN_LABELS[s] || s}</option>`
-      ).join('');
+      const sameChain  = ALL_CCTP_CHAINS.filter(c => state.sources.has(c));
+      const crossChain = ALL_CCTP_CHAINS.filter(c => !state.sources.has(c));
+      const renderOpts = (chains) => chains
+        .map(c => `<option value="${c}"${c === tc ? ' selected' : ''}>${CHAIN_LABELS[c] || c}</option>`)
+        .join('');
+      const opts = `
+        ${sameChain.length ? `<optgroup label="Same-chain (instant)">${renderOpts(sameChain)}</optgroup>` : ''}
+        ${crossChain.length ? `<optgroup label="Cross-chain via CCTP V2 (~30s)">${renderOpts(crossChain)}</optgroup>` : ''}
+      `;
+      const isCross = !state.sources.has(tc);
+      const crossPill = isCross
+        ? '<span title="Delivered via Circle CCTP V2 burn-and-mint — ~30s after schedule fires" style="display:inline-block;margin-left:6px;padding:2px 6px;border-radius:5px;background:rgba(108,63,255,.10);border:1px solid rgba(108,63,255,.32);color:#9D7BFF;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;cursor:help">CCTP</span>'
+        : '';
       return `
       <div class="target-row">
         <div class="field">
@@ -1097,9 +1304,12 @@ select option:checked{background:#1a2c4a;color:#fff}
           <input class="field-input" type="text" placeholder="paste an address" value="${escapeHtml(addr)}" oninput="updateTarget(${i}, this.value)"/>
           <button class="target-mini" onclick="useMyAddress(${i})">USE MINE</button>
         </div>
-        <select class="target-chain-sel" onchange="updateTargetChain(${i}, this.value)" title="Chain this wallet receives USDC on">
-          ${opts}
-        </select>
+        <div style="display:flex;align-items:center;gap:0">
+          <select class="target-chain-sel" onchange="updateTargetChain(${i}, this.value)" title="Chain this wallet receives USDC on">
+            ${opts}
+          </select>
+          ${crossPill}
+        </div>
         ${state.targets.length > 1
           ? `<button class="target-remove" title="Remove" onclick="removeTarget(${i})">×</button>`
           : ''}
@@ -1248,6 +1458,23 @@ select option:checked{background:#1a2c4a;color:#fff}
         <div class="summary-row"><span class="k">Deliver to</span><span class="v">${fmtTargets()}</span></div>
         <div class="summary-row"><span class="k">Each run</span><span class="v">${eachLabel}</span></div>
         <div class="summary-row"><span class="k">Expires</span><span class="v">30 days · revocable</span></div>`;
+    }
+
+    // Detect any cross-chain targets and add a CCTP indicator row. Cross-
+    // chain = target chain ∉ agent.sources (delivery requires CCTP V2
+    // burn-and-mint via Circle, ~30s vs. instant for same-chain).
+    const crossTargets = state.targets
+      .map((t, i) => ({ addr: String(t || '').trim().replace(/^0x/i, ''), chain: state.targetChains[i] }))
+      .filter(x => /^[a-fA-F0-9]{40}$/.test(x.addr) && x.chain && !state.sources.has(x.chain));
+    if (crossTargets.length) {
+      const dests = Array.from(new Set(crossTargets.map(x => CHAIN_LABELS[x.chain] || x.chain))).join(', ');
+      html += `
+        <div class="summary-row" style="background:rgba(108,63,255,.05);border:1px solid rgba(108,63,255,.18);border-radius:8px;padding:8px 10px;margin-top:6px">
+          <span class="k" style="color:#9D7BFF">Cross-chain</span>
+          <span class="v" style="color:#B8A1FF;font-size:11px;line-height:1.5">
+            ${crossTargets.length} target${crossTargets.length > 1 ? 's' : ''} on ${dests} delivered via <strong style="color:#D4C5FF">Circle CCTP V2</strong> burn-and-mint (~30s after each fire). Backend handles burn + attestation + mint automatically.
+          </span>
+        </div>`;
     }
     rows.innerHTML = html;
 
@@ -1590,6 +1817,122 @@ select option:checked{background:#1a2c4a;color:#fff}
     ArcUI.toast('', 'Revoked');
   };
 
+  /**
+   * Retry Circle wallet provisioning for chains that failed at create
+   * time. On success, prompts the user to sign EIP-2612 permits for any
+   * newly-provisioned chains so the agent can actually pull funds.
+   *
+   * Without this, an agent that had Arc wallet creation fail would be
+   * stuck — the user's only recourse was revoke + recreate, losing the
+   * agent's history and forcing a fresh permit signing flow for ALL
+   * chains, not just the failed one.
+   */
+  window.retryProvision = async function(id) {
+    const a = agents.find(x => x.id === id);
+    if (!a) return;
+    if (!a.failedChains || !a.failedChains.length) {
+      ArcUI.toast('', 'Nothing to retry');
+      return;
+    }
+    const failedLabels = a.failedChains.map(f => CHAIN_LABELS[f.source] || f.source).join(', ');
+    if (!confirm(`Retry Circle wallet provisioning on: ${failedLabels}?\n\nIf successful you'll be asked to sign one EIP-2612 permit per newly-provisioned chain.`)) return;
+
+    let updated;
+    try {
+      ArcUI.toast('', 'Retrying…', `Talking to Circle for ${failedLabels}`);
+      updated = await api(`/${id}/reprovision`, {
+        method: 'POST',
+        body: { signature: ownershipProof(a) },
+      });
+    } catch (e) {
+      ArcUI.toast('error', 'Retry failed', e.message);
+      return;
+    }
+    if (updated && updated._fallback) {
+      ArcUI.toast('error', 'Backend offline', 'Cannot retry without API access');
+      return;
+    }
+
+    // Detect newly-added wallets that don't yet have a permit, and prompt
+    // the user to sign one for each. The submitted permits get POSTed to
+    // /permits same as the initial deploy flow.
+    const before = new Set((a.circleWallets || []).map(w => w.source));
+    const after = updated.circleWallets || [];
+    const newWallets = after.filter(w => !before.has(w.source));
+
+    // Replace the local agent record with the updated one
+    Object.assign(a, updated);
+
+    if (newWallets.length) {
+      try {
+        // Build a minimal rule shape so authorizeAgentPermits can compute
+        // value/deadline — same fields it reads at deploy time.
+        const rule = {
+          mode: a.mode,
+          targets: a.targets,
+          params: a.params,
+        };
+        // authorizeAgentPermits iterates a.circleWallets — temporarily
+        // narrow it to just the new wallets so the user only signs for
+        // those, not the already-permitted ones.
+        const fullWallets = a.circleWallets;
+        a.circleWallets = newWallets;
+        await authorizeAgentPermits(a, rule);
+        a.circleWallets = fullWallets; // restore full list
+      } catch (e) {
+        ArcUI.toast('error', 'Permit signing skipped', e?.message || String(e));
+      }
+      // Re-fetch the agent to pick up newly-stored permits
+      try {
+        const fresh = await api(`/${id}`);
+        if (fresh && !fresh._fallback) Object.assign(a, fresh);
+      } catch {}
+    }
+
+    renderAgents();
+    if (a.failedChains?.length) {
+      ArcUI.toast('error', 'Partial retry', `${a.failedChains.length} chain(s) still failing`);
+    } else {
+      ArcUI.toast('', 'Retry succeeded');
+    }
+  };
+
+  /**
+   * Manually mark a stuck CCTP transfer as done. The user should ONLY use
+   * this after verifying on the destination chain explorer that the USDC
+   * actually arrived (e.g. Circle's testnet auto-relayer claimed the
+   * mint, IRIS just didn't report `complete` back to us in time).
+   */
+  window.forceCompleteCctp = async function(agentId, cctpIndex) {
+    const a = agents.find(x => x.id === agentId);
+    if (!a) return;
+    const p = (a.pendingCctp || [])[cctpIndex];
+    if (!p) return;
+    const confirmMsg =
+      `Force CCTP transfer #${cctpIndex} to "done"?\n\n` +
+      `Amount: $${p.amountHuman}\n` +
+      `From: ${p.srcChainKey} → To: ${p.destChainKey}\n` +
+      `Recipient: ${p.recipient}\n\n` +
+      `ONLY use if you verified the USDC arrived on the destination chain. ` +
+      `This bumps the agent's totalSent and won't trigger any new blockchain tx.`;
+    if (!confirm(confirmMsg)) return;
+    try {
+      const res = await api(`/${agentId}/cctp-force-complete`, {
+        method: 'POST',
+        body: { signature: ownershipProof(a), cctpIndex },
+      });
+      if (res && res._fallback) {
+        ArcUI.toast('error', 'Backend offline', 'Cannot force complete without API');
+        return;
+      }
+      Object.assign(a, res);
+      renderAgents();
+      ArcUI.toast('success', 'Marked done', `$${p.amountHuman} CCTP transfer`);
+    } catch (e) {
+      ArcUI.toast('error', 'Force-complete failed', e.message);
+    }
+  };
+
   /* ============================================================
      LOAD FROM BACKEND (or fall back to localStorage)
   ============================================================ */
@@ -1629,7 +1972,17 @@ select option:checked{background:#1a2c4a;color:#fff}
 
   /* ============================================================
      RENDER
+
+     The right-side card shows one COMPACT row per agent — just the
+     essentials so users can scan many agents at a glance. Clicking a
+     row opens .drawer-overlay (renderAgentDrawer below) with full
+     details + actions. This replaces the verbose-card-per-agent layout
+     that became unmanageable past 4-5 agents.
   ============================================================ */
+
+  /** Currently-open drawer agent id (null when closed). */
+  let openDrawerAgentId = null;
+
   function renderAgents() {
     const list = document.getElementById('agents-list');
     if (!agents.length) {
@@ -1638,6 +1991,11 @@ select option:checked{background:#1a2c4a;color:#fff}
         <div class="ae-h">No agents yet</div>
         <div class="ae-s">Configure a rule on the left and click <strong>Deploy</strong>. It'll show up here.</div>
       </div>`;
+      // If drawer was open and the agent vanished (e.g. last one revoked),
+      // close the drawer so it doesn't dangle.
+      if (openDrawerAgentId && !agents.find(a => a.id === openDrawerAgentId)) {
+        closeAgentDrawer();
+      }
       return;
     }
     list.innerHTML = agents.map(a => {
@@ -1646,6 +2004,122 @@ select option:checked{background:#1a2c4a;color:#fff}
       const stateLabel = a.state === 'paused' ? 'Paused' : 'Active';
       const title = a.mode === 'topup' ? 'Auto Top-Up' : 'Scheduled Send';
       const sourcesHtml = a.sources.map(s => `<span class="chain-tag">${CHAIN_LABELS[s] || s}</span>`).join('<span class="arr">·</span>');
+      const tcArrR = a.targetChains || [];
+      const destChainsR = Array.from(new Set(tcArrR.length ? tcArrR : a.sources));
+      const destHtmlR = destChainsR.map(c => `<span class="chain-tag">${CHAIN_LABELS[c] || c}</span>`).join('<span class="arr">·</span>');
+
+      // Compact one-line metric per mode.
+      let metaLine;
+      if (a.mode === 'topup') {
+        metaLine = `Floor $${(p.floor || 0).toFixed(0)} · Refill $${(p.refillAmount || 0).toFixed(0)} · sent <strong>$${(a.totalSent || 0).toFixed(2)}</strong>`;
+      } else {
+        const tFmt = p.time ? `${fmt12(p.time)}` : '';
+        metaLine = `$${(p.sendAmount || 0).toFixed(0)} ${p.cadence || ''}${tFmt ? ' · ' + tFmt : ''} · sent <strong>$${(a.totalSent || 0).toFixed(2)}</strong>`;
+      }
+
+      // CCTP in-flight indicator — any pending transfer NOT in terminal state.
+      const cctpActive = (a.pendingCctp || []).some(p => p.state !== 'done' && p.state !== 'failed');
+      const cctpBadge = cctpActive ? `<span class="cctp-pulse">CCTP</span>` : '';
+
+      // Provisioning failure hint — shown so user notices it even before
+      // opening the drawer.
+      const hasFailed = (a.failedChains || []).length > 0;
+      const failedBadge = hasFailed ? `<span style="font-size:9px;font-family:var(--mono);font-weight:700;color:#FF8BA3;background:rgba(255,85,119,.10);border:1px solid rgba(255,85,119,.28);padding:2px 5px;border-radius:5px;letter-spacing:.06em">⚠ ${a.failedChains.length} FAILED</span>` : '';
+
+      return `
+        <button class="agent-row-compact" type="button" onclick="window.openAgentDrawer('${a.id}')">
+          <div class="arc-row-left">
+            <div class="arc-row-h">
+              <span class="arc-row-name">${title}</span>
+              <span class="agent-row-state ${stateClass}">${stateLabel}</span>
+              ${cctpBadge}
+              ${failedBadge}
+            </div>
+            <div class="arc-row-flow">${sourcesHtml}<span class="arr">→</span>${destHtmlR}</div>
+            <div class="arc-row-meta-line">${metaLine}</div>
+          </div>
+          <div class="arc-row-right">
+            <span class="arc-manage">Manage ›</span>
+          </div>
+        </button>`;
+    }).join('');
+
+    // If a drawer was open before this re-render, refresh its body to
+    // reflect any state changes (CCTP advance, totalSent update, etc.).
+    if (openDrawerAgentId) {
+      renderAgentDrawer(openDrawerAgentId);
+    }
+  }
+
+  /* ============================================================
+     AGENT DRAWER — full detail view, opened by clicking a compact row.
+     Body content is the same dense per-agent block that used to live
+     inline in the right-side card, so users see every detail (Circle
+     wallets, permissions, pending CCTP transfers, failed provisions,
+     PREFUND/CCTP info boxes) plus the action buttons in the footer.
+  ============================================================ */
+  function openAgentDrawer(id) {
+    const a = agents.find(x => x.id === id);
+    if (!a) return;
+    openDrawerAgentId = id;
+    renderAgentDrawer(id);
+    const overlay = document.getElementById('agent-drawer');
+    overlay.classList.add('open');
+  }
+  window.openAgentDrawer = openAgentDrawer;
+
+  function closeAgentDrawer() {
+    openDrawerAgentId = null;
+    const overlay = document.getElementById('agent-drawer');
+    overlay.classList.remove('open');
+  }
+  window.closeAgentDrawer = closeAgentDrawer;
+
+  // Close on overlay click (outside the card) + Escape key.
+  document.getElementById('agent-drawer').addEventListener('click', (e) => {
+    if (e.target.id === 'agent-drawer') closeAgentDrawer();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openDrawerAgentId) closeAgentDrawer();
+  });
+
+  function renderAgentDrawer(id) {
+    const a = agents.find(x => x.id === id);
+    if (!a) { closeAgentDrawer(); return; }
+    const p = a.params || {};
+    const stateClass = a.state === 'paused' ? 'state-paused' : 'state-active';
+    const stateLabel = a.state === 'paused' ? 'Paused' : 'Active';
+    const title = a.mode === 'topup' ? 'Auto Top-Up' : 'Scheduled Send';
+
+    // ── HEAD ────────────────────────────────────────────────────────
+    document.getElementById('drawer-title').innerHTML = `
+      ${title}
+      <span class="agent-row-state ${stateClass}">${stateLabel}</span>`;
+    const created = a.createdAt ? new Date(a.createdAt) : null;
+    const createdStr = created ? `created ${created.toLocaleDateString()} ${fmtClock(created)}` : '';
+    document.getElementById('drawer-sub').innerHTML = `
+      <span>ID ${a.id}</span>
+      ${createdStr ? `<span>· ${createdStr}</span>` : ''}`;
+
+    // ── BODY ────────────────────────────────────────────────────────
+    document.getElementById('drawer-body').innerHTML = buildAgentDetailHtml(a);
+
+    // ── FOOT (action buttons) ───────────────────────────────────────
+    document.getElementById('drawer-foot').innerHTML = `
+      <button onclick="window.toggleAgent('${a.id}')">${a.state === 'paused' ? 'Resume' : 'Pause'}</button>
+      <button class="primary" onclick="window.runOnce('${a.id}')">Run now</button>
+      <button class="danger" onclick="window.revokeAgent('${a.id}')">Revoke</button>`;
+  }
+
+  /**
+   * Build the inner detail block for one agent. Reused by both the (now
+   * removed) inline card and the drawer. Returns ready-to-inject HTML.
+   *
+   * Sections: flow → targets → rule → permission/wallets → CCTP transfers.
+   */
+  function buildAgentDetailHtml(a) {
+    const p = a.params || {};
+    const sourcesHtml = a.sources.map(s => `<span class="chain-tag">${CHAIN_LABELS[s] || s}</span>`).join('<span class="arr">·</span>');
       // Build the targets line. We append the destination chain for each
       // target so the user sees where USDC actually lands ("0xAB…CD on Base").
       // The chain pill uses a subtle teal background so it visually echoes
@@ -1696,22 +2170,38 @@ select option:checked{background:#1a2c4a;color:#fff}
         // submitted permit. Native-USDC chains (Arc) don't count against
         // the "setup needed" warning — they need pre-funding instead, which
         // is communicated per-row.
-        const isPermitRequired = (w) => chainSupportsPermit(chipToArcKey(w.source));
+        // A wallet needs a permit iff: (a) chain supports EIP-2612 AND
+        // (b) it's a SOURCE wallet (we pull USDC from there). Dest-only
+        // wallets (cross-chain CCTP mint receivers) skip permits.
+        const isSourceChip = (chip) => (a.sources || []).includes(chip);
+        const isPermitRequired = (w) =>
+          isSourceChip(w.source) && chainSupportsPermit(chipToArcKey(w.source));
         const permitRequiredWallets = a.circleWallets.filter(isPermitRequired);
         const hasAllRequiredPermits = permitRequiredWallets.every(w => {
           const ak = chipToArcKey(w.source);
           return (a.permits || []).some(p => p.sourceChain === ak && p.state === 'submitted');
         });
-        const hasAnyNativeChain = a.circleWallets.some(w => !isPermitRequired(w));
+        // Distinguish two distinct "no permit" cases:
+        //  - PREFUND: chain is a SOURCE but doesn't support permit (native USDC
+        //    like Arc as source). User must manually fund the SCA wallet.
+        //  - CCTP MINT: chain is a DEST-only wallet for cross-chain transfers.
+        //    No funding/permit needed — only receives mint calls.
+        // Previously these were conflated and Arc-as-dest mistakenly showed
+        // the PREFUND warning.
+        const hasNativeUsdcSource = a.circleWallets.some(w =>
+          isSourceChip(w.source) && !chainSupportsPermit(chipToArcKey(w.source))
+        );
+        const hasCctpDest = a.circleWallets.some(w => !isSourceChip(w.source));
         let headerLabel;
         if (permitRequiredWallets.length === 0) {
-          headerLabel = hasAnyNativeChain
+          headerLabel = hasNativeUsdcSource
             ? '<span style="color:#FFD580;letter-spacing:.04em;text-transform:none;font-size:10.5px">prefund agent wallet</span>'
             : '<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ ready</span>';
         } else if (hasAllRequiredPermits) {
-          headerLabel = hasAnyNativeChain
-            ? '<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ pulls from your wallet · prefund Arc</span>'
-            : '<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ pulls from your wallet</span>';
+          const tail = hasNativeUsdcSource
+            ? ' · prefund native-USDC source'
+            : (hasCctpDest ? ' · CCTP cross-chain delivery' : '');
+          headerLabel = `<span style="color:var(--arc4);letter-spacing:.04em;text-transform:none;font-size:10.5px">✓ pulls from your wallet${tail}</span>`;
         } else {
           headerLabel = '<span style="color:#FFD580;letter-spacing:.04em;text-transform:none;font-size:10.5px">setup needed</span>';
         }
@@ -1726,9 +2216,18 @@ select option:checked{background:#1a2c4a;color:#fff}
               const arcKey = chipToArcKey(w.source);
               const needsPermit = chainSupportsPermit(arcKey);
               const permit = (a.permits || []).find(p => p.sourceChain === arcKey && p.state === 'submitted');
+              // Wallet purpose detection: source wallet (in agent.sources) =
+              // pulls user USDC via permit. Dest-only wallet (chain only
+              // appears in targetChains, NOT in sources) = exists solely to
+              // call CCTP receiveMessage on that chain, no permit needed.
+              const isSourceWallet = (a.sources || []).includes(w.source);
+              const isCctpDestOnly = !isSourceWallet;
               let stateLabel;
-              if (!needsPermit) {
-                // Native USDC chain — show PREFUND pill with explainer tooltip
+              if (isCctpDestOnly) {
+                // Cross-chain mint receiver — no permit needed, no prefund needed.
+                stateLabel = '<span title="CCTP V2 dest wallet — receives mint calls when cross-chain transfers complete. No permit needed (agent pulls from a source chain, then burns + mints here)." style="padding:2px 6px;border-radius:5px;background:rgba(108,63,255,.10);border:1px solid rgba(108,63,255,.32);color:#9D7BFF;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;cursor:help">MINT</span>';
+              } else if (!needsPermit) {
+                // Native USDC chain used as a SOURCE — show PREFUND pill with explainer tooltip
                 stateLabel = '<span title="Send USDC from your wallet to this address on Arc. Agent runs will draw from this balance." style="padding:2px 6px;border-radius:5px;background:rgba(108,63,255,.10);border:1px solid rgba(108,63,255,.32);color:#9D7BFF;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;cursor:help">PREFUND</span>';
               } else {
                 stateLabel = permit
@@ -1749,9 +2248,34 @@ select option:checked{background:#1a2c4a;color:#fff}
                 <a href="${explorerBase}${w.address}" target="_blank" rel="noopener" title="View on explorer" style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);text-decoration:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px">↗</a>
               </div>`;
             }).join('')}
-            ${hasAnyNativeChain ? `
+            ${(a.failedChains || []).map(f => {
+              // Failed-provisioning rows. Same layout as wallet rows so they
+              // visually fit in the AUTH list. Red FAILED pill + retry hint.
+              // Without these the user sees the agent as "Active" but with a
+              // missing chain — and (pre-fix) the silent-fallback bug would
+              // route their target USDC to the wrong chain.
+              const label = CHAIN_LABELS[f.source] || f.source;
+              return `
+              <div style="display:flex;align-items:center;padding:4px 0;font-size:11px;font-family:var(--mono);gap:6px">
+                <span style="color:var(--muted);min-width:84px;flex-shrink:0">${label}</span>
+                <span title="${escapeHtml(f.error || 'provisioning failed')}" style="padding:2px 6px;border-radius:5px;background:rgba(255,85,119,.10);border:1px solid rgba(255,85,119,.30);color:#FF8BA3;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;cursor:help">FAILED</span>
+                <span style="color:#FF8BA3;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px" title="${escapeHtml(f.error || '')}">${escapeHtml((f.error || 'provisioning failed').slice(0, 40))}</span>
+              </div>`;
+            }).join('')}
+            ${(a.failedChains || []).length ? `
+              <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,85,119,.05);border:1px solid rgba(255,85,119,.18);border-radius:6px">
+                <span style="font-size:10.5px;color:#FF8BA3;line-height:1.4;flex:1">
+                  ⚠ <strong>Provisioning failed</strong> on ${a.failedChains.length} chain${a.failedChains.length > 1 ? 's' : ''}. Sends to ${a.failedChains.length > 1 ? 'these chains' : 'this chain'} will fail loudly (no silent rerouting). Retry, or revoke and recreate without ${a.failedChains.length > 1 ? 'them' : 'it'}.
+                </span>
+                <button onclick="window.retryProvision('${a.id}')" style="padding:5px 10px;border-radius:6px;background:rgba(77,214,219,.10);border:1px solid rgba(77,214,219,.32);color:var(--arc1);font-size:10.5px;font-family:var(--mono);font-weight:600;letter-spacing:.04em;cursor:pointer;flex-shrink:0">Retry</button>
+              </div>` : ''}
+            ${hasNativeUsdcSource ? `
               <div style="margin-top:6px;padding:6px 8px;background:rgba(108,63,255,.05);border:1px solid rgba(108,63,255,.18);border-radius:6px;font-size:10.5px;color:#B8A1FF;line-height:1.4">
                 ⓘ <strong style="color:#D4C5FF">PREFUND</strong> required on Arc: USDC is the native gas token there, so the agent can't pull from your wallet via permit. Send USDC to the agent wallet address shown above to enable runs.
+              </div>` : ''}
+            ${hasCctpDest && !hasNativeUsdcSource ? `
+              <div style="margin-top:6px;padding:6px 8px;background:rgba(108,63,255,.05);border:1px solid rgba(108,63,255,.18);border-radius:6px;font-size:10.5px;color:#B8A1FF;line-height:1.4">
+                ⓘ <strong style="color:#D4C5FF">CCTP cross-chain</strong>: targets on chain(s) not in your sources get delivered via Circle CCTP V2 burn-and-mint (~30s after each fire). The <strong>MINT</strong> wallet is where Circle mints to — no funding or permit needed.
               </div>` : ''}
           </div>`;
       } else if (a.provisioning === 'failed') {
@@ -1774,27 +2298,98 @@ select option:checked{background:#1a2c4a;color:#fff}
       const destChains = Array.from(new Set(tcArr.length ? tcArr : a.sources));
       const destHtml = destChains.map(c => `<span class="chain-tag">${CHAIN_LABELS[c] || c}</span>`).join('<span class="arr">·</span>');
 
+      // ── Build the drawer body sections. No wrapping `<div class="agent-row">`,
+      // no title/state header (drawer-head owns that), no action buttons
+      // (drawer-foot owns those). Sections are plain blocks so the drawer
+      // scrolls naturally when content grows.
       return `
-        <div class="agent-row">
-          <div class="agent-row-top">
-            <div class="agent-row-name">${title}</div>
-            <div class="agent-row-state ${stateClass}">${stateLabel}</div>
-          </div>
+        <div class="drawer-section">
+          <div class="drawer-section-h">Flow</div>
           <div class="agent-row-flow">
             ${sourcesHtml}
             <span class="arr">→</span>
             ${destHtml}
           </div>
-          <div class="agent-row-targets">→ ${targetsHtml}</div>
-          <div class="agent-row-meta">${metaHtml}</div>
-          ${walletsHtml}
-          <div class="agent-row-actions">
-            <button onclick="window.toggleAgent('${a.id}')">${a.state === 'paused' ? 'Resume' : 'Pause'}</button>
-            <button onclick="window.runOnce('${a.id}')">Run now</button>
-            <button class="danger" onclick="window.revokeAgent('${a.id}')">Revoke</button>
-          </div>
-        </div>`;
-    }).join('');
+          <div class="agent-row-targets" style="margin-top:6px">→ ${targetsHtml}</div>
+        </div>
+        <div class="drawer-section">
+          <div class="drawer-section-h">Rule</div>
+          <div class="agent-row-meta" style="border-top:none;padding-top:0">${metaHtml}</div>
+        </div>
+        ${walletsHtml}
+        ${(a.pendingCctp && a.pendingCctp.length) ? (() => {
+            // In-flight CCTP transfers — render each with its state machine
+            // step so the user sees real-time progress. State labels match
+            // the backend enum exactly (circle_initiated, burn_confirmed,
+            // attested, mint_initiated, done, failed).
+            const stateMeta = {
+              permit_pending:  { label: 'Awaiting permit',color: '#FFD580', step: '1/6', detail: 'Waiting for EIP-2612 permit to confirm on-chain (~30s)' },
+              pull_pending:    { label: 'Pulling…',      color: '#FFD580', step: '2/6', detail: 'Pulling user USDC into agent wallet via permit (~30s)' },
+              burn_pending:    { label: 'Burning…',      color: '#FFD580', step: '3/6', detail: 'Burning USDC on source chain via TokenMessengerV2 (~30s)' },
+              burn_confirmed:  { label: 'Attesting…',    color: '#FFD580', step: '4/6', detail: 'Waiting for Circle IRIS attestation — Fast ~30s, Standard ~13min' },
+              attested:        { label: 'Minting…',      color: '#FFD580', step: '5/6', detail: 'Attestation ready, submitting mint on dest chain' },
+              mint_pending:    { label: 'Finalizing…',   color: '#FFD580', step: '6/6', detail: 'Mint queued on dest chain, waiting on-chain confirm' },
+              // Legacy states from pre-fix records (shown as their nearest equivalent)
+              circle_initiated:{ label: 'Burning…',      color: '#FFD580', step: '?/6', detail: 'Legacy state — burn submitted' },
+              mint_initiated:  { label: 'Finalizing…',   color: '#FFD580', step: '?/6', detail: 'Legacy state — mint submitted' },
+              done:            { label: 'Delivered',     color: '#7BE495', step: '✓',  detail: 'USDC arrived on dest chain' },
+              failed:          { label: 'Failed',        color: '#FF8BA3', step: '✕',  detail: 'See error below' },
+            };
+            const visible = a.pendingCctp.slice(-3).reverse(); // last 3 most recent
+            return `
+              <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.06)">
+                <div style="font-size:9.5px;font-family:var(--mono);color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">
+                  <span>CCTP Transfers</span>
+                </div>
+                ${visible.map((p, vIdx) => {
+                  const m = stateMeta[p.state] || { label: p.state, color: 'var(--muted)', step: '?', detail: '' };
+                  // Compute the actual index in agent.pendingCctp (since we
+                  // reversed + sliced — `vIdx` here is the visible-index).
+                  const realIdx = a.pendingCctp.length - 1 - vIdx;
+                  const ageMs = Date.now() - (p.updatedAt || p.createdAt || Date.now());
+                  const ageSinceCreate = Date.now() - (p.createdAt || Date.now());
+                  const ageMin = Math.floor(ageMs / 60000);
+                  const ageLabel = ageMin < 1 ? 'just now' : (ageMin < 60 ? `${ageMin}m` : `${Math.floor(ageMin/60)}h`);
+                  // Show "Force done" button when stuck > 5 min in a
+                  // non-terminal state. Lets user manually unblock if
+                  // they've verified the mint landed (auto-relayer claim,
+                  // etc.) but IRIS hasn't reported complete to us.
+                  const isStuck = p.state !== 'done' && p.state !== 'failed' && ageSinceCreate > 5 * 60 * 1000;
+                  const forceBtn = isStuck
+                    ? `<button onclick="window.forceCompleteCctp('${a.id}', ${realIdx})" title="Mark this transfer as done — use only after verifying USDC actually landed on dest chain" style="padding:3px 8px;border-radius:5px;background:rgba(255,184,0,.10);border:1px solid rgba(255,184,0,.32);color:#FFD580;font-size:9.5px;font-family:var(--mono);font-weight:600;cursor:pointer;margin-left:6px">Force done</button>`
+                    : '';
+                  // Burn explorer link — once we have the on-chain txHash,
+                  // surface it so the user can verify the burn really
+                  // happened (and check finality on the source chain
+                  // explorer themselves while waiting for IRIS).
+                  const burnExplorerBase = {
+                    baseSepolia:     'https://sepolia.basescan.org/tx/',
+                    sepolia:         'https://sepolia.etherscan.io/tx/',
+                    arbitrumSepolia: 'https://sepolia.arbiscan.io/tx/',
+                    optimismSepolia: 'https://sepolia-optimism.etherscan.io/tx/',
+                    polygonAmoy:     'https://amoy.polygonscan.com/tx/',
+                    avalancheFuji:   'https://testnet.snowtrace.io/tx/',
+                    unichainSepolia: 'https://sepolia.uniscan.xyz/tx/',
+                    arc:             'https://testnet.arcscan.app/tx/',
+                  }[p.srcChainKey] || '';
+                  const burnLink = (p.burnTxHash && burnExplorerBase)
+                    ? `<a href="${burnExplorerBase}${p.burnTxHash}" target="_blank" rel="noopener" title="View burn tx on ${p.srcChainKey}" style="color:var(--arc1);font-size:9.5px;text-decoration:none;margin-left:6px">burn ↗</a>`
+                    : '';
+                  return `
+                  <div style="display:flex;align-items:center;padding:6px 8px;margin-bottom:4px;border-radius:6px;background:rgba(255,255,255,.02);border:1px solid var(--border);font-size:11px;font-family:var(--mono);gap:8px">
+                    <span style="padding:2px 6px;border-radius:5px;background:rgba(${m.color === '#7BE495' ? '123,228,149' : (m.color === '#FF8BA3' ? '255,85,119' : '255,184,0')},.10);border:1px solid rgba(${m.color === '#7BE495' ? '123,228,149' : (m.color === '#FF8BA3' ? '255,85,119' : '255,184,0')},.30);color:${m.color};font-size:9px;font-weight:700;letter-spacing:.06em;min-width:42px;text-align:center">${m.step}</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="color:${m.color};font-size:10.5px;font-weight:600">${m.label} <span style="color:var(--muted);font-weight:400;font-size:9.5px">· $${p.amountHuman} ${p.srcChainKey || ''} → ${p.destChainKey || ''}</span>${burnLink}${forceBtn}</div>
+                      <div style="color:var(--muted);font-size:9.5px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.error ? '⚠ ' + p.error.slice(0, 80) : m.detail}</div>
+                    </div>
+                    <span style="color:var(--muted);font-size:9.5px;flex-shrink:0">${ageLabel}</span>
+                  </div>`;
+                }).join('')}
+                ${a.pendingCctp.length > 3 ? `<div style="text-align:center;color:var(--muted);font-size:10px;margin-top:4px">+${a.pendingCctp.length - 3} older transfer(s)</div>` : ''}
+              </div>`;
+          })() : ''}
+      `;
+      // Action buttons live in the drawer footer (renderAgentDrawer) — not here.
   }
 
   function renderExecLog() {
@@ -1915,6 +2510,37 @@ select option:checked{background:#1a2c4a;color:#fff}
   renderExecLog();
   updateStats();
   updateSummary();
+
+  /* ============================================================
+     HELP TOOLTIPS — wire the ? buttons. Mirrors trade.html src-help
+     pattern: click toggles `.open` on the matching .help-pop; clicking
+     anywhere else closes any open popover. data-help on the button names
+     the popover (help-<name>). Buttons created later (e.g. inside the
+     drawer) are picked up via event delegation on document.
+  ============================================================ */
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.help-btn');
+    if (btn) {
+      e.stopPropagation();
+      const which = btn.dataset.help;
+      const pop = document.getElementById('help-' + which);
+      // Close any other open popover first (only one at a time).
+      document.querySelectorAll('.help-pop.open').forEach(p => {
+        if (p !== pop) p.classList.remove('open');
+      });
+      document.querySelectorAll('.help-btn.open').forEach(b => {
+        if (b !== btn) b.classList.remove('open');
+      });
+      pop?.classList.toggle('open');
+      btn.classList.toggle('open', pop?.classList.contains('open'));
+      return;
+    }
+    // Clicked outside any help control → close all popovers.
+    if (!e.target.closest('.help-pop')) {
+      document.querySelectorAll('.help-pop.open').forEach(p => p.classList.remove('open'));
+      document.querySelectorAll('.help-btn.open').forEach(b => b.classList.remove('open'));
+    }
+  });
 
   // After the wallet snapshot stabilizes (autoConnect runs during ArcUI.boot),
   // refresh from backend. This swaps localStorage cache → server truth.

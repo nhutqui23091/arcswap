@@ -52,17 +52,20 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .o3{display:none}
 @keyframes orb-drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,20px) scale(1.06)}}
 
-/* NAVBAR — unified with /trade (arc-ui.css) */
+/* NAVBAR — unified with /trade & /agent (matches arc-ui.css render) */
 nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .3s;gap:16px}
 nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
 .logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer}
 .logo-name{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.logo-badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;background:rgba(77,214,219,.15);border:1px solid rgba(77,214,219,.35);border-radius:20px;color:var(--arc2);font-family:var(--mono)}
 .nav-tabs{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 .nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;text-decoration:none;border:none;background:none;cursor:pointer;font-family:var(--font)}
 .nav-tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
 .nav-tab.active{color:var(--text);background:rgba(255,255,255,.07)}
 .nav-tab.faucet-tab{color:var(--muted);background:none;border:none}
 .nav-tab.faucet-tab:hover{color:var(--arc2);background:rgba(0,207,255,.06)}
+.nav-tab.new-pill{position:relative}
+.nav-tab.new-pill::after{content:'NEW';position:absolute;top:-3px;right:-12px;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 5px;border-radius:6px}
 .nav-right{display:flex;align-items:center;gap:10px}
 .testnet-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
 .tnet-dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4);animation:blink 2s ease-in-out infinite}
@@ -206,14 +209,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <div class="cursor-ring" id="cring"></div>
 <div class="aurora"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
 
-<!-- NAVBAR -->
+<!-- NAVBAR — kept identical to the shared arc-ui.js render so /trade, /agent,
+     /balance, /token all share the same chrome. -->
 <nav>
-  <div class="logo-wrap" onclick="window.location.href='/'">
-    <span class="logo-name" style="font-size:20px;font-weight:800;letter-spacing:-.04em">ArcSwap</span>
-  </div>
+  <a class="logo-wrap nav-logo" href="/" style="text-decoration:none">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-badge">TESTNET</span>
+  </a>
   <div class="nav-tabs">
     <a class="nav-tab" href="/trade">Trade</a>
     <a class="nav-tab" href="/balance">Balance</a>
+    <a class="nav-tab new-pill" href="/agent">Agent</a>
     <a class="nav-tab active" href="/token">Create Token</a>
     <a class="nav-tab faucet-tab" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
     <a class="nav-tab" href="/blog">Blog</a>

@@ -71,3 +71,10 @@ scratch/
 # ─── Generated social previews (raster exports — keep SVG sources only) ──────
 assets/social/*.png
 assets/social/*.jpg
+
+# ─── Investor / business-sensitive content ───────────────────────────────────
+# Pitch deck content (markdown source, generated .pptx, and the build script
+# which embeds all slide content). Keep local — never push to GitHub.
+INVESTOR-DECK.md
+INVESTOR-DECK.pptx
+scripts/build_deck.py
