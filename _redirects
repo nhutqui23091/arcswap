@@ -24,3 +24,16 @@
 /blog-launch        /blog/launch-arc-testnet      301
 /blog-arcswap       /blog/what-is-arcswap         301
 /blog-usyc          /blog/usyc-explained          301
+
+# ─── Defense-in-depth: block direct access to source/internal files ──────────
+# These should never exist in a deploy, but if a future `wrangler pages deploy`
+# accidentally uploads them (gitignored ≠ deploy-ignored), CF returns 404.
+# Note: Pages Function source files (functions/**) and config (_headers,
+# _redirects, wrangler.toml) are NOT actually served — SPA fallback hides them.
+# Listed below mostly for paths that ARE servable as static.
+/INVESTOR-DECK.md      /404   404
+/INVESTOR-DECK.pptx    /404   404
+/scripts/*             /404   404
+/workers/*             /404   404
+/.env                  /404   404
+/.env.*                /404   404
