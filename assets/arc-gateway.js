@@ -371,6 +371,14 @@
    * `valueCanonical` in 6-decimal BigInt.
    */
   async function spend({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee, onStep }) {
+    if (!ARC.wallet.signer) throw new Error('Connect wallet');
+    // SECURITY: defense-in-depth chain verification. Callers in trade.html
+    // already call ensureChain before us, but if a future caller forgets,
+    // signing on the wrong chain could let an attacker exploit the fact
+    // that Circle's GatewayWallet EIP-712 domain lacks chainId (signature
+    // is portable). Forcing ensureChain here also prompts MetaMask to
+    // surface the chain switch to the user.
+    await ARC.wallet.ensureChain(srcChainKey);
     // Circle's /v1/transfer rejects maxFee=0 with "Insufficient max fee".
     // Pick a safe default scaled to amount when caller didn't set one.
     const fee = (maxFee == null || maxFee === 0n) ? defaultMaxFee(valueCanonical) : maxFee;

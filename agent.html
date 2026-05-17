@@ -1115,9 +1115,17 @@ select option:checked{background:#1a2c4a;color:#fff}
         console.log(`[permits] skipping ${arcKey} — no USDC mapping`);
         continue;
       }
-      // Update modal copy so user knows which chain they're signing for
+      // SECURITY: surface the EXACT amount the user is permitting + the
+      // 30-day deadline. The wallet popup shows raw uint256 values which
+      // most users can't decode at a glance ("99000000000" = "99,000
+      // USDC"). Spelling it out here in human units lets users sanity-
+      // check before clicking Sign on the wallet popup.
       const msgEl = document.getElementById('modal-s');
-      if (msgEl) msgEl.textContent = `Authorize agent to pull USDC from your wallet on ${CHAIN_LABELS[arcKey] || arcKey}. One signature, no gas, no on-chain transaction yet.`;
+      const humanValue = (Number(perChainValue) / 1e6).toLocaleString('en-US', { maximumFractionDigits: 2 });
+      if (msgEl) msgEl.textContent =
+        `Authorize agent to pull up to ${humanValue} USDC from your wallet on ${CHAIN_LABELS[arcKey] || arcKey} ` +
+        `(expires in 30 days). One signature, no gas, no on-chain transaction yet.`;
+      ArcUI.toast('warn', `Permit: up to ${humanValue} USDC on ${CHAIN_LABELS[arcKey] || arcKey}`, 'Verify the amount in your wallet popup before signing.', { ttl: 6000 });
       try {
         const permit = await signOnePermit({
           arcKey,
@@ -1595,6 +1603,40 @@ select option:checked{background:#1a2c4a;color:#fff}
         }
       }
       nextRun = next;
+    }
+
+    // SECURITY: blocking confirm dialog showing the exact rule values
+    // before the wallet popup. The agent EIP-712 typed data includes
+    // semantic field names (good), but the values get JSON-stringified
+    // into a single "params" string field — meaning the wallet popup
+    // shows {"floor":10,"refillAmount":50,"dailyCap":500} as opaque text.
+    //
+    // This dialog re-states the human-readable plan so the user can
+    // verify it matches what they configured in the builder UI before
+    // signing. If a tampered page injected different values into `rule`
+    // but kept the UI showing the original, this confirm dialog would
+    // reveal the discrepancy.
+    const paramsLine = state.mode === 'topup'
+      ? `Floor: ${rule.params.floor} USDC · Refill: ${rule.params.refillAmount} USDC · Daily cap: ${rule.params.dailyCap} USDC`
+      : `Send: ${rule.params.sendAmount} USDC · Every ${rule.params.cadence} @ ${rule.params.time}`;
+    const targetsLine = rule.targets.length === 1
+      ? `${rule.targets[0].slice(0, 6)}...${rule.targets[0].slice(-4)}`
+      : `${rule.targets.length} addresses`;
+    const expiresIn = Math.round((rule.expiresAt - Date.now()) / (24 * 60 * 60 * 1000));
+    const ruleConfirmMsg =
+      `🔐 REVIEW AGENT BEFORE SIGNING\n\n` +
+      `Mode: ${rule.mode === 'topup' ? 'Auto Top-up' : 'Scheduled Send'}\n` +
+      `Sources: ${rule.sources.join(', ')}\n` +
+      `Targets: ${targetsLine}\n` +
+      `${paramsLine}\n` +
+      `Expires: in ${expiresIn} days\n\n` +
+      `Next, you'll sign:\n` +
+      `1. Agent rule (this dialog)\n` +
+      `2. One USDC permit per source chain (${rule.sources.length})\n\n` +
+      `If anything looks wrong, click Cancel.`;
+    if (!window.confirm(ruleConfirmMsg)) {
+      ArcUI.toast('warn', 'Cancelled', 'No agent created');
+      return;
     }
 
     openSignModal();

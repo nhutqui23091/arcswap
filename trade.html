@@ -440,7 +440,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         referrerpolicy="no-referrer"></script>
 <script src="/assets/arc-core.js?v=9.6.2"></script>
 <script src="/assets/arc-ui.js?v=9.6.3"></script>
-<script src="/assets/arc-gateway.js?v=9.6.1"></script>
+<script src="/assets/arc-gateway.js?v=9.6.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
      file is gitignored locally so dev paste their own key from arc-appkit-config.js.example) -->
@@ -1378,6 +1378,36 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     let runAmt = parseAmt(state.amountIn, state.fromToken.decimals);
     let runChain = state.src.chainKey;
     let runTokSym = state.fromToken.symbol;
+
+    // SECURITY: blocking confirm dialog listing the full plan before any
+    // wallet sign popup. Without this, attackers on a tampered page could
+    // trick users into signing transactions that don't match what the UI
+    // showed (Circle GatewayWallet's EIP-712 domain lacks chainId, so
+    // wallets can't display source chain in the sign popup).
+    //
+    // We list every step verbatim so a vigilant user can compare the
+    // confirm dialog text to what they expected, before the wallet popup
+    // (which only shows opaque typed-data fields).
+    const planLines = steps.map((s, i) => {
+      const n = i + 1;
+      if (s.type === 'gateway-spend') return `${n}. Gateway burn → ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+      if (s.type === 'cctp-burn')     return `${n}. CCTP burn → ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+      if (s.type === 'swap')          return `${n}. Swap ${s.fromSym}→${s.toSym} on ${chainShort(s.chain)}`;
+      return `${n}. ${s.type} on ${chainShort(s.chain || s.src)}`;
+    }).join('\n');
+    const recipShort = recipient.slice(0, 6) + '...' + recipient.slice(-4);
+    const isOwnWallet = recipient.toLowerCase() === wallet.address.toLowerCase();
+    const confirmMsg =
+      `🔐 REVIEW BEFORE SIGNING\n\n` +
+      `Amount: ${state.amountIn} ${state.fromToken.symbol}\n` +
+      `Recipient: ${isOwnWallet ? 'Your wallet' : recipShort + ' (external — verify!)'}\n\n` +
+      `Plan (${steps.length} step${steps.length > 1 ? 's' : ''}):\n${planLines}\n\n` +
+      `You will sign ${steps.filter(s => s.type === 'gateway-spend' || s.type === 'cctp-burn' || s.type === 'swap').length}+ wallet transactions.\n\n` +
+      `If anything looks wrong, click Cancel.`;
+    if (!window.confirm(confirmMsg)) {
+      ArcUI.toast('warn', 'Cancelled', 'No transactions signed');
+      return;
+    }
 
     // Build progress modal steps
     const modalSteps = steps.map((s, i) => ({ id: 'step' + i, title: stepTitle(s) }));
