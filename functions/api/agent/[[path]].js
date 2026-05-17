@@ -427,8 +427,17 @@ async function handleCreate(req, kv, env) {
       // removes one race-condition surface. Fire-and-forget; by the time
       // any cross-chain transfer fires, the approve has long confirmed.
       // Only matters for cross-chain agents but harmless for same-chain.
+      //
+      // SECURITY: approval amount is bounded to ~30 days of expected
+      // spending (see computeAgentApprovalAmount). Previously was 2^96-1
+      // (effectively unlimited) — that meant a single Circle API key leak
+      // would let the attacker drain the agent's SCA forever. With the
+      // bounded approval, the blast radius is capped at one renewal cycle.
+      // TODO: add auto-renew in cron-tick when allowance < pendingTransfer.
       try {
-        const { preApproveTokenMessenger } = await import('./_cctp.js');
+        const { preApproveTokenMessenger, computeAgentApprovalAmount } = await import('./_cctp.js');
+        const approvalAmount = computeAgentApprovalAmount(agent);
+        console.log(`[handleCreate] approval amount for agent ${id}: ${approvalAmount} base units (~${Number(approvalAmount) / 1e6} USDC) per source chain`);
         const sourceWallets = result.wallets.filter(w => sources.includes(w.source));
         for (const w of sourceWallets) {
           const arcKey = w.source === 'base' ? 'baseSepolia'
@@ -438,7 +447,7 @@ async function handleCreate(req, kv, env) {
                        : w.source === 'unichain' ? 'unichainSepolia'
                        : w.source === 'fuji' ? 'avalancheFuji'
                        : w.source;
-          const tx = await preApproveTokenMessenger(env, w, arcKey);
+          const tx = await preApproveTokenMessenger(env, w, arcKey, approvalAmount);
           if (tx) {
             console.log(`[handleCreate] pre-approved TokenMessenger on ${w.source}: circleTxId=${tx.id}`);
           }

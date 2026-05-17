@@ -597,7 +597,18 @@
     if (have >= amount) return null;
     onStep?.('Requesting approval…');
     const c = new Contract(token.address, ABIS.erc20, wallet.signer);
-    const tx = await c.approve(spender, (1n << 256n) - 1n);
+    // Security: approve only what's needed for this deposit + 50% buffer
+    // (lets minor retries / slippage adjustments succeed without re-approval).
+    //
+    // PREVIOUSLY: approved (2^256 - 1) — "infinite approval" pattern. Risk:
+    // if the spender contract is ever compromised, attacker drains user's
+    // entire token balance. Industry has moved away from this pattern post
+    // multiple high-profile DeFi exploits (e.g. Multichain 2023).
+    //
+    // Trade-off: user pays gas for an extra approve on most deposits, but
+    // the residual approval at any time is capped at 1.5× their last deposit.
+    const approvalAmount = (amount * 15n) / 10n;
+    const tx = await c.approve(spender, approvalAmount);
     onStep?.('Approving… ' + tx.hash.slice(0, 10));
     await tx.wait();
     return tx.hash;

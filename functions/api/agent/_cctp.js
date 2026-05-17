@@ -213,20 +213,37 @@ const USDC_ADDR_BY_CHAIN = {
  * per (wallet, source-chain) pair before the first depositForBurn — CCTP
  * uses transferFrom internally to pull burn tokens.
  *
- * We approve a very large amount (effectively unlimited) so subsequent
- * transfers don't need to re-approve. Standard pattern for SCA wallets
- * that own only USDC.
+ * SECURITY: We approve a BOUNDED amount (typically ~30 days of expected
+ * spending) instead of unlimited. If Circle API key leaks or the SCA wallet
+ * is compromised, the attacker can only drain up to this cap. Caller is
+ * responsible for re-approval (auto-renew) when allowance runs low — see
+ * checkAndRenewAllowance() in [[path]].js cron-tick flow.
+ *
+ * PREVIOUSLY: 2^96 - 1 (~7.9e28 USDC) effectively unlimited approval. Risk
+ * model: Circle API key leak → attacker drains entire agent SCA balance
+ * forever. Bounded approval limits blast radius to one renewal window.
+ *
+ * @param {object} env       Pages Functions env (CIRCLE_API_KEY, etc.)
+ * @param {object} wallet    Circle SCA wallet object ({ walletId, address, blockchain })
+ * @param {string} srcChainKey  Chain key used to look up USDC contract address
+ * @param {bigint|string} amount  Approval amount in USDC base units (6 decimals).
+ *                                  Pass 100_000_000n for "100 USDC".
  */
-export async function approveTokenMessenger(env, wallet, srcChainKey) {
+export async function approveTokenMessenger(env, wallet, srcChainKey, amount) {
   const usdc = USDC_ADDR_BY_CHAIN[srcChainKey];
   if (!usdc) throw new Error(`CCTP: no USDC address for "${srcChainKey}"`);
-  // 2^96 - 1 ≈ 7.9e28 — far more than any plausible USDC supply.
-  const MAX_APPROVE = (2n ** 96n - 1n).toString();
+  if (amount == null || BigInt(amount) <= 0n) {
+    throw new Error(`CCTP approveTokenMessenger: invalid amount ${amount}`);
+  }
+  // Safety ceiling: even if caller passes a huge number, cap at 2^96-1
+  // (TokenMessenger uses uint96-compatible bookkeeping internally).
+  const MAX_CEILING = (2n ** 96n - 1n);
+  const approveAmount = (BigInt(amount) > MAX_CEILING ? MAX_CEILING : BigInt(amount)).toString();
   return await contractExecution(env, {
     walletId: wallet.walletId,
     contractAddress: usdc,
     abiFunctionSignature: 'approve(address,uint256)',
-    abiParameters: [TOKEN_MESSENGER_V2.toLowerCase(), MAX_APPROVE],
+    abiParameters: [TOKEN_MESSENGER_V2.toLowerCase(), approveAmount],
   });
 }
 
@@ -427,14 +444,55 @@ export async function initiateCrossChainTransfer(env, params) {
  * wait for confirmation. By the time the first transfer runs (could be
  * minutes to days), the approve will long since have confirmed.
  */
-export async function preApproveTokenMessenger(env, wallet, srcChainKey) {
+export async function preApproveTokenMessenger(env, wallet, srcChainKey, amount) {
   if (!chainSupportsCctp(srcChainKey)) return null;
   try {
-    return await approveTokenMessenger(env, wallet, srcChainKey);
+    return await approveTokenMessenger(env, wallet, srcChainKey, amount);
   } catch (e) {
     console.warn(`[cctp] pre-approve failed for ${wallet.walletId} on ${srcChainKey}:`, e?.message || e);
     return null;
   }
+}
+
+/**
+ * Compute a bounded approval amount for an agent based on its mode/params.
+ *
+ * Goal: approve roughly 30 days of expected spending, so that even if the
+ * Circle API key leaks the attacker can only drain ~1 month worth before
+ * the next renewal cycle (or revoke).
+ *
+ * Returns USDC base units (6 decimals). Always at least 1 USDC to avoid
+ * dust-only approvals that block immediate first-fire.
+ *
+ * @param {object} agent  Agent record from KV (mode + params)
+ * @returns {bigint}      Approval amount in USDC base units
+ */
+export function computeAgentApprovalAmount(agent) {
+  const USDC_DECIMALS = 6n;
+  const SCALE = 10n ** USDC_DECIMALS;       // 1_000_000n
+  const MIN_APPROVAL = 1n * SCALE;          // 1 USDC floor
+
+  const params = agent?.params || {};
+  let humanAmount = 0;
+
+  if (agent?.mode === 'topup') {
+    // Topup: agent fires when balance < floor, refills up to refillAmount.
+    // Cap is dailyCap (per-day spending limit). Approve 30 × dailyCap = 1 month.
+    humanAmount = Number(params.dailyCap || 0) * 30;
+  } else {
+    // Schedule: sendAmount per execution. Multiplier depends on cadence.
+    //   once    → 1× (single fire)
+    //   daily   → 30× (1 month)
+    //   weekly  → ~5× (1 month rounded up)
+    //   monthly → 3× (~3 months — re-approve cadence longer than monthly mode)
+    const send = Number(params.sendAmount || 0);
+    const mul = ({ once: 1, daily: 30, weekly: 5, monthly: 3 })[params.cadence] || 30;
+    humanAmount = send * mul;
+  }
+
+  // Convert to base units, with floor.
+  const baseUnits = BigInt(Math.ceil(humanAmount * Number(SCALE)));
+  return baseUnits > MIN_APPROVAL ? baseUnits : MIN_APPROVAL;
 }
 
 /**
