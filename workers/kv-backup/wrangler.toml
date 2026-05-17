@@ -1,0 +1,58 @@
+# ArcSwap KV Backup — Cloudflare Worker.
+#
+# Daily snapshot of AGENT_KV → R2 bucket. Defends against:
+#   - Accidental KV namespace deletion
+#   - Cloudflare account compromise (R2 bucket can be restored from snapshots
+#     if KV is wiped, attacker is unlikely to also wipe R2 separately)
+#   - Bad migration / accidental wipe by our own code
+#
+# What it backs up (entire AGENT_KV namespace):
+#   agent:<id>                   → JSON agent record (config, owner, Circle Wallet ID)
+#   agent:<id>:executions        → execution history (last 100)
+#   owner:<addr>:agents          → list of agent IDs per user
+#   agents:index                 → master index for cron iteration
+#   agents:topup, agents:schedule → mode-sharded indexes
+#
+# Output (in R2 bucket `arcswap-kv-backups`):
+#   kv-backup-YYYY-MM-DD.json    → daily snapshot (overwrites if same day)
+#   kv-backup-latest.json        → always-overwritten "latest" pointer
+#
+# Retention: keep last 30 days. Old backups deleted automatically.
+#
+# Deploy:
+#   cd workers/kv-backup
+#   wrangler deploy
+#
+# Manual run (test):
+#   curl -X POST https://arcswap-kv-backup.<account>.workers.dev/__run \
+#     -H "X-Backup-Secret: <BACKUP_SECRET>"
+#
+# Set the secret (one-time):
+#   wrangler secret put BACKUP_SECRET
+#   (paste a random 64-char hex string — used to gate manual run endpoint)
+
+name = "arcswap-kv-backup"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# KV: read the same namespace that Pages function writes to.
+# Namespace ID confirmed via `wrangler kv:namespace list` — title "arcswap-agents-prod".
+[[kv_namespaces]]
+binding = "AGENT_KV"
+id = "1b973b912292414aab582485ec0fe58f"
+
+# R2: write daily snapshot here.
+# Bucket created via `wrangler r2 bucket create arcswap-kv-backups` after R2 enabled.
+[[r2_buckets]]
+binding = "BACKUPS"
+bucket_name = "arcswap-kv-backups"
+
+# Cron: 02:00 UTC daily (09:00 GMT+7 — Vietnam morning).
+# Choose 2am UTC so the backup snapshot is taken at a quiet time across most regions.
+# 1 run/day × ~3 KV lists + ~N reads × 1 R2 PUT — well under free tier (1k lists, 100k reads).
+[triggers]
+crons = ["0 2 * * *"]
+
+# Observability — let us tail logs for backup runs to confirm they succeeded.
+[observability]
+enabled = true
