@@ -264,6 +264,81 @@
   }
   function closeModal() { document.getElementById('arc-modal-root')?.classList.remove('show'); }
 
+  /**
+   * Styled confirmation dialog — replaces window.confirm() for security gates
+   * (pre-sign review modals etc.) so the UX matches the rest of the app
+   * instead of showing the browser-native generic dialog.
+   *
+   * Usage:
+   *   const ok = await ArcUI.confirm({
+   *     title: '🔐 Review',
+   *     body: 'Some HTML or text describing the action.',
+   *     confirmLabel: 'Sign',
+   *     cancelLabel: 'Cancel',
+   *     danger: false,   // if true, confirm button is red-tinted
+   *   });
+   *   if (!ok) return;
+   *
+   * Returns a Promise that resolves true on Confirm and false on Cancel /
+   * Esc / backdrop click / X button. Always closes the modal before resolving.
+   */
+  function confirm({ title, body, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false } = {}) {
+    return new Promise((resolve) => {
+      // Build the body as a container with the message + a button row
+      const wrap = document.createElement('div');
+      const msg = document.createElement('div');
+      msg.className = 'arc-confirm-msg';
+      // Accept either an HTMLElement or an HTML string for `body`
+      if (body instanceof HTMLElement) msg.appendChild(body);
+      else msg.innerHTML = typeof body === 'string' ? body : '';
+      const row = document.createElement('div');
+      row.className = 'arc-confirm-row';
+      row.style.cssText = 'display:flex;gap:10px;margin-top:18px;justify-content:flex-end';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn-ghost';
+      cancelBtn.textContent = cancelLabel;
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'btn-primary';
+      confirmBtn.textContent = confirmLabel;
+      if (danger) {
+        confirmBtn.style.color = 'var(--red)';
+        confirmBtn.style.borderColor = 'rgba(255,85,119,.45)';
+      }
+      row.appendChild(cancelBtn);
+      row.appendChild(confirmBtn);
+      wrap.appendChild(msg);
+      wrap.appendChild(row);
+
+      let settled = false;
+      const finish = (val) => {
+        if (settled) return;
+        settled = true;
+        document.removeEventListener('keydown', onKey);
+        closeModal();
+        resolve(val);
+      };
+      const onKey = (e) => {
+        if (e.key === 'Escape') finish(false);
+        else if (e.key === 'Enter') finish(true);
+      };
+      cancelBtn.onclick = () => finish(false);
+      confirmBtn.onclick = () => finish(true);
+
+      openModal({
+        title: title || 'Confirm',
+        body: wrap,
+        onOpen: (m) => {
+          // Treat backdrop click + X button as Cancel (not just close)
+          m.addEventListener('click', (e) => { if (e.target === m) finish(false); }, { once: true });
+          m.querySelector('.arc-modal-close').addEventListener('click', () => finish(false), { once: true });
+          document.addEventListener('keydown', onKey);
+          // Focus confirm by default — Enter accepts, Esc cancels.
+          setTimeout(() => confirmBtn.focus(), 50);
+        },
+      });
+    });
+  }
+
   // ── AURORA + CURSOR ────────────────────────────────────
   function renderAurora() {
     if (document.querySelector('.aurora-bg')) return;
@@ -307,5 +382,5 @@
     await ARC.wallet.autoConnect().catch(() => null);
   }
 
-  global.ArcUI = { boot, renderNav, toast, openModal, closeModal };
+  global.ArcUI = { boot, renderNav, toast, openModal, closeModal, confirm };
 })(window);

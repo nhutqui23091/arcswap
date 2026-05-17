@@ -10,7 +10,7 @@
 <title>ArcSwap — Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.6.3"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.6.4"/>
 <style>
 :root{
   /* /agent used to ship a violet primary that clashed with the rest of the
@@ -742,7 +742,7 @@ select option:checked{background:#1a2c4a;color:#fff}
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/arc-core.js?v=9.6.2"></script>
-<script src="/assets/arc-ui.js?v=9.6.3"></script>
+<script src="/assets/arc-ui.js?v=9.6.4"></script>
 <script>
 (async () => {
   await ArcUI.boot('agent');
@@ -1605,7 +1605,7 @@ select option:checked{background:#1a2c4a;color:#fff}
       nextRun = next;
     }
 
-    // SECURITY: blocking confirm dialog showing the exact rule values
+    // SECURITY: styled confirm dialog showing the exact rule values
     // before the wallet popup. The agent EIP-712 typed data includes
     // semantic field names (good), but the values get JSON-stringified
     // into a single "params" string field — meaning the wallet popup
@@ -1616,25 +1616,37 @@ select option:checked{background:#1a2c4a;color:#fff}
     // signing. If a tampered page injected different values into `rule`
     // but kept the UI showing the original, this confirm dialog would
     // reveal the discrepancy.
-    const paramsLine = state.mode === 'topup'
-      ? `Floor: ${rule.params.floor} USDC · Refill: ${rule.params.refillAmount} USDC · Daily cap: ${rule.params.dailyCap} USDC`
-      : `Send: ${rule.params.sendAmount} USDC · Every ${rule.params.cadence} @ ${rule.params.time}`;
-    const targetsLine = rule.targets.length === 1
-      ? `${rule.targets[0].slice(0, 6)}...${rule.targets[0].slice(-4)}`
-      : `${rule.targets.length} addresses`;
+    const paramsRowsHtml = state.mode === 'topup'
+      ? `<div class="row"><span class="k">Floor</span><span class="v">${rule.params.floor} USDC</span></div>
+         <div class="row"><span class="k">Refill</span><span class="v">${rule.params.refillAmount} USDC</span></div>
+         <div class="row"><span class="k">Daily cap</span><span class="v">${rule.params.dailyCap} USDC</span></div>`
+      : `<div class="row"><span class="k">Send amount</span><span class="v">${rule.params.sendAmount} USDC</span></div>
+         <div class="row"><span class="k">Cadence</span><span class="v">${rule.params.cadence} @ ${rule.params.time}</span></div>`;
+    const targetsHtml = rule.targets.length === 1
+      ? `<span class="v">${rule.targets[0].slice(0, 6)}…${rule.targets[0].slice(-4)}</span>`
+      : `<span class="v">${rule.targets.length} addresses</span>`;
     const expiresIn = Math.round((rule.expiresAt - Date.now()) / (24 * 60 * 60 * 1000));
-    const ruleConfirmMsg =
-      `🔐 REVIEW AGENT BEFORE SIGNING\n\n` +
-      `Mode: ${rule.mode === 'topup' ? 'Auto Top-up' : 'Scheduled Send'}\n` +
-      `Sources: ${rule.sources.join(', ')}\n` +
-      `Targets: ${targetsLine}\n` +
-      `${paramsLine}\n` +
-      `Expires: in ${expiresIn} days\n\n` +
-      `Next, you'll sign:\n` +
-      `1. Agent rule (this dialog)\n` +
-      `2. One USDC permit per source chain (${rule.sources.length})\n\n` +
-      `If anything looks wrong, click Cancel.`;
-    if (!window.confirm(ruleConfirmMsg)) {
+    const ruleConfirmBody = `
+      <div class="lede">This agent will sign transactions on your behalf. Verify the plan below matches what you configured before continuing.</div>
+      <div class="row"><span class="k">Mode</span><span class="v">${rule.mode === 'topup' ? 'Auto Top-up' : 'Scheduled Send'}</span></div>
+      <div class="row"><span class="k">Sources</span><span class="v">${rule.sources.join(', ')}</span></div>
+      <div class="row"><span class="k">Targets</span>${targetsHtml}</div>
+      ${paramsRowsHtml}
+      <div class="row"><span class="k">Expires</span><span class="v">in ${expiresIn} days</span></div>
+      <div class="footer">Next, you will sign:
+        <ol>
+          <li>Agent rule (after this dialog)</li>
+          <li>One USDC permit per source chain (${rule.sources.length})</li>
+        </ol>
+      </div>
+    `;
+    const ok = await ArcUI.confirm({
+      title: '🔐 Review agent before signing',
+      body: ruleConfirmBody,
+      confirmLabel: 'Sign agent',
+      cancelLabel: 'Cancel',
+    });
+    if (!ok) {
       ArcUI.toast('warn', 'Cancelled', 'No agent created');
       return;
     }

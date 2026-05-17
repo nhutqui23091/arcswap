@@ -10,7 +10,7 @@
 <title>Trade · Swap & Bridge — ArcSwap</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.1.11"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.6.4"/>
 <style>
 main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:110px 20px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
 @media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding-top:100px}}
@@ -439,7 +439,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/arc-core.js?v=9.6.2"></script>
-<script src="/assets/arc-ui.js?v=9.6.3"></script>
+<script src="/assets/arc-ui.js?v=9.6.4"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
@@ -1379,32 +1379,44 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     let runChain = state.src.chainKey;
     let runTokSym = state.fromToken.symbol;
 
-    // SECURITY: blocking confirm dialog listing the full plan before any
+    // SECURITY: styled confirm dialog listing the full plan before any
     // wallet sign popup. Without this, attackers on a tampered page could
     // trick users into signing transactions that don't match what the UI
     // showed (Circle GatewayWallet's EIP-712 domain lacks chainId, so
     // wallets can't display source chain in the sign popup).
     //
-    // We list every step verbatim so a vigilant user can compare the
-    // confirm dialog text to what they expected, before the wallet popup
-    // (which only shows opaque typed-data fields).
-    const planLines = steps.map((s, i) => {
+    // We list every step verbatim so a vigilant user can compare this
+    // dialog to what they expected, before the wallet popup (which only
+    // shows opaque typed-data fields).
+    const planRowsHtml = steps.map((s, i) => {
       const n = i + 1;
-      if (s.type === 'gateway-spend') return `${n}. Gateway burn → ${chainShort(s.src)} → ${chainShort(s.dst)}`;
-      if (s.type === 'cctp-burn')     return `${n}. CCTP burn → ${chainShort(s.src)} → ${chainShort(s.dst)}`;
-      if (s.type === 'swap')          return `${n}. Swap ${s.fromSym}→${s.toSym} on ${chainShort(s.chain)}`;
-      return `${n}. ${s.type} on ${chainShort(s.chain || s.src)}`;
-    }).join('\n');
-    const recipShort = recipient.slice(0, 6) + '...' + recipient.slice(-4);
+      let label;
+      if (s.type === 'gateway-spend')      label = `Gateway burn · ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+      else if (s.type === 'cctp-burn')     label = `CCTP burn · ${chainShort(s.src)} → ${chainShort(s.dst)}`;
+      else if (s.type === 'swap')          label = `Swap ${s.fromSym}→${s.toSym} on ${chainShort(s.chain)}`;
+      else                                 label = `${s.type} on ${chainShort(s.chain || s.src)}`;
+      return `<div class="row"><span class="k">Step ${n}</span><span class="v">${label}</span></div>`;
+    }).join('');
+    const recipShort = recipient.slice(0, 6) + '…' + recipient.slice(-4);
     const isOwnWallet = recipient.toLowerCase() === wallet.address.toLowerCase();
-    const confirmMsg =
-      `🔐 REVIEW BEFORE SIGNING\n\n` +
-      `Amount: ${state.amountIn} ${state.fromToken.symbol}\n` +
-      `Recipient: ${isOwnWallet ? 'Your wallet' : recipShort + ' (external — verify!)'}\n\n` +
-      `Plan (${steps.length} step${steps.length > 1 ? 's' : ''}):\n${planLines}\n\n` +
-      `You will sign ${steps.filter(s => s.type === 'gateway-spend' || s.type === 'cctp-burn' || s.type === 'swap').length}+ wallet transactions.\n\n` +
-      `If anything looks wrong, click Cancel.`;
-    if (!window.confirm(confirmMsg)) {
+    const signCount = steps.filter(s => s.type === 'gateway-spend' || s.type === 'cctp-burn' || s.type === 'swap').length;
+    const recipientHtml = isOwnWallet
+      ? `<span class="v">Your wallet</span>`
+      : `<span class="v warn">${recipShort} (external)</span>`;
+    const confirmBody = `
+      <div class="lede">Verify the plan below matches what you set up. The wallet popup that follows shows opaque typed-data, so this is your last clean checkpoint.</div>
+      <div class="row"><span class="k">Amount</span><span class="v">${state.amountIn} ${state.fromToken.symbol}</span></div>
+      <div class="row"><span class="k">Recipient</span>${recipientHtml}</div>
+      ${planRowsHtml}
+      <div class="footer">You will sign <b>${signCount}</b> wallet transaction${signCount > 1 ? 's' : ''}. Click Cancel if anything looks wrong.</div>
+    `;
+    const ok = await ArcUI.confirm({
+      title: '🔐 Review before signing',
+      body: confirmBody,
+      confirmLabel: 'Sign & continue',
+      cancelLabel: 'Cancel',
+    });
+    if (!ok) {
       ArcUI.toast('warn', 'Cancelled', 'No transactions signed');
       return;
     }
