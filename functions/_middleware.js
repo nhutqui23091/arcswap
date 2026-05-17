@@ -1,8 +1,8 @@
 // Page-level access gate.
 //
-// Locks the Pool and Vault pages so only the operator can view them.
-// Both pages share the same credentials, which come from Cloudflare Pages
-// env vars (Settings → Environment variables → Production):
+// Locks the Pool, Vault, and Dashboard pages so only the operator can view
+// them. All three share the same credentials, which come from Cloudflare
+// Pages env vars (Settings → Environment variables → Production):
 //   POOL_AUTH_USER  — username (anything you want)
 //   POOL_AUTH_PASS  — password
 //
@@ -23,7 +23,11 @@ function isProtected(pathname) {
     pathname === '/vault' ||
     pathname === '/vault/' ||
     pathname === '/vault.html' ||
-    pathname.startsWith('/vault/')
+    pathname.startsWith('/vault/') ||
+    pathname === '/dashboard' ||
+    pathname === '/dashboard/' ||
+    pathname === '/dashboard.html' ||
+    pathname.startsWith('/dashboard/')
   );
 }
 

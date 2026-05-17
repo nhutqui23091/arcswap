@@ -5,9 +5,14 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com https://gateway-api-testnet.circle.com https://*.circle.com https://api.circle.com https://esm.sh; base-uri 'self'; form-action 'self'; object-src 'none'"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<!-- Private operator page — gated by Basic Auth in functions/_middleware.js.
+     noindex/nofollow keeps it out of search engines and crawler indexes
+     while it's under wraps. Remove these when the page goes public. -->
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet"/>
+<meta name="googlebot" content="noindex,nofollow"/>
 <link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
-<meta name="description" content="ArcSwap Dashboard — modern stablecoin infrastructure control center. Unified balance, cross-chain operations, agent management in one view."/>
+<meta name="description" content="ArcSwap Dashboard — private operator console."/>
 <title>Dashboard — ArcSwap</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
@@ -452,7 +457,7 @@
         referrerpolicy="no-referrer"></script>
 <script src="/assets/arc-core.js?v=9.6.2"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
-<script src="/assets/arc-ui.js?v=9.6.5"></script>
+<script src="/assets/arc-ui.js?v=9.6.6"></script>
 <script>
 (async () => {
   /* ============================================================

@@ -16,14 +16,14 @@
   }
 
   function navTabs(active) {
+    // Dashboard is intentionally NOT in this list — it's a private operator
+    // page gated behind Basic Auth in functions/_middleware.js. Reach it by
+    // typing /dashboard in the URL bar. Will be re-added once it's public.
     const base = [
-      // Dashboard sits first — it's the control-center entry point that ties
-      // Trade / Balance / Agent together in one view.
-      { id: 'dashboard', label: 'Dashboard',  href: '/dashboard', newBadge: true },
-      { id: 'trade',     label: 'Trade',      href: '/trade'   },
-      { id: 'balance',   label: 'Balance',    href: '/balance' },
-      { id: 'agent',     label: 'Agent',      href: '/agent'   },
-      { id: 'token',     label: 'Create Token', href: '/token' },
+      { id: 'trade',     label: 'Trade',        href: '/trade'   },
+      { id: 'balance',   label: 'Balance',      href: '/balance' },
+      { id: 'agent',     label: 'Agent',        href: '/agent', newBadge: true },
+      { id: 'token',     label: 'Create Token', href: '/token'   },
     ];
     const gated = isTester(ARC.wallet.address)
       ? [
