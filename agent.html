@@ -1845,9 +1845,29 @@ select option:checked{background:#1a2c4a;color:#fff}
   };
 
   window.revokeAgent = async function(id) {
-    if (!confirm('Revoke this agent? Its signature will be invalidated and it stops running.')) return;
     const a = agents.find(x => x.id === id);
     if (!a) return;
+    // Styled modal instead of native window.confirm() so the destructive
+    // action gets the same visual treatment as the create/deploy review.
+    // Shows agent identity + a clear warning, with a red Revoke button.
+    const p = a.params || {};
+    const summaryRow = a.mode === 'topup'
+      ? `<div class="row"><span class="k">Rule</span><span class="v">Top-up · floor $${(p.floor||0).toFixed(2)} / refill $${(p.refillAmount||0).toFixed(2)}</span></div>`
+      : `<div class="row"><span class="k">Rule</span><span class="v">Schedule · $${(p.sendAmount||0).toFixed(2)} ${p.cadence||''}</span></div>`;
+    const ok = await ArcUI.confirm({
+      title: 'Revoke this agent?',
+      body: `<div class="arc-confirm-msg">
+        <div class="lede">Its EIP-712 signature is invalidated server-side and the agent stops running. This cannot be undone — you'll need to create a new agent if you change your mind.</div>
+        <div class="row"><span class="k">Agent</span><span class="v">${escapeHtml(a.name || 'Untitled')}</span></div>
+        <div class="row"><span class="k">ID</span><span class="v" style="font-family:var(--mono);font-size:11.5px">${escapeHtml(a.id)}</span></div>
+        ${summaryRow}
+        <div class="row"><span class="k">Sent so far</span><span class="v">$${(a.totalSent||0).toFixed(2)}</span></div>
+      </div>`,
+      confirmLabel: 'Revoke agent',
+      cancelLabel: 'Keep running',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       const res = await api(`/${id}`, {
         method: 'DELETE',
@@ -2179,12 +2199,33 @@ select option:checked{background:#1a2c4a;color:#fff}
       // The chain pill uses a subtle teal background so it visually echoes
       // the source chips at the top of the form.
       const tcArr = a.targetChains || [];
+      // Explorer URL base keyed on the UI chip name (not the arc key) — the
+      // chips are what land in `tcArr`. Lets the recipient row link straight
+      // to the dest chain's address explorer so users can verify the wallet
+      // they're sending USDC to.
+      const recipientExplorerBase = (chip) => ({
+        base:     'https://sepolia.basescan.org/address/',
+        sepolia:  'https://sepolia.etherscan.io/address/',
+        arbitrum: 'https://sepolia.arbiscan.io/address/',
+        optimism: 'https://sepolia-optimism.etherscan.io/address/',
+        polygon:  'https://amoy.polygonscan.com/address/',
+        fuji:     'https://testnet.snowtrace.io/address/',
+        unichain: 'https://sepolia.uniscan.xyz/address/',
+        arc:      'https://testnet.arcscan.app/address/',
+      })[chip] || '';
       const targetWithChain = (addr, idx) => {
         const c = tcArr[idx] || (a.sources && a.sources[0]) || '';
         const chainPill = c
           ? `<span style="margin-left:6px;padding:1px 6px;border-radius:5px;background:rgba(77,214,219,.10);border:1px solid rgba(77,214,219,.28);color:var(--arc1);font-size:10px;font-family:var(--mono);font-weight:600;letter-spacing:.02em">${CHAIN_LABELS[c] || c}</span>`
           : '';
-        return `${ARC.shortAddr(addr)}${chainPill}`;
+        // Stored addresses may or may not carry the 0x prefix (user input
+        // strips it in the form). Normalise before linking to the explorer.
+        const canon = addr.startsWith('0x') ? addr : '0x' + addr;
+        const explorerBase = recipientExplorerBase(c);
+        const explorerLink = explorerBase
+          ? ` <a href="${explorerBase}${canon}" target="_blank" rel="noopener" title="View ${CHAIN_LABELS[c] || c} recipient on explorer" style="margin-left:4px;color:var(--muted);text-decoration:none;font-size:11px;vertical-align:middle">↗</a>`
+          : '';
+        return `${ARC.shortAddr(addr)}${chainPill}${explorerLink}`;
       };
       const targetsHtml = a.targets.length === 1
         ? targetWithChain(a.targets[0], 0)
@@ -2260,11 +2301,41 @@ select option:checked{background:#1a2c4a;color:#fff}
           headerLabel = '<span style="color:#FFD580;letter-spacing:.04em;text-transform:none;font-size:10.5px">setup needed</span>';
         }
 
+        // Collapse the verbose PREFUND / CCTP-cross-chain explainer banners
+        // into a single "?" help badge sitting next to the Permission header.
+        // Hovering shows the native browser tooltip; clicking opens a toast
+        // for touch users who can't hover. Keeps the drawer compact.
+        const helpBits = [];
+        if (hasNativeUsdcSource) {
+          helpBits.push({
+            label: 'PREFUND',
+            text: "USDC is the native gas token on Arc, so the agent can't pull from your wallet via permit. Send USDC to the agent wallet address shown above to enable runs.",
+          });
+        }
+        if (hasCctpDest) {
+          helpBits.push({
+            label: 'CCTP cross-chain',
+            text: 'Targets on chain(s) not in your sources get delivered via Circle CCTP V2 burn-and-mint (~30s after each fire). The MINT wallet is where Circle mints to — no funding or permit needed.',
+          });
+        }
+        const helpAttr = helpBits.length
+          ? helpBits.map(h => `${h.label}: ${h.text}`).join('\n\n')
+          : '';
+        const helpToastBody = helpBits.length
+          ? helpBits.map(h => `${h.label} — ${h.text}`).join(' · ')
+          : '';
+        const helpBadge = helpBits.length
+          ? `<span title="${escapeHtml(helpAttr)}"
+                   onclick="ArcUI.toast('info', 'How this permission works', ${JSON.stringify(helpToastBody)})"
+                   style="cursor:help;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(108,63,255,.12);border:1px solid rgba(108,63,255,.32);color:#B8A1FF;font-size:9.5px;font-weight:700;line-height:1;user-select:none">?</span>`
+          : '';
+
         walletsHtml = `
           <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.06)">
             <div style="font-size:9.5px;font-family:var(--mono);color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px">
               <span>Permission</span>
               ${headerLabel}
+              ${helpBadge}
             </div>
             ${a.circleWallets.map(w => {
               const arcKey = chipToArcKey(w.source);
@@ -2322,14 +2393,6 @@ select option:checked{background:#1a2c4a;color:#fff}
                   ⚠ <strong>Provisioning failed</strong> on ${a.failedChains.length} chain${a.failedChains.length > 1 ? 's' : ''}. Sends to ${a.failedChains.length > 1 ? 'these chains' : 'this chain'} will fail loudly (no silent rerouting). Retry, or revoke and recreate without ${a.failedChains.length > 1 ? 'them' : 'it'}.
                 </span>
                 <button onclick="window.retryProvision('${a.id}')" style="padding:5px 10px;border-radius:6px;background:rgba(77,214,219,.10);border:1px solid rgba(77,214,219,.32);color:var(--arc1);font-size:10.5px;font-family:var(--mono);font-weight:600;letter-spacing:.04em;cursor:pointer;flex-shrink:0">Retry</button>
-              </div>` : ''}
-            ${hasNativeUsdcSource ? `
-              <div style="margin-top:6px;padding:6px 8px;background:rgba(108,63,255,.05);border:1px solid rgba(108,63,255,.18);border-radius:6px;font-size:10.5px;color:#B8A1FF;line-height:1.4">
-                ⓘ <strong style="color:#D4C5FF">PREFUND</strong> required on Arc: USDC is the native gas token there, so the agent can't pull from your wallet via permit. Send USDC to the agent wallet address shown above to enable runs.
-              </div>` : ''}
-            ${hasCctpDest && !hasNativeUsdcSource ? `
-              <div style="margin-top:6px;padding:6px 8px;background:rgba(108,63,255,.05);border:1px solid rgba(108,63,255,.18);border-radius:6px;font-size:10.5px;color:#B8A1FF;line-height:1.4">
-                ⓘ <strong style="color:#D4C5FF">CCTP cross-chain</strong>: targets on chain(s) not in your sources get delivered via Circle CCTP V2 burn-and-mint (~30s after each fire). The <strong>MINT</strong> wallet is where Circle mints to — no funding or permit needed.
               </div>` : ''}
           </div>`;
       } else if (a.provisioning === 'failed') {
