@@ -175,45 +175,48 @@ async function renderHeroAndStats() {
   document.getElementById('hero-block').textContent = '#' + A.fmtNum(blockHi);
   document.getElementById('hero-gas').textContent   = (18 + A.rng() * 6).toFixed(1);
 
-  if (real && real.grandTotal !== undefined) {
-    // REAL DATA PATH
-    const total   = real.grandTotal;
+  // API reachable → ALWAYS use real data (even if all 0s). No more seeded fakes
+  // mixed in. The point of this page is to show actual project growth — 0 is
+  // honest information when nothing has happened yet.
+  if (real) {
+    const total   = real.grandTotal || 0;
     const today   = real.todayTotal || 0;
     const last30  = real.last30 || {};
     const totals  = real.totals || {};
     const series  = real.series || {};
-    // 30-day trend = compare today vs 30d-avg
     const seriesVals = Object.values(series);
-    const avg30 = seriesVals.length ? seriesVals.reduce((a,b)=>a+b,0) / seriesVals.length : 1;
+    const avg30 = seriesVals.length ? seriesVals.reduce((a,b)=>a+b,0) / seriesVals.length : 0;
     const trendPct = avg30 > 0 ? ((today - avg30) / avg30 * 100) : 0;
+
     document.getElementById('hero-total').textContent = A.fmtNum(total);
-    document.getElementById('hero-trend').textContent = (trendPct >= 0 ? '+' : '') + trendPct.toFixed(1) + '%';
+    document.getElementById('hero-trend').textContent = total === 0 ? '—' : (trendPct >= 0 ? '+' : '') + trendPct.toFixed(1) + '%';
     document.getElementById('hero-24h').textContent   = A.fmtNum(today);
-    document.getElementById('hero-fee').textContent   = '0.00098'; // gas-tracker derived, stays seeded for now
+    document.getElementById('hero-fee').textContent   = '—';
     A.mountDataBadge({ status: 'live', detail: 'updated ' + new Date(real.asOf).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) });
 
     const stats = [
-      { lbl: 'Trade Txns',           ic: '⇄', val: A.fmtNum(totals.trade || 0)        },
-      { lbl: 'Balance Deposits',     ic: '↓', val: A.fmtNum(totals.deposit || 0)      },
-      { lbl: 'Cross-chain Spends',   ic: '↗', val: A.fmtNum(totals.spend || 0)        },
+      { lbl: 'Trade Txns',           ic: '⇄', val: A.fmtNum(totals.trade || 0) },
+      { lbl: 'Balance Deposits',     ic: '↓', val: A.fmtNum(totals.deposit || 0) },
+      { lbl: 'Cross-chain Spends',   ic: '↗', val: A.fmtNum(totals.spend || 0) },
       { lbl: 'Agent Executions',     ic: '◆', val: A.fmtNum(totals['agent-exec'] || 0) },
-      { lbl: 'Settlement Volume',    ic: '$', val: '—',          tr: 'volume API soon' },
-      { lbl: 'Bridge Txns',          ic: '⇌', val: A.fmtNum(totals.bridge || 0)       },
-      { lbl: 'Active Users · today', ic: '◉', val: A.fmtNum(real.activeUsers || 0)    },
+      { lbl: 'Bridge Txns',          ic: '⇌', val: A.fmtNum(totals.bridge || 0) },
       { lbl: 'Agents Created',       ic: '⊞', val: A.fmtNum(totals['agent-create'] || 0) },
-      { lbl: 'Failures · 30d',       ic: '✕', val: A.fmtNum(last30.failure || 0)      },
-      { lbl: 'Active Chains',        ic: '⌖', val: '8',          tr: 'all live'       },
+      { lbl: 'Active Users · today', ic: '◉', val: A.fmtNum(real.activeUsers || 0) },
+      { lbl: 'Failures · 30d',       ic: '✕', val: A.fmtNum(last30.failure || 0) },
+      { lbl: 'Total · last 30d',     ic: '∑', val: A.fmtNum(seriesVals.reduce((a,b)=>a+b,0)) },
+      { lbl: 'Active Chains',        ic: '⌖', val: '8' },
     ];
     document.getElementById('key-stats').innerHTML = stats.map(s => `
       <div class="stat-card">
         <div class="lbl"><span class="ic">${s.ic}</span>${s.lbl}</div>
         <div class="val tab-num">${s.val}</div>
-        <div class="trend"><span>${s.tr || 'lifetime · real'}</span></div>
+        <div class="trend"><span>lifetime · real</span></div>
       </div>`).join('');
     return real;
   }
 
-  // SEEDED FALLBACK PATH (endpoint unreachable)
+  // SEEDED FALLBACK only when API truly unreachable (network down, CORS error).
+  // Page won't look broken in that case — but badge says DEMO so it's clear.
   const dailyAvg = 11_800 + A.ri(0, 600);
   const today    = dailyAvg + A.ri(-1200, 1800);
   const total    = 365_000 + A.ri(0, 22_000);
@@ -352,35 +355,52 @@ function chainExplorerTx(key, hash) {
 }
 
 async function renderFeed() {
-  // Try real data first
   const real = await A.fetchRecent(14);
-  if (real && real.events && real.events.length >= 3) {
-    const items = real.events.map(e => {
-      const meta = EV_MAP[e.event] || { type: 'route', icon: '•', label: e.event };
-      const chainLabel = (A.CHAINS.find(c => c.key === e.chain)?.label) || e.chain;
-      return {
-        type: meta.type, icon: meta.icon, label: meta.label + (e.surface ? ' · via ' + e.surface : ''),
-        amount: e.amount != null ? Number(e.amount).toFixed(2) : null,
-        chainKey: e.chain, chainLabel,
-        hash: e.txHash, ago: Date.now() - e.ts,
-      };
-    });
-    document.getElementById('feed-card').innerHTML = items.map(it => `
-      <div class="feed-row">
-        <div class="feed-icon ${it.type}">${it.icon}</div>
-        <div class="feed-main">
-          <div class="feed-title">${it.label}</div>
-          <div class="feed-sub">${it.hash ? A.shortHash(it.hash) : 'no on-chain hash'} · ${it.chainLabel}</div>
-        </div>
-        <div class="feed-amt">${it.amount != null ? it.amount + ' USDC' : '—'}</div>
-        <div class="feed-chain">${chainShortLabel(it.chainKey)}</div>
-        <div class="feed-time">${A.fmtAgo(it.ago)}</div>
-        ${it.hash ? `<a class="feed-link" href="${chainExplorerTx(it.chainKey, it.hash)}" target="_blank" rel="noopener noreferrer">view ↗</a>` : `<span class="feed-link" style="opacity:.5;cursor:default">—</span>`}
-      </div>`).join('');
+
+  // API reachable (any state) → render real data or empty state. No seeded fakes.
+  if (real) {
+    if (real.events && real.events.length > 0) {
+      const items = real.events.map(e => {
+        const meta = EV_MAP[e.event] || { type: 'route', icon: '•', label: e.event };
+        const chainLabel = (A.CHAINS.find(c => c.key === e.chain)?.label) || e.chain;
+        return {
+          type: meta.type, icon: meta.icon, label: meta.label + (e.surface ? ' · via ' + e.surface : ''),
+          amount: e.amount != null ? Number(e.amount).toFixed(2) : null,
+          chainKey: e.chain, chainLabel,
+          hash: e.txHash, ago: Date.now() - e.ts,
+        };
+      });
+      document.getElementById('feed-card').innerHTML = items.map(it => `
+        <div class="feed-row">
+          <div class="feed-icon ${it.type}">${it.icon}</div>
+          <div class="feed-main">
+            <div class="feed-title">${it.label}</div>
+            <div class="feed-sub">${it.hash ? A.shortHash(it.hash) : 'no on-chain hash'} · ${it.chainLabel}</div>
+          </div>
+          <div class="feed-amt">${it.amount != null ? it.amount + ' USDC' : '—'}</div>
+          <div class="feed-chain">${chainShortLabel(it.chainKey)}</div>
+          <div class="feed-time">${A.fmtAgo(it.ago)}</div>
+          ${it.hash ? `<a class="feed-link" href="${chainExplorerTx(it.chainKey, it.hash)}" target="_blank" rel="noopener noreferrer">view ↗</a>` : `<span class="feed-link" style="opacity:.5;cursor:default">—</span>`}
+        </div>`).join('');
+    } else {
+      // Empty state — API works but no transactions logged yet
+      document.getElementById('feed-card').innerHTML = `
+        <div style="padding:48px 24px;text-align:center">
+          <div style="font-size:32px;margin-bottom:12px;opacity:.4">∅</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;letter-spacing:-.01em">No transactions yet</div>
+          <div style="font-size:12px;color:var(--muted);font-family:var(--mono);line-height:1.6">
+            Status page is wired to <span style="color:var(--green)">live telemetry</span>.<br/>
+            Be the first to test a <a href="https://arcswap.net/trade" target="_blank" rel="noopener noreferrer" style="color:var(--arc1);text-decoration:underline">trade</a>,
+            <a href="https://arcswap.net/balance" target="_blank" rel="noopener noreferrer" style="color:var(--arc1);text-decoration:underline">deposit</a>,
+            or <a href="https://arcswap.net/agent" target="_blank" rel="noopener noreferrer" style="color:var(--arc1);text-decoration:underline">agent</a>
+            to see it appear here within 30 seconds.
+          </div>
+        </div>`;
+    }
     return;
   }
 
-  // SEEDED FALLBACK PATH — when /api/metrics/recent isn't ready or has few events
+  // SEEDED FALLBACK only when API truly unreachable
   const items = [];
   let elapsed = 0;
   for (let i = 0; i < 14; i++) {

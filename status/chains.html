@@ -70,8 +70,20 @@ function chainSkel() {
 
 async function renderChains() {
   chainSkel();
-  const txCounts = SHARES.map(s => Math.round(s * (60 + A.rng() * 40)));
-  const probes = await Promise.all(A.CHAINS.map(c => A.probeRpc(c.rpc, 5000).catch(() => ({ ok: false, latencyMs: 0 }))));
+  // Fetch real per-chain data + run live RPC probes in parallel.
+  const [summary, ...probes] = await Promise.all([
+    A.fetchSummary(),
+    ...A.CHAINS.map(c => A.probeRpc(c.rpc, 5000).catch(() => ({ ok: false, latencyMs: 0 }))),
+  ]);
+  const byChain = (summary && summary.byChain) || {};
+  const isLive  = !!summary;
+
+  // Liquidity share = real per-chain share of today's tx, or fallback share
+  let totalToday = 0;
+  A.CHAINS.forEach(c => { totalToday += byChain[c.key] || 0; });
+  const realShare = (key) => totalToday > 0
+    ? Math.round((byChain[key] || 0) / totalToday * 100)
+    : 0;
 
   // Per-chain detail cards
   document.getElementById('chains-grid').innerHTML = A.CHAINS.map((c, i) => {
@@ -79,8 +91,8 @@ async function renderChains() {
     const cls = !p.ok ? 'muted' : p.latencyMs > 1500 ? 'yellow' : 'green';
     const lat = p.ok ? p.latencyMs + 'ms' : '—';
     const block = p.block ? '#' + p.block.toLocaleString('en-US') : 'CHAIN ID · ' + c.key;
-    const share = SHARES[i];
-    const settle = Math.round(txCounts[i] * (0.6 + A.rng() * 0.3));
+    const txCount = byChain[c.key] || 0;
+    const share = realShare(c.key);
     return `
       <div class="chain-card" style="--accent:${c.grad}">
         <div class="chain-head">
@@ -92,32 +104,34 @@ async function renderChains() {
           <div class="chain-status-dot ${cls}"></div>
         </div>
         <div class="chain-grid">
-          <div class="chain-stat"><div class="k">Tx · 30d</div><div class="v tab-num">${A.fmtNum(txCounts[i])}</div></div>
-          <div class="chain-stat"><div class="k">Latency</div><div class="v ${p.ok ? A.latBucket(p.latencyMs) : ''} tab-num">${lat}</div></div>
-          <div class="chain-stat"><div class="k">Settlement</div><div class="v tab-num">${A.fmtNum(settle)}</div></div>
+          <div class="chain-stat"><div class="k">ArcSwap Tx · today</div><div class="v tab-num">${A.fmtNum(txCount)}</div></div>
+          <div class="chain-stat"><div class="k">RPC Latency</div><div class="v ${p.ok ? A.latBucket(p.latencyMs) : ''} tab-num">${lat}</div></div>
+          <div class="chain-stat"><div class="k">Tx Share</div><div class="v tab-num">${totalToday > 0 ? share + '%' : '—'}</div></div>
           <div class="chain-stat"><div class="k">Status</div><div class="v">${p.ok ? (p.latencyMs > 1500 ? 'Slow' : 'Healthy') : 'Probing'}</div></div>
         </div>
         <div class="chain-liq"><div class="chain-liq-fill" style="width:${share}%"></div></div>
-        <div class="chain-liq-label"><span>Liquidity share</span><span>${share}%</span></div>
+        <div class="chain-liq-label"><span>${isLive ? 'Live tx share · today' : 'No data yet'}</span><span>${totalToday > 0 ? share + '%' : '0%'}</span></div>
       </div>`;
   }).join('');
 
-  // Summary stats (top of page)
-  const totalTx = txCounts.reduce((a, b) => a + b, 0);
-  const totalSettle = txCounts.reduce((a, c, i) => a + Math.round(c * (0.6 + A.rng() * 0.3)), 0);
+  // Summary stats (top of page) — all real where possible
+  const totalTx = totalToday;
   const avgLatency = Math.round(probes.filter(p => p.ok).reduce((a, p) => a + p.latencyMs, 0) / Math.max(1, probes.filter(p => p.ok).length));
   const healthy = probes.filter(p => p.ok && p.latencyMs < 1500).length;
+  const lifetimeTotal = summary
+    ? (Object.values(summary.totals || {}).reduce((a, b) => a + b, 0))
+    : 0;
   document.getElementById('chains-summary').innerHTML = [
-    { lbl: 'Total Chains',         ic: '⌖', val: A.CHAINS.length.toString(), tr: 'all live' },
-    { lbl: 'Healthy Now',           ic: '✓', val: healthy + '/' + A.CHAINS.length, tr: 'realtime' },
-    { lbl: 'Aggregate Tx · 30d',   ic: '∑', val: A.fmtNum(totalTx), tr: '+22.4%' },
-    { lbl: 'Aggregate Settlement', ic: '↗', val: A.fmtNum(totalSettle), tr: '+19.8%' },
+    { lbl: 'Total Chains',          ic: '⌖', val: A.CHAINS.length.toString(),               tr: 'all live' },
+    { lbl: 'Healthy Now',           ic: '✓', val: healthy + '/' + A.CHAINS.length,           tr: 'realtime' },
+    { lbl: 'ArcSwap Tx · today',    ic: '∑', val: A.fmtNum(totalTx),                          tr: isLive ? 'live · real' : '—' },
+    { lbl: 'ArcSwap Tx · lifetime', ic: '◐', val: A.fmtNum(lifetimeTotal),                    tr: isLive ? 'live · real' : '—' },
     { lbl: 'Avg RPC Latency',       ic: '⏱', val: (isNaN(avgLatency) ? '—' : avgLatency + 'ms'), tr: 'realtime' },
   ].map(s => `
     <div class="stat-card">
       <div class="lbl"><span class="ic">${s.ic}</span>${s.lbl}</div>
       <div class="val tab-num">${s.val}</div>
-      <div class="trend"><span class="${s.tr.startsWith('+') ? 'up' : ''}">${s.tr.startsWith('+') ? '▲' : ''} ${s.tr}</span></div>
+      <div class="trend"><span>${s.tr}</span></div>
     </div>`).join('');
 }
 

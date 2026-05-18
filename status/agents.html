@@ -37,7 +37,7 @@
     <div class="glass agent-queue">
       <div class="aq-title">
         <span class="label"><span class="aq-status"></span>Next execution queue</span>
-        <span style="font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:500">PENDING · ARC TESTNET</span>
+        <span style="font-family:var(--mono);font-size:10.5px;color:#FF9F4A;font-weight:600;letter-spacing:.06em;text-transform:uppercase">DEMO · requires wallet auth</span>
       </div>
       <div class="aq-list" id="aq-list"><!-- injected --></div>
     </div>
@@ -58,25 +58,53 @@
 const A = window.ArcStatus;
 A.bootCommon('agents');
 
-function renderKpis() {
-  const active = 24 + A.ri(0, 12);
-  const scheduled = 18 + A.ri(0, 6);
-  const daily = 11 + A.ri(0, 4);
-  const weekly = 7 + A.ri(0, 3);
-  const monthly = 4 + A.ri(0, 2);
-  const refills = 9 + A.ri(0, 5);
-  const success = (97 + A.rng() * 2.4).toFixed(2);
-  const failed = A.ri(2, 6);
-  const kpis = [
-    { k: 'Active agents',          v: active,        m: '<strong class="ok">●</strong> all healthy' },
-    { k: 'Scheduled executions',   v: scheduled,     m: 'next: in <strong>3m 12s</strong>' },
-    { k: 'Daily automations',      v: daily,         m: 'cadence: 24h drip' },
-    { k: 'Weekly automations',     v: weekly,        m: 'cadence: 7d cycle' },
-    { k: 'Monthly automations',    v: monthly,       m: 'cadence: 30d cycle' },
-    { k: 'Auto-refill ops',        v: refills,       m: 'triggered on low balance' },
-    { k: 'Success rate · 30d',     v: success + '%', m: '<strong class="ok">within SLO</strong>' },
-    { k: 'Failed exec · 24h',      v: failed,        m: failed <= 3 ? '<strong class="ok">acceptable</strong>' : '<strong class="bad">review</strong>' },
-  ];
+async function renderKpis() {
+  // Prefer real data from /api/metrics/summary. The metrics endpoint tracks
+  // 'agent-create' on UI deploy and 'agent-exec' on each successful cron run,
+  // so these counters reflect actual project activity.
+  const summary = await A.fetchSummary();
+  let kpis;
+
+  if (summary) {
+    const t = summary.totals || {};
+    const l30 = summary.last30 || {};
+    const l24 = summary.last24h || {};
+    const created = t['agent-create'] || 0;
+    const totalExec = t['agent-exec'] || 0;
+    const exec30 = l30['agent-exec'] || 0;
+    const exec24 = l24['agent-exec'] || 0;
+    const fail30 = l30.failure || 0;
+    const successRate = (exec30 + fail30) > 0
+      ? ((exec30 / (exec30 + fail30)) * 100).toFixed(2)
+      : null;
+    kpis = [
+      { k: 'Agents created',         v: A.fmtNum(created),        m: 'lifetime · real' },
+      { k: 'Agent executions',       v: A.fmtNum(totalExec),      m: 'lifetime · real' },
+      { k: 'Executions · 30d',       v: A.fmtNum(exec30),         m: '<strong class="ok">live</strong>' },
+      { k: 'Executions · 24h',       v: A.fmtNum(exec24),         m: 'last 24 hours' },
+      { k: 'Failures · 30d',         v: A.fmtNum(fail30),         m: fail30 === 0 ? '<strong class="ok">none yet</strong>' : '<strong class="bad">review logs</strong>' },
+      { k: 'Success rate · 30d',     v: successRate ? successRate + '%' : '—', m: successRate ? '<strong class="ok">live</strong>' : 'no exec yet' },
+      { k: 'Active users · today',   v: A.fmtNum(summary.activeUsers || 0), m: 'unique · today' },
+      { k: 'Active chains',          v: '8',                       m: 'realtime probes' },
+    ];
+  } else {
+    // SEEDED FALLBACK only if /api/metrics/summary unreachable
+    const active = 24 + A.ri(0, 12);
+    const scheduled = 18 + A.ri(0, 6);
+    const success = (97 + A.rng() * 2.4).toFixed(2);
+    const failed = A.ri(2, 6);
+    kpis = [
+      { k: 'Active agents',         v: active,        m: '<strong class="ok">●</strong> all healthy · demo' },
+      { k: 'Scheduled executions',  v: scheduled,     m: 'demo · API unreachable' },
+      { k: 'Daily automations',     v: 11 + A.ri(0,4),m: 'cadence: 24h drip · demo' },
+      { k: 'Weekly automations',    v: 7 + A.ri(0,3), m: 'cadence: 7d cycle · demo' },
+      { k: 'Monthly automations',   v: 4 + A.ri(0,2), m: 'cadence: 30d cycle · demo' },
+      { k: 'Auto-refill ops',       v: 9 + A.ri(0,5), m: 'triggered on low balance · demo' },
+      { k: 'Success rate · 30d',    v: success + '%', m: '<strong class="ok">within SLO · demo</strong>' },
+      { k: 'Failed exec · 24h',     v: failed,        m: failed <= 3 ? '<strong class="ok">acceptable · demo</strong>' : '<strong class="bad">review · demo</strong>' },
+    ];
+  }
+
   document.getElementById('agent-kpis').innerHTML = kpis.map(x => `
     <div class="agent-kpi">
       <div class="k">${x.k}</div>
@@ -118,49 +146,75 @@ function renderQueue() {
     </div>`).join('');
 }
 
-function renderExec() {
-  const rules = [
-    'Daily drip',
-    'Auto-refill keeper',
-    'Cross-chain sweep',
-    'Monthly payroll',
-    'Weekly USDC top-up',
-    'Threshold rebalance',
-  ];
+async function renderExec() {
+  // Pull recent telemetry events and filter to agent activity only.
+  const recent = await A.fetchRecent(50);
+  const head = `<div class="exec-row head"><div></div><div>Event</div><div>Amount</div><div>Chain</div><div>Time</div></div>`;
+
+  if (recent) {
+    const agentEvents = (recent.events || []).filter(e => e.event === 'agent-exec' || e.event === 'agent-create' || (e.event === 'failure' && e.surface === 'cron'));
+    if (agentEvents.length > 0) {
+      const rows = agentEvents.slice(0, 14).map(e => ({
+        ok: e.event !== 'failure',
+        rule: e.event === 'agent-create' ? 'Agent created' : e.event === 'agent-exec' ? 'Agent execution' : 'Execution failed',
+        id: 'srv_' + String(e.ts).slice(-6),
+        amount: e.amount != null ? Number(e.amount).toFixed(2) : null,
+        chainShort: ({ arc:'ARC', sepolia:'SEP', baseSepolia:'BASE', arbitrumSepolia:'ARB', optimismSepolia:'OP', avalancheFuji:'FUJI', polygonAmoy:'AMOY', unichainSepolia:'UNI' })[e.chain] || (e.chain || '?').toUpperCase().slice(0,4),
+        ago: Date.now() - e.ts,
+      }));
+      document.getElementById('exec-table').innerHTML = head + rows.map(r => `
+        <div class="exec-row">
+          <div class="exec-icon ${r.ok ? 'ok' : 'fail'}">${r.ok ? '✓' : '✕'}</div>
+          <div>
+            <div class="exec-rule">${r.rule}</div>
+            <div class="exec-id">${r.id}</div>
+          </div>
+          <div class="exec-amt">${r.amount != null ? r.amount + ' USDC' : '—'}</div>
+          <div class="exec-chain">${r.chainShort}</div>
+          <div class="exec-time">${A.fmtAgo(r.ago)}</div>
+        </div>`).join('');
+    } else {
+      document.getElementById('exec-table').innerHTML = `
+        <div style="padding:40px 24px;text-align:center">
+          <div style="font-size:30px;opacity:.35;margin-bottom:10px">∅</div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:6px">No agent executions yet</div>
+          <div style="font-size:11.5px;color:var(--muted);font-family:var(--mono);line-height:1.6">
+            Create an agent on <a href="https://arcswap.net/agent" target="_blank" rel="noopener noreferrer" style="color:var(--arc1);text-decoration:underline">arcswap.net/agent</a><br/>
+            Cron runs every minute · execution appears here within 30 seconds.
+          </div>
+        </div>`;
+    }
+    return;
+  }
+
+  // SEEDED FALLBACK only if API unreachable
+  const rules = ['Daily drip','Auto-refill keeper','Cross-chain sweep','Monthly payroll','Weekly USDC top-up','Threshold rebalance'];
   const chains = ['ARC', 'BASE', 'SEP', 'ARB', 'OP'];
   const rows = [];
   let elapsed = 0;
   for (let i = 0; i < 14; i++) {
     elapsed += A.ri(180, 3600);
-    const ok = A.rng() > 0.08; // 92% success
+    const ok = A.rng() > 0.08;
     rows.push({
       ok,
-      rule: A.pick(rules),
+      rule: A.pick(rules) + ' (demo)',
       id: 'ag_' + A.hex(8).slice(2, 8),
       amount: (5 + A.rng() * 250).toFixed(2),
       chain: A.pick(chains),
       ago: elapsed * 1000,
     });
   }
-  document.getElementById('exec-table').innerHTML =
-    `<div class="exec-row head">
-       <div></div>
-       <div>Rule</div>
-       <div>Amount</div>
-       <div>Chain</div>
-       <div>Time</div>
-     </div>` +
-    rows.map(r => `
-      <div class="exec-row">
-        <div class="exec-icon ${r.ok ? 'ok' : 'fail'}">${r.ok ? '✓' : '✕'}</div>
-        <div>
-          <div class="exec-rule">${r.rule}</div>
-          <div class="exec-id">${r.id}</div>
-        </div>
-        <div class="exec-amt">${r.ok ? r.amount + ' USDC' : '—'}</div>
-        <div class="exec-chain">${r.chain}</div>
-        <div class="exec-time">${A.fmtAgo(r.ago)}</div>
-      </div>`).join('');
+  document.getElementById('exec-table').innerHTML = head + rows.map(r => `
+    <div class="exec-row">
+      <div class="exec-icon ${r.ok ? 'ok' : 'fail'}">${r.ok ? '✓' : '✕'}</div>
+      <div>
+        <div class="exec-rule">${r.rule}</div>
+        <div class="exec-id">${r.id}</div>
+      </div>
+      <div class="exec-amt">${r.ok ? r.amount + ' USDC' : '—'}</div>
+      <div class="exec-chain">${r.chain}</div>
+      <div class="exec-time">${A.fmtAgo(r.ago)}</div>
+    </div>`).join('');
 }
 
 renderKpis();
