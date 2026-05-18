@@ -25,10 +25,10 @@ ArcSwap is a **non-custodial stablecoin terminal** built on the [Arc Layer 1](ht
 
 | Surface | When | Notes |
 |---|---|---|
-| **Dashboard** | Q2 2026 | Operator console: portfolio, balances, agents, activity — one view. |
-| **Circle Wallets onboarding** | Q3 2026 | Embedded sign-in for non-crypto users. |
-| **StableFX** | Q4 2026 | RFQ-driven USDC ⇄ EURC PvP settlement via Arc FxEscrow. |
-| **Nanopayments + Agent SDK** | 2027 | Streaming USDC primitives + mainnet. |
+| **Dashboard** | Pre-Mainnet | Operator console: portfolio, balances, agents, activity — one view. |
+| **Circle Wallets onboarding** | At Arc Mainnet | Embedded sign-in for non-crypto users. |
+| **StableFX** | Post-Mainnet | RFQ-driven USDC ⇄ EURC PvP settlement via Arc FxEscrow. |
+| **Nanopayments + Agent SDK** | Long-horizon | Streaming USDC primitives + Agent SDK GA. |
 
 You always retain custody. ArcSwap never holds funds, and the agent backend executes only within EIP-712-signed bounds you can revoke at any time.
 
@@ -45,7 +45,7 @@ Every Circle product we use is integrated **natively** — no third-party bridge
 | **CCTP V2** | Live (testnet) | `TokenMessengerV2.depositForBurn` + `MessageTransmitterV2.receiveMessage`, Fast and Standard modes. See [`assets/arc-core.js`](assets/arc-core.js#L39-L40) and [`trade.html`](trade.html#L1436-L1483). |
 | **Programmable Wallets** | Live (testnet) | Developer-Controlled Wallets API for the Agent backend — RSA-OAEP `entitySecretCiphertext`, per-chain wallet provisioning, USDC transfers. See [`functions/api/agent/_circle.js`](functions/api/agent/_circle.js). |
 | **App Kit (Stablecoin Kit)** | Live (testnet) | In-Arc swap routing proxied via [`functions/api/circle-proxy/`](functions/api/circle-proxy/) so the API key never reaches the browser. |
-| **Nanopayments** | Planned (2027) | Streaming USDC primitives — Agent SDK foundation. |
+| **Nanopayments** | Planned (long-horizon) | Streaming USDC primitives — Agent SDK foundation. |
 
 Supported chains for Unified Balance and CCTP V2: **Arc, Ethereum, Base, Arbitrum, Optimism, Polygon, Avalanche, Unichain** (all testnets today).
 
@@ -184,12 +184,15 @@ Contact: `security@arcswap.net` (PGP key in `SECURITY.md`).
 
 ## Roadmap
 
-| When | What |
+ArcSwap's production timeline is anchored to **Arc Mainnet** — targeted **Summer 2026** per Circle's Arc whitepaper. We ship in phases tied to that milestone, not to calendar quarters.
+
+| Phase | What |
 |---|---|
-| **Q2 2026** | Dashboard GA · Unified Balance polish · agent UX hardening |
-| **Q3 2026** | Deeper Circle Wallets onboarding · WalletConnect / Reown for mobile · activity points |
-| **Q4 2026** | **StableFX** — RFQ-driven USDC ⇄ EURC PvP settlement via Arc FxEscrow · Treasury API preview |
-| **2027** | Arc Mainnet · Circle Nanopayments + streaming USDC · Agent SDK GA |
+| **Now · Arc Testnet** | Unified Balance, Trade, and Agent live on Arc Testnet. Dashboard built, opening to public next. |
+| **Pre-Mainnet · hardening** | Security audit. Dashboard GA. Mobile (WalletConnect / Reown). Mainnet candidate build locked. |
+| **At Arc Mainnet · production launch** | All three surfaces in production. Circle Wallets embedded sign-in live for non-crypto users. |
+| **Post-Mainnet · expansion** | **StableFX** (USDC ⇄ EURC ⇄ USDP) on Arc FxEscrow. Treasury API for DAOs & fintechs. |
+| **Long-horizon** | Circle Nanopayments + streaming USDC. Agent SDK GA. |
 
 See live roadmap on the [homepage](https://arcswap.net/#roadmap).
 
