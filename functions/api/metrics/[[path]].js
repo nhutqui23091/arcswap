@@ -246,8 +246,10 @@ export async function onRequest(context) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        // Edge-cache for 30s — multiple status page visitors share one read
-        'Cache-Control': 'public, max-age=30, s-maxage=30',
+        // Edge-cache 2 minutes — multiple status page visitors share one
+        // origin KV read. Status page polls every 2 minutes anyway, so
+        // most polls will hit a fresh edge cache and never touch origin.
+        'Cache-Control': 'public, max-age=120, s-maxage=120',
         ...cors(origin),
       },
     });
@@ -279,7 +281,9 @@ export async function onRequest(context) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=15, s-maxage=15',
+        // Edge-cache 60s for the activity feed. Trades won't appear
+        // INSTANTLY but within 60s, which is acceptable for a status page.
+        'Cache-Control': 'public, max-age=60, s-maxage=60',
         ...cors(origin),
       },
     });

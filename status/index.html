@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/status.css?v=2"/>
+<link rel="stylesheet" href="/assets/status.css?v=3"/>
 </head>
 <body>
 
@@ -137,7 +137,7 @@
   <div id="footer-mount"></div>
 </div>
 
-<script src="/assets/status-shared.js?v=2"></script>
+<script src="/assets/status-shared.js?v=3"></script>
 <script>
 'use strict';
 const A = window.ArcStatus;
@@ -491,9 +491,12 @@ refreshAll();
 renderIncidentsMini();
 renderHealth();
 
-// Auto refresh — real metrics endpoint is edge-cached 30s so this is cheap
-setInterval(renderHealth, 30_000);
-setInterval(refreshAll, 30_000);
+// Auto refresh — gentle cadence so Cloudflare WAF doesn't see this as a bot.
+// Service health probes go to cross-origin /api/* + raw RPCs (14 reqs each
+// pass), so we throttle to once every 2 minutes. Metrics summary is edge-
+// cached 2min anyway so polling more often is wasted bandwidth.
+setInterval(renderHealth, 120_000);
+setInterval(refreshAll,   120_000);
 </script>
 
 </body>
