@@ -23,6 +23,10 @@ const ALLOWED_ORIGINS = [
   'https://arcswap.net',
   'https://www.arcswap.net',
   'https://arcswap.pages.dev',
+  // status.arcswap.net is a SEPARATE Cloudflare Pages project that cross-origin
+  // probes /api/gateway-proxy/health for the status dashboard. Allowlisted so
+  // CORS preflight passes; the endpoint itself only reports up/down — no PII.
+  'https://status.arcswap.net',
 ];
 
 export async function onRequest(context) {
@@ -56,9 +60,24 @@ export async function onRequest(context) {
   if (!m) return new Response('Bad request: missing proxy path', { status: 400 });
   const upstreamPath = m[1];
 
+  // Health endpoint for status.arcswap.net dashboard — returns 204 with CORS
+  // headers so cross-origin probes can read up/down. No upstream call.
+  if (upstreamPath === 'health') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': origin || '*',
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
+
   // Light path allowlist — don't proxy arbitrary paths
   if (!/^v1\/(balances|transfer|info)(\/|$)/.test(upstreamPath)) {
-    return new Response('Forbidden: path not allowed', { status: 403 });
+    return new Response('Forbidden: path not allowed', {
+      status: 403,
+      headers: { 'Access-Control-Allow-Origin': origin || '*' },
+    });
   }
 
   const targetUrl = `${UPSTREAM}/${upstreamPath}${url.search}`;

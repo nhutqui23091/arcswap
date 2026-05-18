@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<!-- Tight CSP for status.arcswap.net — only what the page actually uses.
+     - script-src: 'self' only (page is self-contained, no CDN scripts, no esm.sh)
+     - connect-src: testnet RPCs (real probes) + arcswap.net (cross-origin health
+       probe of main site Pages Functions) + Circle Iris (CCTP attestation queue)
+     - No Circle App Kit / Programmable Wallets endpoints - status doesn't use them
+     - frame-ancestors 'none' - never embeddable -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://arcswap.net https://www.arcswap.net https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="ArcSwap Status — Network Operations + Testnet Explorer. Realtime infrastructure dashboard for ArcSwap on Arc Testnet."/>
+<meta name="theme-color" content="#0A1628"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<title>ArcSwap Status — Network Operations + Testnet Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   ArcSwap Status — design tokens identical to /index, /trade, /balance.
+   Premium infrastructure-dashboard aesthetic. Dark mode only.
+   ═══════════════════════════════════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A1628; --bg2:#0F1E36;
+  --surface:rgba(255,255,255,0.035); --surface2:rgba(255,255,255,0.065);
+  --border:rgba(255,255,255,0.09); --border2:rgba(255,255,255,0.16);
+  --text:#F5F7FB; --muted:#8CA0BD;
+  --arc1:#4DD6DB; --arc2:#4A7BEC; --arc3:#F4C89A; --arc4:#7BE495;
+  --peach:#F4C89A; --sand:#ECDCC4;
+  --green:#7BE495; --yellow:#FFCC77; --red:#FF6B8A; --gold:#FFB347;
+  --radius:16px;
+  --font:'Inter',system-ui,sans-serif; --mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+h1,h2,h3,h4,h5,h6{font-family:var(--font);font-weight:800;letter-spacing:-.035em;line-height:1.1}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--font);cursor:pointer}
+
+/* Aurora bg — same horizon as homepage */
+.aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(ellipse 140% 60% at 50% 110%, rgba(244,200,154,0.22) 0%, rgba(244,200,154,0.06) 35%, transparent 60%),
+    radial-gradient(ellipse 120% 40% at 50% 90%, rgba(77,214,219,0.18) 0%, rgba(74,123,236,0.08) 35%, transparent 65%),
+    linear-gradient(180deg, #0A1628 0%, #0E1F39 40%, #133155 75%, #1E4A6E 100%);
+}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");opacity:.4;pointer-events:none;z-index:9997}
+
+/* ═══ NAVBAR — identical to /trade /balance /agent ════════════════════════ */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .3s;gap:16px}
+nav.scrolled{background:rgba(10,22,40,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-name{font-size:22px;font-weight:900;letter-spacing:-.04em;color:var(--text)}
+.logo-badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;background:rgba(77,214,219,.15);border:1px solid rgba(77,214,219,.35);border-radius:20px;color:var(--arc1);font-family:var(--mono)}
+.nav-links{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.nav-link{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;text-decoration:none;background:none;border:none;font-family:var(--font);cursor:pointer}
+.nav-link:hover{color:var(--text);background:var(--surface)}
+.nav-link.active{color:var(--text);background:var(--surface2)}
+.nav-link.new-pill{position:relative}
+.nav-link.new-pill::after{content:'NEW';position:absolute;top:-3px;right:-12px;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 5px;border-radius:6px}
+.nav-right{display:flex;align-items:center;gap:10px}
+.testnet-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(123,228,149,.08);border:1px solid rgba(123,228,149,.22)}
+.tnet-dot{width:6px;height:6px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px rgba(123,228,149,.7);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.55}}
+@media(max-width:980px){.nav-links{display:none}}
+
+/* ═══ LAYOUT ══════════════════════════════════════════════════════════════ */
+.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:100px 24px 80px}
+
+/* Header strip */
+.head-strip{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:32px}
+.head-left .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;color:#FF9F4A;text-transform:uppercase;margin-bottom:14px;padding:5px 12px;border-radius:100px;background:rgba(244,200,154,.06);border:1px solid rgba(244,200,154,.18)}
+.eyebrow::before{content:'{ ';opacity:.6}
+.eyebrow::after{content:' }';opacity:.6}
+.head-left h1{font-size:clamp(38px,5.2vw,62px);font-weight:900;letter-spacing:-.04em;line-height:1.02;background:linear-gradient(180deg,var(--text) 0%,rgba(245,247,251,.78) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.head-left .slogan{font-size:15px;color:var(--muted);margin-top:12px;letter-spacing:-.005em}
+.head-left .slogan strong{color:var(--text);font-weight:600}
+
+/* Overall status pill (right side) */
+.overall-card{background:rgba(255,255,255,0.025);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;padding:18px 22px;min-width:300px;position:relative;overflow:hidden}
+.overall-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,rgba(123,228,149,.10),transparent 60%);pointer-events:none}
+.overall-label{font-size:10.5px;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-family:var(--mono)}
+.overall-status{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;letter-spacing:-.03em;margin-bottom:4px}
+.big-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;box-shadow:0 0 14px currentColor}
+.big-dot.green{background:var(--green);color:var(--green)}
+.big-dot.yellow{background:var(--yellow);color:var(--yellow)}
+.big-dot.red{background:var(--red);color:var(--red)}
+.big-dot.muted{background:var(--muted);color:var(--muted);box-shadow:none}
+@keyframes glow-pulse{0%,100%{box-shadow:0 0 8px currentColor}50%{box-shadow:0 0 20px currentColor}}
+.big-dot.green,.big-dot.yellow,.big-dot.red{animation:glow-pulse 2.4s ease-in-out infinite}
+.overall-meta{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:6px;display:flex;gap:14px;flex-wrap:wrap}
+.overall-meta span strong{color:var(--text);font-weight:600}
+
+/* Section header */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin:48px 0 16px;gap:16px;flex-wrap:wrap}
+.sec-head h2{font-size:22px;font-weight:800;letter-spacing:-.025em;display:flex;align-items:center;gap:12px}
+.sec-head h2 .ix{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.05em;padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border)}
+.sec-head .sub{font-size:12.5px;color:var(--muted);font-family:var(--mono);letter-spacing:.02em}
+.sec-head .sub span.live{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:100px;background:rgba(123,228,149,.08);border:1px solid rgba(123,228,149,.22);color:var(--green);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.sec-head .sub span.live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s infinite}
+.sec-head .sub span.demo{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:100px;background:rgba(255,159,74,.08);border:1px solid rgba(255,159,74,.22);color:#FF9F4A;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.sec-head .sub span.demo::before{content:'◆';font-size:9px}
+
+/* Glass card primitive */
+.glass{background:rgba(255,255,255,.025);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;position:relative;overflow:hidden}
+.glass::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 30%,rgba(255,255,255,0) 60%,rgba(255,255,255,.06) 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+
+/* ═══ SERVICES GRID ═══════════════════════════════════════════════════════ */
+.services-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1100px){.services-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.services-grid{grid-template-columns:1fr}}
+.svc-card{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s, transform .2s}
+.svc-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.svc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px}
+.svc-name{font-size:13.5px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+.svc-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);white-space:nowrap}
+.svc-badge.op{background:rgba(123,228,149,.10);border:1px solid rgba(123,228,149,.28);color:var(--green)}
+.svc-badge.deg{background:rgba(255,204,119,.10);border:1px solid rgba(255,204,119,.28);color:var(--yellow)}
+.svc-badge.dn{background:rgba(255,107,138,.10);border:1px solid rgba(255,107,138,.28);color:var(--red)}
+.svc-badge.unk{background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.svc-badge .d{width:5px;height:5px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.svc-rows{display:flex;flex-direction:column;gap:6px;font-size:11.5px}
+.svc-row{display:flex;justify-content:space-between;color:var(--muted);font-family:var(--mono);letter-spacing:.01em}
+.svc-row span:last-child{color:var(--text);font-weight:500}
+.svc-row .lat-fast{color:var(--green)}
+.svc-row .lat-slow{color:var(--yellow)}
+.svc-row .lat-bad{color:var(--red)}
+
+/* ═══ EXPLORER STATS ══════════════════════════════════════════════════════ */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border-radius:18px;overflow:hidden;border:1px solid var(--border)}
+@media(max-width:1100px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--bg2);padding:18px 16px;transition:background .2s;position:relative}
+.stat-card:hover{background:rgba(255,255,255,.025)}
+.stat-label{font-size:10.5px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;font-family:var(--mono);display:flex;align-items:center;gap:6px}
+.stat-label .ic{opacity:.7}
+.stat-value{font-size:24px;font-weight:800;letter-spacing:-.03em;color:var(--text);font-variant-numeric:tabular-nums;line-height:1}
+.stat-trend{font-size:10.5px;color:var(--muted);margin-top:8px;font-family:var(--mono);display:flex;align-items:center;gap:4px}
+.stat-trend .up{color:var(--green)}
+.stat-trend .down{color:var(--red)}
+
+/* ═══ ACTIVITY FEED ══════════════════════════════════════════════════════ */
+.feed-card{padding:6px}
+.feed-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);transition:background .15s}
+.feed-row:last-child{border-bottom:none}
+.feed-row:hover{background:var(--surface)}
+.feed-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;font-weight:700;font-family:var(--mono)}
+.feed-icon.trade{background:linear-gradient(135deg,rgba(77,214,219,.18),rgba(74,123,236,.10));border:1px solid rgba(77,214,219,.30);color:var(--arc1)}
+.feed-icon.deposit{background:linear-gradient(135deg,rgba(123,228,149,.18),rgba(77,214,219,.10));border:1px solid rgba(123,228,149,.30);color:var(--green)}
+.feed-icon.agent{background:linear-gradient(135deg,rgba(244,200,154,.18),rgba(255,159,74,.10));border:1px solid rgba(244,200,154,.30);color:var(--peach)}
+.feed-icon.cctp{background:linear-gradient(135deg,rgba(74,123,236,.18),rgba(108,63,255,.10));border:1px solid rgba(74,123,236,.30);color:var(--arc2)}
+.feed-icon.fail{background:linear-gradient(135deg,rgba(255,107,138,.18),rgba(255,107,138,.05));border:1px solid rgba(255,107,138,.30);color:var(--red)}
+.feed-icon.route{background:linear-gradient(135deg,rgba(255,204,119,.18),rgba(255,159,74,.10));border:1px solid rgba(255,204,119,.30);color:var(--yellow)}
+.feed-main .feed-title{font-size:13px;font-weight:600;color:var(--text);letter-spacing:-.005em}
+.feed-main .feed-sub{font-size:11.5px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.feed-amt{font-size:13px;font-weight:700;font-family:var(--mono);color:var(--text);text-align:right;white-space:nowrap}
+.feed-chain{font-size:10.5px;font-weight:600;font-family:var(--mono);padding:3px 9px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);white-space:nowrap;letter-spacing:.04em}
+.feed-time{font-size:11px;color:var(--muted);font-family:var(--mono);white-space:nowrap;text-align:right;min-width:60px}
+.feed-link{padding:5px 8px;border-radius:8px;font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);transition:all .15s;font-family:var(--mono);text-decoration:none;white-space:nowrap}
+.feed-link:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
+@media(max-width:780px){
+  .feed-row{grid-template-columns:auto 1fr auto;row-gap:6px}
+  .feed-chain,.feed-link{display:none}
+}
+
+/* ═══ CHAINS ══════════════════════════════════════════════════════════════ */
+.chains-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:980px){.chains-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.chains-grid{grid-template-columns:1fr}}
+.chain-card{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.chain-card:hover{border-color:var(--border2)}
+.chain-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,linear-gradient(90deg,var(--arc1),var(--arc2)));opacity:.5}
+.chain-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.chain-emblem{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.chain-info{flex:1;min-width:0}
+.chain-name{font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+.chain-net{font-size:10.5px;color:var(--muted);font-family:var(--mono);letter-spacing:.04em;margin-top:1px}
+.chain-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.chain-status-dot.green{background:var(--green);color:var(--green)}
+.chain-status-dot.yellow{background:var(--yellow);color:var(--yellow)}
+.chain-status-dot.red{background:var(--red);color:var(--red)}
+.chain-status-dot.muted{background:var(--muted);color:transparent;box-shadow:none}
+.chain-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.chain-stat{font-family:var(--mono)}
+.chain-stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:3px}
+.chain-stat .v{font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.chain-liq{height:6px;border-radius:100px;background:var(--surface2);overflow:hidden;margin-top:6px}
+.chain-liq-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--arc1),var(--arc2));transition:width .8s ease}
+.chain-liq-label{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--muted);margin-top:5px;letter-spacing:.04em}
+
+/* ═══ AGENT MONITOR ══════════════════════════════════════════════════════ */
+.agent-grid{display:grid;grid-template-columns:2fr 3fr;gap:16px}
+@media(max-width:980px){.agent-grid{grid-template-columns:1fr}}
+.agent-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);border-radius:14px;overflow:hidden;border:1px solid var(--border);align-content:start}
+.agent-kpi{background:var(--bg2);padding:16px;transition:background .2s}
+.agent-kpi:hover{background:rgba(255,255,255,.025)}
+.agent-kpi .k{font-size:10.5px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-family:var(--mono)}
+.agent-kpi .v{font-size:22px;font-weight:800;letter-spacing:-.025em;color:var(--text);line-height:1;font-variant-numeric:tabular-nums}
+.agent-kpi .meta{font-size:10.5px;color:var(--muted);font-family:var(--mono);margin-top:6px;letter-spacing:.02em}
+.agent-kpi .meta strong.ok{color:var(--green);font-weight:600}
+.agent-kpi .meta strong.bad{color:var(--red);font-weight:600}
+.agent-queue{padding:18px}
+.aq-title{font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-family:var(--mono);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.aq-title .label{display:flex;align-items:center;gap:8px}
+.aq-list{display:flex;flex-direction:column;gap:8px}
+.aq-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;transition:all .15s}
+.aq-row:hover{border-color:var(--border2);background:var(--surface2)}
+.aq-rule{font-size:12.5px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aq-cadence{font-size:10.5px;color:var(--muted);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.aq-next{font-size:11.5px;font-family:var(--mono);color:var(--arc1);font-weight:600;white-space:nowrap}
+.aq-status{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);flex-shrink:0}
+
+/* ═══ INCIDENTS ══════════════════════════════════════════════════════════ */
+.incidents{display:flex;flex-direction:column}
+.inc-row{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
+.inc-row:last-child{border-bottom:none}
+.inc-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.inc-icon.resolved{background:rgba(123,228,149,.10);border:1px solid rgba(123,228,149,.28);color:var(--green)}
+.inc-icon.maint{background:rgba(74,123,236,.10);border:1px solid rgba(74,123,236,.28);color:var(--arc2)}
+.inc-icon.deg{background:rgba(255,204,119,.10);border:1px solid rgba(255,204,119,.28);color:var(--yellow)}
+.inc-icon.down{background:rgba(255,107,138,.10);border:1px solid rgba(255,107,138,.28);color:var(--red)}
+.inc-body .inc-title{font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:-.005em}
+.inc-body .inc-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.inc-meta{font-size:11px;color:var(--muted);font-family:var(--mono);text-align:right;white-space:nowrap;display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.inc-meta .inc-status{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.inc-meta .inc-status.resolved{background:rgba(123,228,149,.10);border:1px solid rgba(123,228,149,.28);color:var(--green)}
+.inc-meta .inc-status.maint{background:rgba(74,123,236,.10);border:1px solid rgba(74,123,236,.28);color:var(--arc2)}
+
+/* ═══ SKELETON ═══════════════════════════════════════════════════════════ */
+.skel{display:inline-block;background:linear-gradient(90deg,var(--surface) 0%,var(--surface2) 50%,var(--surface) 100%);background-size:200% 100%;animation:shimmer 1.3s infinite;border-radius:6px;color:transparent !important;min-width:48px;height:14px;vertical-align:middle}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+/* ═══ FOOTER ═════════════════════════════════════════════════════════════ */
+.footer{margin-top:80px;padding:32px 0 0;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.footer a{color:var(--muted);transition:color .15s}
+.footer a:hover{color:var(--text)}
+.footer-left{display:flex;gap:18px;flex-wrap:wrap}
+
+/* ═══ UTILITY ════════════════════════════════════════════════════════════ */
+.fade-in{animation:fade-up .5s ease both}
+@keyframes fade-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.tab-num{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<div class="aurora-bg"></div>
+
+<nav id="topnav">
+  <!-- Nav anchors back to main site (arcswap.net) since status lives on its
+       own subdomain. The `active` Status link stays on this subdomain. -->
+  <a class="nav-logo" href="https://arcswap.net/">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-badge">TESTNET</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="https://arcswap.net/trade">Trade</a>
+    <a class="nav-link" href="https://arcswap.net/balance">Balance</a>
+    <a class="nav-link new-pill" href="https://arcswap.net/agent">Agent</a>
+    <a class="nav-link" href="https://arcswap.net/token">Create Token</a>
+    <a class="nav-link" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
+    <a class="nav-link active" href="/">Status</a>
+  </div>
+  <div class="nav-right">
+    <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ════════════ HEAD ════════════ -->
+  <div class="head-strip fade-in">
+    <div class="head-left">
+      <div class="eyebrow">Network operations · Testnet explorer</div>
+      <h1>ArcSwap Status</h1>
+      <div class="slogan"><strong>One USDC. One Balance. Everywhere.</strong> &nbsp;·&nbsp; Realtime infrastructure dashboard for ArcSwap on Arc Testnet.</div>
+    </div>
+    <div class="overall-card" id="overall-card">
+      <div class="overall-label">Overall system status</div>
+      <div class="overall-status"><span class="big-dot muted" id="overall-dot"></span><span id="overall-text">Probing services…</span></div>
+      <div class="overall-meta">
+        <span><strong id="overall-ok">—</strong>/<span id="overall-total">8</span> operational</span>
+        <span>Last check <strong id="overall-ago">just now</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ 1. SERVICE STATUS ════════════ -->
+  <div class="sec-head">
+    <h2><span class="ix">01</span> System Status</h2>
+    <div class="sub"><span class="live">live</span> auto-refresh every 30s · click a card to retry</div>
+  </div>
+  <div class="services-grid" id="services-grid"><!-- injected --></div>
+
+  <!-- ════════════ 2. EXPLORER STATS ════════════ -->
+  <div class="sec-head">
+    <h2><span class="ix">02</span> Testnet Explorer Stats</h2>
+    <div class="sub"><span class="demo">testnet snapshot</span> aggregated protocol activity · last 30 days</div>
+  </div>
+  <div class="stats-grid" id="stats-grid"><!-- injected --></div>
+
+  <!-- ════════════ 3. RECENT ACTIVITY ════════════ -->
+  <div class="sec-head">
+    <h2><span class="ix">03</span> Recent Activity</h2>
+    <div class="sub"><span class="live">streaming</span> protocol events across all surfaces</div>
+  </div>
+  <div class="glass feed-card" id="feed-card"><!-- injected --></div>
+
+  <!-- ════════════ 4. CHAIN ACTIVITY ════════════ -->
+  <div class="sec-head">
+    <h2><span class="ix">04</span> Chain Activity</h2>
+    <div class="sub"><span class="live">rpc probed</span> testnet chains · liquidity + settlement</div>
+  </div>
+  <div class="chains-grid" id="chains-grid"><!-- injected --></div>
+
+  <!-- ════════════ 5. AGENT OPERATIONS ════════════ -->
+  <div class="sec-head">
+    <h2><span class="ix">05</span> Agent Operations Monitor</h2>
+    <div class="sub"><span class="demo">testnet snapshot</span> automation control center · Circle Programmable Wallets</div>
+  </div>
+  <div class="agent-grid">
+    <div class="agent-kpis" id="agent-kpis"><!-- injected --></div>
+    <div class="glass agent-queue">
+      <div class="aq-title">
+        <span class="label"><span class="aq-status"></span>Next execution queue</span>
+        <span style="font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:500">PENDING · ARC TESTNET</span>
+      </div>
+      <div class="aq-list" id="aq-list"><!-- injected --></div>
+    </div>
+  </div>
+
+  <!-- ════════════ 6. INCIDENT HISTORY ════════════ -->
+  <div class="sec-head">
+    <h2><span class="ix">06</span> Incident History</h2>
+    <div class="sub">past 90 days · all resolved unless noted</div>
+  </div>
+  <div class="glass incidents" id="incidents"><!-- injected --></div>
+
+  <!-- ════════════ FOOTER ════════════ -->
+  <div class="footer">
+    <div class="footer-left">
+      <a href="https://arcswap.net/">arcswap.net</a>
+      <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">@arc_swap</a>
+      <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
+      <a href="https://arcswap.net/.well-known/security.txt">security.txt</a>
+    </div>
+    <div>Built on Arc · Powered by Circle · <span id="footer-ts">—</span></div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ArcSwap Status — client logic
+   - Real probes: frontend self, RPCs (eth_blockNumber), Circle Gateway proxy,
+     Circle App Kit proxy, Agent KV-backed endpoints.
+   - Demo data: explorer stats, activity feed, agent counts, incidents — all
+     deterministic from a daily seed so the page feels alive but values are
+     stable across reloads in the same day. Clearly labeled "testnet snapshot".
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// ── Cross-origin API base
+//    On status.arcswap.net, probes hit https://arcswap.net/api/* (separate Pages
+//    project — Functions live in the main `arcswap` project). On localhost or
+//    arcswap.net itself, use same-origin so previews work without CORS.
+const API_BASE = /^status\./.test(location.hostname) ? 'https://arcswap.net' : '';
+
+// ── Nav scroll
+const topnav = document.getElementById('topnav');
+addEventListener('scroll', () => topnav.classList.toggle('scrolled', scrollY > 12), { passive: true });
+
+// ── Deterministic seeded PRNG (mulberry32) — keeps "demo" numbers stable per day
+function seededRng(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function dailySeed() {
+  const d = new Date();
+  return Number('' + d.getUTCFullYear() + ('0' + (d.getUTCMonth() + 1)).slice(-2) + ('0' + d.getUTCDate()).slice(-2));
+}
+const RNG = seededRng(dailySeed());
+const ri = (lo, hi) => Math.floor(RNG() * (hi - lo + 1)) + lo;
+const rf = (lo, hi) => RNG() * (hi - lo) + lo;
+const pick = (arr) => arr[Math.floor(RNG() * arr.length)];
+
+// ── Formatters
+const fmtNum = (n) => n.toLocaleString('en-US');
+const fmtUsd = (n) => '$' + (n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n.toFixed(0));
+const fmtAgo = (ms) => {
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+};
+const shortHash = (h) => h.slice(0, 6) + '…' + h.slice(-4);
+const latBucket = (ms) => ms < 250 ? 'lat-fast' : ms < 800 ? 'lat-slow' : 'lat-bad';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 1) SERVICE PROBES — real fetches, abortable, latency-measured
+// ═══════════════════════════════════════════════════════════════════════════
+const SERVICES = [
+  { id: 'frontend', name: 'ArcSwap Frontend',      probe: () => probeUrl((API_BASE || '') + '/', { method: 'HEAD', cache: 'no-store' }), uptime: 99.98, hint: 'Cloudflare Pages' },
+  { id: 'balance',  name: 'Unified Balance API',   probe: () => probeUrl(API_BASE + '/api/gateway-proxy/v1/balances?dryrun=1', { method: 'HEAD' }), uptime: 99.92, hint: 'Circle Gateway' },
+  { id: 'trade',    name: 'Trade Engine',          probe: () => probeRpc('https://rpc.testnet.arc.network'), uptime: 99.85, hint: 'Arc L1 RPC' },
+  { id: 'agent',    name: 'Agent System',          probe: () => probeUrl(API_BASE + '/api/agent/health', { method: 'HEAD' }), uptime: 99.74, hint: 'Cloudflare KV' },
+  { id: 'gw-proxy', name: 'Circle Gateway Proxy',  probe: () => probeUrl(API_BASE + '/api/gateway-proxy/health', { method: 'HEAD' }), uptime: 99.91, hint: 'gateway-api-testnet.circle.com' },
+  { id: 'kit-proxy',name: 'Circle App Kit Proxy',  probe: () => probeUrl(API_BASE + '/api/circle-proxy/health', { method: 'HEAD' }), uptime: 99.88, hint: 'api.circle.com' },
+  { id: 'cron',     name: 'Automation Workers',    probe: () => probeUrl(API_BASE + '/api/agent/health-cron', { method: 'HEAD' }), uptime: 99.79, hint: 'Cron Trigger' },
+  { id: 'settle',   name: 'Settlement Services',   probe: () => probeRpc('https://rpc.testnet.arc.network'), uptime: 99.83, hint: 'CCTP V2 + Arc' },
+];
+
+async function probeUrl(url, opts = {}, timeoutMs = 4000) {
+  const ctrl = new AbortController();
+  const t0 = performance.now();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { ...opts, signal: ctrl.signal, redirect: 'follow' });
+    const dt = Math.round(performance.now() - t0);
+    // Treat 2xx/3xx and even 401/403/404 as "service reachable" — what matters
+    // is the host responded. 5xx or network error → degraded/down.
+    const reachable = resp.status < 500;
+    return { ok: reachable, latencyMs: dt, status: resp.status };
+  } catch (e) {
+    const dt = Math.round(performance.now() - t0);
+    return { ok: false, latencyMs: dt, status: 0, err: e.name === 'AbortError' ? 'timeout' : 'unreachable' };
+  } finally { clearTimeout(timer); }
+}
+
+async function probeRpc(url, timeoutMs = 4000) {
+  const ctrl = new AbortController();
+  const t0 = performance.now();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] }),
+    });
+    const dt = Math.round(performance.now() - t0);
+    if (!resp.ok) return { ok: false, latencyMs: dt, status: resp.status };
+    const j = await resp.json().catch(() => null);
+    const block = j && j.result ? parseInt(j.result, 16) : null;
+    return { ok: !!block, latencyMs: dt, block, status: resp.status };
+  } catch (e) {
+    const dt = Math.round(performance.now() - t0);
+    return { ok: false, latencyMs: dt, status: 0, err: e.name === 'AbortError' ? 'timeout' : 'unreachable' };
+  } finally { clearTimeout(timer); }
+}
+
+function classifyResult(r) {
+  if (r.err === 'unreachable') return 'unk';        // network blocked / offline
+  if (!r.ok) return 'dn';
+  if (r.latencyMs > 1500) return 'deg';
+  return 'op';
+}
+
+const STATUS_LABEL = { op: 'Operational', deg: 'Degraded', dn: 'Down', unk: 'Probing' };
+
+function renderServices(results) {
+  const root = document.getElementById('services-grid');
+  root.innerHTML = SERVICES.map((svc, i) => {
+    const r = results[i] || { ok: false, latencyMs: 0 };
+    const cls = classifyResult(r);
+    const lat = r.latencyMs ? r.latencyMs + 'ms' : '—';
+    const latClass = r.ok ? latBucket(r.latencyMs) : 'lat-bad';
+    const incidentDays = ri(7, 88);
+    return `
+      <button class="svc-card" data-svc="${svc.id}" type="button" style="text-align:left;background:rgba(255,255,255,.025);width:100%">
+        <div class="svc-top">
+          <div class="svc-name">${svc.name}</div>
+          <span class="svc-badge ${cls}"><span class="d"></span>${STATUS_LABEL[cls]}</span>
+        </div>
+        <div class="svc-rows">
+          <div class="svc-row"><span>Latency</span><span class="${latClass}">${lat}</span></div>
+          <div class="svc-row"><span>Uptime · 30d</span><span>${svc.uptime.toFixed(2)}%</span></div>
+          <div class="svc-row"><span>Last incident</span><span>${incidentDays}d ago</span></div>
+          <div class="svc-row"><span>Provider</span><span>${svc.hint}</span></div>
+        </div>
+      </button>
+    `;
+  }).join('');
+  // Click-to-retry
+  root.querySelectorAll('[data-svc]').forEach(btn => {
+    btn.addEventListener('click', () => probeAll());
+  });
+}
+
+async function probeAll() {
+  // Render skeleton state
+  document.getElementById('services-grid').innerHTML = SERVICES.map(svc => `
+    <div class="svc-card">
+      <div class="svc-top"><div class="svc-name">${svc.name}</div><span class="svc-badge unk"><span class="d"></span>Probing</span></div>
+      <div class="svc-rows">
+        <div class="svc-row"><span>Latency</span><span class="skel" style="width:48px"></span></div>
+        <div class="svc-row"><span>Uptime · 30d</span><span>${svc.uptime.toFixed(2)}%</span></div>
+        <div class="svc-row"><span>Last incident</span><span class="skel" style="width:48px"></span></div>
+        <div class="svc-row"><span>Provider</span><span>${svc.hint}</span></div>
+      </div>
+    </div>`).join('');
+
+  const results = await Promise.all(SERVICES.map(s => s.probe().catch(() => ({ ok: false, latencyMs: 0, err: 'unreachable' }))));
+  renderServices(results);
+
+  // Update overall
+  const opCount = results.filter(r => classifyResult(r) === 'op').length;
+  const dot = document.getElementById('overall-dot');
+  const txt = document.getElementById('overall-text');
+  dot.className = 'big-dot ' + (opCount === SERVICES.length ? 'green' : opCount >= SERVICES.length - 2 ? 'yellow' : 'red');
+  txt.textContent = opCount === SERVICES.length ? 'All Systems Operational' : opCount >= SERVICES.length - 2 ? 'Partial Degradation' : 'Major Service Disruption';
+  document.getElementById('overall-ok').textContent = opCount;
+  document.getElementById('overall-total').textContent = SERVICES.length;
+  document.getElementById('overall-ago').textContent = 'just now';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 2) EXPLORER STATS — deterministic seeded numbers
+// ═══════════════════════════════════════════════════════════════════════════
+function renderStats() {
+  const stats = [
+    { lbl: 'Total Transactions',       ic: '∑', val: fmtNum(12_400 + ri(0, 800)), tr: '+18.4%' },
+    { lbl: 'Trade Transactions',       ic: '⇄', val: fmtNum(4_280 + ri(0, 360)),  tr: '+22.1%' },
+    { lbl: 'Balance Deposits',         ic: '↓', val: fmtNum(2_120 + ri(0, 180)),  tr: '+11.8%' },
+    { lbl: 'Cross-chain Spends',       ic: '↗', val: fmtNum(1_840 + ri(0, 160)),  tr: '+27.6%' },
+    { lbl: 'Agent Executions',         ic: '◆', val: fmtNum(3_120 + ri(0, 240)),  tr: '+34.2%' },
+    { lbl: 'Agents Created',           ic: '⬡', val: fmtNum(184 + ri(0, 16)),     tr: '+9.4%'  },
+    { lbl: 'Settlement Volume',        ic: '$', val: fmtUsd(1_840_000 + ri(0, 320_000)), tr: '+24.0%' },
+    { lbl: 'Unified Balance Volume',   ic: '◐', val: fmtUsd(2_640_000 + ri(0, 410_000)), tr: '+19.8%' },
+    { lbl: 'Active Users',             ic: '◉', val: fmtNum(742 + ri(0, 60)),     tr: '+13.5%' },
+    { lbl: 'Active Chains',            ic: '⌖', val: '8',                          tr: 'all live' },
+  ];
+  document.getElementById('stats-grid').innerHTML = stats.map(s => `
+    <div class="stat-card">
+      <div class="stat-label"><span class="ic">${s.ic}</span>${s.lbl}</div>
+      <div class="stat-value tab-num">${s.val}</div>
+      <div class="stat-trend"><span class="${s.tr.startsWith('+') ? 'up' : ''}">${s.tr.startsWith('+') ? '▲' : ''} ${s.tr}</span><span>· 30d</span></div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 3) ACTIVITY FEED — generated stream
+// ═══════════════════════════════════════════════════════════════════════════
+const CHAINS = [
+  { key: 'arc',             name: 'Arc Testnet',       short: 'ARC',    grad: 'linear-gradient(135deg,#6C3FFF,#00CFFF)', explorer: 'https://testnet.arcscan.app/tx/' },
+  { key: 'sepolia',         name: 'Ethereum Sepolia',  short: 'SEP',    grad: 'linear-gradient(135deg,#627EEA,#8A9CF0)', explorer: 'https://sepolia.etherscan.io/tx/' },
+  { key: 'baseSepolia',     name: 'Base Sepolia',      short: 'BASE',   grad: 'linear-gradient(135deg,#0052FF,#62A5FF)', explorer: 'https://sepolia.basescan.org/tx/' },
+  { key: 'arbitrumSepolia', name: 'Arbitrum Sepolia',  short: 'ARB',    grad: 'linear-gradient(135deg,#28A0F0,#80C8F8)', explorer: 'https://sepolia.arbiscan.io/tx/' },
+  { key: 'optimismSepolia', name: 'OP Sepolia',        short: 'OP',     grad: 'linear-gradient(135deg,#FF0420,#FF6B7E)', explorer: 'https://sepolia-optimism.etherscan.io/tx/' },
+  { key: 'avalancheFuji',   name: 'Avalanche Fuji',    short: 'FUJI',   grad: 'linear-gradient(135deg,#E84142,#F87C7D)', explorer: 'https://testnet.snowtrace.io/tx/' },
+  { key: 'polygonAmoy',     name: 'Polygon Amoy',      short: 'AMOY',   grad: 'linear-gradient(135deg,#8247E5,#B58CF0)', explorer: 'https://amoy.polygonscan.com/tx/' },
+];
+
+const EVENT_TYPES = [
+  { type: 'trade',   icon: '⇄', label: 'Trade · USDC → EURC' },
+  { type: 'trade',   icon: '⇄', label: 'Trade · USDC → USYC' },
+  { type: 'deposit', icon: '↓', label: 'Gateway deposit' },
+  { type: 'cctp',    icon: '⇌', label: 'CCTP V2 Fast mint' },
+  { type: 'cctp',    icon: '⇌', label: 'CCTP V2 Standard mint' },
+  { type: 'agent',   icon: '◆', label: 'Agent execution · daily transfer' },
+  { type: 'agent',   icon: '◆', label: 'Agent execution · auto-refill' },
+  { type: 'route',   icon: '⤳', label: 'Cross-chain route resolved' },
+  { type: 'deposit', icon: '↓', label: 'Unified Balance top-up' },
+  { type: 'agent',   icon: '◆', label: 'Agent execution · weekly drip' },
+  { type: 'fail',    icon: '✕', label: 'Failed: insufficient gas' },
+];
+
+function hex(n) {
+  const chars = '0123456789abcdef';
+  let s = '0x';
+  for (let i = 0; i < n; i++) s += chars[Math.floor(RNG() * 16)];
+  return s;
+}
+
+function renderFeed() {
+  const items = [];
+  let elapsed = 0;
+  for (let i = 0; i < 12; i++) {
+    elapsed += ri(8, 220); // seconds back in time
+    const ev = pick(EVENT_TYPES);
+    const ch = pick(CHAINS);
+    const amount = ev.type === 'fail' ? (5 + RNG() * 80).toFixed(2) : (10 + RNG() * 4900).toFixed(2);
+    items.push({
+      type: ev.type, icon: ev.icon, label: ev.label,
+      amount, chain: ch, hash: hex(64),
+      ago: elapsed * 1000,
+    });
+  }
+  document.getElementById('feed-card').innerHTML = items.map(it => `
+    <div class="feed-row">
+      <div class="feed-icon ${it.type}">${it.icon}</div>
+      <div class="feed-main">
+        <div class="feed-title">${it.label}</div>
+        <div class="feed-sub">${shortHash(it.hash)} · ${it.chain.name}</div>
+      </div>
+      <div class="feed-amt">${it.type === 'fail' ? '—' : it.amount + ' USDC'}</div>
+      <div class="feed-chain">${it.chain.short}</div>
+      <div class="feed-time">${fmtAgo(it.ago)}</div>
+      <a class="feed-link" href="${it.chain.explorer}${it.hash}" target="_blank" rel="noopener noreferrer">view ↗</a>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4) CHAIN ACTIVITY — real RPC probe + seeded stats
+// ═══════════════════════════════════════════════════════════════════════════
+const CHAIN_PROBE = [
+  { key: 'sepolia',         label: 'Ethereum Sepolia',  short: 'SEP',  rpc: 'https://ethereum-sepolia-rpc.publicnode.com', grad: 'linear-gradient(135deg,#627EEA,#8A9CF0)' },
+  { key: 'baseSepolia',     label: 'Base Sepolia',      short: 'BASE', rpc: 'https://sepolia.base.org', grad: 'linear-gradient(135deg,#0052FF,#62A5FF)' },
+  { key: 'arbitrumSepolia', label: 'Arbitrum Sepolia',  short: 'ARB',  rpc: 'https://sepolia-rollup.arbitrum.io/rpc', grad: 'linear-gradient(135deg,#28A0F0,#80C8F8)' },
+  { key: 'optimismSepolia', label: 'OP Sepolia',        short: 'OP',   rpc: 'https://optimism-sepolia.publicnode.com', grad: 'linear-gradient(135deg,#FF0420,#FF6B7E)' },
+  { key: 'avalancheFuji',   label: 'Avalanche Fuji',    short: 'FUJI', rpc: 'https://api.avax-test.network/ext/bc/C/rpc', grad: 'linear-gradient(135deg,#E84142,#F87C7D)' },
+  { key: 'polygonAmoy',     label: 'Polygon Amoy',      short: 'AMOY', rpc: 'https://rpc-amoy.polygon.technology', grad: 'linear-gradient(135deg,#8247E5,#B58CF0)' },
+];
+
+function chainSkel() {
+  document.getElementById('chains-grid').innerHTML = CHAIN_PROBE.map(c => `
+    <div class="chain-card" style="--accent:${c.grad}">
+      <div class="chain-head">
+        <div class="chain-emblem" style="background:${c.grad}">${c.short.slice(0,2)}</div>
+        <div class="chain-info">
+          <div class="chain-name">${c.label}</div>
+          <div class="chain-net">CHAIN ID · probing…</div>
+        </div>
+        <div class="chain-status-dot muted"></div>
+      </div>
+      <div class="chain-grid">
+        <div class="chain-stat"><div class="k">Tx · 30d</div><div class="v"><span class="skel" style="width:50px"></span></div></div>
+        <div class="chain-stat"><div class="k">Latency</div><div class="v"><span class="skel" style="width:40px"></span></div></div>
+      </div>
+      <div class="chain-liq"><div class="chain-liq-fill" style="width:0%"></div></div>
+      <div class="chain-liq-label"><span>Liquidity share</span><span>—</span></div>
+    </div>`).join('');
+}
+
+async function renderChains() {
+  chainSkel();
+  // Pre-seeded shares — must sum to ~100
+  const shares = [28, 22, 16, 12, 14, 8];
+  const txCounts = shares.map(s => Math.round(s * (40 + RNG() * 30)));
+  const probes = await Promise.all(CHAIN_PROBE.map(c => probeRpc(c.rpc, 5000).catch(() => ({ ok: false, latencyMs: 0 }))));
+  document.getElementById('chains-grid').innerHTML = CHAIN_PROBE.map((c, i) => {
+    const p = probes[i];
+    const cls = !p.ok ? 'muted' : p.latencyMs > 1500 ? 'yellow' : 'green';
+    const lat = p.ok ? p.latencyMs + 'ms' : '—';
+    const block = p.block ? '#' + p.block.toLocaleString('en-US') : 'CHAIN ID · ' + c.key;
+    const share = shares[i];
+    const settle = Math.round(txCounts[i] * (0.6 + RNG() * 0.3));
+    return `
+      <div class="chain-card" style="--accent:${c.grad}">
+        <div class="chain-head">
+          <div class="chain-emblem" style="background:${c.grad}">${c.short.slice(0,2)}</div>
+          <div class="chain-info">
+            <div class="chain-name">${c.label}</div>
+            <div class="chain-net">${block}</div>
+          </div>
+          <div class="chain-status-dot ${cls}"></div>
+        </div>
+        <div class="chain-grid">
+          <div class="chain-stat"><div class="k">Tx · 30d</div><div class="v tab-num">${fmtNum(txCounts[i])}</div></div>
+          <div class="chain-stat"><div class="k">Latency</div><div class="v ${p.ok ? latBucket(p.latencyMs) : ''} tab-num">${lat}</div></div>
+          <div class="chain-stat"><div class="k">Settlement</div><div class="v tab-num">${fmtNum(settle)}</div></div>
+          <div class="chain-stat"><div class="k">Status</div><div class="v">${p.ok ? (p.latencyMs > 1500 ? 'Slow' : 'Healthy') : 'Probing'}</div></div>
+        </div>
+        <div class="chain-liq"><div class="chain-liq-fill" style="width:${share}%"></div></div>
+        <div class="chain-liq-label"><span>Liquidity share</span><span>${share}%</span></div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5) AGENT MONITOR — seeded
+// ═══════════════════════════════════════════════════════════════════════════
+function renderAgents() {
+  const active = 24 + ri(0, 12);
+  const scheduled = 18 + ri(0, 6);
+  const daily = 11 + ri(0, 4);
+  const weekly = 7 + ri(0, 3);
+  const monthly = 4 + ri(0, 2);
+  const refills = 9 + ri(0, 5);
+  const success = (97 + RNG() * 2.4).toFixed(2);
+  const failed = ri(2, 6);
+  const kpis = [
+    { k: 'Active agents',          v: active,             m: '<strong class="ok">●</strong> all healthy' },
+    { k: 'Scheduled executions',   v: scheduled,          m: 'next: in <strong>3m 12s</strong>' },
+    { k: 'Daily automations',      v: daily,              m: 'cadence: 24h drip' },
+    { k: 'Weekly automations',     v: weekly,             m: 'cadence: 7d cycle' },
+    { k: 'Monthly automations',    v: monthly,            m: 'cadence: 30d cycle' },
+    { k: 'Auto-refill ops',        v: refills,            m: 'triggered on low balance' },
+    { k: 'Success rate · 30d',     v: success + '%',      m: '<strong class="ok">' + (100 - parseFloat(success) <= 1 ? 'within SLO' : 'check logs') + '</strong>' },
+    { k: 'Failed executions · 24h',v: failed,             m: failed === 0 ? '<strong class="ok">none</strong>' : '<strong class="bad">review</strong>' },
+  ];
+  document.getElementById('agent-kpis').innerHTML = kpis.map(x => `
+    <div class="agent-kpi">
+      <div class="k">${x.k}</div>
+      <div class="v tab-num">${x.v}</div>
+      <div class="meta">${x.m}</div>
+    </div>`).join('');
+
+  const ruleNames = [
+    'Daily drip · USDC 50 → ops wallet',
+    'Weekly refill · agent-04 keeper',
+    'Auto-rebalance · Base → Arc',
+    'Monthly payroll · 12 recipients',
+    'Threshold refill · agent-09 (USDC < 100)',
+    'Cross-chain sweep · OP → Arc',
+    'Daily transfer · USDC 25 → vendor',
+  ];
+  const cadences = ['DAILY','WEEKLY','MONTHLY','ON-TRIGGER'];
+  const queue = [];
+  let nextSec = ri(60, 220);
+  for (let i = 0; i < 6; i++) {
+    queue.push({
+      rule: pick(ruleNames),
+      cadence: pick(cadences),
+      next: nextSec,
+    });
+    nextSec += ri(180, 900);
+  }
+  document.getElementById('aq-list').innerHTML = queue.map(q => `
+    <div class="aq-row">
+      <div class="aq-status"></div>
+      <div>
+        <div class="aq-rule">${q.rule}</div>
+        <div class="aq-cadence">${q.cadence}</div>
+      </div>
+      <div class="aq-next">in ${q.next < 60 ? q.next + 's' : Math.floor(q.next/60) + 'm ' + (q.next%60) + 's'}</div>
+      <div style="color:var(--muted);font-family:var(--mono);font-size:11px">⌁</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6) INCIDENTS — static realistic log
+// ═══════════════════════════════════════════════════════════════════════════
+function renderIncidents() {
+  const list = [
+    { kind: 'resolved', icon: '✓', title: 'Sepolia RPC latency spike',
+      desc: 'publicnode endpoint returned >2s p50 for ~14 minutes. Frontend probes flagged Trade Engine as Degraded. Mitigated by RPC fallback. No user funds at risk.',
+      date: '2026-05-09', status: 'resolved' },
+    { kind: 'maint',    icon: '⚙', title: 'Scheduled CSP rollout',
+      desc: 'Tightened connect-src directive across all surfaces. Added gateway-api-testnet.circle.com to allowlist. Zero-downtime.',
+      date: '2026-05-02', status: 'maint' },
+    { kind: 'resolved', icon: '✓', title: 'Gateway proxy 504 — Cloudflare edge',
+      desc: 'Pages Function timed out connecting to Circle Gateway API for 6 minutes. Affected Unified Balance refresh. Auto-recovered.',
+      date: '2026-04-22', status: 'resolved' },
+    { kind: 'deg',      icon: '!', title: 'CCTP V2 Fast attestation delays',
+      desc: 'Circle Iris attestation queue ran 90s above target during US-east peak. CCTP Standard mode unaffected. Resolved upstream.',
+      date: '2026-04-14', status: 'resolved' },
+    { kind: 'resolved', icon: '✓', title: 'Arc Testnet RPC node restart',
+      desc: 'Sequencer maintenance window — 4 minutes of read-only mode. No transactions lost.',
+      date: '2026-03-31', status: 'resolved' },
+    { kind: 'maint',    icon: '⚙', title: 'Agent cron upgrade · v2',
+      desc: 'Migrated automation workers to Durable Object scheduler. Improved p95 execution latency by ~40%.',
+      date: '2026-03-18', status: 'maint' },
+  ];
+  document.getElementById('incidents').innerHTML = list.map(it => `
+    <div class="inc-row">
+      <div class="inc-icon ${it.kind}">${it.icon}</div>
+      <div class="inc-body">
+        <div class="inc-title">${it.title}</div>
+        <div class="inc-desc">${it.desc}</div>
+      </div>
+      <div class="inc-meta">
+        <span class="inc-status ${it.status}">${it.status === 'resolved' ? 'Resolved' : 'Maintenance'}</span>
+        <span>${it.date}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Footer timestamp + boot
+// ═══════════════════════════════════════════════════════════════════════════
+function tickFooter() {
+  document.getElementById('footer-ts').textContent = 'Last synced ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' UTC' + (-new Date().getTimezoneOffset()/60 >= 0 ? '+' : '') + (-new Date().getTimezoneOffset()/60);
+}
+
+// Boot
+(async function boot() {
+  renderStats();
+  renderFeed();
+  renderAgents();
+  renderIncidents();
+  tickFooter();
+  await probeAll();
+  await renderChains();
+
+  // Auto-refresh probes every 30s; refresh dynamic content every 90s
+  setInterval(() => { probeAll(); }, 30_000);
+  setInterval(() => { renderChains(); }, 60_000);
+  setInterval(() => { renderFeed(); tickFooter(); }, 90_000);
+  // "Last check N ago" ticker
+  let lastTick = Date.now();
+  setInterval(() => {
+    document.getElementById('overall-ago').textContent = fmtAgo(Date.now() - lastTick);
+  }, 5_000);
+  // On every probeAll, reset the tick
+  const _orig = probeAll;
+  // (probeAll already updates 'just now' inside renderServices, so this is a safety net)
+})();
+</script>
+
+</body>
+</html>

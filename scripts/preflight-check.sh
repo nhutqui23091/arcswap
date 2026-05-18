@@ -16,7 +16,7 @@ echo
 
 # ─── 1. CSP meta tag in every HTML ───────────────────────────────────────────
 echo "[1/6] Content-Security-Policy in every HTML…"
-MISSING=$(grep -L "Content-Security-Policy" *.html 2>/dev/null || true)
+MISSING=$(grep -L "Content-Security-Policy" *.html status/*.html 2>/dev/null || true)
 if [[ -z "$MISSING" ]]; then
   ok "CSP present in all HTML files"
 else
@@ -28,7 +28,7 @@ fi
 # Skip CSP meta tags (which mention jsdelivr as an allowed origin, not as a script).
 echo "[2/6] SRI integrity on jsdelivr scripts…"
 NO_SRI=""
-for f in *.html; do
+for f in *.html status/*.html; do
   # Pull every <script ...> tag (may span lines) that loads from jsdelivr,
   # then check whether it also contains integrity=
   if awk '
@@ -48,7 +48,7 @@ fi
 
 # ─── 3. target=_blank without rel=noopener ───────────────────────────────────
 echo "[3/6] target=\"_blank\" with rel=\"noopener\"…"
-BAD_TARGETS=$(grep -rE 'target="_blank"' *.html | grep -v 'rel=' || true)
+BAD_TARGETS=$(grep -rE 'target="_blank"' *.html status/*.html | grep -v 'rel=' || true)
 if [[ -z "$BAD_TARGETS" ]]; then
   ok "All target=_blank have rel=noopener"
 else
@@ -59,7 +59,7 @@ fi
 # ─── 4. No hardcoded secrets ─────────────────────────────────────────────────
 echo "[4/6] No hardcoded secrets…"
 SECRETS=$(grep -rEi '(api[_-]?key|secret|bearer|authorization)\s*[:=]\s*["'\''][^"'\'']{8,}' \
-  --include="*.html" --include="*.js" --include="*.json" \
+  --include="*.html status/*.html" --include="*.js" --include="*.json" \
   --exclude-dir=node_modules --exclude-dir=.git . 2>/dev/null || true)
 if [[ -z "$SECRETS" ]]; then
   ok "No obvious secrets in tracked files"

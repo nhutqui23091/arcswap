@@ -1173,6 +1173,20 @@ export async function onRequest(context) {
     });
   }
 
+  // Health endpoint for status.arcswap.net dashboard. Returns 204 with CORS
+  // header — checks the Function is reachable but does NOT require KV binding
+  // (so this still reports "up" if AGENT_KV isn't bound yet in some preview
+  // environments). Placed BEFORE the KV guard intentionally.
+  if (url.pathname === '/api/agent/health' || url.pathname === '/api/agent/health-cron') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': origin || '*',
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
+
   // KV binding required for storage
   const kv = env.AGENT_KV;
   if (!kv) return notReady();

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4DD6DB"/>
+      <stop offset="1" stop-color="#4A7BEC"/>
+    </linearGradient>
+    <linearGradient id="letter" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E8F4F6"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background with brand gradient -->
+  <rect width="64" height="64" rx="14" ry="14" fill="url(#bg)"/>
+  <!-- Subtle inner glow -->
+  <rect x="2" y="2" width="60" height="60" rx="12" ry="12" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+  <!-- Letter A — bold, geometric -->
+  <path d="M 32 12 L 50 50 L 42 50 L 38.5 42.5 L 25.5 42.5 L 22 50 L 14 50 Z M 28.5 35.5 L 35.5 35.5 L 32 27 Z"
+        fill="url(#letter)"/>
+</svg>

@@ -15,6 +15,11 @@
 /point   /trade   302
 /points  /trade   302
 
+# Status page lives on its own subdomain (separate Cloudflare Pages project for
+# cache isolation + independent uptime). Forward any legacy /status URLs.
+/status     https://status.arcswap.net/   301
+/status/*   https://status.arcswap.net/:splat   301
+
 # Blog posts giờ là file thật trong /blog/<slug>.html
 # Cloudflare Pages tự strip .html → URL đẹp /blog/<slug>. KHÔNG dùng 200 rewrite
 # từ /blog/<slug> → /blog-<slug>.html nữa — gây infinite redirect loop với

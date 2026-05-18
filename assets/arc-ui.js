@@ -50,6 +50,7 @@
         <div class="nav-tabs">
           ${tabs.map(t => `<a class="nav-tab ${t.id===active?'active':''}${t.newBadge?' new-pill':''}" href="${t.href}">${t.label}</a>`).join('')}
           <a class="nav-tab" href="https://faucet.circle.com" target="_blank" rel="noopener">💧 Faucet</a>
+          <a class="nav-tab" href="https://status.arcswap.net" target="_blank" rel="noopener">Status</a>
           <a class="nav-tab ${active==='blog'?'active':''}" href="/blog">Blog</a>
         </div>
         <div class="nav-right">

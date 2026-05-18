@@ -29,6 +29,9 @@ export async function onRequest(context) {
     'https://arcswap.net',
     'https://www.arcswap.net',
     'https://arcswap.pages.dev',
+    // status.arcswap.net is a separate Pages project for the status dashboard.
+    // It cross-origin probes /api/circle-proxy/health for the App Kit row.
+    'https://status.arcswap.net',
     // Allow Cloudflare Pages preview deploys (*.arcswap.pages.dev)
   ];
   const isAllowedOrigin = !origin || ALLOWED_ORIGINS.includes(origin) ||
@@ -56,6 +59,20 @@ export async function onRequest(context) {
     return new Response('Bad request: missing proxy path', { status: 400 });
   }
   const circlePath = proxyPathMatch[1];
+
+  // Health endpoint for status.arcswap.net dashboard — returns 204 with CORS
+  // headers so cross-origin probes can read up/down. No upstream call, no
+  // KIT_KEY required (so this still works in environments where the secret
+  // isn't configured yet).
+  if (circlePath === 'health') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': origin || '*',
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
 
   // Validate KIT_KEY exists in env
   if (!env.KIT_KEY) {
