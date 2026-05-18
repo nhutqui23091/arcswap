@@ -442,11 +442,13 @@ export async function onRequest(context) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
+        ...cors(origin),
         // Edge-cache 2 minutes. Single-key reads are cheap so we don't
         // need extreme caching, but edge cache still saves origin trips
         // when many status-page tabs share an edge colo.
+        // NOTE: must come AFTER cors() spread — cors() sets a no-store
+        // default that would otherwise override this header.
         'Cache-Control': 'public, max-age=120, s-maxage=120',
-        ...cors(origin),
       },
     });
   }
@@ -485,9 +487,10 @@ export async function onRequest(context) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        // 60s edge cache — activity feed should feel near-live.
-        'Cache-Control': 'public, max-age=60, s-maxage=60',
         ...cors(origin),
+        // 60s edge cache — activity feed should feel near-live.
+        // NOTE: must come AFTER cors() spread (no-store default).
+        'Cache-Control': 'public, max-age=60, s-maxage=60',
       },
     });
   }
