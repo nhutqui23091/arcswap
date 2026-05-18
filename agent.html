@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
 <title>ArcSwap — Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/arc-ui.css?v=9.6.4"/>
 <style>
 :root{
@@ -26,7 +26,7 @@
 
 /* HEADER */
 .page-header{margin-bottom:22px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.page-title{font-size:clamp(40px,5.5vw,68px);font-weight:900;letter-spacing:-.035em;line-height:1;margin-bottom:10px;text-transform:uppercase}
+.page-title{font-family:var(--display);font-size:clamp(40px,5.5vw,68px);font-weight:700;letter-spacing:-.025em;line-height:1;margin-bottom:10px;text-transform:uppercase}
 .page-sub{font-size:14px;color:var(--muted);max-width:680px;line-height:1.6}
 .preview-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:100px;font-size:12px;font-weight:600;font-family:var(--mono);color:var(--violet);background:rgba(77,214,219,.08);border:1px solid rgba(77,214,219,.25);text-transform:uppercase;letter-spacing:.08em}
 .preview-dot{width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 10px var(--violet)}
@@ -34,7 +34,7 @@
 /* STATS */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 20px;backdrop-filter:blur(20px)}
-.stat-val{font-size:28px;font-weight:800;letter-spacing:-.035em;line-height:1.05;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-val{font-family:var(--display);font-size:28px;font-weight:700;letter-spacing:-.025em;line-height:1.05;color:var(--text);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1}
 .stat-change{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
 
 /* MAIN LAYOUT */
@@ -68,7 +68,7 @@
 /* INPUT */
 .field{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
 .field:focus-within{border-color:rgba(77,214,219,.4)}
-.field-input{flex:1;background:none;border:none;outline:none;font-size:16px;font-weight:600;color:var(--text);font-family:var(--font);min-width:0}
+.field-input{flex:1;background:none;border:none;outline:none;font-size:16px;font-weight:700;color:var(--text);font-family:var(--font);min-width:0;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1}
 .field-input::placeholder{color:rgba(255,255,255,.18)}
 .field-suffix{font-size:13px;color:var(--muted);font-family:var(--mono);font-weight:600}
 .field-prefix{font-size:13px;color:var(--muted);font-family:var(--mono);font-weight:600}
@@ -171,9 +171,9 @@ select option:checked{background:#1a2c4a;color:#fff}
 /* SUMMARY */
 .summary{margin-top:18px;padding:14px 16px;background:rgba(77,214,219,.06);border:1px solid rgba(77,214,219,.18);border-radius:12px}
 .summary-h{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);margin-bottom:8px}
-.summary-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12.5px;gap:12px}
-.summary-row .k{color:var(--muted);flex-shrink:0}
-.summary-row .v{font-family:var(--mono);font-weight:600;text-align:right;color:var(--text);min-width:0;word-break:break-word}
+.summary-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;gap:12px;line-height:1.4}
+.summary-row .k{color:var(--muted);flex-shrink:0;font-weight:500}
+.summary-row .v{font-family:var(--mono);font-weight:700;text-align:right;color:var(--text);min-width:0;word-break:break-word;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1}
 
 /* DEPLOY BTN */
 .deploy-btn{width:100%;margin-top:18px;padding:16px;border-radius:14px;border:1px solid rgba(77,214,219,.35);font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,rgba(77,214,219,.18),rgba(74,123,236,.18));color:var(--text);transition:all .2s;letter-spacing:.02em}

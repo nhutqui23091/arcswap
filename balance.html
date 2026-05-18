@@ -10,17 +10,17 @@
 <meta name="description" content="ArcSwap Unified Balance — deposit USDC from any chain, spend on Arc instantly. Powered by Circle Gateway."/>
 <title>Unified Balance — ArcSwap</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0A1628;--bg2:#0F1E36;
   --surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);
   --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
-  --text:#F5F7FB;--muted:#8CA0BD;
+  --text:#F5F7FB;--muted:#A4B8D0;--muted-soft:#7E92AE;
   --arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;
   --warn:#FFB454;--danger:#FF7A7A;
-  --font:'Inter',system-ui,sans-serif;--mono:'DM Mono',monospace;
+  --display:'Space Grotesk','Inter',system-ui,sans-serif; --font:'DM Sans','Inter',system-ui,sans-serif;--mono:'Space Mono','DM Mono',ui-monospace,monospace;
 }
 html{scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
@@ -53,7 +53,7 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
 .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:110px 24px 80px}
 
 .hero-strip{margin-bottom:24px}
-.hero-strip h1{font-size:clamp(40px,5.5vw,72px);letter-spacing:-.035em;font-weight:900;line-height:1;text-transform:uppercase}
+.hero-strip h1{font-family:var(--display);font-size:clamp(40px,5.5vw,72px);letter-spacing:-.03em;font-weight:700;line-height:1;text-transform:uppercase}
 .hero-strip p{color:var(--muted);font-size:14px;margin-top:6px;max-width:680px;line-height:1.55}
 .eyebrow{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--arc3);margin-bottom:14px}
 .eyebrow::before{content:'// ';color:rgba(140,160,189,.55)}
@@ -62,7 +62,7 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
 .balance-card{margin-top:18px;padding:32px;border-radius:20px;background:linear-gradient(135deg,rgba(244,200,154,0.10),rgba(77,214,219,0.06),rgba(74,123,236,0.08));border:1px solid var(--border);position:relative;overflow:hidden}
 .balance-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(244,200,154,0.10),transparent 50%);pointer-events:none}
 .balance-label{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;position:relative}
-.balance-amount{font-size:64px;font-weight:900;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;color:var(--text);position:relative}
+.balance-amount{font-family:var(--display);font-size:64px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1;color:var(--text);position:relative}
 .balance-token{font-size:24px;font-weight:600;color:var(--muted);margin-left:8px;letter-spacing:-.02em}
 .balance-sub{font-size:13px;color:var(--muted);margin-top:8px;font-family:var(--mono);position:relative}
 .balance-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;position:relative}
@@ -83,10 +83,10 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
 .chain-dot img{width:100%;height:100%;object-fit:cover;display:block}
 .chain-dot.fallback{background:linear-gradient(135deg,#4DD6DB,#4A7BEC);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
 .chain-name{font-size:14px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis}
-.chain-name small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:400;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
-.chain-bal{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
-.chain-bal small{color:var(--muted);margin-left:4px;font-weight:400}
-.chain-bal.zero{color:var(--muted);font-weight:400}
+.chain-name small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.chain-bal{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1}
+.chain-bal small{color:var(--muted);margin-left:4px;font-weight:500}
+.chain-bal.zero{color:var(--muted-soft,#7E92AE);font-weight:500}
 .chain-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .chain-actions button{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .15s;font-family:var(--font)}
 .chain-actions button:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
