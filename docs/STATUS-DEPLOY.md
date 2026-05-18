@@ -24,22 +24,44 @@ origin allowlist and expose a lightweight `/health` endpoint).
 
 In Cloudflare Dashboard → **Workers & Pages → Create → Pages → Connect to Git**.
 
+In the new Cloudflare UI (May 2026+), the Pages flow is reached via the link
+at the bottom of the Workers create screen: **"Looking to deploy Pages? Get
+started"** → **"Import an existing Git repository"**.
+
 | Setting | Value |
 |---|---|
 | **Project name** | `arcswap-status` |
 | **Production branch** | `main` |
 | **Framework preset** | None (static) |
 | **Build command** | _(leave empty)_ |
-| **Build output directory** | `status` |
-| **Root directory** | `/` _(default — keep at repo root)_ |
+| **Build output directory** | _(leave empty)_ — or `/` |
+| **Root directory** | `status` — **the critical setting** |
 
-> **Important:** set **Build output directory** to `status` so Cloudflare only
-> deploys files in the `status/` folder. The rest of the repo (root
-> `index.html`, `trade.html`, `functions/`, etc.) is **not** uploaded into this
-> project — that's the whole point of project separation.
+> **Critical:** set **Root directory** = `status`, NOT Build output directory.
+> Reasons:
+>
+> 1. **Functions isolation.** If Root is the repo root, Cloudflare scans the
+>    repo's `/functions` directory and uploads those Functions onto
+>    `status.arcswap.net` too — that's wrong; we want Functions to live only on
+>    the main `arcswap` project. Setting Root directory to `status` makes
+>    Cloudflare `cd status/` before scanning, so `../functions` is invisible.
+>
+> 2. **No trailing whitespace gotchas.** A Build output directory of `"status "`
+>    (with a stray space) fails the build with `Output directory "status " not
+>    found`. The Root directory field is less prone to this kind of typo.
+>
+> After Root is set to `status`, Cloudflare treats `status/` as the
+> project root — everything (output dir, watch paths) is relative to it.
 
 Hit **Save and Deploy**. First deploy takes ~30 seconds. You should see
 `arcswap-status.pages.dev` come live with the status dashboard.
+
+A correct build log shows:
+- `HEAD is now at <sha> ...`
+- `Using v2 root directory strategy`
+- `No build command specified. Skipping build step.`
+- `Success: Finished uploading assets` ← key line
+- **NO** line saying `Found Functions directory at /functions. Uploading.`
 
 ---
 
