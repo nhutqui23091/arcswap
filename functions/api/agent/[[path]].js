@@ -83,6 +83,41 @@ async function putJSON(kv, key, val) {
   await kv.put(key, JSON.stringify(val));
 }
 
+/**
+ * Server-side metric increment. Mirrors what POST /api/metrics/track does
+ * client-side, but for events that originate on the server (agent cron
+ * execution, etc.). Best-effort and never throws — analytics must never
+ * block the actual agent flow.
+ *
+ * Writes:
+ *   metric:event:<ts>:<rand>         (event ring buffer, TTL 7d)
+ *   metric:count:<date>:<event>      (daily total)
+ *   metric:count:<date>:<event>:<chain>  (daily per-chain)
+ *   metric:total:<event>             (lifetime)
+ */
+async function incrMetric(kv, event, chain, amount) {
+  try {
+    const ts = Date.now();
+    const d = new Date(ts);
+    const day = d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth()+1)).slice(-2) + '-' + ('0' + d.getUTCDate()).slice(-2);
+    const rand = Math.random().toString(36).slice(2, 10);
+    const incr = async (key) => {
+      const cur = parseInt((await kv.get(key)) || '0', 10);
+      await kv.put(key, String(cur + 1));
+    };
+    await Promise.all([
+      kv.put(`metric:event:${ts}:${rand}`,
+        JSON.stringify({ event, chain, amount: amount ?? null, txHash: null, surface: 'cron', ts }),
+        { expirationTtl: 7 * 24 * 60 * 60 }),
+      incr(`metric:count:${day}:${event}`),
+      incr(`metric:count:${day}:${event}:${chain}`),
+      incr(`metric:total:${event}`),
+    ]);
+  } catch (e) {
+    console.warn('[metrics] server-side incr failed:', e?.message);
+  }
+}
+
 async function listOwnerAgentIds(kv, owner) {
   return await getJSON(kv, `owner:${lower(owner)}:agents`, []);
 }
@@ -1052,6 +1087,8 @@ async function fireAgentInCron(kv, env, agent, summary, now) {
           type: 'error',
           detail: `[cron] ${t.source}→${t.target?.slice(0,10) || '?'}: ${String(t.error).slice(0, 160)}`,
         });
+        // Real-metrics: track agent failure (server-side, no CORS to worry about).
+        await incrMetric(kv, 'failure', 'arc', null);
       } else if (t.flow === 'cctp') {
         await appendExecution(kv, agent.id, {
           type: 'cctp_burn',
@@ -1070,6 +1107,9 @@ async function fireAgentInCron(kv, env, agent, summary, now) {
           state: t.state,
           flow: t.flow,
         });
+        // Real-metrics: track successful agent execution (server-side write).
+        // No CORS, no PII — just event + chain + amount.
+        await incrMetric(kv, 'agent-exec', t.source || 'arc', Number(t.amount));
       }
     }
     agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);

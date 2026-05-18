@@ -1527,6 +1527,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     }
     modal.finish();
     ArcUI.toast('success', 'Trade complete', `Received ≈ ${formatAmt(runAmt, state.toToken.decimals)} ${state.toToken.symbol} on ${chainShort(state.dst.chainKey)}`);
+    // Real-metrics telemetry — fire-and-forget so the status page (status.arcswap.net)
+    // can report actual usage instead of seeded mocks. Failure is non-blocking.
+    try {
+      // Approximate USDC-equivalent amount: amount-in always denominated in source token
+      // (USDC across all flows in this surface).
+      const amtUsdc = Number(formatAmt(runAmt, state.fromToken.decimals));
+      ARC.track('trade', state.dst.chainKey, amtUsdc, null, 'trade');
+    } catch {}
     // Refresh sources and current-balance widgets
     loadAllSources().catch(() => null);
     updateBalances();

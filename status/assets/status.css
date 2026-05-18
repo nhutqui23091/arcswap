@@ -329,6 +329,14 @@ nav.topnav.scrolled{background:rgba(10,22,40,0.88);backdrop-filter:blur(20px);-w
 .footer a:hover{color:var(--text)}
 .footer-left{display:flex;gap:18px;flex-wrap:wrap}
 
+/* ═══ DATA-SOURCE BADGE (LIVE / DEMO / PROBING) ════════════════════════════ */
+.data-pill{display:inline-flex;align-items:center;gap:8px;padding:5px 11px;border-radius:100px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-family:var(--mono);white-space:nowrap}
+.data-pill .d{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;flex-shrink:0;animation:pulse-dot 2s infinite}
+.data-pill.live{background:rgba(123,228,149,.08);border:1px solid rgba(123,228,149,.28);color:var(--green)}
+.data-pill.demo{background:rgba(255,159,74,.08);border:1px solid rgba(255,159,74,.28);color:#FF9F4A}
+.data-pill.demo .d{animation:none}
+.data-pill.probing{background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+
 /* ═══ UTILITY ══════════════════════════════════════════════════════════════ */
 .fade-in{animation:fade-up .5s ease both}
 @keyframes fade-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}

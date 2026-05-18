@@ -715,6 +715,33 @@
     } catch { return null; }
   }
 
+  // ───────── METRICS TELEMETRY ─────────
+  // Fire-and-forget reporter — runs after a successful user action so the
+  // status page (status.arcswap.net) can show real numbers, not seeded mocks.
+  //
+  //   event   : 'trade' | 'deposit' | 'spend' | 'bridge' | 'agent-create'
+  //             | 'agent-exec' | 'failure'   (validated server-side too)
+  //   chain   : one of CHAINS keys (arc, sepolia, baseSepolia, ...)
+  //   amount  : number (USDC units, decimal — e.g. 12.5) or null
+  //   txHash  : 0x-prefixed hash or null (for non-onchain events)
+  //   surface : 'trade' | 'balance' | 'agent' (origin page) or null
+  //
+  // Never throws, never blocks. `keepalive: true` lets the request finish
+  // even if the user navigates away immediately after.
+  async function track(event, chain, amount = null, txHash = null, surface = null) {
+    try {
+      await fetch('/api/metrics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ event, chain, amount, txHash, surface }),
+      });
+    } catch (e) {
+      // Best-effort only — never surface to the user.
+      if (typeof console !== 'undefined') console.debug('[metrics] track failed:', e?.message);
+    }
+  }
+
   // ───────── EXPORTS ─────────
   global.ARC = {
     CHAINS, TOKENS, ABIS,
@@ -730,7 +757,8 @@
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
     chainIcon,
-    version: '9.5.2',
+    track,
+    version: '9.5.3',
   };
 
   // ───────── CHAIN ICONS ─────────

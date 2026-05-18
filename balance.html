@@ -663,6 +663,8 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
     try {
       await ARC.gateway.deposit(k, value, { onStep: (m) => setStatus('deposit-status', '', m) });
       setStatus('deposit-status', 'ok', '✅ Deposit confirmed');
+      // Real-metrics telemetry (status.arcswap.net real counters). Non-blocking.
+      try { ARC.track('deposit', k, Number(amtStr), null, 'balance'); } catch {}
       setTimeout(() => closeModal('modal-deposit'), 1200);
       refreshAll();
     } catch (e) {
@@ -844,6 +846,8 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
         });
       }
       setStatus('spend-status', 'ok', '✅ Cross-chain spend complete');
+      // Real-metrics telemetry (status.arcswap.net real counters). Non-blocking.
+      try { ARC.track('spend', dst, Number(amtStr), null, 'balance'); } catch {}
       setTimeout(() => closeModal('modal-spend'), 1500);
       refreshAll();
     } catch (e) {

@@ -51,7 +51,7 @@
       </div>
     </div>
     <div class="hero-stat-right">
-      <span class="pulse-label">Live · Auto-refresh 30s</span>
+      <span id="data-badge"><span class="data-pill probing"><span class="d"></span>PROBING · /api/metrics</span></span>
       <span class="pulse-sub">Block <span id="hero-block">—</span> · Arc Testnet</span>
       <span class="pulse-sub">Gas <span id="hero-gas">—</span> Gwei</span>
     </div>
@@ -165,21 +165,63 @@ searchInput.addEventListener('keydown', (e) => {
 });
 
 // ─── HERO + KEY STATS ────────────────────────────────────────────────────────
-function renderHeroAndStats() {
-  // Total tx — large, prominent. Daily volume seed.
+// Prefers real data from /api/metrics/summary. Falls back to seeded mocks if
+// the endpoint is unreachable (e.g. arcswap.net main project not yet redeployed
+// with the new endpoint). Badge in the hero says LIVE vs DEMO.
+
+async function renderHeroAndStats() {
+  const real = await A.fetchSummary();
+  const blockHi  = 42_837_329 + A.ri(0, 5000);
+  document.getElementById('hero-block').textContent = '#' + A.fmtNum(blockHi);
+  document.getElementById('hero-gas').textContent   = (18 + A.rng() * 6).toFixed(1);
+
+  if (real && real.grandTotal !== undefined) {
+    // REAL DATA PATH
+    const total   = real.grandTotal;
+    const today   = real.todayTotal || 0;
+    const last30  = real.last30 || {};
+    const totals  = real.totals || {};
+    const series  = real.series || {};
+    // 30-day trend = compare today vs 30d-avg
+    const seriesVals = Object.values(series);
+    const avg30 = seriesVals.length ? seriesVals.reduce((a,b)=>a+b,0) / seriesVals.length : 1;
+    const trendPct = avg30 > 0 ? ((today - avg30) / avg30 * 100) : 0;
+    document.getElementById('hero-total').textContent = A.fmtNum(total);
+    document.getElementById('hero-trend').textContent = (trendPct >= 0 ? '+' : '') + trendPct.toFixed(1) + '%';
+    document.getElementById('hero-24h').textContent   = A.fmtNum(today);
+    document.getElementById('hero-fee').textContent   = '0.00098'; // gas-tracker derived, stays seeded for now
+    A.mountDataBadge({ status: 'live', detail: 'updated ' + new Date(real.asOf).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) });
+
+    const stats = [
+      { lbl: 'Trade Txns',           ic: '⇄', val: A.fmtNum(totals.trade || 0)        },
+      { lbl: 'Balance Deposits',     ic: '↓', val: A.fmtNum(totals.deposit || 0)      },
+      { lbl: 'Cross-chain Spends',   ic: '↗', val: A.fmtNum(totals.spend || 0)        },
+      { lbl: 'Agent Executions',     ic: '◆', val: A.fmtNum(totals['agent-exec'] || 0) },
+      { lbl: 'Settlement Volume',    ic: '$', val: '—',          tr: 'volume API soon' },
+      { lbl: 'Bridge Txns',          ic: '⇌', val: A.fmtNum(totals.bridge || 0)       },
+      { lbl: 'Active Users · today', ic: '◉', val: A.fmtNum(real.activeUsers || 0)    },
+      { lbl: 'Agents Created',       ic: '⊞', val: A.fmtNum(totals['agent-create'] || 0) },
+      { lbl: 'Failures · 30d',       ic: '✕', val: A.fmtNum(last30.failure || 0)      },
+      { lbl: 'Active Chains',        ic: '⌖', val: '8',          tr: 'all live'       },
+    ];
+    document.getElementById('key-stats').innerHTML = stats.map(s => `
+      <div class="stat-card">
+        <div class="lbl"><span class="ic">${s.ic}</span>${s.lbl}</div>
+        <div class="val tab-num">${s.val}</div>
+        <div class="trend"><span>${s.tr || 'lifetime · real'}</span></div>
+      </div>`).join('');
+    return real;
+  }
+
+  // SEEDED FALLBACK PATH (endpoint unreachable)
   const dailyAvg = 11_800 + A.ri(0, 600);
   const today    = dailyAvg + A.ri(-1200, 1800);
   const total    = 365_000 + A.ri(0, 22_000);
-  const last24h  = today;
-  const avgFee   = (0.00086 + A.rng() * 0.0004).toFixed(5);
-  const blockHi  = 42_837_329 + A.ri(0, 5000);
-
   document.getElementById('hero-total').textContent = A.fmtNum(total);
   document.getElementById('hero-trend').textContent = '+' + (16 + Math.floor(A.rng() * 8)) + '.' + A.ri(0,9) + '%';
-  document.getElementById('hero-24h').textContent   = A.fmtNum(last24h);
-  document.getElementById('hero-fee').textContent   = avgFee;
-  document.getElementById('hero-block').textContent = '#' + A.fmtNum(blockHi);
-  document.getElementById('hero-gas').textContent   = (18 + A.rng() * 6).toFixed(1);
+  document.getElementById('hero-24h').textContent   = A.fmtNum(today);
+  document.getElementById('hero-fee').textContent   = (0.00086 + A.rng() * 0.0004).toFixed(5);
+  A.mountDataBadge({ status: 'demo', detail: 'metrics API unreachable' });
 
   const stats = [
     { lbl: 'Trade Txns',           ic: '⇄', val: A.fmtNum(4_280 + A.ri(0, 360)),  tr: '+22.1%' },
@@ -199,19 +241,26 @@ function renderHeroAndStats() {
       <div class="val tab-num">${s.val}</div>
       <div class="trend"><span class="${s.tr.startsWith('+') ? 'up' : ''}">${s.tr.startsWith('+') ? '▲' : ''} ${s.tr}</span><span>· 30d</span></div>
     </div>`).join('');
+  return null;
 }
 
 // ─── DAILY TX CHART (inline SVG) ─────────────────────────────────────────────
-function renderChart() {
+function renderChart(realSeries) {
   const days = 30;
-  const data = [];
-  let v = 8500;
-  for (let i = 0; i < days; i++) {
-    // smooth random walk with positive drift
-    v += A.ri(-700, 900) + 30;
-    if (v < 5000) v = 5000 + A.ri(0, 1500);
-    if (v > 16000) v = 16000 - A.ri(0, 1500);
-    data.push(v);
+  let data;
+  if (realSeries && Object.keys(realSeries).length === 30) {
+    // Real path — keys are YYYY-MM-DD sorted ascending
+    data = Object.keys(realSeries).sort().map(k => realSeries[k]);
+  } else {
+    // Seeded fallback — smooth random walk
+    data = [];
+    let v = 8500;
+    for (let i = 0; i < days; i++) {
+      v += A.ri(-700, 900) + 30;
+      if (v < 5000) v = 5000 + A.ri(0, 1500);
+      if (v > 16000) v = 16000 - A.ri(0, 1500);
+      data.push(v);
+    }
   }
   const peak = Math.max(...data);
   const avg = Math.round(data.reduce((a, b) => a + b, 0) / data.length);
@@ -221,9 +270,11 @@ function renderChart() {
   document.getElementById('chart-today').textContent = A.fmtNum(today);
 
   const W = 800, H = 160, padX = 8, padY = 18;
-  const min = Math.min(...data) * 0.85;
-  const max = peak * 1.02;
-  const range = max - min;
+  // Guard against all-zero or constant data (when KV is empty post-deploy).
+  // Floor min at 0 and inflate max so the chart still has a visible Y axis.
+  const min = Math.max(0, Math.min(...data) * 0.85);
+  const max = peak > 0 ? peak * 1.02 : 10;
+  const range = (max - min) || 1;
   const xStep = (W - padX * 2) / (days - 1);
   const ptToXY = (val, i) => {
     const x = padX + i * xStep;
@@ -279,7 +330,57 @@ const EVENT_TYPES = [
   { type: 'fail',    icon: '✕', label: 'Failed: insufficient gas' },
 ];
 
-function renderFeed() {
+// Map server-side event types to UI category + icon used by feed rendering
+const EV_MAP = {
+  trade:          { type: 'trade',   icon: '⇄', label: 'Trade · USDC swap' },
+  deposit:        { type: 'deposit', icon: '↓', label: 'Gateway deposit' },
+  spend:          { type: 'cctp',    icon: '↗', label: 'Cross-chain Spend' },
+  bridge:         { type: 'cctp',    icon: '⇌', label: 'CCTP V2 mint' },
+  'agent-create': { type: 'agent',   icon: '⊞', label: 'Agent created' },
+  'agent-exec':   { type: 'agent',   icon: '◆', label: 'Agent execution' },
+  failure:        { type: 'fail',    icon: '✕', label: 'Failed transaction' },
+};
+
+function chainShortLabel(key) {
+  const m = { arc:'ARC', sepolia:'SEP', baseSepolia:'BASE', arbitrumSepolia:'ARB', optimismSepolia:'OP', avalancheFuji:'FUJI', polygonAmoy:'AMOY', unichainSepolia:'UNI' };
+  return m[key] || (key || '').toUpperCase().slice(0, 4);
+}
+
+function chainExplorerTx(key, hash) {
+  const c = A.CHAINS.find(x => x.key === key);
+  return c ? c.explorer + hash : '#';
+}
+
+async function renderFeed() {
+  // Try real data first
+  const real = await A.fetchRecent(14);
+  if (real && real.events && real.events.length >= 3) {
+    const items = real.events.map(e => {
+      const meta = EV_MAP[e.event] || { type: 'route', icon: '•', label: e.event };
+      const chainLabel = (A.CHAINS.find(c => c.key === e.chain)?.label) || e.chain;
+      return {
+        type: meta.type, icon: meta.icon, label: meta.label + (e.surface ? ' · via ' + e.surface : ''),
+        amount: e.amount != null ? Number(e.amount).toFixed(2) : null,
+        chainKey: e.chain, chainLabel,
+        hash: e.txHash, ago: Date.now() - e.ts,
+      };
+    });
+    document.getElementById('feed-card').innerHTML = items.map(it => `
+      <div class="feed-row">
+        <div class="feed-icon ${it.type}">${it.icon}</div>
+        <div class="feed-main">
+          <div class="feed-title">${it.label}</div>
+          <div class="feed-sub">${it.hash ? A.shortHash(it.hash) : 'no on-chain hash'} · ${it.chainLabel}</div>
+        </div>
+        <div class="feed-amt">${it.amount != null ? it.amount + ' USDC' : '—'}</div>
+        <div class="feed-chain">${chainShortLabel(it.chainKey)}</div>
+        <div class="feed-time">${A.fmtAgo(it.ago)}</div>
+        ${it.hash ? `<a class="feed-link" href="${chainExplorerTx(it.chainKey, it.hash)}" target="_blank" rel="noopener noreferrer">view ↗</a>` : `<span class="feed-link" style="opacity:.5;cursor:default">—</span>`}
+      </div>`).join('');
+    return;
+  }
+
+  // SEEDED FALLBACK PATH — when /api/metrics/recent isn't ready or has few events
   const items = [];
   let elapsed = 0;
   for (let i = 0; i < 14; i++) {
@@ -301,7 +402,7 @@ function renderFeed() {
         <div class="feed-sub">${A.shortHash(it.hash)} · ${it.chain.label}</div>
       </div>
       <div class="feed-amt">${it.type === 'fail' ? '—' : it.amount + ' USDC'}</div>
-      <div class="feed-chain">${it.chain.short === 'AR' ? 'ARC' : it.chain.short === 'SE' ? 'SEP' : it.chain.short === 'BA' ? 'BASE' : it.chain.short === 'AB' ? 'ARB' : it.chain.short === 'OP' ? 'OP' : it.chain.short === 'AV' ? 'FUJI' : it.chain.short === 'PO' ? 'AMOY' : 'UNI'}</div>
+      <div class="feed-chain">${chainShortLabel(it.chain.key)}</div>
       <div class="feed-time">${A.fmtAgo(it.ago)}</div>
       <a class="feed-link" href="${it.chain.explorer}${it.hash}" target="_blank" rel="noopener noreferrer">view ↗</a>
     </div>
@@ -361,15 +462,18 @@ function renderIncidentsMini() {
 }
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
-renderHeroAndStats();
-renderChart();
-renderFeed();
+async function refreshAll() {
+  const real = await renderHeroAndStats();
+  renderChart(real?.series);
+  renderFeed();
+}
+refreshAll();
 renderIncidentsMini();
 renderHealth();
 
-// Auto refresh
-setInterval(() => renderHealth(), 30_000);
-setInterval(() => { renderFeed(); renderHeroAndStats(); }, 90_000);
+// Auto refresh — real metrics endpoint is edge-cached 30s so this is cheap
+setInterval(renderHealth, 30_000);
+setInterval(refreshAll, 30_000);
 </script>
 
 </body>

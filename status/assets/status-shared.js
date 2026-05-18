@@ -101,6 +101,39 @@
     return 'op';
   }
 
+  // ── Real-metrics fetchers (cross-origin to arcswap.net/api/metrics/*)
+  // Both return null on failure so callers can fall back to seeded data.
+  async function fetchSummary() {
+    try {
+      const r = await fetch(API_BASE + '/api/metrics/summary', { cache: 'no-cache' });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j && j.ready ? j : null;
+    } catch { return null; }
+  }
+  async function fetchRecent(n = 20) {
+    try {
+      const r = await fetch(API_BASE + '/api/metrics/recent?n=' + n);
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j && j.ready ? j : null;
+    } catch { return null; }
+  }
+
+  // ── Live/Demo data-source badge
+  // Renders a small chip explaining whether numbers on the page come from
+  // real telemetry (/api/metrics/*) or seeded mock data. Call updateDataBadge
+  // whenever the status changes.
+  function mountDataBadge(opts = {}) {
+    const host = document.getElementById('data-badge');
+    if (!host) return;
+    const status = opts.status || 'probing'; // 'live' | 'demo' | 'probing'
+    const detail = opts.detail || '';
+    const cls = status === 'live' ? 'live' : status === 'demo' ? 'demo' : 'probing';
+    const label = status === 'live' ? 'LIVE · real telemetry' : status === 'demo' ? 'DEMO · seeded snapshot' : 'PROBING · /api/metrics';
+    host.innerHTML = `<span class="data-pill ${cls}"><span class="d"></span>${label}${detail ? ' · ' + detail : ''}</span>`;
+  }
+
   // ── Catalogs
   const SERVICES = [
     { id: 'frontend', name: 'ArcSwap Frontend',      probe: () => probeUrl((API_BASE || '') + '/', { method: 'HEAD', cache: 'no-store' }), uptime: 99.98, hint: 'Cloudflare Pages' },
@@ -205,6 +238,7 @@
     API_BASE, rng, ri, rf, pick,
     fmtNum, fmtUsd, fmtAgo, shortHash, hex, latBucket,
     probeUrl, probeRpc, classifyResult,
+    fetchSummary, fetchRecent, mountDataBadge,
     SERVICES, CHAINS,
     renderTopNav, renderSubNav, renderFooter, bootCommon,
     SUBNAV_PAGES,
