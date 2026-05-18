@@ -1080,9 +1080,15 @@ async function topupTargetBelowFloor(env, agent) {
  *   }
  */
 async function handleDebugFailures(req, kv, env) {
+  // Auth: prefer env.DEBUG_KEY (a separate one-time-use secret operators can
+  // add via Cloudflare Pages UI and delete after diagnostic), fall back to
+  // env.CRON_SECRET. This lets you run the diagnostic without rotating the
+  // production CRON_SECRET (which would also need to be rotated on the
+  // agent-cron worker, breaking the cron mid-day).
   const provided = req.headers.get('X-Debug-Key') || '';
-  if (!env.CRON_SECRET) return json(503, { error: 'cron_not_configured' });
-  if (provided !== env.CRON_SECRET) return json(401, { error: 'unauthorized' });
+  const expected = env.DEBUG_KEY || env.CRON_SECRET || '';
+  if (!expected) return json(503, { error: 'auth_not_configured', message: 'Set DEBUG_KEY (or CRON_SECRET) env var on Cloudflare Pages to enable this endpoint.' });
+  if (provided !== expected) return json(401, { error: 'unauthorized' });
 
   const url = new URL(req.url);
   const lookbackHours = Math.min(168, Math.max(1, parseInt(url.searchParams.get('hours') || '24', 10)));
