@@ -309,12 +309,11 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     </div>
   </div>
 
-  <!-- App Kit Swap status pill (compact, full-width across both grid columns) -->
+  <!-- App Kit degraded-state warning (full-width above grid). Only renders when
+       App Kit SDK fails to load OR config is missing — then Uniswap V2 fallback
+       kicks in, which on Arc Testnet has thin pools so user needs the heads-up.
+       In the normal ready state we render nothing (no news = good news). -->
   <div id="appkit-status" style="display:none;grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4"></div>
-
-  <!-- Gateway smart-routing hint: shown only when user has USDC scattered across
-       multiple chains (i.e. Unified Balance > local wallet) → encourage using /balance -->
-  <div id="gateway-hint" style="display:none;grid-column:1/-1;margin:0 0 8px;padding:9px 14px;border-radius:10px;font-size:12.5px;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.45;background:rgba(244,200,154,0.07);border:1px solid rgba(244,200,154,0.22);color:var(--text)"></div>
 
   <!-- LEFT: main trade form -->
   <div>
@@ -432,11 +431,6 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       <div class="rail-title">Activity</div>
       <div id="tx-list"><div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">No trades yet</div></div>
     </div>
-
-    <div class="rail-card">
-      <div class="rail-title">Liquidity (Arc)</div>
-      <div id="pool-stats"><div style="font-size:12px;color:var(--muted)">Loading…</div></div>
-    </div>
   </aside>
 </main>
 
@@ -461,32 +455,28 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   // ── App Kit Swap (Circle) — dynamic import so trade page still loads if SDK fails
   let APPKIT = null;
   const appkitPill = document.getElementById('appkit-status');
-  function setAppkitPill(state) {
+  // Only shows the pill in the *degraded* state (SDK failed / kit key missing).
+  // Healthy state = no banner; the rate row already says "Querying Circle App Kit…"
+  // during quotes, which is enough confirmation the integration is live.
+  function showAppkitFallbackPill() {
     if (!appkitPill) return;
-    if (state === 'ready') {
-      appkitPill.style.cssText = 'grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4;background:rgba(77,214,219,0.06);border:1px solid rgba(77,214,219,0.2);color:var(--text)';
-      appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--arc1);white-space:nowrap">// APP KIT</span>'
-        + '<span>Same-chain USDC ↔ EURC swaps routed through <strong>Circle App Kit</strong> — '
-        + '<a href="https://docs.arc.network/app-kit/swap" target="_blank" rel="noopener noreferrer" style="color:var(--arc1);text-decoration:underline">official liquidity</a>.</span>';
-    } else if (state === 'fallback') {
-      appkitPill.style.cssText = 'grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4;background:rgba(255,180,84,0.06);border:1px solid rgba(255,180,84,0.22);color:var(--text)';
-      appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#FFB454;white-space:nowrap">// LIMITED</span>'
-        + '<span>App Kit unavailable — using Uniswap V2 fallback (testnet pools may be thin).</span>';
-    }
+    appkitPill.style.cssText = 'grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4;background:rgba(255,180,84,0.06);border:1px solid rgba(255,180,84,0.22);color:var(--text)';
+    appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#FFB454;white-space:nowrap">// LIMITED</span>'
+      + '<span>App Kit unavailable — using Uniswap V2 fallback (testnet pools may be thin).</span>';
   }
   try {
     APPKIT = await import('/assets/arc-appkit.js?v=9.1.21');
     if (!APPKIT.isAppKitReady()) {
       console.warn('[arcswap] App Kit config missing or placeholder — same-chain swaps will fall back to Uniswap (likely empty pools).');
       APPKIT = null;
-      setAppkitPill('fallback');
+      showAppkitFallbackPill();
     } else {
       console.info('[arcswap] App Kit Swap ready — USDC/EURC swaps on Arc will route through Circle.');
-      setAppkitPill('ready');
+      // No pill in the healthy state — keep the chrome quiet.
     }
   } catch (e) {
     console.warn('[arcswap] App Kit module failed to load — falling back to Uniswap:', e?.message || e);
-    setAppkitPill('fallback');
+    showAppkitFallbackPill();
   }
   // Helper: check if a swap pair is supported by App Kit (Arc Testnet: USDC/EURC only)
   const APPKIT_TOKENS = new Set(['USDC', 'EURC']);
@@ -1694,40 +1684,6 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   }
   renderActivity();
 
-  // ── Pool stats (real on-chain) ───────────────────────
-  async function loadPoolStats() {
-    const box = document.getElementById('pool-stats');
-    const provider = rpcProvider('arc');
-    const factory = new Contract(CHAINS.arc.contracts.factory, ABIS.factory, provider);
-    const pairs = [
-      { a: TOKENS.arc.USDC, b: TOKENS.arc.EURC },
-      { a: TOKENS.arc.USDC, b: TOKENS.arc.USYC },
-      { a: TOKENS.arc.EURC, b: TOKENS.arc.USYC },
-    ];
-    const rows = [];
-    for (const p of pairs) {
-      try {
-        const addr = await factory.getPair(p.a.address, p.b.address);
-        if (!addr || addr === ZeroAddress) { rows.push({ sym: `${p.a.symbol}/${p.b.symbol}`, tvl: 'No pool' }); continue; }
-        const pair = new Contract(addr, ABIS.pair, provider);
-        const [t0, r] = await Promise.all([pair.token0(), pair.getReserves()]);
-        const isZeroA = t0.toLowerCase() === p.a.address.toLowerCase();
-        const ra = isZeroA ? r[0] : r[1];
-        const rb = isZeroA ? r[1] : r[0];
-        const vA = parseFloat(formatAmt(ra, p.a.decimals));
-        const vB = parseFloat(formatAmt(rb, p.b.decimals));
-        // Both are stablecoin-ish; approximate TVL in USD
-        const price = { USDC: 1, USYC: 1.08, EURC: 1.08 };
-        const tvl = vA * (price[p.a.symbol] || 1) + vB * (price[p.b.symbol] || 1);
-        rows.push({ sym: `${p.a.symbol}/${p.b.symbol}`, tvl: '$' + tvl.toLocaleString(undefined, { maximumFractionDigits: 0 }) });
-      } catch {
-        rows.push({ sym: `${p.a.symbol}/${p.b.symbol}`, tvl: '—' });
-      }
-    }
-    box.innerHTML = rows.map(r => `<div class="rail-row"><span class="l">${r.sym}</span><span class="v">${r.tvl}</span></div>`).join('');
-  }
-  loadPoolStats();
-
   // ── Gas / block tickers ──────────────────────────────
   async function tick() {
     try {
@@ -1743,11 +1699,11 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   // ── Wallet reactivity ────────────────────────────────
   ARC.wallet.on(async () => {
     await loadAllSources().catch(() => null);
-    updateBalances(); refreshExec(); renderActivity(); refreshGatewayHint();
+    updateBalances(); refreshExec(); renderActivity();
   });
   // Initial load — fires after autoConnect resolves (ArcUI.boot already awaited it).
   loadAllSources().catch(() => null).then(() => {
-    updateBalances(); refreshExec(); refreshGatewayHint();
+    updateBalances(); refreshExec();
   });
 
   // Auto-refresh sources every 15s while page is visible. Circle's operator
@@ -1759,41 +1715,16 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     if (_sourceRefreshTimer || !ARC.wallet.address) return;
     _sourceRefreshTimer = setInterval(() => {
       if (document.visibilityState !== 'visible' || !ARC.wallet.address) return;
-      loadAllSources().then(() => { updateBalances(); refreshGatewayHint(); }).catch(() => null);
+      loadAllSources().then(() => { updateBalances(); }).catch(() => null);
     }, 15000);
   }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && ARC.wallet.address) {
-      loadAllSources().then(() => { updateBalances(); refreshGatewayHint(); }).catch(() => null);
+      loadAllSources().then(() => { updateBalances(); }).catch(() => null);
     }
   });
   ARC.wallet.on(() => { if (ARC.wallet.address) startSourceAutoRefresh(); });
   if (ARC.wallet.address) startSourceAutoRefresh();
-
-  // ── Gateway hint pill ─────────────────────────────────
-  // Now that sources are surfaced inline in the dropdown, the pill becomes a
-  // friendly callout that nudges users towards using the new picker.
-  const gwHintEl = document.getElementById('gateway-hint');
-  function hideGatewayHint() { if (gwHintEl) gwHintEl.style.display = 'none'; }
-  async function refreshGatewayHint() {
-    if (!ARC.gateway || !gwHintEl) return;
-    if (!ARC.wallet.address) { hideGatewayHint(); return; }
-    try {
-      const gateways = [...state.sources.values()].filter(s => s.kind === 'gateway' && s.canonical > 0n);
-      if (!gateways.length) { hideGatewayHint(); return; }
-      const totalCanonical = gateways.reduce((a, b) => a + b.canonical, 0n);
-      const total = ARC.formatAmt(totalCanonical, 6, 2);
-      const n = gateways.length;
-      gwHintEl.style.display = 'flex';
-      gwHintEl.innerHTML = `
-        <span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#F4C89A;white-space:nowrap">// GATEWAY ⚡</span>
-        <span>${total} USDC across ${n} chain${n!==1?'s':''} ready to spend. Pick "<strong>Gateway ⚡</strong>" sources in the dropdown above for instant cross-chain swaps. <a href="/balance" style="color:#F4C89A;text-decoration:underline;font-weight:600">Manage ↗</a></span>`;
-    } catch (e) {
-      console.warn('[trade] gateway hint skipped:', e?.message);
-      hideGatewayHint();
-    }
-  }
-  setInterval(refreshGatewayHint, 30000);
 })();
 </script>
 </body>
