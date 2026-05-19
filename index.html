@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
 <title>ArcSwap — One USDC. One Balance. Everywhere.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@800;900&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -134,10 +134,12 @@ nav.scrolled{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bo
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--arc4);animation:pulse-dot 2s ease-in-out infinite}
 @keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,178,.4)}50%{opacity:.8;box-shadow:0 0 0 6px rgba(0,255,178,0)}}
 .hero-title{
-  /* Archivo Black is single-weight 900 designed only for display use —
-     true heavy chunky look, much weightier than Space Grotesk 700 caps. */
-  font-family:'Archivo Black',var(--display),sans-serif;
-  font-size:clamp(48px,7.6vw,104px);font-weight:900;line-height:1;
+  /* Inter 900 — pre-Arc.io-design hero. Inter has true 100-900 weights
+     (DM Sans + Space Grotesk both cap at 700, Archivo Black is too
+     condensed). Inter Black gives the open + humanist heavy display
+     look from the version Qui remembered. */
+  font-family:'Inter',var(--display),sans-serif;
+  font-size:clamp(40px,6.4vw,80px);font-weight:900;line-height:1.05;
   letter-spacing:-.035em;margin-bottom:24px;text-transform:uppercase;
   color:var(--text);
   animation:fade-up .8s .1s ease both;
