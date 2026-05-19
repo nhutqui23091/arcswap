@@ -11,6 +11,7 @@
 <title>Unified Balance — ArcSwap</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.7.1"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -31,26 +32,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:h
     linear-gradient(180deg,#0A1628 0%,#0E1F39 50%,#0A1628 100%);
 }
 
-/* NAVBAR — unified with /trade & /agent (matches arc-ui.css render) */
-nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .3s;gap:16px}
-nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;cursor:pointer}
-.logo-name{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
-.logo-badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;background:rgba(77,214,219,.15);border:1px solid rgba(77,214,219,.35);border-radius:20px;color:var(--arc2);font-family:var(--mono)}
-.nav-links{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
-.nav-link{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none}
-.nav-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
-.nav-link.active{color:var(--text);background:rgba(255,255,255,.07)}
-.nav-link.new-pill{position:relative}
-.nav-link.new-pill::after{content:'NEW';position:absolute;top:-3px;right:-12px;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 5px;border-radius:6px}
-.nav-right{display:flex;align-items:center;gap:10px}
-.testnet-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
-.tnet-dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4);animation:tnet-blink 2s ease-in-out infinite}
-@keyframes tnet-blink{0%,100%{opacity:1}50%{opacity:.3}}
-.btn-ghost{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font);text-decoration:none}
-.btn-ghost:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.32)}
+/* Top nav removed — sidebar provides chrome via ArcUI.bootApp('balance'). */
 
-.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:110px 24px 80px}
+.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:44px 28px 80px}
+@media(max-width:900px){.wrap{padding:72px 18px 60px}}
 
 .hero-strip{margin-bottom:24px}
 .hero-strip h1{font-family:var(--display);font-size:clamp(40px,5.5vw,72px);letter-spacing:-.03em;font-weight:700;line-height:1;text-transform:uppercase}
@@ -144,7 +129,6 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
 .how-card p{font-size:13.5px;color:var(--muted);line-height:1.6}
 
 @media(max-width:768px){
-  .nav-links{display:none}
   .balance-amount{font-size:48px}
   .chain-row{grid-template-columns:1fr 1fr;row-gap:8px}
   .chain-row.header{display:none}
@@ -154,28 +138,7 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
 </head>
 <body>
 
-<div class="aurora-bg"></div>
-
-<!-- NAVBAR — kept identical to the shared arc-ui.js render so /trade, /agent,
-     /balance, /token all share the same chrome. -->
-<nav>
-  <a class="nav-logo" href="/">
-    <span class="logo-name">ArcSwap</span>
-    <span class="logo-badge">TESTNET</span>
-  </a>
-  <div class="nav-links">
-    <a class="nav-link" href="/trade">Trade</a>
-    <a class="nav-link active" href="/balance">Balance</a>
-    <a class="nav-link new-pill" href="/agent">Agent</a>
-    <a class="nav-link" href="/token">Create Token</a>
-    <a class="nav-link" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
-    <a class="nav-link" href="/blog">Blog</a>
-  </div>
-  <div class="nav-right">
-    <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
-    <button id="gw-connect-btn" class="btn-ghost" type="button">Connect Wallet</button>
-  </div>
-</nav>
+<!-- aurora + cursor + sidebar are injected by ArcUI.bootApp('balance') below -->
 
 <div class="wrap">
 
@@ -347,10 +310,13 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
         referrerpolicy="no-referrer"></script>
 <script src="/assets/arc-core.js?v=9.6.2"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
+<script src="/assets/arc-ui.js?v=9.7.1"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
   if (!ARC?.gateway) { console.error('ARC.gateway missing'); return; }
+  // Sidebar chrome (aurora + cursor + nav + wallet button live in sidebar foot)
+  await ArcUI.bootApp('balance');
 
   // ───── State ─────
   const state = {
@@ -371,28 +337,22 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
 
   const chainKeys = ARC.gateway.gatewayChains();
 
-  // ───── Wallet button ─────
-  const connectBtn = document.getElementById('gw-connect-btn');
-  function refreshConnectBtn() {
+  // ───── Wallet ─────
+  // Connect/disconnect lives in the sidebar foot (rendered by ArcUI.bootApp).
+  // We just need to react to state changes here so the page refreshes when
+  // the user connects or disconnects from the sidebar button.
+  ARC.wallet.on(() => {
     const s = ARC.wallet.snapshot();
     if (s.connected) {
-      connectBtn.textContent = ARC.shortAddr(s.address);
-      connectBtn.title = s.address;
+      state.addr = s.address;
+      refreshAll();
     } else {
-      connectBtn.textContent = 'Connect Wallet';
-      connectBtn.title = '';
+      state.addr = null;
+      state.balances = [];
+      renderTable();
+      refreshTotal();
     }
-  }
-  connectBtn.onclick = async () => {
-    const s = ARC.wallet.snapshot();
-    if (s.connected) { ARC.wallet.disconnect(); state.addr = null; state.balances = []; renderTable(); refreshTotal(); refreshConnectBtn(); return; }
-    try { await ARC.wallet.connect(); }
-    catch (e) { alert('Connect failed: ' + ARC.explainError(e)); return; }
-    state.addr = ARC.wallet.address;
-    refreshConnectBtn();
-    refreshAll();
-  };
-  ARC.wallet.on(refreshConnectBtn);
+  });
 
   // ───── Modal helpers ─────
   function openModal(id) { document.getElementById(id).classList.add('show'); }
@@ -623,8 +583,14 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
   });
 
   // ───── Top-bar Spend button ─────
-  document.getElementById('ub-spend-top').onclick = () => {
-    if (!state.addr) { connectBtn.click(); return; }
+  document.getElementById('ub-spend-top').onclick = async () => {
+    if (!state.addr) {
+      try { await ARC.wallet.connect(); }
+      catch (e) { ArcUI.toast('error', 'Connect failed', ARC.explainError(e)); return; }
+      state.addr = ARC.wallet.address;
+      refreshAll();
+      return;
+    }
     openSpendModal();
   };
 
@@ -864,15 +830,13 @@ nav.scrolled,nav{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);borde
   // ───── Init ─────
   renderTable();
   refreshTotal();
-  refreshConnectBtn();
-  await ARC.wallet.autoConnect().catch(() => null);
+  // ArcUI.bootApp already kicked off autoConnect; check if it landed in time.
   if (ARC.wallet.address) {
     state.addr = ARC.wallet.address;
-    refreshConnectBtn();
     refreshAll();
     startAutoRefresh();
   }
-  // Also start the timer when the user connects later
+  // Also start the auto-refresh timer when the user connects later
   ARC.wallet.on(() => { if (ARC.wallet.address) { state.addr = ARC.wallet.address; startAutoRefresh(); } });
 })();
 </script>

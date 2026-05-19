@@ -455,11 +455,8 @@
       side.innerHTML = `
         <div class="arc-side-head">
           <a class="arc-side-brand" href="/" aria-label="ArcSwap home">
-            <span class="arc-side-logo">A</span>
-            <span class="arc-side-brandtext">
-              <span class="arc-side-name">ArcSwap</span>
-              <span class="arc-side-pill">TESTNET</span>
-            </span>
+            <span class="arc-side-name">ArcSwap</span>
+            <span class="arc-side-pill">TESTNET</span>
           </a>
           <button class="arc-side-toggle" type="button" aria-label="Toggle sidebar">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">

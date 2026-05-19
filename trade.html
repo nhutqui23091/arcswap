@@ -10,10 +10,11 @@
 <title>Trade · Swap & Bridge — ArcSwap</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.6.4"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.7.1"/>
 <style>
-main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:110px 20px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
-@media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding-top:100px}}
+main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:44px 28px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
+@media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding:40px 20px 80px}}
+@media(max-width:900px){main.trade-wrap{padding-top:72px}}
 
 .hero-strip{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:4px}
 .hero-strip h1{font-size:clamp(40px,5.5vw,72px);letter-spacing:-.035em;font-weight:900;line-height:1;text-transform:uppercase}
@@ -439,7 +440,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/arc-core.js?v=9.6.2"></script>
-<script src="/assets/arc-ui.js?v=9.6.6"></script>
+<script src="/assets/arc-ui.js?v=9.7.1"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
@@ -450,7 +451,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   const { CHAINS, TOKENS, ABIS, rpcProvider, wallet, formatAmt, parseAmt, shortAddr, addrToBytes32, ensureAllowance, tokenBalance, sendAndWait, explainError } = ARC;
   const { Contract, Interface, getAddress, isAddress, ZeroAddress } = ethers;
 
-  await ArcUI.boot('trade');
+  await ArcUI.bootApp('trade');
 
   // ── App Kit Swap (Circle) — dynamic import so trade page still loads if SDK fails
   let APPKIT = null;

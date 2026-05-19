@@ -10,6 +10,7 @@
 <title>ArcSwap — Token Deployer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.7.1"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -36,47 +37,16 @@ p,span,div,button,input,select,textarea,a{font-family:var(--font)}
 .arc-divider{height:1px;background:linear-gradient(90deg,transparent 0%,rgba(0,207,255,.35) 20%,rgba(0,207,255,.35) 80%,transparent 100%);border:none;margin:18px 0}
 
 html{height:100%}
-body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh;cursor:none}
-.cursor-dot{position:fixed;width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9999;mix-blend-mode:difference}
-.cursor-ring{position:fixed;width:36px;height:36px;border:1.5px solid rgba(255,255,255,.4);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9998;transition:all .12s ease}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");opacity:.35;pointer-events:none;z-index:9997}
-.aurora{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
-  background:
-    radial-gradient(ellipse 140% 60% at 50% 110%, rgba(244,200,154,0.28) 0%, rgba(244,200,154,0.08) 35%, transparent 60%),
-    radial-gradient(ellipse 120% 40% at 50% 90%, rgba(77,214,219,0.22) 0%, rgba(74,123,236,0.10) 35%, transparent 65%),
-    linear-gradient(180deg, #0A1628 0%, #0E1F39 40%, #133155 75%, #1E4A6E 100%);
-}
-.orb{position:absolute;border-radius:50%;filter:blur(150px);animation:orb-drift 40s ease-in-out infinite alternate;mix-blend-mode:screen}
-.o1{width:720px;height:500px;background:var(--arc1);opacity:.06;top:-240px;left:-200px;animation-duration:40s}
-.o2{width:620px;height:520px;background:var(--arc2);opacity:.05;top:-160px;right:-220px;animation-duration:46s;animation-delay:-10s}
-.o3{display:none}
-@keyframes orb-drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,20px) scale(1.06)}}
+/* Body styling is provided by arc-ui.css (noise overlay, font, cursor-none).
+   Local override: keep min-height:100vh so token form fills tall screens. */
+body{min-height:100vh}
 
-/* NAVBAR — unified with /trade & /agent (matches arc-ui.css render) */
-nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;transition:all .3s;gap:16px}
-nav.scrolled{background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-.logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer}
-.logo-name{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
-.logo-badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;background:rgba(77,214,219,.15);border:1px solid rgba(77,214,219,.35);border-radius:20px;color:var(--arc2);font-family:var(--mono)}
-.nav-tabs{display:flex;align-items:center;gap:4px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
-.nav-tab{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;text-decoration:none;border:none;background:none;cursor:pointer;font-family:var(--font)}
-.nav-tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
-.nav-tab.active{color:var(--text);background:rgba(255,255,255,.07)}
-.nav-tab.faucet-tab{color:var(--muted);background:none;border:none}
-.nav-tab.faucet-tab:hover{color:var(--arc2);background:rgba(0,207,255,.06)}
-.nav-tab.new-pill{position:relative}
-.nav-tab.new-pill::after{content:'NEW';position:absolute;top:-3px;right:-12px;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 5px;border-radius:6px}
-.nav-right{display:flex;align-items:center;gap:10px}
-.testnet-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--mono);color:var(--arc4);background:rgba(0,255,178,.08);border:1px solid rgba(0,255,178,.2)}
-.tnet-dot{width:5px;height:5px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4);animation:blink 2s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-#wallet-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font)}
-#wallet-btn:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.32)}
-#wallet-btn.connected{background:rgba(77,214,219,0.10);border-color:rgba(77,214,219,0.3);color:var(--text)}
-.w-dot{width:7px;height:7px;border-radius:50%;background:var(--arc4);flex-shrink:0;box-shadow:0 0 8px var(--arc4)}
+/* Top nav + inline aurora/cursor removed — sidebar shell (ArcUI.bootApp)
+   injects all three. */
 
 /* PAGE LAYOUT */
-.page{position:relative;z-index:1;min-height:100vh;padding:88px 24px 60px;max-width:1100px;margin:0 auto}
+.page{position:relative;z-index:1;min-height:100vh;padding:44px 28px 60px;max-width:1100px;margin:0 auto}
+@media(max-width:900px){.page{padding:72px 18px 50px}}
 .page-header{text-align:center;margin-bottom:28px}
 .page-badge{display:inline-flex;align-items:center;gap:8px;padding:4px 12px;border-radius:100px;background:rgba(77,214,219,.12);border:1px solid rgba(77,214,219,.3);font-size:11px;font-weight:600;color:var(--arc1);letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px}
 .page-title{font-size:clamp(40px,5.5vw,72px);font-weight:900;letter-spacing:-.035em;line-height:1;margin-bottom:10px;text-transform:uppercase;color:var(--text)}
@@ -205,30 +175,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 </style>
 </head>
 <body>
-<div class="cursor-dot" id="cdot"></div>
-<div class="cursor-ring" id="cring"></div>
-<div class="aurora"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
-
-<!-- NAVBAR — kept identical to the shared arc-ui.js render so /trade, /agent,
-     /balance, /token all share the same chrome. -->
-<nav>
-  <a class="logo-wrap nav-logo" href="/" style="text-decoration:none">
-    <span class="logo-name">ArcSwap</span>
-    <span class="logo-badge">TESTNET</span>
-  </a>
-  <div class="nav-tabs">
-    <a class="nav-tab" href="/trade">Trade</a>
-    <a class="nav-tab" href="/balance">Balance</a>
-    <a class="nav-tab new-pill" href="/agent">Agent</a>
-    <a class="nav-tab active" href="/token">Create Token</a>
-    <a class="nav-tab faucet-tab" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
-    <a class="nav-tab" href="/blog">Blog</a>
-  </div>
-  <div class="nav-right">
-    <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
-    <button id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
-  </div>
-</nav>
+<!-- aurora + cursor + sidebar are injected by ArcUI.bootApp('token') below -->
 
 <!-- TOAST -->
 <div class="toast" id="toast">
@@ -402,12 +349,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   </div>
 </div>
 
+<!-- Sidebar + shared chrome (aurora, cursor, wallet button in foot) -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
+        integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+<script src="/assets/arc-core.js?v=9.6.2"></script>
+<script src="/assets/arc-ui.js?v=9.7.1"></script>
 <script>
-/* CURSOR */
-const cdot=document.getElementById('cdot'),cring=document.getElementById('cring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cdot.style.left=mx+'px';cdot.style.top=my+'px'});
-(function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;cring.style.left=rx+'px';cring.style.top=ry+'px';requestAnimationFrame(animRing)})();
+/* Boot sidebar chrome — fires aurora, cursor, sidebar render, and wallet
+   autoconnect. Wallet state below is bridged from ARC.wallet so the
+   page's existing flow (walletAddr / currentProvider) keeps working. */
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.ArcUI?.bootApp) ArcUI.bootApp('token');
+});
 
 /* ============================================================
    STATE
@@ -511,55 +466,70 @@ function updateDeployBtn(){
 }
 
 /* ============================================================
-   WALLET
+   WALLET — routed through ARC.wallet so the sidebar's Connect button
+   and this page's Deploy button share a single source of truth. The
+   sidebar handles the picker UI + auto-reconnect; we only sync state
+   (walletAddr, currentProvider) and prompt the chain switch.
 ============================================================ */
-async function connectWallet(){
-  if(walletAddr){
-    walletAddr=null;currentProvider=null;
-    document.getElementById('wallet-btn').textContent='Connect Wallet';
-    document.getElementById('wallet-btn').className='';
-    updateDeployBtn();return;
-  }
-  const prov = window.okexchain || window.ethereum;
-  if(!prov){showToast('❌','No wallet','Install MetaMask or OKX Wallet first.');return}
-  try{
-    const accounts = await prov.request({method:'eth_requestAccounts'});
-    if(!accounts.length) return;
-    walletAddr = accounts[0];
-    currentProvider = prov;
+async function ensureArcChain(prov){
+  try {
     const chainId = await prov.request({method:'eth_chainId'});
-    if(chainId!==ARC_CHAIN.chainId){
-      try{await prov.request({method:'wallet_switchEthereumChain',params:[{chainId:ARC_CHAIN.chainId}]});}
-      catch(e){
-        if(e.code===4902||e.code===-32603)
-          await prov.request({method:'wallet_addEthereumChain',params:[ARC_CHAIN]});
-      }
+    if (chainId === ARC_CHAIN.chainId) return;
+    try { await prov.request({method:'wallet_switchEthereumChain',params:[{chainId:ARC_CHAIN.chainId}]}); }
+    catch (e) {
+      if (e.code === 4902 || e.code === -32603) {
+        await prov.request({method:'wallet_addEthereumChain',params:[ARC_CHAIN]});
+      } else { throw e; }
     }
-    const btn=document.getElementById('wallet-btn');
-    btn.innerHTML=`<div class="w-dot"></div>${walletAddr.slice(0,6)}...${walletAddr.slice(-4)}`;
-    btn.className='connected';
-    showToast('✅','Wallet connected',walletAddr.slice(0,6)+'...'+walletAddr.slice(-4));
-    prov.on('accountsChanged',a=>{if(!a.length){walletAddr=null;btn.textContent='Connect Wallet';btn.className='';updateDeployBtn();}});
-    prov.on('chainChanged',()=>window.location.reload());
-    updateDeployBtn();
-  }catch(e){showToast('❌','Rejected','Connection cancelled.');}
+  } catch (e) { console.warn('[token] chain switch:', e?.message || e); }
 }
 
-async function tryAutoReconnect(){
-  const prov = window.okexchain || window.ethereum;
-  if(!prov) return;
-  try{
-    const accounts = await prov.request({method:'eth_accounts'});
-    if(!accounts||!accounts.length) return;
-    walletAddr=accounts[0]; currentProvider=prov;
-    const btn=document.getElementById('wallet-btn');
-    btn.innerHTML=`<div class="w-dot"></div>${walletAddr.slice(0,6)}...${walletAddr.slice(-4)}`;
-    btn.className='connected';
+async function connectWallet(){
+  // Called from Deploy button when wallet isn't connected yet.
+  if (!window.ARC?.wallet) { showToast('❌','Wallet system not ready','Try again in a moment.'); return; }
+  if (walletAddr) {
+    // Toggle disconnect
+    window.ARC.wallet.disconnect();
+    walletAddr = null; currentProvider = null;
     updateDeployBtn();
-    prov.on('accountsChanged',a=>{if(!a.length){walletAddr=null;btn.textContent='Connect Wallet';btn.className='';updateDeployBtn();}});
-    prov.on('chainChanged',()=>window.location.reload());
-  }catch(e){}
+    return;
+  }
+  try {
+    await window.ARC.wallet.connect();
+  } catch (e) {
+    showToast('❌','Rejected', window.ARC?.explainError?.(e) || 'Connection cancelled.');
+    return;
+  }
+  // The wallet listener below will sync walletAddr + currentProvider once
+  // the connection resolves; nothing else to do here.
 }
+
+/* Subscribe to ARC.wallet state changes — fires on connect, disconnect,
+   account switch. Keeps token.html's local walletAddr in sync with the
+   sidebar's Connect button. */
+function bindArcWallet(){
+  if (!window.ARC?.wallet) return false;
+  const sync = async () => {
+    const s = window.ARC.wallet.snapshot();
+    if (s.connected) {
+      walletAddr = s.address;
+      currentProvider = window.ARC.wallet.provider || window.ethereum;
+      if (currentProvider) await ensureArcChain(currentProvider);
+      updateDeployBtn();
+    } else {
+      walletAddr = null;
+      currentProvider = null;
+      updateDeployBtn();
+    }
+  };
+  window.ARC.wallet.on(sync);
+  sync(); // pick up state if autoConnect already finished
+  return true;
+}
+
+// Legacy stub — kept so older callers don't error. ARC.wallet.autoConnect
+// runs inside ArcUI.bootApp; we just hook into the state.
+async function tryAutoReconnect(){ /* no-op — handled by bindArcWallet */ }
 
 /* ============================================================
    ERC-20 BYTECODE GENERATION
@@ -846,7 +816,13 @@ async function rpcCall(method, params){
 
 /* INIT */
 updatePreview();
-tryAutoReconnect();
+// Bind to ARC.wallet once the core script has loaded. ArcUI.bootApp is
+// triggered on DOMContentLoaded above; ARC may not be ready yet on first
+// tick, so we retry briefly until the global appears.
+(function waitArc(tries = 30){
+  if (bindArcWallet()) return;
+  if (tries > 0) setTimeout(() => waitArc(tries - 1), 100);
+})();
 </script>
 
 <!-- DEPLOY SUCCESS MODAL -->
