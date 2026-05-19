@@ -85,18 +85,24 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 @keyframes orb-drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,20px) scale(1.06)}}
 
 /* ===== NAVBAR ===== */
+/* 3-column grid so the center column (.nav-links) is anchored to viewport center
+   regardless of how wide .nav-logo or .nav-right grow. Plain flex space-between
+   pushes the middle off-center when sides have different widths. */
 nav{
   position:fixed;top:0;left:0;right:0;z-index:1000;
   padding:16px 24px;
-  display:flex;align-items:center;justify-content:space-between;
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
   transition:all .3s;
 }
+nav .nav-logo{justify-self:start}
+nav .nav-links{justify-self:center}
+nav .nav-right{justify-self:end}
 nav.scrolled{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
 .logo-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--arc1),var(--arc2));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 18px rgba(77,214,219,.28)}
 .logo-mark svg{width:22px;height:22px}
-.logo-name{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
-.logo-badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;background:rgba(77,214,219,0.15);border:1px solid rgba(77,214,219,0.35);border-radius:20px;color:var(--arc1);font-family:var(--mono)}
+.logo-name{font-family:var(--display);font-size:26px;font-weight:700;letter-spacing:-.035em;color:var(--text);line-height:1}
+.logo-badge{font-size:9px;font-weight:700;letter-spacing:.18em;padding:2.5px 7px;background:rgba(77,214,219,0.10);border:1px solid rgba(77,214,219,0.32);border-radius:20px;color:var(--arc1);font-family:var(--mono);line-height:1.2}
 .nav-links{display:flex;align-items:center;gap:4px}
 .nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none;background:none;border:none;font-family:var(--font)}
 .nav-link:hover{color:var(--text);background:var(--surface)}
@@ -127,8 +133,9 @@ nav.scrolled{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bo
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--arc4);animation:pulse-dot 2s ease-in-out infinite}
 @keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,178,.4)}50%{opacity:.8;box-shadow:0 0 0 6px rgba(0,255,178,0)}}
 .hero-title{
-  font-size:clamp(40px,6.4vw,80px);font-weight:900;line-height:1.05;
-  letter-spacing:-.035em;margin-bottom:24px;text-transform:uppercase;
+  font-family:var(--display);
+  font-size:clamp(44px,7vw,92px);font-weight:700;line-height:1.02;
+  letter-spacing:-.045em;margin-bottom:24px;text-transform:uppercase;
   color:var(--text);
   animation:fade-up .8s .1s ease both;
 }
@@ -343,7 +350,7 @@ section{position:relative;z-index:1}
 /* ===== FOOTER (Arc-inspired: //SECTION mono labels) ===== */
 footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(--border);background:linear-gradient(180deg,rgba(10,22,40,0.4) 0%,rgba(10,22,40,0.85) 100%)}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:64px;margin-bottom:56px}
-.footer-brand .logo-name{font-size:22px;margin-bottom:12px;display:block}
+.footer-brand .logo-name{font-size:22px;margin-bottom:12px;display:block;font-family:var(--display);font-weight:700;letter-spacing:-.035em}
 .footer-tagline{font-size:14px;color:var(--muted);line-height:1.7;max-width:300px;margin-top:12px}
 .footer-col-title{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--arc1);margin-bottom:22px;font-family:var(--mono)}
 .footer-col-title::before{content:'// ';color:rgba(140,160,189,.55);font-weight:400}
@@ -397,8 +404,9 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
 
 <!-- NAVBAR -->
 <nav id="navbar">
-  <a class="nav-logo" href="#">
-    <span class="logo-name" style="font-size:22px;font-weight:900;letter-spacing:-.5px">ArcSwap</span>
+  <a class="nav-logo" href="/">
+    <span class="logo-name">ArcSwap</span>
+    <span class="logo-badge">TESTNET</span>
   </a>
   <div class="nav-links">
     <a class="nav-link" href="/trade">Trade</a>
@@ -773,8 +781,8 @@ HIDDEN_END -->
     <div class="footer-grid">
       <div class="footer-brand">
         <div class="nav-logo" style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          
-          <span class="logo-name" style="font-size:18px">ArcSwap</span>
+          <span class="logo-name" style="font-size:20px">ArcSwap</span>
+          <span class="logo-badge">TESTNET</span>
         </div>
         <p class="footer-tagline">One USDC, one balance, everywhere — unified stablecoin spend across chains via Circle Gateway and CCTP V2. Built on Arc Testnet, now with an Auto-Replenish Agent in preview.</p>
       </div>

@@ -34,9 +34,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:h
   background:radial-gradient(ellipse 100% 40% at 50% 0%,rgba(74,123,236,0.10) 0%,transparent 60%),
   linear-gradient(180deg,#0A1628 0%,#0E1F39 60%,#0A1628 100%)}
 
-nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+nav .nav-logo{justify-self:start}
+nav .nav-links{justify-self:center}
+nav .nav-right{justify-self:end}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
-.logo-name{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--text)}
+.logo-name{font-family:var(--display);font-size:26px;font-weight:700;letter-spacing:-.035em;color:var(--text);line-height:1}
 .logo-tag{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;border-left:1px solid var(--border);padding-left:10px;margin-left:4px}
 .nav-links{display:flex;align-items:center;gap:4px}
 .nav-link{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-decoration:none}
