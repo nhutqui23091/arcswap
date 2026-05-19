@@ -169,7 +169,7 @@
     return `
       <nav class="topnav" id="topnav">
         <a class="nav-logo" href="/">
-          <img class="logo-img" src="/assets/wordmark-arcswap.png?v=1" alt="ArcSwap" width="101" height="22"/>
+          <span class="logo-name">ArcSwap</span>
           <span class="logo-sub">Status</span>
         </a>
         <div class="nav-right">
