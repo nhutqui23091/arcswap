@@ -39,6 +39,7 @@ nav.topnav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 24px;di
 nav.topnav.scrolled{background:rgba(10,22,40,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
 .nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer}
 .logo-name{font-family:'Space Grotesk',system-ui,sans-serif;font-size:22px;font-weight:700;letter-spacing:-.035em;color:var(--text);line-height:1}
+.logo-img{height:22px;width:auto;display:block;flex-shrink:0;user-select:none;-webkit-user-drag:none}
 .logo-sub{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);margin-left:2px}
 .logo-badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;background:rgba(77,214,219,.15);border:1px solid rgba(77,214,219,.35);border-radius:20px;color:var(--arc1);font-family:var(--mono)}
 .nav-right{display:flex;align-items:center;gap:10px}
