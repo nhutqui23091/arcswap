@@ -34,7 +34,7 @@
       const tabs = navTabs(active);
       nav.innerHTML = `
         <a class="nav-logo" href="/">
-          <span class="logo-name">ArcSwap</span>
+          <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=1" alt="ArcSwap" width="129" height="28"/>
           <span class="logo-badge">TESTNET</span>
         </a>
         <div class="nav-tabs">
@@ -455,7 +455,7 @@
       side.innerHTML = `
         <div class="arc-side-head">
           <a class="arc-side-brand" href="/" aria-label="ArcSwap home">
-            <span class="arc-side-name">ArcSwap</span>
+            <img class="arc-side-logo" src="/assets/logos/wordmark-arcswap.png?v=1" alt="ArcSwap" width="138" height="30"/>
             <span class="arc-side-pill">TESTNET</span>
           </a>
           <button class="arc-side-toggle" type="button" aria-label="Toggle sidebar">
