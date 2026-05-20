@@ -179,18 +179,18 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <p>What if your USDC just <em>worked</em>? Whatever chain it's sitting on, you can spend it on Arc — instantly. Whatever stablecoin you need, you can swap into it. Whatever token you want to launch, you ship it without a deploy script. One interface, one balance, one mental model.</p>
 
-    <p>That's ArcSwap today. Three public products, tightly integrated:</p>
+    <p>That's ArcSwap today. Three public products plus an Auto-Replenish Agent in preview, all tightly integrated:</p>
 
     <div class="feature-grid">
       <div class="fcard">
         <span class="fcard-tag c2">BALANCE</span>
         <div class="fcard-name">Unified Balance</div>
-        <div class="fcard-desc">Powered by Circle Gateway. Spend USDC on Arc using funds sitting on Ethereum, Base, Arbitrum, Avalanche, Optimism, Polygon — no manual bridge.</div>
+        <div class="fcard-desc">Powered by Circle Gateway. Spend USDC on Arc using funds sitting on Ethereum, Base, Arbitrum, Avalanche, Optimism, Polygon, Unichain — no manual bridge.</div>
       </div>
       <div class="fcard">
         <span class="fcard-tag c1">TRADE</span>
         <div class="fcard-name">Native Swap + CCTP</div>
-        <div class="fcard-desc">Convert USDC ↔ EURC instantly via Uniswap V2 on Arc, plus burn-and-mint CCTP V2 bridging in the same surface.</div>
+        <div class="fcard-desc">Convert USDC ↔ EURC instantly via Circle App Kit Swap on Arc, plus burn-and-mint CCTP V2 bridging in the same surface.</div>
       </div>
       <div class="fcard">
         <span class="fcard-tag c3">CREATE</span>
@@ -199,7 +199,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
       </div>
     </div>
 
-    <p style="font-size:14.5px;color:var(--muted);font-style:italic">Vault (USYC yield) and Pool (LP) are in private beta — see <em>What's coming</em> below.</p>
+    <p style="font-size:14.5px;color:var(--muted);font-style:italic">The <strong>Auto-Replenish Agent</strong> is in preview — sign once, your agent keeps any wallet topped up via Circle Programmable Wallets. Daily safety cap, revocable anytime. See <em>What's coming</em> below.</p>
 
     <h2>Why <em>Arc</em>, specifically</h2>
 
@@ -247,13 +247,13 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <table class="t">
       <tr><th>When</th><th>What</th></tr>
-      <tr><td>Q2 2026</td><td>Unified Balance polish — more source chains, intent-style "spend X USDC anywhere" flow, Gateway-native deposits to ArcSwap features</td></tr>
-      <tr><td>Q3 2026</td><td>Vault GA — USYC tokenized T-bill yield, position history, redemption queue (private beta now)</td></tr>
-      <tr><td>Q4 2026</td><td>Pool GA + StableFX — RFQ-driven USDC ⇄ EURC PvP settlement via Arc FxEscrow</td></tr>
-      <tr><td>2027</td><td>Multi-vault yield products + B2B Memo references + <strong>mainnet</strong></td></tr>
+      <tr><td>Q2 2026 · now</td><td>Balance · Agent · Trade — UX deepening. Polish the three live surfaces. Intent / approval / revoke flows, quote &amp; route polish. No new product surfaces.</td></tr>
+      <tr><td>Q3 2026</td><td>Dashboard GA — operator control center moves from <em>soon</em> to public. Audit kickoff. Mainnet candidate build.</td></tr>
+      <tr><td>Q4 2026</td><td>Circle Wallets + Mobile — Programmable Wallets onboarding for non-crypto users. WalletConnect / Reown for mobile. Audit completion.</td></tr>
+      <tr><td>2027+</td><td>StableFX (RFQ-driven USDC ⇄ EURC ⇄ USDP via Arc <code>FxEscrow</code>) + Nanopayments + Agent SDK + Treasury API + <strong>mainnet</strong></td></tr>
     </table>
 
-    <p>If even half of this ships, ArcSwap becomes the default place to hold and move productive USDC on Arc. That's the bet.</p>
+    <p>If even half of this ships, ArcSwap becomes the default place to hold, move, and automate USDC on Arc. That's the bet.</p>
 
     <h2>Try it</h2>
 

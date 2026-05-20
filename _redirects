@@ -1,19 +1,24 @@
-# Cloudflare Pages tự động phục vụ /vault.html ở cả /vault và /vault.html
-# (auto-redirect /vault.html → /vault để tránh duplicate). KHÔNG được thêm rule
-# rewrite kiểu "/vault /vault.html 200" — sẽ tạo infinite redirect loop.
-#
-# File này giữ:
-# 1. LEGACY alias (URL cũ trỏ sang URL mới)
-# 2. PRETTY URL cho blog post (vd /blog/usyc-explained → /blog-usyc.html)
-
 # Legacy aliases
+# Cloudflare Pages applies these BEFORE static file matching, so old URLs
+# for surfaces we dropped (Vault / Pool / Points / USYC blog / DEX deploy)
+# now redirect cleanly instead of 404-ing.
+
 /swap    /trade   301
 /bridge  /trade   301
 /farm    /token   302
+/deploy  /token   301
 
-# Disabled pages — redirect to active feature
+# Dropped surfaces — redirect to nearest live page
+/vault   /balance 301
+/vaults  /balance 301
+/pool    /trade   301
+/pools   /trade   301
 /point   /trade   302
 /points  /trade   302
+
+# Dropped blog post — redirect to blog index
+/blog/usyc-explained   /blog   301
+/blog-usyc             /blog   301
 
 # Status page lives on its own subdomain (separate Cloudflare Pages project for
 # cache isolation + independent uptime). Forward any legacy /status URLs.
@@ -28,7 +33,6 @@
 # Old flat URLs → 301 sang URL mới
 /blog-launch        /blog/launch-arc-testnet      301
 /blog-arcswap       /blog/what-is-arcswap         301
-/blog-usyc          /blog/usyc-explained          301
 
 # ─── Defense-in-depth: block direct access to source/internal files ──────────
 # These should never exist in a deploy, but if a future `wrangler pages deploy`

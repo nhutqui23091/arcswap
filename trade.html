@@ -1229,9 +1229,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   }
 
   function estimateUSD(amount, token) {
-    // Stablecoin assumption for USDC/EURC/USYC; ETH rough $2400 on Sepolia (display only)
+    // Stablecoin assumption for USDC/EURC; ETH rough $2400 on Sepolia (display only)
     const s = parseFloat(formatAmt(amount, token.decimals));
-    if (['USDC', 'USYC'].includes(token.symbol)) return s.toFixed(2);
+    if (token.symbol === 'USDC') return s.toFixed(2);
     if (token.symbol === 'EURC') return (s * 1.08).toFixed(2);
     if (token.symbol === 'ETH') return (s * 2400).toFixed(2);
     return s.toFixed(2);

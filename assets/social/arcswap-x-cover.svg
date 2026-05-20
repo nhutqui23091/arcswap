@@ -72,10 +72,10 @@
   <!-- Tagline -->
   <g text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
     <text x="750" y="335" font-size="28" font-weight="700" letter-spacing="-.5" fill="#F5F7FB">
-      The Yield Terminal for <tspan fill="url(#swap)">Stablecoins</tspan>
+      The Stablecoin Command Center for <tspan fill="url(#swap)">Arc</tspan>
     </text>
     <text x="750" y="372" font-size="16" font-weight="500" letter-spacing="0" fill="#8CA0BD">
-      USYC Vault &#8226; Swap &#8226; Bridge &#8226; Pools &#8202;—&#8202; built on Arc
+      Unified Balance &#8226; Trade &#8226; Auto-Replenish Agent &#8202;—&#8202; built on Arc
     </text>
   </g>
 

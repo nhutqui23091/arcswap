@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
-<meta name="description" content="ArcSwap Documentation — the engineering reference for the unified stablecoin terminal on Arc. Covers Unified Balance (Circle Gateway), USYC Vault, CCTP V2 bridge, Uniswap V2 swap, and the full contract / API surface."/>
+<meta name="description" content="ArcSwap Documentation — the engineering reference for the unified stablecoin terminal on Arc. Covers Trade, Unified Balance (Circle Gateway), the Auto-Replenish Agent, History, Create Token, Dashboard, plus the full contract / API surface."/>
 <title>Documentation — ArcSwap</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
@@ -267,8 +267,8 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
   <div class="nav-links">
     <a class="nav-link" href="/trade">Trade</a>
     <a class="nav-link" href="/balance">Balance</a>
+    <a class="nav-link" href="/agent">Agent</a>
     <a class="nav-link" href="/token">Create Token</a>
-    <a class="nav-link" href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">💧 Faucet</a>
     <a class="nav-link" href="/blog">Blog</a>
     <a class="nav-link active" href="/docs">Docs</a>
   </div>
@@ -292,19 +292,19 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     </div>
     <div class="side-section">
       <div class="side-title">Products</div>
-      <a class="side-link" href="#unified-balance">Unified Balance</a>
-      <a class="side-link" href="#vault">USYC Vault</a>
-      <a class="side-link" href="#swap">Swap (Arc)</a>
-      <a class="side-link" href="#bridge">CCTP Bridge</a>
-      <a class="side-link" href="#pool">Liquidity Pools</a>
-      <a class="side-link" href="#points">Activity Points</a>
+      <a class="side-link" href="#trade">Trade</a>
+      <a class="side-link" href="#balance">Unified Balance</a>
+      <a class="side-link" href="#agent">Auto-Replenish Agent</a>
+      <a class="side-link" href="#history">History</a>
+      <a class="side-link" href="#token">Create Token</a>
+      <a class="side-link" href="#dashboard">Dashboard</a>
     </div>
     <div class="side-section">
       <div class="side-title">Concepts</div>
       <a class="side-link" href="#arc-network">Arc L1</a>
-      <a class="side-link" href="#usyc">USYC</a>
       <a class="side-link" href="#circle-gateway">Circle Gateway</a>
       <a class="side-link" href="#cctp">CCTP V2</a>
+      <a class="side-link" href="#programmable-wallets">Programmable Wallets</a>
       <a class="side-link" href="#usdc-gas">USDC as gas</a>
     </div>
     <div class="side-section">
@@ -331,131 +331,141 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <h1 class="docs-h1">ArcSwap <span class="grad">Documentation</span></h1>
     <p class="docs-lead">
       The engineering reference for the unified stablecoin terminal on Arc.
-      ArcSwap unifies Circle's stablecoin stack — Gateway, CCTP V2, USDC, EURC — with
-      Hashnote's tokenized U.S. Treasury yield (USYC) and a Uniswap V2 venue, all on
-      the Arc Layer&nbsp;1. This guide covers product flows, the on-chain surface,
-      the proxy API, and the security baseline.
+      ArcSwap puts Circle's stablecoin stack — <strong>Gateway, CCTP V2, Programmable Wallets,
+      USDC, EURC</strong> — behind a single non-custodial UI on the Arc Layer&nbsp;1. This guide covers
+      every live product surface, the on-chain contract registry, the proxy API, and the security baseline.
     </p>
     <div class="docs-meta">
       <span class="pill"><span class="dot"></span> Public Beta · Arc Testnet</span>
-      <span class="pill">Version 0.9.4</span>
-      <span class="pill">Updated 2026-05-10</span>
+      <span class="pill">Version 0.10.0</span>
+      <span class="pill">Updated 2026-05-20</span>
     </div>
 
     <div class="card-grid">
       <a class="qcard" href="#quick-start">
         <div class="qcard-title">→ Quick start</div>
-        <div class="qcard-desc">From a fresh browser to your first deposit in five steps.</div>
+        <div class="qcard-desc">From a fresh browser to your first cross-chain spend in five steps.</div>
       </a>
-      <a class="qcard" href="#unified-balance">
+      <a class="qcard" href="#balance">
         <div class="qcard-title">→ Unified Balance</div>
-        <div class="qcard-desc">One USDC balance across every supported chain.</div>
+        <div class="qcard-desc">One USDC balance across every supported chain — powered by Circle Gateway.</div>
       </a>
-      <a class="qcard" href="#vault">
-        <div class="qcard-title">→ USYC Vault</div>
-        <div class="qcard-desc">Earn tokenized U.S. Treasury yield on idle USDC.</div>
+      <a class="qcard" href="#agent">
+        <div class="qcard-title">→ Auto-Replenish Agent</div>
+        <div class="qcard-desc">Keep any wallet topped up automatically with one signature. Preview.</div>
       </a>
       <a class="qcard" href="#contracts">
         <div class="qcard-title">→ Contract addresses</div>
-        <div class="qcard-desc">All addresses, all chains, audited and verifiable.</div>
+        <div class="qcard-desc">Every Circle and Arc contract ArcSwap touches, verifiable on-explorer.</div>
       </a>
     </div>
 
     <!-- ─── INTRODUCTION ─── -->
     <h2 class="docs-h2" id="introduction">Introduction</h2>
     <p class="docs-p">
-      <strong>ArcSwap</strong> is a non-custodial frontend that brings five stablecoin primitives together
-      under a single UX on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc Layer&nbsp;1</a>:
+      <strong>ArcSwap</strong> is a non-custodial frontend that brings Circle's stablecoin stack together
+      under a single UX on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc Layer&nbsp;1</a>.
+      Six surfaces, one balance, zero custody:
     </p>
     <table class="docs-table">
-      <tr><th style="width:22%">Product</th><th>What it does</th><th style="width:24%">Built on</th></tr>
-      <tr><td><strong>Unified Balance</strong></td><td>One USDC balance across every supported chain. Deposit from any chain, spend on Arc instantly — no bridge clicks, no wrapped tokens.</td><td>Circle Gateway V1</td></tr>
-      <tr><td><strong>USYC Vault</strong></td><td>Convert idle USDC to USYC, a tokenized money market fund backed by short-dated U.S. Treasury bills. ~4.85% APY (variable).</td><td>Hashnote USYC Teller</td></tr>
-      <tr><td><strong>Swap</strong></td><td>Convert between USDC, EURC, and USYC inside Arc.</td><td>Uniswap V2 (Arc deploy)</td></tr>
-      <tr><td><strong>CCTP Bridge</strong></td><td>Move native USDC between Arc, Ethereum, Base, Arbitrum, OP, Polygon, Avalanche, Unichain — burn-and-mint, no wrapped tokens.</td><td>Circle CCTP V2</td></tr>
-      <tr><td><strong>Liquidity Pools</strong></td><td>Provide liquidity to USDC/EURC and USDC/USYC pairs and earn the pool's swap-fee share.</td><td>Uniswap V2 (Arc deploy)</td></tr>
+      <tr><th style="width:24%">Surface</th><th>What it does</th><th style="width:22%">Built on</th></tr>
+      <tr><td><strong>Trade</strong></td><td>Spend USDC anywhere — swap inside Arc (USDC ⇄ EURC) or bridge cross-chain. One panel, one source picker (wallet + Gateway pre-deposits), one destination.</td><td>Circle App Kit Swap + CCTP V2 (Uniswap V2 fallback)</td></tr>
+      <tr><td><strong>Unified Balance</strong></td><td>One USDC balance across every supported chain. Deposit from any chain, spend instantly on Arc — no bridge clicks, no wrapped tokens.</td><td>Circle Gateway V1</td></tr>
+      <tr><td><strong>Auto-Replenish Agent</strong> <em style="color:var(--peach);font-size:12px">preview</em></td><td>Sign once. Your agent keeps any wallet topped up automatically — or runs scheduled USDC transfers across chains. Daily safety cap, revocable anytime.</td><td>Circle Programmable Wallets + Paymaster</td></tr>
+      <tr><td><strong>History</strong></td><td>A receipt-style feed of every Trade, Balance, and Agent moment on your USDC activity. Filter by surface, jump to the chain explorer in one click.</td><td>Local activity log + agent API</td></tr>
+      <tr><td><strong>Create Token</strong></td><td>Deploy a custom ERC-20 to Arc in under a minute. Name, symbol, supply, decimals, mintable / burnable / pausable / capped toggles.</td><td>Arc Testnet ERC-20</td></tr>
+      <tr><td><strong>Dashboard</strong> <em style="color:var(--muted);font-size:12px">soon</em></td><td>Operator control center. Live portfolio across chains, agent fleet view, settlement volume, quick-actions tile grid.</td><td>Read-only aggregator</td></tr>
     </table>
 
     <h3 class="docs-h3" id="who-is-it-for">Who is this for?</h3>
     <ul class="docs-ul">
-      <li><strong>Stablecoin holders</strong> who want yield on idle USDC without leaving the dollar.</li>
-      <li><strong>Multi-chain treasurers</strong> tired of fragmenting USDC into seven balances across seven chains.</li>
-      <li><strong>Arc-native traders</strong> swapping inside the L1 with sub-second finality and predictable USD-denominated gas.</li>
-      <li><strong>LPs</strong> earning fees on stablecoin and yield-bearing pairs.</li>
-      <li><strong>Builders</strong> using ArcSwap as a reference implementation for Circle Gateway, CCTP V2, and USYC integrations.</li>
+      <li><strong>Stablecoin holders</strong> tired of fragmenting USDC into seven balances across seven chains.</li>
+      <li><strong>Multi-chain treasurers</strong> who want one place to see, move, and automate USDC across the Circle ecosystem.</li>
+      <li><strong>Arc-native traders</strong> swapping USDC ⇄ EURC inside the L1 with sub-second finality and predictable USD-denominated gas.</li>
+      <li><strong>Agent operators</strong> who want sign-once / run-forever USDC plumbing — auto top-ups, scheduled payouts — across any of 8 Circle-supported chains.</li>
+      <li><strong>Builders</strong> using ArcSwap as a reference implementation for Circle Gateway, CCTP V2, App Kit Swap, and Programmable Wallets integrations.</li>
     </ul>
 
     <h3 class="docs-h3">Design principles</h3>
     <ul class="docs-ul">
-      <li><strong>Custody never leaves you.</strong> ArcSwap holds no funds and has no admin path that can pause your access.</li>
-      <li><strong>No build pipeline.</strong> The frontend is plain HTML/CSS/vanilla JS plus ethers.js — every served byte is reviewable, every CDN script is SRI-pinned.</li>
-      <li><strong>Strict CSP, locked CDNs.</strong> Every page ships with a Content-Security-Policy. The only third-party origins reachable are the RPCs we explicitly trust.</li>
-      <li><strong>Read paths through proxies.</strong> Reads to Circle's Gateway and IRIS APIs route through Cloudflare Pages Functions to keep the browser's connect-src tight and to dodge browser CORS quirks.</li>
+      <li><strong>Custody never leaves you.</strong> ArcSwap holds no funds and has no admin path that can pause your access. Every state-changing call is signed by your wallet against a third-party contract.</li>
+      <li><strong>No build pipeline.</strong> The frontend is plain HTML/CSS/vanilla JS plus <code>ethers.js v6</code> — every served byte is reviewable, every CDN script is SRI-pinned.</li>
+      <li><strong>Strict CSP, locked CDNs.</strong> Every page ships with a Content-Security-Policy. The only third-party origins reachable are the RPCs and Circle endpoints we explicitly trust.</li>
+      <li><strong>Reads through proxies.</strong> Reads to Circle's Gateway and IRIS APIs route through Cloudflare Pages Functions to keep the browser's <code>connect-src</code> tight and to dodge CORS quirks.</li>
     </ul>
 
     <!-- ─── ARCHITECTURE ─── -->
     <h2 class="docs-h2" id="architecture">Architecture</h2>
     <p class="docs-p">
-      ArcSwap is a thin frontend over three external protocol stacks. There is no ArcSwap-owned
-      smart contract and no centralized backend that can pause user actions. What lives on our
-      origin is static HTML, a few KB of shared JavaScript, and two stateless proxy routes.
+      ArcSwap is a thin frontend over Circle's stablecoin stack and the Arc Layer&nbsp;1. There is no
+      ArcSwap-owned smart contract on any chain. What lives on our origin is static HTML, a few KB of
+      shared JavaScript, a handful of stateless proxy routes, and a single Cloudflare Worker that
+      executes scheduled agent runs.
     </p>
 
     <pre class="arch"><span class="meta"># ArcSwap layered architecture</span>
 <span class="layer-name">┌─ UI Layer ────────────────────────────────────────────────────────────┐</span>
-<span class="item">│  index.html · balance.html · vault.html · trade.html · pool.html ...  │</span>
+<span class="item">│  index · trade · balance · agent · history · token · dashboard        │</span>
 <span class="meta">│   plain HTML + CSS + vanilla JS, no framework, no build step          │</span>
 <span class="layer-name">└────────────────────────────────────────────────────────────────────────┘</span>
                                   <span class="arrow">↓</span>
 <span class="layer-name">┌─ Shared JS modules (assets/) ─────────────────────────────────────────┐</span>
-<span class="item">│  arc-core.js     </span><span class="meta">→ chain registry, token registry, ABIs, wallet, RPC </span><span class="item">│</span>
-<span class="item">│  arc-gateway.js  </span><span class="meta">→ Circle Gateway client (deposit, withdraw, transfer)</span><span class="item">│</span>
-<span class="item">│  arc-appkit.js   </span><span class="meta">→ wallet picker (EIP-6963), session, chain switching </span><span class="item">│</span>
-<span class="item">│  arc-ui.js / .css</span><span class="meta">→ shared UI atoms (modal, toast, skeleton)           </span><span class="item">│</span>
+<span class="item">│  arc-core.js       </span><span class="meta">→ chain registry, token registry, ABIs, RPC      </span><span class="item">│</span>
+<span class="item">│  arc-gateway.js    </span><span class="meta">→ Circle Gateway client (deposit, transfer, mint)</span><span class="item">│</span>
+<span class="item">│  arc-appkit.js     </span><span class="meta">→ Circle App Kit wallet picker (EIP-6963)        </span><span class="item">│</span>
+<span class="item">│  arc-ui.js / .css  </span><span class="meta">→ shared UI atoms (modal, toast, skeleton, nav)  </span><span class="item">│</span>
 <span class="layer-name">└────────────────────────────────────────────────────────────────────────┘</span>
                                   <span class="arrow">↓</span>
-<span class="layer-name">┌─ Cloudflare Pages Functions (proxies, no business logic) ─────────────┐</span>
-<span class="item">│  /api/circle-proxy/*   </span><span class="meta">→ proxies CCTP IRIS API                        </span><span class="item">│</span>
-<span class="item">│  /api/gateway-proxy/*  </span><span class="meta">→ proxies Circle Gateway public REST API       </span><span class="item">│</span>
+<span class="layer-name">┌─ Cloudflare Pages Functions (proxies + agent API) ────────────────────┐</span>
+<span class="item">│  /api/circle-proxy/*   </span><span class="meta">→ CCTP V2 IRIS attestation API                 </span><span class="item">│</span>
+<span class="item">│  /api/gateway-proxy/*  </span><span class="meta">→ Circle Gateway public REST API               </span><span class="item">│</span>
+<span class="item">│  /api/agent/*          </span><span class="meta">→ register / list / pause / revoke agents      </span><span class="item">│</span>
+<span class="item">│  /api/metrics/*        </span><span class="meta">→ aggregated read-only telemetry rollup        </span><span class="item">│</span>
+<span class="layer-name">└────────────────────────────────────────────────────────────────────────┘</span>
+                                  <span class="arrow">↓</span>
+<span class="layer-name">┌─ Cloudflare Worker (cron, every minute) ──────────────────────────────┐</span>
+<span class="item">│  agent-cron       </span><span class="meta">→ scans rules, fires Programmable Wallet executions  </span><span class="item">│</span>
 <span class="layer-name">└────────────────────────────────────────────────────────────────────────┘</span>
                                   <span class="arrow">↓</span>
 <span class="layer-name">┌─ External protocols (we don't operate any of these) ──────────────────┐</span>
-<span class="item">│  Arc L1            </span><span class="meta">→ EVM execution + USDC native gas                   </span><span class="item">│</span>
-<span class="item">│  Hashnote USYC     </span><span class="meta">→ tokenized money-market fund Teller contract       </span><span class="item">│</span>
-<span class="item">│  Circle CCTP V2    </span><span class="meta">→ TokenMessenger / MessageTransmitter, IRIS service </span><span class="item">│</span>
-<span class="item">│  Circle Gateway    </span><span class="meta">→ GatewayWallet / GatewayMinter, gateway-api        </span><span class="item">│</span>
-<span class="item">│  Uniswap V2 (Arc)  </span><span class="meta">→ Router + Factory deployed by Arc Foundation       </span><span class="item">│</span>
+<span class="item">│  Arc L1                  </span><span class="meta">→ EVM execution + USDC native gas               </span><span class="item">│</span>
+<span class="item">│  Circle Gateway          </span><span class="meta">→ GatewayWallet / GatewayMinter + REST API      </span><span class="item">│</span>
+<span class="item">│  Circle CCTP V2          </span><span class="meta">→ TokenMessenger / MessageTransmitter + IRIS    </span><span class="item">│</span>
+<span class="item">│  Circle App Kit Swap     </span><span class="meta">→ same-chain USDC ⇄ EURC routing on Arc         </span><span class="item">│</span>
+<span class="item">│  Circle Programmable     </span><span class="meta">→ smart-account executor + Paymaster gas        </span><span class="item">│</span>
+<span class="item">│      Wallets             </span><span class="meta">  sponsorship for the agent                     </span><span class="item">│</span>
 <span class="layer-name">└────────────────────────────────────────────────────────────────────────┘</span></pre>
 
     <h3 class="docs-h3">What "non-custodial" means in practice</h3>
     <ul class="docs-ul">
-      <li>Every state-changing action is a transaction signed by <em>your</em> wallet against a third-party contract (Hashnote, Circle, or Uniswap-on-Arc).</li>
+      <li>Every state-changing user action is a transaction signed by <em>your</em> wallet against a third-party contract (Circle's Gateway, CCTP, App Kit Swap router, or an ERC-20 you just deployed).</li>
       <li>ArcSwap has no privileged role on any of these contracts: no <code>owner</code>, no <code>admin</code>, no upgrade path. Read the verified source on the Arc explorer.</li>
-      <li>The proxy routes (<code>/api/*</code>) only reformulate read requests to Circle's public APIs. They cannot move funds, sign messages, or hold state.</li>
+      <li>The agent runner moves funds only along the rules you signed, via a Circle Programmable Wallet you authorized via EIP-2612 permit. You can pause or revoke any agent in one click — that yanks the permit and stops every future execution.</li>
+      <li>The proxy routes (<code>/api/*</code>) only reformulate read requests to Circle's public APIs. They cannot move funds, sign messages, or hold custody.</li>
     </ul>
 
     <!-- ─── QUICK START ─── -->
     <h2 class="docs-h2" id="quick-start">Quick start</h2>
-    <p class="docs-p">From a fresh browser to your first vault deposit in five steps.</p>
+    <p class="docs-p">From a fresh browser to your first cross-chain USDC spend in five steps.</p>
 
     <ol class="steps">
-      <li><strong>Install a wallet.</strong> MetaMask, Rabby, Coinbase Wallet, Frame, or any other EIP-6963-compliant browser wallet. See <a href="#wallets">Supported wallets</a>.</li>
+      <li><strong>Install a wallet.</strong> MetaMask, Rabby, Coinbase Wallet, Frame, or any EIP-6963-compliant browser wallet. See <a href="#wallets">Supported wallets</a>.</li>
       <li><strong>Add Arc Testnet.</strong> Open <a href="/trade">arcswap.net/trade</a>, click <em>Connect</em>, and approve the network prompt. Manual params are in the <a href="#network-info">Network info</a> table below.</li>
-      <li><strong>Get testnet USDC.</strong> Use the <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">Circle faucet</a> on your address. Arc uses USDC as native gas, so one faucet drip covers both spending and gas fees.</li>
-      <li><strong>Open the Vault.</strong> Go to <a href="/vault">arcswap.net/vault</a>, enter a USDC amount, click <em>Deposit</em>. First deposit is two transactions (approve + deposit), subsequent deposits are one.</li>
-      <li><strong>Watch yield accrue.</strong> Your USYC balance reflects the live NAV of the underlying T-bill fund. Yield posts each U.S. Treasury market session (Mon–Fri 09:30–16:00 ET, ex U.S. bank holidays).</li>
+      <li><strong>Get testnet USDC.</strong> Use the <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">Circle faucet</a> on your address. Arc uses USDC as native gas, so one faucet drip covers both spending and gas fees. The same USDC works for Trade, Balance, and Agent.</li>
+      <li><strong>Open <a href="/balance">Balance</a>.</strong> Deposit USDC from any supported chain (Sepolia, Base, Fuji, Arbitrum, OP, Polygon, Unichain) into the Gateway. Your unified balance updates in seconds.</li>
+      <li><strong>Spend from <a href="/trade">Trade</a>.</strong> Pick a destination chain and recipient. Multi-source unified spend pulls from N chains in one transfer and mints native USDC on the destination.</li>
     </ol>
 
     <div class="callout">
       <div class="callout-title">Tip</div>
-      <div class="callout-body">If you hold USDC on a different chain (Sepolia, Base, Arbitrum, etc.), skip the faucet and use <a href="#unified-balance">Unified Balance</a> instead — deposit your existing USDC into the Gateway and it becomes spendable on Arc immediately.</div>
+      <div class="callout-body">For fastest testnet deposits, use Avalanche Fuji as your source chain — Gateway credits show up in ~30 seconds. Ethereum Sepolia takes 12–15 minutes (two beacon-chain epochs of finality).</div>
     </div>
 
     <!-- ─── WALLET SETUP ─── -->
     <h2 class="docs-h2" id="wallet-setup">Wallet setup</h2>
     <p class="docs-p">
-      ArcSwap uses <strong>EIP-6963</strong> for wallet discovery (the multi-injector standard that
-      replaced the old <code>window.ethereum</code> singleton). Any wallet that announces itself via
+      ArcSwap uses <strong>EIP-6963</strong> for wallet discovery — the multi-injector standard that
+      replaced the old <code>window.ethereum</code> singleton. Any wallet that announces itself via
       <code>eip6963:announceProvider</code> appears in our wallet picker, ranked by RDNS so the choice
       is deterministic when multiple wallets are installed.
     </p>
@@ -479,13 +489,13 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <h2 class="docs-h2" id="get-testnet-usdc">Get testnet USDC</h2>
     <p class="docs-p">
       Arc Testnet uses <strong>USDC as the native gas token</strong>. You need USDC for both transaction
-      fees and for whatever you want to do with it (deposit, swap, bridge). One faucet call covers both.
+      fees and for whatever you want to do with it (deposit, swap, agent funding). One faucet call covers both.
     </p>
     <ol class="steps">
       <li>Visit <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">faucet.circle.com</a>.</li>
       <li>Select <strong>Arc Testnet</strong> from the network dropdown.</li>
       <li>Paste your wallet address — delivery is typically under 30 seconds.</li>
-      <li>Faucets are rate-limited per-address per-day. If you hit the limit, come back tomorrow or try one of the supported chains' faucets and bridge in.</li>
+      <li>Faucets are rate-limited per-address per-day. If you hit the limit, come back tomorrow or grab USDC on Sepolia / Base / Fuji and use <a href="#balance">Unified Balance</a> to make it spendable on Arc.</li>
     </ol>
 
     <div class="callout warn">
@@ -493,8 +503,47 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <div class="callout-body">Every asset on this network is a testnet token with no monetary value. <strong>Never send mainnet USDC or real funds to a testnet address</strong> — they are unrecoverable.</div>
     </div>
 
-    <!-- ─── UNIFIED BALANCE ─── -->
-    <h2 class="docs-h2" id="unified-balance">Unified Balance</h2>
+    <!-- ─── TRADE ─── -->
+    <h2 class="docs-h2" id="trade">Trade</h2>
+    <p class="docs-p">
+      The <a href="/trade"><code>/trade</code></a> page is the spend surface. It unifies same-chain
+      swap (USDC ⇄ EURC on Arc via Circle App Kit Swap) and cross-chain bridging (USDC anywhere via
+      CCTP V2) into a single panel. Source picker shows your wallet balances plus your Circle Gateway
+      pre-deposits, ranked so the path with the lowest friction floats to the top.
+    </p>
+
+    <h3 class="docs-h3">Same-chain swap (Arc internal)</h3>
+    <p class="docs-p">
+      Routes through <strong>Circle App Kit Swap</strong> for USDC ⇄ EURC pairs on Arc. If the App Kit
+      SDK is unreachable the page degrades gracefully to a Uniswap V2 fallback (deployed by the Arc
+      Foundation). Quote latency is debounced at 150 ms with an SDK prefetch on the source-amount input.
+    </p>
+
+    <h3 class="docs-h3">Cross-chain spend (CCTP V2)</h3>
+    <ol class="steps">
+      <li>Choose source chain and destination chain (any pair from the <a href="#supported-chains">8 supported</a>).</li>
+      <li>Enter USDC amount and recipient address (defaults to your own).</li>
+      <li>Pick a finality mode — <strong>Fast</strong> (~20 s, small Circle fee) or <strong>Standard</strong> (13–19 min, zero fee).</li>
+      <li><strong>Burn</strong> on source — calls <code>TokenMessengerV2.depositForBurn(amount, destDomain, recipient, burnToken, ...)</code>.</li>
+      <li>Wait for Circle's IRIS attestation, then <strong>mint</strong> on destination — calls <code>MessageTransmitterV2.receiveMessage(message, attestation)</code>. ArcSwap submits the receive automatically when the attestation arrives.</li>
+    </ol>
+
+    <h3 class="docs-h3">Trade panel features</h3>
+    <ul class="docs-ul">
+      <li><strong>Source picker.</strong> One dropdown — wallet on any chain or Circle Gateway pre-deposits — ranked by available balance.</li>
+      <li><strong>Slippage.</strong> Default 0.5%. Presets 0.1% / 0.5% / 1% / custom (hard cap 5%).</li>
+      <li><strong>Route box.</strong> Shows rate, price impact, network fee, min received, ETA.</li>
+      <li><strong>Resumability.</strong> A burn tx hash is the only thing needed to mint on the destination later. Close the tab mid-flight, return to <code>/trade</code> with the same wallet — the pending mint appears automatically.</li>
+      <li><strong>Activity rail.</strong> Live tx ledger on the right — last 10 actions deep-linked to per-chain explorer.</li>
+    </ul>
+
+    <div class="callout warn">
+      <div class="callout-title">Latency is dominated by the slowest chain</div>
+      <div class="callout-body">Arc has sub-second deterministic finality, so an Arc → other-chain bridge waits only on the destination's finality clock. An Ethereum Sepolia → Arc bridge waits 13+ minutes for two beacon-chain epochs before Circle issues the attestation. Fast-finality mode short-circuits this for supported pairs.</div>
+    </div>
+
+    <!-- ─── BALANCE ─── -->
+    <h2 class="docs-h2" id="balance">Unified Balance</h2>
     <p class="docs-p">
       The <a href="/balance"><code>/balance</code></a> page is the centerpiece of ArcSwap. It uses
       <a href="#circle-gateway">Circle Gateway V1</a> to give you a single USDC balance that's
@@ -504,26 +553,42 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <h3 class="docs-h3">How it works</h3>
     <p class="docs-p">
       Each Gateway-supported chain has a <code>GatewayWallet</code> contract at the same deterministic
-      address. You deposit USDC into the wallet on whichever chain you currently hold it. Circle's
-      Gateway service issues attestations that authorize a fresh mint of native USDC on the destination
-      chain — so the USDC you spend is always native USDC, not a wrapped derivative.
+      address (CREATE2 with the same salt). You deposit USDC into the wallet on whichever chain you
+      currently hold it. Circle's Gateway service issues attestations that authorize a fresh mint of
+      native USDC on the destination chain — the USDC you spend is always native USDC, not a wrapped
+      derivative.
     </p>
 
     <h4 class="docs-h4">Deposit flow</h4>
     <ol class="steps">
       <li><strong>Select a source chain</strong> with a USDC balance (Sepolia, Base, Arbitrum, OP, Polygon Amoy, Fuji, Unichain).</li>
       <li><strong>Approve</strong> the GatewayWallet to pull USDC (one-time per chain per token).</li>
-      <li><strong>Deposit</strong> — your USDC moves from your wallet into the GatewayWallet contract on that chain.</li>
-      <li><strong>Done.</strong> Your unified balance updates within seconds. You can now spend it on Arc (or any other Gateway chain) without further bridging.</li>
+      <li><strong>Deposit</strong> — your USDC moves from your wallet into the <code>GatewayWallet</code> contract on that chain.</li>
+      <li><strong>Done.</strong> Your unified balance updates in seconds (Fuji ~30s, Sepolia ~12-15 min). Spendable everywhere Gateway is supported.</li>
     </ol>
 
     <h4 class="docs-h4">Spend flow (mint on Arc)</h4>
     <ol class="steps">
-      <li>Submit an EIP-712 signed <em>burn intent</em> to Circle's Gateway service.</li>
+      <li>Submit an EIP-712 signed <em>burn intent</em> to Circle's Gateway service via <code>POST /v1/transfer</code>.</li>
       <li>Gateway validates available balance across all your deposits, signs an attestation.</li>
-      <li>Your wallet calls <code>GatewayMinter.gatewayMint(attestation, signature)</code> on the destination chain (Arc).</li>
-      <li>Native USDC appears on Arc, ready to use in the Vault, Swap, or Pool.</li>
+      <li>Your wallet calls <code>GatewayMinter.gatewayMint(attestation, signature)</code> on the destination chain.</li>
+      <li>Native USDC appears on the destination, ready to spend or hold.</li>
     </ol>
+
+    <h4 class="docs-h4">Multi-source spend (the killer flow)</h4>
+    <p class="docs-p">
+      The Spend modal has a toggle: <em>⚡ Unified (auto, multi-source)</em> vs <em>Single chain</em>.
+      Unified mode lets Gateway draw from N different chain deposits in one transfer — one attestation,
+      one mint on the destination, combined amount. Single mode forces a specific source chain (useful
+      for testing or when you want to drain one balance).
+    </p>
+
+    <h3 class="docs-h3">Withdrawals</h3>
+    <p class="docs-p">
+      Withdrawals are two-step. You <em>initiate</em> a withdrawal on the source chain, which queues
+      it through Gateway's safety delay (~minutes on testnet). Then you <em>finalize</em> to receive
+      USDC back in your wallet. The pending list shows everything in flight with countdown timers.
+    </p>
 
     <div class="callout note">
       <div class="callout-title">Why this is different from a normal bridge</div>
@@ -535,136 +600,106 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       Arc's USDC is the native gas token, which lives in the L1 ledger rather than in an ERC-20 wrapper.
       <code>GatewayWallet.deposit</code> relies on standard <code>approve</code>/<code>transferFrom</code>,
       which can only move ERC-20 balances, so direct deposits from Arc are disabled. To fund Arc, deposit
-      from any other supported chain and let the Gateway mint native USDC on Arc.
+      from any other supported chain and let Gateway mint native USDC on Arc.
     </p>
 
-    <!-- ─── VAULT ─── -->
-    <h2 class="docs-h2" id="vault">USYC Vault</h2>
+    <!-- ─── AGENT ─── -->
+    <h2 class="docs-h2" id="agent">Auto-Replenish Agent <span style="font-size:11px;font-family:var(--mono);background:linear-gradient(135deg,#A78BFA,#4A7BEC);color:#fff;padding:2px 8px;border-radius:6px;letter-spacing:.06em;vertical-align:middle">PREVIEW</span></h2>
     <p class="docs-p">
-      The USYC Vault wraps Hashnote's <strong>U.S. Yield Coin (USYC)</strong>, a tokenized money-market
-      fund backed 1:1 by short-duration U.S. Treasury bills and overnight reverse-repurchase agreements.
-      Depositing USDC into the vault calls Hashnote's Teller contract, which mints USYC at the live
-      navigator-published NAV. Redeeming USYC burns it for USDC at the same NAV.
+      The <a href="/agent"><code>/agent</code></a> page is the autopilot layer for your USDC. Two modes
+      today: <strong>Auto Top-Up</strong> (keep a target wallet above a floor) and <strong>Scheduled
+      Send</strong> (recurring USDC transfers across chains and wallets, once/daily/weekly/monthly).
+      Both run on Circle Programmable Wallets with Circle Paymaster-sponsored gas — you sign once, the
+      agent runs forever, you can pause or revoke at any moment.
     </p>
 
-    <h3 class="docs-h3">How the yield works</h3>
+    <h3 class="docs-h3">How it works</h3>
+    <ol class="steps">
+      <li><strong>You sign once.</strong> One EIP-712 typed signature defines the rule (floor, refill amount, daily cap, target chains). One EIP-2612 permit authorizes the agent's Circle Programmable Wallet to pull USDC from your wallet via <code>transferFrom</code>.</li>
+      <li><strong>Agent watches.</strong> A Cloudflare cron Worker scans active rules every minute. When a target wallet drops below its floor (or a scheduled time arrives), the rule fires.</li>
+      <li><strong>Funds move.</strong> The agent's smart account assembles a userOp — USDC pull, optional CCTP V2 burn-and-mint to the destination chain (~30s fast finality), final delivery to the target wallet. Gas is sponsored by Circle Paymaster, so the user pays nothing in their gas token.</li>
+      <li><strong>Pause / resume / revoke.</strong> One-click in the agent drawer. Revoke yanks the permit; every future execution fails closed.</li>
+    </ol>
+
+    <h3 class="docs-h3">Safety rails</h3>
     <ul class="docs-ul">
-      <li>The fund holds short-dated T-bills (typically 1-month and 3-month tenors).</li>
-      <li>As bills mature and roll, interest accrues to the fund's NAV.</li>
-      <li>USYC's price-per-share rises by approximately the daily yield each U.S. business day.</li>
-      <li>Currently targeting <strong>~4.85% APY</strong>, varying with the U.S. Treasury rate environment.</li>
+      <li><strong>Daily safety cap.</strong> Hard upper bound on USDC the agent can move in any rolling 24h window. The agent will not exceed it, ever.</li>
+      <li><strong>Auto-pause after failures.</strong> 5 consecutive execution failures (RPC outage, balance drained, etc.) auto-pause the agent. You're notified, fix the issue, resume manually.</li>
+      <li><strong>Revoke wipes future risk.</strong> Revoke removes the permit on-chain. The agent literally cannot pull from your wallet anymore — even if our server is compromised.</li>
+      <li><strong>No private keys held.</strong> The agent runs from a Circle Programmable Wallet (smart account); we never custody your EOA key. Your EOA signature is the only authorization.</li>
     </ul>
 
-    <h3 class="docs-h3">Depositing</h3>
-    <ol class="steps">
-      <li>Connect wallet, ensure you're on Arc Testnet with a USDC balance.</li>
-      <li>Open <a href="/vault">/vault</a>, enter the USDC amount.</li>
-      <li>First deposit triggers an <em>approve</em> transaction (one-time per token, gives the Teller permission to pull USDC).</li>
-      <li>Second transaction is the deposit itself — you receive USYC at the NAV-priced share count.</li>
-    </ol>
+    <h3 class="docs-h3">Modes</h3>
+    <table class="docs-table">
+      <tr><th>Mode</th><th>When it fires</th><th>Use case</th></tr>
+      <tr><td><strong>Auto Top-Up</strong></td><td>Target wallet's USDC drops below your floor</td><td>Keep an ops wallet, a hot wallet, or a treasury sub-account always funded</td></tr>
+      <tr><td><strong>Scheduled Send</strong></td><td>Calendar: once / daily / weekly / monthly</td><td>Recurring payouts, payroll, subscription disbursements</td></tr>
+    </table>
 
-    <h3 class="docs-h3">Redeeming</h3>
-    <p class="docs-p">
-      Redemptions are processed at the next NAV strike during U.S. Treasury market hours. Outside
-      hours, the request queues and settles when the market opens.
-    </p>
-
-    <div class="callout">
-      <div class="callout-title">Smart contract surface</div>
-      <div class="callout-body">The Vault calls into the Hashnote USYC Teller at <code>0x9fdF14c5B14173D74C08Af27AebFf39240dC105A</code>. ArcSwap is a frontend; the underlying contract is operated by Hashnote.</div>
+    <div class="callout note">
+      <div class="callout-title">Preview status</div>
+      <div class="callout-body">The agent is in <strong>preview</strong>. Mainnet flows wait on Arc mainnet + the Circle Programmable Wallets production GA. Dry-run executions, telemetry, and feedback are all welcome — Discord is the fastest channel.</div>
     </div>
 
-    <!-- ─── SWAP ─── -->
-    <h2 class="docs-h2" id="swap">Swap (Arc internal)</h2>
+    <!-- ─── HISTORY ─── -->
+    <h2 class="docs-h2" id="history">History</h2>
     <p class="docs-p">
-      The swap module on the <a href="/trade"><code>/trade</code></a> page routes through Uniswap V2
-      deployed by the Arc Foundation. It supports direct and 2-hop paths between USDC, EURC, and USYC.
-      Slippage default is 0.5% (configurable up to a hard cap of 5%).
+      The <a href="/history"><code>/history</code></a> page is your personal stablecoin operations
+      explorer. Every transfer, swap, bridge, and agent execution renders as a clean receipt — title,
+      source → destination chain tags, status pill, relative time, amount, tx hash linkable to the
+      right chain explorer.
     </p>
 
-    <h3 class="docs-h3">Quote pipeline</h3>
-    <ol class="steps">
-      <li>The router contract is queried via <code>getAmountsOut(amountIn, path)</code> for every viable path.</li>
-      <li>The frontend picks the path with the highest output, factoring in pool reserves and the 0.25% Arc-deploy fee.</li>
-      <li>You approve the input token (one-time per token), then call <code>swapExactTokensForTokens</code> with your minOut.</li>
-    </ol>
-
-    <h3 class="docs-h3">Pairs currently surfaced</h3>
+    <h3 class="docs-h3">Tabs</h3>
     <ul class="docs-ul">
-      <li><strong>USDC / EURC</strong> — stablecoin FX pair</li>
-      <li><strong>USDC / USYC</strong> — cash vs. yield-bearing pair</li>
-      <li><strong>EURC / USYC</strong> — via 2-hop</li>
+      <li><strong>All</strong> — every event across all three surfaces, newest first.</li>
+      <li><strong>Trade</strong> — same-chain swaps and bridge originations.</li>
+      <li><strong>Balance</strong> — deposits, withdrawals, multi-source unified spends.</li>
+      <li><strong>Agent</strong> — every agent execution (succeeded, pending, failed) with run-ID for debugging.</li>
     </ul>
 
-    <!-- ─── BRIDGE ─── -->
-    <h2 class="docs-h2" id="bridge">CCTP Bridge</h2>
+    <h3 class="docs-h3">Data sources</h3>
     <p class="docs-p">
-      The bridge module on <a href="/trade"><code>/trade</code></a> uses
-      <strong>CCTP V2</strong> (Cross-Chain Transfer Protocol) — Circle's burn-and-mint mechanism.
-      Native USDC is destroyed on the source chain, Circle's IRIS service issues a signed attestation,
-      and the same USDC is freshly minted on the destination chain. No wrapped tokens, no liquidity
-      pools, no bridge custodian.
+      Trade and Balance events come from your browser's local activity log (<code>arc.trade.activity.v1</code>),
+      so they're fully local-first — no server round-trip, no privacy leak. Agent events come from the
+      backend <code>/api/agent/*</code> endpoints which only return rows where you're the rule
+      owner (server-side auth).
     </p>
 
-    <h3 class="docs-h3">End-to-end flow</h3>
-    <ol class="steps">
-      <li>Choose source chain and destination chain (any pair from the <a href="#supported-chains">8 supported</a>).</li>
-      <li>Enter USDC amount and recipient address (defaults to your own).</li>
-      <li><strong>Burn</strong> tx on source — calls <code>TokenMessengerV2.depositForBurn(amount, destDomain, recipient, burnToken, ...)</code>.</li>
-      <li>Wait for Circle's IRIS attestation (typically 10–20 minutes on testnet, 13–19 minutes on mainnet — Circle waits for source-chain finality).</li>
-      <li><strong>Mint</strong> tx on destination — calls <code>MessageTransmitterV2.receiveMessage(message, attestation)</code>. ArcSwap submits this for you when the attestation arrives.</li>
-    </ol>
-
-    <h3 class="docs-h3">Resumability</h3>
+    <!-- ─── TOKEN ─── -->
+    <h2 class="docs-h2" id="token">Create Token</h2>
     <p class="docs-p">
-      A burn tx hash is the only thing needed to mint on the destination later. If you close the tab
-      mid-flight, return to <code>/trade</code> with the same wallet and the pending mint will appear
-      automatically. Or use Circle's reference dashboard or any other CCTP-aware tool to redeem the
-      attestation manually.
+      The <a href="/token"><code>/token</code></a> page deploys a custom ERC-20 to Arc Testnet in under
+      a minute. No coding, no Hardhat, no Foundry — pick your params in a form, sign one tx, get back
+      a contract address linkable to <a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer">testnet.arcscan.app</a>.
     </p>
 
-    <div class="callout warn">
-      <div class="callout-title">Latency is dominated by the slowest chain</div>
-      <div class="callout-body">Arc has sub-second deterministic finality, so an Arc → other-chain bridge waits only on the destination's finality clock. An Ethereum Sepolia → Arc bridge waits 13+ minutes for two beacon-chain epochs of finality before Circle issues the attestation.</div>
-    </div>
+    <h3 class="docs-h3">What you can configure</h3>
+    <ul class="docs-ul">
+      <li><strong>Basics</strong> — name, symbol (A-Z, 2-8 chars), one-line description.</li>
+      <li><strong>Economics</strong> — total supply (1K to 10B), decimals (18 default, or 6/8/0).</li>
+      <li><strong>Features</strong> — Mintable, Burnable, Pausable, Capped — combine any subset.</li>
+      <li><strong>Advanced</strong> — initial recipient address (defaults to your connected wallet).</li>
+    </ul>
 
-    <!-- ─── POOL ─── -->
-    <h2 class="docs-h2" id="pool">Liquidity Pools</h2>
     <p class="docs-p">
-      The <a href="/pool"><code>/pool</code></a> page lets you provide liquidity to Uniswap V2 pairs
-      on Arc and earn the pool's share of swap fees (the Arc deploy uses a 0.25% per-trade fee, of
-      which the LP earns the full amount).
+      Gas is paid in USDC (Arc's native gas token). A typical deploy costs a few cents in USDC.
     </p>
 
-    <h3 class="docs-h3">Adding liquidity</h3>
-    <ol class="steps">
-      <li>Pick a pair, enter amounts (the second amount auto-fills based on the current pool ratio).</li>
-      <li>Approve both tokens (one-time per token, per spender).</li>
-      <li>Click <em>Add Liquidity</em> — you receive LP tokens representing your share of the pool.</li>
-    </ol>
-
-    <h3 class="docs-h3">Removing liquidity</h3>
+    <!-- ─── DASHBOARD ─── -->
+    <h2 class="docs-h2" id="dashboard">Dashboard <em style="font-size:14px;color:var(--muted)">soon</em></h2>
     <p class="docs-p">
-      Burn your LP tokens to redeem the underlying tokens at the current pool ratio. Accumulated fees
-      are baked into the redeemed amounts (Uniswap V2's "k-grows" model).
-    </p>
-
-    <div class="callout warn">
-      <div class="callout-title">Impermanent loss — yes, even on stablecoins</div>
-      <div class="callout-body">USDC/EURC drifts with the EUR/USD FX rate. USDC/USYC drifts as USYC's NAV accrues. Your withdrawn token amounts <em>will</em> differ from what you deposited. Always track total value, not token quantities.</div>
-    </div>
-
-    <!-- ─── POINTS ─── -->
-    <h2 class="docs-h2" id="points">Activity Points</h2>
-    <p class="docs-p">
-      The <a href="/point"><code>/point</code></a> page tabulates your activity across vault deposits,
-      swaps, bridges, and LP positions. Points are non-transferable and have no monetary value during
-      testnet — they exist solely as an indicator of engagement and may inform future incentive
-      programs.
+      The <a href="/dashboard"><code>/dashboard</code></a> page is the operator control center —
+      a read-only aggregator over your unified balance, your agent fleet, and your settlement
+      activity. Five metric cards (Portfolio Value, Unified Balance, Active Chains, Active Agents,
+      24h Settlement Volume) with sparklines, plus modules for portfolio analytics, recent
+      settlements, agent fleet, and a quick-actions tile grid (Swap / Deposit / Spend / New Agent /
+      Create Token / Faucet).
     </p>
     <p class="docs-p">
-      Points are computed client-side from on-chain events visible to the connected wallet. There is
-      no off-chain database storing your activity.
+      It's a pure aggregator — no Gateway writes happen on this page. Every action button deep-links
+      to <a href="/balance">Balance</a>, <a href="/trade">Trade</a>, <a href="/agent">Agent</a>, or
+      <a href="/token">Create Token</a>.
     </p>
 
     <!-- ─── ARC NETWORK ─── -->
@@ -684,45 +719,17 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <a href="https://docs.arc.network" target="_blank" rel="noopener noreferrer">docs.arc.network</a>.
     </p>
 
-    <!-- ─── USYC ─── -->
-    <h2 class="docs-h2" id="usyc">USYC</h2>
-    <p class="docs-p">
-      <strong>USYC (U.S. Yield Coin)</strong> is an ERC-20 token issued by Hashnote representing
-      shares of the <em>Hashnote International Short Duration Yield Fund SP</em>, a regulated money
-      market fund holding short-dated U.S. Treasury bills and overnight reverse repos.
-    </p>
-
-    <h3 class="docs-h3">Key properties</h3>
-    <table class="docs-table">
-      <tr><th>Property</th><th>Detail</th></tr>
-      <tr><td>Underlying assets</td><td>Short-duration U.S. Treasury bills + overnight reverse-repurchase agreements</td></tr>
-      <tr><td>Issuer</td><td>Hashnote (regulated fund admin)</td></tr>
-      <tr><td>Token decimals</td><td><code>6</code></td></tr>
-      <tr><td>Yield model</td><td>Price-per-share (NAV) accrues; token quantity stays constant</td></tr>
-      <tr><td>Redemption</td><td>1:1 to USDC at NAV during U.S. Treasury market hours</td></tr>
-      <tr><td>Custody</td><td>Underlying T-bills held by qualified custodian</td></tr>
-      <tr><td>Token contract (Arc Testnet)</td><td><code>0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C</code></td></tr>
-    </table>
-
-    <h3 class="docs-h3">Risk surface</h3>
-    <ul class="docs-ul">
-      <li><strong>Issuer risk.</strong> Hashnote operates the fund. Their compliance, custody, and operational integrity matter.</li>
-      <li><strong>Smart-contract risk.</strong> The USYC token and Teller contracts have been audited; no audit eliminates risk.</li>
-      <li><strong>Market hours.</strong> Redemptions queue outside U.S. Treasury market hours — you cannot exit instantly during a panic.</li>
-      <li><strong>Yield variability.</strong> The headline APY tracks short-term U.S. Treasury rates and moves with the federal funds rate.</li>
-    </ul>
-
     <!-- ─── CIRCLE GATEWAY ─── -->
     <h2 class="docs-h2" id="circle-gateway">Circle Gateway</h2>
     <p class="docs-p">
-      Circle Gateway is the protocol that powers <a href="#unified-balance">Unified Balance</a>. It
+      Circle Gateway is the protocol that powers <a href="#balance">Unified Balance</a>. It
       replaces "I bridged my USDC to chain X and now I have to bridge it back" with "my USDC is
       already everywhere I need it."
     </p>
 
     <h3 class="docs-h3">The two on-chain contracts</h3>
     <ul class="docs-ul">
-      <li><code>GatewayWallet</code> at <code>0x0077777d7EBA4688BDeF3E311b846F25870A19B9</code> on every Gateway chain. You deposit USDC into this contract; balances are held per-chain but indexed globally.</li>
+      <li><code>GatewayWallet</code> at <code>0x0077777d7EBA4688BDeF3E311b846F25870A19B9</code> on every Gateway chain. You deposit USDC into this contract; balances are held per-chain but indexed globally by the Gateway service.</li>
       <li><code>GatewayMinter</code> at <code>0x0022222ABE238Cc2C7Bb1f21003F0a260052475B</code> on every Gateway chain. Anyone with a valid Circle-signed attestation can call <code>gatewayMint</code> to materialize USDC on the destination chain.</li>
     </ul>
     <p class="docs-p">
@@ -732,9 +739,9 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
 
     <h3 class="docs-h3">Gateway vs. CCTP — when to use which</h3>
     <table class="docs-table">
-      <tr><th></th><th>Gateway</th><th>CCTP</th></tr>
+      <tr><th></th><th>Gateway</th><th>CCTP V2</th></tr>
       <tr><td><strong>Best for</strong></td><td>Multi-chain treasury, "I want my USDC available everywhere"</td><td>One-shot move from chain A to chain B</td></tr>
-      <tr><td><strong>Latency</strong></td><td>Seconds (off-chain attestation + one mint tx)</td><td>10–20 min (waits for source finality)</td></tr>
+      <tr><td><strong>Latency</strong></td><td>Seconds (off-chain attestation + one mint tx)</td><td>~20s (Fast) or 13–19 min (Standard, free)</td></tr>
       <tr><td><strong>State held</strong></td><td>Yes — balance lives in <code>GatewayWallet</code> until you spend it</td><td>No — fully transactional, USDC moves directly between user wallets</td></tr>
       <tr><td><strong>Min flow</strong></td><td>1 tx (deposit) + 1 tx (mint at spend time)</td><td>2 txs (burn + receive)</td></tr>
     </table>
@@ -755,11 +762,27 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <li>Issuer-attested. Only Circle's signed attestation can authorize the destination mint.</li>
     </ul>
 
-    <h3 class="docs-h3">Trade-offs vs. Gateway</h3>
+    <h3 class="docs-h3">Finality modes</h3>
     <ul class="docs-ul">
-      <li><strong>Latency.</strong> CCTP waits for source-chain finality before issuing the attestation. Gateway uses Circle's centralized service to attest immediately against on-chain deposits.</li>
-      <li><strong>Two transactions on the user side.</strong> Burn on source, receive on destination — both paid by the user.</li>
-      <li><strong>Limited chain coverage.</strong> Both protocols only support chains Circle has activated. ArcSwap surfaces all currently-supported testnets.</li>
+      <li><strong>Fast</strong> (V2-only) — Circle's enhanced attestation pipeline issues the attestation ahead of full source-chain finality for supported pairs. Small Circle fee. Typical end-to-end: ~20 seconds.</li>
+      <li><strong>Standard</strong> — Circle waits for source-chain finality (two beacon epochs on Ethereum, instant on Arc). Zero fee. Typical: 13–19 minutes when Sepolia is the source.</li>
+    </ul>
+
+    <!-- ─── PROGRAMMABLE WALLETS ─── -->
+    <h2 class="docs-h2" id="programmable-wallets">Programmable Wallets &amp; Paymaster</h2>
+    <p class="docs-p">
+      Circle <strong>Programmable Wallets</strong> are smart-account wallets Circle issues on demand
+      via REST API. ArcSwap's <a href="#agent">Auto-Replenish Agent</a> uses them as the executor
+      account — every scheduled or threshold-triggered USDC move is a userOp signed by a Programmable
+      Wallet under server-side custody, paid for by <strong>Circle Paymaster</strong>.
+    </p>
+
+    <h3 class="docs-h3">Why this is safe</h3>
+    <ul class="docs-ul">
+      <li><strong>The executor wallet doesn't hold your funds.</strong> It only spends what you've explicitly permitted via EIP-2612 — and only along the rule you signed. No discretionary access.</li>
+      <li><strong>Permits are revocable.</strong> One on-chain call (the standard ERC-2612 path or our UI's <em>Revoke</em> button) zeroes the allowance. The executor cannot pull a single USDC unit afterward.</li>
+      <li><strong>Paymaster is gas-only.</strong> Circle Paymaster sponsors gas for the userOp; it doesn't sign or authorize value transfers. The agent's executor still has to satisfy your permit + rule.</li>
+      <li><strong>Daily cap is enforced server-side AND in the smart-account.</strong> Two layers of defense — even a backend bug can't exceed the on-chain limit you signed.</li>
     </ul>
 
     <!-- ─── USDC AS GAS ─── -->
@@ -770,7 +793,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     </p>
     <ul class="docs-ul">
       <li>Gas costs are predictable in USD terms — a transfer that costs $0.001 today costs $0.001 tomorrow, regardless of any token's price action.</li>
-      <li>You don't need to maintain a "gas reserve" in a separate token. The same USDC you trade with pays for the trade.</li>
+      <li>You don't need to maintain a "gas reserve" in a separate token. The same USDC you spend with pays for the transaction.</li>
       <li>Internally, native USDC has <strong>18 decimals</strong> (to match standard EVM gas math), distinct from the canonical 6-decimal Circle USDC. The frontend handles the conversion at the burn/mint boundary using a <code>cctpDecimals</code> hint on the token registry.</li>
     </ul>
 
@@ -801,18 +824,18 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <h2 class="docs-h2" id="supported-chains">Supported chains</h2>
     <p class="docs-p">
       ArcSwap surfaces eight testnets — Arc as the home chain plus seven external chains for
-      Unified Balance and CCTP bridging.
+      Unified Balance, CCTP bridging, and the Auto-Replenish Agent.
     </p>
     <table class="docs-table">
       <tr><th>Chain</th><th>Chain ID</th><th>CCTP domain</th><th>RPC</th><th>Role</th></tr>
-      <tr><td><strong>Arc Testnet</strong></td><td class="num"><code>5042002</code></td><td class="num"><code>26</code></td><td><code>rpc.testnet.arc.network</code></td><td>Home — Vault, Swap, Pool, mint destination</td></tr>
-      <tr><td>Ethereum Sepolia</td><td class="num"><code>11155111</code></td><td class="num"><code>0</code></td><td><code>ethereum-sepolia-rpc.publicnode.com</code></td><td>Gateway · CCTP</td></tr>
-      <tr><td>Base Sepolia</td><td class="num"><code>84532</code></td><td class="num"><code>6</code></td><td><code>sepolia.base.org</code></td><td>Gateway · CCTP</td></tr>
-      <tr><td>Avalanche Fuji</td><td class="num"><code>43113</code></td><td class="num"><code>1</code></td><td><code>api.avax-test.network</code></td><td>Gateway · CCTP</td></tr>
-      <tr><td>Arbitrum Sepolia</td><td class="num"><code>421614</code></td><td class="num"><code>3</code></td><td><code>sepolia-rollup.arbitrum.io</code></td><td>Gateway · CCTP</td></tr>
-      <tr><td>OP Sepolia</td><td class="num"><code>11155420</code></td><td class="num"><code>2</code></td><td><code>optimism-sepolia.publicnode.com</code></td><td>Gateway · CCTP</td></tr>
-      <tr><td>Polygon Amoy</td><td class="num"><code>80002</code></td><td class="num"><code>7</code></td><td><code>rpc-amoy.polygon.technology</code></td><td>Gateway · CCTP</td></tr>
-      <tr><td>Unichain Sepolia</td><td class="num"><code>1301</code></td><td class="num"><code>10</code></td><td><code>sepolia.unichain.org</code></td><td>Gateway · CCTP</td></tr>
+      <tr><td><strong>Arc Testnet</strong></td><td class="num"><code>5042002</code></td><td class="num"><code>26</code></td><td><code>rpc.testnet.arc.network</code></td><td>Home — Trade, Mint destination, Token Deployer</td></tr>
+      <tr><td>Ethereum Sepolia</td><td class="num"><code>11155111</code></td><td class="num"><code>0</code></td><td><code>ethereum-sepolia-rpc.publicnode.com</code></td><td>Gateway · CCTP · Agent</td></tr>
+      <tr><td>Base Sepolia</td><td class="num"><code>84532</code></td><td class="num"><code>6</code></td><td><code>sepolia.base.org</code></td><td>Gateway · CCTP · Agent</td></tr>
+      <tr><td>Avalanche Fuji</td><td class="num"><code>43113</code></td><td class="num"><code>1</code></td><td><code>api.avax-test.network</code></td><td>Gateway · CCTP · Agent · <em>fastest</em></td></tr>
+      <tr><td>Arbitrum Sepolia</td><td class="num"><code>421614</code></td><td class="num"><code>3</code></td><td><code>sepolia-rollup.arbitrum.io</code></td><td>Gateway · CCTP · Agent</td></tr>
+      <tr><td>OP Sepolia</td><td class="num"><code>11155420</code></td><td class="num"><code>2</code></td><td><code>optimism-sepolia.publicnode.com</code></td><td>Gateway · CCTP · Agent</td></tr>
+      <tr><td>Polygon Amoy</td><td class="num"><code>80002</code></td><td class="num"><code>7</code></td><td><code>rpc-amoy.polygon.technology</code></td><td>Gateway · CCTP · Agent</td></tr>
+      <tr><td>Unichain Sepolia</td><td class="num"><code>1301</code></td><td class="num"><code>10</code></td><td><code>sepolia.unichain.org</code></td><td>Gateway · CCTP · Agent</td></tr>
     </table>
 
     <!-- ─── CONTRACTS ─── -->
@@ -824,28 +847,6 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <tr><th>Token</th><th>Address</th><th>Decimals</th><th>Issuer</th></tr>
       <tr><td><strong>USDC</strong> (native gas)</td><td><code>0x3600000000000000000000000000000000000000</code></td><td class="num">18 / 6 (CCTP)</td><td>Circle / Arc</td></tr>
       <tr><td><strong>EURC</strong></td><td><code>0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a</code></td><td class="num">6</td><td>Circle</td></tr>
-      <tr><td><strong>USYC</strong></td><td><code>0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C</code></td><td class="num">6</td><td>Hashnote</td></tr>
-    </table>
-
-    <h3 class="docs-h3">Hashnote (USYC)</h3>
-    <table class="docs-table">
-      <tr><th>Contract</th><th>Address</th></tr>
-      <tr><td>USYC Teller (deposit / redeem)</td><td><code>0x9fdF14c5B14173D74C08Af27AebFf39240dC105A</code></td></tr>
-    </table>
-
-    <h3 class="docs-h3">Uniswap V2 (Arc Foundation deploy)</h3>
-    <table class="docs-table">
-      <tr><th>Contract</th><th>Address</th></tr>
-      <tr><td>Router</td><td><code>0x48a9bd1644ac67fbef4183261c466bea3eb333fc</code></td></tr>
-      <tr><td>Factory</td><td><code>0x45dd35611179ae6663ae47791175d7d598ced086</code></td></tr>
-    </table>
-
-    <h3 class="docs-h3">Circle CCTP V2</h3>
-    <p class="docs-p" style="font-size:13px;color:var(--muted);margin-top:-4px">Same addresses on every CCTP V2 chain.</p>
-    <table class="docs-table">
-      <tr><th>Contract</th><th>Address</th></tr>
-      <tr><td>TokenMessengerV2</td><td><code>0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA</code></td></tr>
-      <tr><td>MessageTransmitterV2</td><td><code>0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275</code></td></tr>
     </table>
 
     <h3 class="docs-h3">Circle Gateway V1</h3>
@@ -856,40 +857,55 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <tr><td>GatewayMinter</td><td><code>0x0022222ABE238Cc2C7Bb1f21003F0a260052475B</code></td></tr>
     </table>
 
+    <h3 class="docs-h3">Circle CCTP V2</h3>
+    <p class="docs-p" style="font-size:13px;color:var(--muted);margin-top:-4px">Same addresses on every CCTP V2 chain.</p>
+    <table class="docs-table">
+      <tr><th>Contract</th><th>Address</th></tr>
+      <tr><td>TokenMessengerV2</td><td><code>0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA</code></td></tr>
+      <tr><td>MessageTransmitterV2</td><td><code>0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275</code></td></tr>
+    </table>
+
+    <h3 class="docs-h3">Uniswap V2 (Arc Foundation deploy — App Kit fallback)</h3>
+    <p class="docs-p" style="font-size:13px;color:var(--muted);margin-top:-4px">Used by Trade as the same-chain swap fallback if Circle App Kit's SDK is unreachable.</p>
+    <table class="docs-table">
+      <tr><th>Contract</th><th>Address</th></tr>
+      <tr><td>Router</td><td><code>0x48a9bd1644ac67fbef4183261c466bea3eb333fc</code></td></tr>
+      <tr><td>Factory</td><td><code>0x45dd35611179ae6663ae47791175d7d598ced086</code></td></tr>
+    </table>
+
     <h3 class="docs-h3">Arc-native</h3>
     <table class="docs-table">
       <tr><th>Contract</th><th>Address</th></tr>
-      <tr><td>FxEscrow (StableFX, planned)</td><td><code>0x867650F5eAe8df91445971f14d89fd84F0C9a9f8</code></td></tr>
+      <tr><td>FxEscrow (StableFX — roadmap)</td><td><code>0x867650F5eAe8df91445971f14d89fd84F0C9a9f8</code></td></tr>
       <tr><td>Multicall3</td><td><code>0xcA11bde05977b3631167028862bE2a173976CA11</code></td></tr>
     </table>
 
     <p class="docs-p" style="font-size:13px;color:var(--muted);margin-top:8px">
       <em>ArcSwap does not own or operate any smart contracts. All contracts above are operated by
-      Hashnote, Circle, or the Arc Foundation, and verified on the Arc explorer.</em>
+      Circle or the Arc Foundation, and verified on the Arc explorer.</em>
     </p>
 
     <!-- ─── API ─── -->
     <h2 class="docs-h2" id="api">API endpoints</h2>
     <p class="docs-p">
-      ArcSwap exposes two read-only proxy routes implemented as Cloudflare Pages Functions. They exist
-      to keep the browser's <code>connect-src</code> CSP allowlist tight (one origin per upstream
-      Circle service) and to avoid CORS preflight issues. Neither route holds state, signs anything,
-      or moves funds.
+      ArcSwap exposes a handful of Cloudflare Pages Functions. Two are read-only proxies to Circle's
+      public APIs; the others are the minimal backend the <a href="#agent">Auto-Replenish Agent</a>
+      needs (rule storage, cron triggers, execution log). None hold private keys, none custody funds.
     </p>
 
     <h3 class="docs-h3">/api/circle-proxy/*</h3>
     <p class="docs-p">
-      Proxies Circle's <strong>IRIS attestation API</strong> for CCTP. Used by the bridge module to
+      Proxies Circle's <strong>IRIS attestation API</strong> for CCTP. Used by the Trade module to
       poll for attestations after a burn transaction.
     </p>
     <pre><code><span class="code-comment"># Fetch attestation by burn message hash</span>
 GET <span class="code-key">/api/circle-proxy/v2/messages/</span><span class="code-str">{sourceDomain}</span><span class="code-key">?transactionHash=</span><span class="code-str">{txHash}</span>
-   <span class="arrow">↓</span> proxies to <span class="code-str">https://iris-api-sandbox.circle.com/v2/messages/...</span></code></pre>
+   <span class="code-key">↓</span> proxies to <span class="code-str">https://iris-api-sandbox.circle.com/v2/messages/...</span></code></pre>
 
     <h3 class="docs-h3">/api/gateway-proxy/*</h3>
     <p class="docs-p">
-      Proxies Circle's <strong>Gateway public REST API</strong>. Used by the Unified Balance module
-      to fetch balances and submit signed transfer intents.
+      Proxies Circle's <strong>Gateway public REST API</strong>. Used by Unified Balance to fetch
+      balances and submit signed transfer intents.
     </p>
     <pre><code><span class="code-comment"># Read multi-chain balance</span>
 POST <span class="code-key">/api/gateway-proxy/v1/balances</span>
@@ -898,6 +914,32 @@ POST <span class="code-key">/api/gateway-proxy/v1/balances</span>
 <span class="code-comment"># Submit a signed burn-intent for cross-chain spend</span>
 POST <span class="code-key">/api/gateway-proxy/v1/transfer</span>
      <span class="code-comment"># body: signed EIP-712 BurnIntent</span></code></pre>
+
+    <h3 class="docs-h3">/api/agent/*</h3>
+    <p class="docs-p">
+      The agent backend. Reads are filtered by your connected-wallet signature; writes require an
+      EIP-712 typed signature matching the rule payload.
+    </p>
+    <pre><code><span class="code-comment"># Register a new rule (Auto Top-Up or Scheduled Send)</span>
+POST <span class="code-key">/api/agent/register</span>
+     <span class="code-comment"># body: { rule, eip712Signature, permitSignature }</span>
+
+<span class="code-comment"># List agents owned by the connected wallet</span>
+GET  <span class="code-key">/api/agent/list?owner=</span><span class="code-str">{address}</span>
+
+<span class="code-comment"># Execution log for a single agent</span>
+GET  <span class="code-key">/api/agent/</span><span class="code-str">{id}</span><span class="code-key">/executions</span>
+
+<span class="code-comment"># Pause / resume / revoke</span>
+POST <span class="code-key">/api/agent/</span><span class="code-str">{id}</span><span class="code-key">/pause</span>
+POST <span class="code-key">/api/agent/</span><span class="code-str">{id}</span><span class="code-key">/resume</span>
+POST <span class="code-key">/api/agent/</span><span class="code-str">{id}</span><span class="code-key">/revoke</span></code></pre>
+
+    <h3 class="docs-h3">/api/metrics/*</h3>
+    <p class="docs-p">
+      Read-only telemetry rollup used by <code>status.arcswap.net</code>. Compute-on-write so a
+      single <code>/summary</code> call doesn't trigger 273× KV reads.
+    </p>
 
     <div class="callout note">
       <div class="callout-title">No API key on the client</div>
@@ -931,17 +973,17 @@ POST <span class="code-key">/api/gateway-proxy/v1/transfer</span>
     <div class="kv-grid">
       <div class="kv-item"><div class="kv-key">Frontend</div><div class="kv-val">Plain HTML + CSS + vanilla JavaScript. No framework, no JSX, no transpiler, no build step.</div></div>
       <div class="kv-item"><div class="kv-key">On-chain library</div><div class="kv-val"><code>ethers.js v6</code> via SRI-pinned UMD CDN — the only runtime dependency.</div></div>
-      <div class="kv-item"><div class="kv-key">Hosting</div><div class="kv-val">Cloudflare Pages — free tier, edge CDN, DDoS protection, automatic HTTPS.</div></div>
-      <div class="kv-item"><div class="kv-key">Functions</div><div class="kv-val">Cloudflare Pages Functions for the two proxy routes. No persistent backend.</div></div>
-      <div class="kv-item"><div class="kv-key">Optional path</div><div class="kv-val">IPFS pin + ENS contenthash for an immutable, decentralized backup deploy.</div></div>
-      <div class="kv-item"><div class="kv-key">Source</div><div class="kv-val">~14 HTML files + four shared JS modules (~1,900 LOC). First paint &lt; 1s on 4G.</div></div>
+      <div class="kv-item"><div class="kv-key">Hosting</div><div class="kv-val">Cloudflare Pages — edge CDN, DDoS protection, automatic HTTPS.</div></div>
+      <div class="kv-item"><div class="kv-key">Functions</div><div class="kv-val">Cloudflare Pages Functions for the proxy + agent API routes.</div></div>
+      <div class="kv-item"><div class="kv-key">Cron</div><div class="kv-val">Cloudflare Worker (<code>agent-cron</code>) runs every minute to scan and fire active agent rules.</div></div>
+      <div class="kv-item"><div class="kv-key">Source</div><div class="kv-val">~12 HTML files + four shared JS modules. First paint &lt; 1s on 4G.</div></div>
     </div>
 
     <h3 class="docs-h3">Why no framework?</h3>
     <ul class="docs-ul">
       <li><strong>Auditability.</strong> Every line shipped to your browser is in the repo as written, not generated by a bundler. You can diff the served HTML against the GitHub source byte-for-byte.</li>
       <li><strong>SRI integrity.</strong> The only third-party script (ethers.js) is pinned by SHA-384. Any tamper at the CDN fails to load instead of executing.</li>
-      <li><strong>Performance.</strong> No runtime, no hydration. The vault page is interactive in &lt; 200&nbsp;ms after first byte.</li>
+      <li><strong>Performance.</strong> No runtime, no hydration. The Balance page is interactive in &lt; 200&nbsp;ms after first byte.</li>
       <li><strong>Footprint.</strong> No <code>node_modules</code>, no supply-chain blast radius from <code>npm install</code>, no dependency CVEs.</li>
     </ul>
 
@@ -951,14 +993,14 @@ POST <span class="code-key">/api/gateway-proxy/v1/transfer</span>
       ArcSwap takes a defense-in-depth approach. Highlights:
     </p>
     <ul class="docs-ul">
-      <li><strong>Non-custodial.</strong> No funds ever flow through ArcSwap-controlled addresses.</li>
+      <li><strong>Non-custodial.</strong> No user funds ever flow through ArcSwap-controlled addresses. The agent executor is a Circle Programmable Wallet bound to permits you explicitly signed.</li>
       <li><strong>Open source.</strong> The entire frontend is published. Verify the served build matches the committed source.</li>
       <li><strong>Strict CSP.</strong> A <code>Content-Security-Policy</code> header constrains script, style, image, font, and connect origins per page. There is no <code>'unsafe-eval'</code>.</li>
       <li><strong>SRI on every CDN script.</strong> ethers.js (and any other CDN asset) carries a SHA-384 integrity hash; CDN tampering fails closed.</li>
       <li><strong>Host security headers.</strong> HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy — all set via Cloudflare Pages <code>_headers</code>.</li>
       <li><strong>No third-party tracking.</strong> No analytics, no fingerprinting scripts, no marketing pixels. The only third-party origins reachable are the chain RPCs and Circle's APIs explicitly allowlisted in the CSP.</li>
-      <li><strong>IPFS + ENS (optional).</strong> Production builds are content-addressed and pinned to multiple providers; ENS contenthash updates require a multi-sig signature.</li>
       <li><strong>Pre-flight checks.</strong> Every deploy runs <code>scripts/preflight-check.sh</code> — six gates covering CSP, SRI, secrets hygiene, redirects, and host headers.</li>
+      <li><strong>Agent safety rails.</strong> Daily cap (signed on-chain), revocable permit, auto-pause after 5 consecutive failures, two-layer cap enforcement (server + smart-account).</li>
     </ul>
     <p class="docs-p">
       Found a vulnerability? Report it via <a href="/SECURITY.md">SECURITY.md</a> — bug-bounty rewards
@@ -969,33 +1011,35 @@ POST <span class="code-key">/api/gateway-proxy/v1/transfer</span>
     <!-- ─── FAQ ─── -->
     <h2 class="docs-h2" id="faq">FAQ</h2>
 
-    <h3 class="docs-h3">Why does USYC sometimes show 0% accrual?</h3>
+    <h3 class="docs-h3">When should I use Unified Balance vs. Trade (CCTP)?</h3>
     <p class="docs-p">
-      U.S. Treasury markets are closed on weekends and U.S. bank holidays. During those windows the
-      fund's NAV is fixed and your token quantity is unchanged, so the displayed APY rounds to zero.
-      Yield resumes on the next U.S. business day.
+      Use <strong>Unified Balance</strong> when you want USDC ready to spend on multiple chains over
+      time. Deposit once, spend many times — latency at spend is in the seconds. Use the
+      <strong>Trade</strong> cross-chain mode (CCTP V2) for a one-shot move from chain A to chain B
+      where you don't need to pre-fund.
     </p>
 
-    <h3 class="docs-h3">Why is my CCTP bridge taking 20 minutes?</h3>
+    <h3 class="docs-h3">Why is my CCTP bridge taking 13 minutes?</h3>
     <p class="docs-p">
-      Circle waits for source-chain finality before issuing the attestation that authorizes the
-      destination mint. On Arc this is sub-second; on Ethereum Sepolia it can take 13+ minutes
-      (waiting for two epochs of beacon-chain finality). Total time is dominated by the slowest
-      chain involved.
+      You're on <strong>Standard finality</strong>. Circle waits for source-chain finality before
+      issuing the attestation — sub-second on Arc, but ~13 min on Ethereum Sepolia (two beacon-chain
+      epochs). Switch to <strong>Fast finality</strong> for supported pairs to bring this down to ~20s
+      for a small fee.
     </p>
 
-    <h3 class="docs-h3">When should I use Unified Balance vs. CCTP Bridge?</h3>
+    <h3 class="docs-h3">Can the agent drain my wallet?</h3>
     <p class="docs-p">
-      Use <strong>Unified Balance</strong> if you want USDC ready to spend on multiple chains over time.
-      Deposit once, spend many times — the latency is in the seconds. Use the <strong>CCTP Bridge</strong>
-      for a one-shot move from chain A to chain B where you don't need to pre-fund.
+      No. The agent can only pull what your EIP-2612 permit explicitly authorizes — bounded by the
+      daily cap you signed on-chain. Revoke the permit at any time and the agent literally cannot
+      pull a single USDC unit. The executor's smart account holds no private keys you didn't
+      authorize via signature.
     </p>
 
-    <h3 class="docs-h3">Can I lose money in the USYC vault?</h3>
+    <h3 class="docs-h3">Where do agent rules live?</h3>
     <p class="docs-p">
-      In theory, yes — money market funds can technically "break the buck" if their underlying assets
-      default. In practice, U.S. Treasury bills are the lowest-default-risk asset in global finance.
-      Specific risks are detailed in the <a href="#usyc">USYC</a> section.
+      Rules and execution logs are stored in Cloudflare KV, keyed by your wallet address with the
+      EIP-712 signature serving as ownership proof. We never see your private key — only your
+      public address and the typed-data signature.
     </p>
 
     <h3 class="docs-h3">Does ArcSwap have its own token?</h3>
@@ -1017,30 +1061,31 @@ POST <span class="code-key">/api/gateway-proxy/v1/transfer</span>
 
     <!-- ─── CHANGELOG ─── -->
     <h2 class="docs-h2" id="changelog">Changelog</h2>
-    <p class="docs-p" style="font-family:var(--mono);font-size:13px;color:var(--muted)">v0.9.x — Public Beta on Arc Testnet</p>
+    <p class="docs-p" style="font-family:var(--mono);font-size:13px;color:var(--muted)">v0.10.x — Public Beta on Arc Testnet</p>
     <ul class="docs-ul">
-      <li><strong>2026-05-10</strong> — Documentation overhaul: full architecture overview, API surface, all 8 supported chains, corrected contract registry. Brand favicon refreshed.</li>
-      <li><strong>2026-05-08</strong> — Real Unified Balance with multi-source spend; polished wallet picker (EIP-6963 + RDNS-based ranking).</li>
-      <li><strong>2026-05-06</strong> — Trade page UX: chain logos in source picker, larger fonts, help moved to a popover.</li>
-      <li><strong>2026-05-04</strong> — Wallet picker modal; 0-balance tokens hidden by default; Fuji recommended for fastest deposits.</li>
+      <li><strong>2026-05-20</strong> — Docs rewrite. Dropped Vault / Pools / Points sections (no longer being built). Added Trade, Agent, History, Create Token, Dashboard reference pages. Updated contract registry — USYC removed, App Kit fallback noted on the Uniswap V2 entry.</li>
+      <li><strong>2026-05-18</strong> — Trade declutter — removed App Kit ready pill, Gateway hint pill, Liquidity card. Quote latency cut via 150ms debounce + SDK prefetch.</li>
+      <li><strong>2026-05-15</strong> — Balance polish — circular chain logos, Unichain added to the chain registry, CCTP-domain subtext dropped.</li>
+      <li><strong>2026-05-12</strong> — History page launched. Receipt-feed aesthetic across Trade / Balance / Agent activity, segmented tabs, deep-link to chain explorer.</li>
+      <li><strong>2026-05-08</strong> — Agent v0.9 — auto-pause after 5 consecutive failures; admin diagnostic endpoint for failure log; Cloudflare cron rollout.</li>
+      <li><strong>2026-05-04</strong> — Real Unified Balance with multi-source spend; wallet picker (EIP-6963 + RDNS-based ranking).</li>
       <li><strong>2026-04-25</strong> — Security baseline: CSP, SRI, host headers, vulnerability disclosure policy, pre-flight check script.</li>
-      <li><strong>2026-04-22</strong> — Vault page UX refresh; "How USYC works" restructured for narrow viewports.</li>
       <li><strong>2026-04-20</strong> — Initial homepage launch.</li>
     </ul>
 
     <p class="docs-p" style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:24px">Upcoming</p>
     <ul class="docs-ul">
+      <li><strong>Balance / Agent / Trade — UX deepening</strong> — Q2 2026 focus on polishing the three live surfaces. Intent / approval / revoke flows, quote &amp; route polish.</li>
+      <li><strong>Dashboard GA</strong> — operator control center moves from <em>soon</em> to public.</li>
       <li><strong>WalletConnect / Reown AppKit</strong> — mobile wallet support.</li>
-      <li><strong>StableFX</strong> — RFQ-driven USDC ⇄ EURC PvP settlement via the Arc <code>FxEscrow</code> contract.</li>
-      <li><strong>Position history</strong> — per-vault, per-pool historical accrual and fee charts.</li>
-      <li><strong>Status page</strong> — public uptime + incident timeline at <code>status.arcswap.net</code>.</li>
-      <li><strong>Multi-vault yield</strong> — additional tokenized RWA primitives once available on Arc.</li>
+      <li><strong>Circle Wallets onboarding</strong> — non-crypto-native users land directly on a Programmable Wallet.</li>
+      <li><strong>StableFX</strong> — RFQ-driven USDC ⇄ EURC ⇄ USDP PvP settlement via the Arc <code>FxEscrow</code> contract.</li>
       <li><strong>Mainnet</strong> — shipping shortly after Arc Foundation launches Arc L1 mainnet.</li>
     </ul>
 
     <!-- ─── FOOTER ─── -->
     <div class="docs-foot">
-      <span>© 2026 ArcSwap · Arc Testnet · v0.9.4</span>
+      <span>© 2026 ArcSwap · Arc Testnet · v0.10.0</span>
       <div>
         <a href="/">Home</a> &nbsp;·&nbsp;
         <a href="/blog">Blog</a> &nbsp;·&nbsp;
@@ -1060,16 +1105,16 @@ POST <span class="code-key">/api/gateway-proxy/v1/transfer</span>
     <a class="toc-link" href="#quick-start">Quick start</a>
     <a class="toc-link" href="#wallet-setup">Wallet setup</a>
     <a class="toc-link" href="#get-testnet-usdc">Testnet USDC</a>
-    <a class="toc-link" href="#unified-balance">Unified Balance</a>
-    <a class="toc-link" href="#vault">USYC Vault</a>
-    <a class="toc-link" href="#swap">Swap</a>
-    <a class="toc-link" href="#bridge">CCTP Bridge</a>
-    <a class="toc-link" href="#pool">Pools</a>
-    <a class="toc-link" href="#points">Points</a>
+    <a class="toc-link" href="#trade">Trade</a>
+    <a class="toc-link" href="#balance">Unified Balance</a>
+    <a class="toc-link" href="#agent">Agent</a>
+    <a class="toc-link" href="#history">History</a>
+    <a class="toc-link" href="#token">Create Token</a>
+    <a class="toc-link" href="#dashboard">Dashboard</a>
     <a class="toc-link" href="#arc-network">Arc L1</a>
-    <a class="toc-link" href="#usyc">USYC</a>
     <a class="toc-link" href="#circle-gateway">Gateway</a>
     <a class="toc-link" href="#cctp">CCTP V2</a>
+    <a class="toc-link" href="#programmable-wallets">Programmable Wallets</a>
     <a class="toc-link" href="#usdc-gas">USDC as gas</a>
     <a class="toc-link" href="#network-info">Network info</a>
     <a class="toc-link" href="#supported-chains">Chains</a>

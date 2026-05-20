@@ -452,12 +452,12 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
       <div class="stat-label">Chains Unified</div>
     </div>
     <div class="stat-item">
-      <div class="stat-num" id="hero-tvl">—</div>
-      <div class="stat-label">Live Pool TVL</div>
+      <div class="stat-num">~20s</div>
+      <div class="stat-label">CCTP Fast Bridge</div>
     </div>
     <div class="stat-item">
-      <div class="stat-num" id="hero-vol">—</div>
-      <div class="stat-label">24H Volume</div>
+      <div class="stat-num">Sub-1s</div>
+      <div class="stat-label">Arc Finality</div>
     </div>
     <div class="stat-item">
       <div class="stat-num" id="hero-block">—</div>
@@ -509,8 +509,8 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
   <div class="section-inner">
     <div class="section-header">
       <div class="section-badge">◆ One Balance · Three Surfaces</div>
-      <h2 class="section-title">Spend. Automate.<br>Provide Liquidity.</h2>
-      <p class="section-sub">Spend USDC anywhere via Circle Gateway and CCTP V2, automate wallet top-ups with the Auto-Replenish Agent, and provide liquidity on Arc-native pairs.</p>
+      <h2 class="section-title">Spend. Automate.<br>Read the receipts.</h2>
+      <p class="section-sub">Spend USDC anywhere via Circle Gateway and CCTP V2, automate wallet top-ups with the Auto-Replenish Agent, and trace every move in a clean receipt-style history feed.</p>
     </div>
     <div class="features-grid glass">
       <div class="feat-card">
@@ -531,15 +531,15 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
           <div class="feat-stat-label">Dry-run preview · feedback-driven build</div>
         </div>
       </a>
-      <div class="feat-card">
+      <a class="feat-card" href="/history" style="text-decoration:none;color:inherit;cursor:pointer">
         <div class="feat-icon fi-pink">◈</div>
-        <div class="feat-name">Liquidity Pools</div>
-        <p class="feat-desc">Provide liquidity to Arc-native pairs and earn a share of every swap. Constant-product AMM with full position tracking and instant withdraw.</p>
+        <div class="feat-name">Receipt-Style History</div>
+        <p class="feat-desc">Every Trade, Balance, and Agent move shows up in one clean feed — title, source → destination chain tags, status pill, relative time, amount, tx hash one-click linkable to the right chain explorer.</p>
         <div class="feat-stat">
-          <div class="feat-stat-num grad-pink">0.25%</div>
-          <div class="feat-stat-label">LP fee per swap · auto-compounded</div>
+          <div class="feat-stat-num grad-pink">All · Trade · Balance · Agent</div>
+          <div class="feat-stat-label">Receipt feed · not charts, not noise</div>
         </div>
-      </div>
+      </a>
     </div>
   </div>
 </section>
@@ -654,7 +654,7 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
     <div class="section-header">
       <div class="section-badge">◇ Getting Started</div>
       <h2 class="section-title">From Wallet to<br>Spend Anywhere</h2>
-      <p class="section-sub">Connect, fund with testnet USDC, see your unified balance across chains, then spend instantly anywhere or provide liquidity on Arc-native pairs.</p>
+      <p class="section-sub">Connect, fund with testnet USDC, see your unified balance across chains, then spend instantly anywhere — or let the Auto-Replenish Agent keep any wallet topped up for you.</p>
     </div>
     <div class="steps-grid glass">
       <div class="step-card" data-n="01">
@@ -667,7 +667,7 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
         <div class="step-num">Step 02</div>
         <div class="step-icon">💧</div>
         <div class="step-name">Get Testnet USDC</div>
-        <p class="step-desc">Claim free USDC from <strong>faucet.circle.com</strong> — Circle's official Arc Testnet faucet. The same USDC works for trade, agent, pool, and gas.</p>
+        <p class="step-desc">Claim free USDC from <strong>faucet.circle.com</strong> — Circle's official Arc Testnet faucet. The same USDC works for trade, agent, and gas.</p>
       </div>
       <div class="step-card" data-n="03">
         <div class="step-num">Step 03</div>
@@ -928,59 +928,21 @@ function doSwap(){
 }
 updateSwapUI();
 
-/* Live hero stats — read on-chain from Arc Testnet */
+/* Live hero stat — read latest Arc block from Arc Testnet RPC */
 (async () => {
   const RPC = 'https://rpc.testnet.arc.network';
-  const FACTORY = '0x45dd35611179ae6663ae47791175d7d598ced086';
-  const PAIRS = [
-    { a: '0x3600000000000000000000000000000000000000', b: '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a', dA: 18, dB: 6, pA: 1.00, pB: 1.08 },
-    { a: '0x3600000000000000000000000000000000000000', b: '0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C', dA: 18, dB: 6, pA: 1.00, pB: 1.08 },
-    { a: '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a', b: '0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C', dA: 6, dB: 6, pA: 1.08, pB: 1.08 },
-  ];
-  const SWAP_TOPIC = '0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822';
-  function pad32(a){ return a.replace('0x','').toLowerCase().padStart(64,'0'); }
-  async function rpc(method, params){
-    const r = await fetch(RPC, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ jsonrpc:'2.0', id:1, method, params }) });
-    const j = await r.json(); if(j.error) throw new Error(j.error.message); return j.result;
-  }
-  function fmt(n){ if(n==null||isNaN(n)) return '—'; if(n>=1e6) return '$'+(n/1e6).toFixed(2)+'M'; if(n>=1e3) return '$'+(n/1e3).toFixed(1)+'K'; return '$'+Math.round(n).toLocaleString(); }
-  async function getPair(a,b){
-    const data='0xe6a43905'+pad32(a)+pad32(b);
-    const r=await rpc('eth_call',[{to:FACTORY,data},'latest']);
-    if(!r||r==='0x'||/^0x0+$/.test(r)) return null;
-    return '0x'+r.slice(-40);
-  }
-  async function getReserves(p){
-    const r=await rpc('eth_call',[{to:p,data:'0x0902f1ac'},'latest']);
-    return [BigInt('0x'+r.slice(2,66)), BigInt('0x'+r.slice(66,130))];
-  }
-  async function getToken0(p){
-    const r=await rpc('eth_call',[{to:p,data:'0x0dfe1681'},'latest']);
-    return '0x'+r.slice(-40);
-  }
   try {
-    const head = parseInt(await rpc('eth_blockNumber',[]),16);
-    document.getElementById('hero-block').textContent = '#'+head.toLocaleString();
-    let totalTVL = 0, totalVol = 0;
-    const fromBlock = Math.max(0, head - 43200); // ~24h at 2s
-    for(const p of PAIRS){
-      try {
-        const pair = await getPair(p.a, p.b); if(!pair) continue;
-        const [t0, [r0, r1]] = await Promise.all([getToken0(pair), getReserves(pair)]);
-        const isAFirst = t0.toLowerCase() === p.a.toLowerCase();
-        const rA = isAFirst ? r0 : r1, rB = isAFirst ? r1 : r0;
-        totalTVL += Number(rA)/(10**p.dA) * p.pA + Number(rB)/(10**p.dB) * p.pB;
-        const logs = await rpc('eth_getLogs',[{ address: pair, fromBlock:'0x'+fromBlock.toString(16), toBlock:'0x'+head.toString(16), topics:[SWAP_TOPIC] }]);
-        for(const L of logs){
-          const d=L.data.slice(2);
-          const a0In=BigInt('0x'+d.slice(0,64)), a1In=BigInt('0x'+d.slice(64,128));
-          totalVol += (Number(a0In)/(10**(isAFirst?p.dA:p.dB)) * (isAFirst?p.pA:p.pB) + Number(a1In)/(10**(isAFirst?p.dB:p.dA)) * (isAFirst?p.pB:p.pA));
-        }
-      } catch(e) { console.warn('hero pair fail', e); }
+    const r = await fetch(RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_blockNumber', params:[] }),
+    });
+    const j = await r.json();
+    if (j && j.result) {
+      const head = parseInt(j.result, 16);
+      document.getElementById('hero-block').textContent = '#'+head.toLocaleString();
     }
-    document.getElementById('hero-tvl').textContent = fmt(totalTVL);
-    document.getElementById('hero-vol').textContent = fmt(totalVol);
-  } catch(e) { console.warn('hero stats fail', e); }
+  } catch(e) { console.warn('hero block fail', e); }
 })();
 </script>
 </body>

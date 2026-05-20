@@ -7,11 +7,11 @@
   // ── NAVBAR ─────────────────────────────────────────────
   // Two chrome variants:
   //   1. boot()    — classic top nav. Marketing/landing pages (/, /blog).
-  //   2. bootApp() — left sidebar app shell. Operator surfaces (/history,
-  //                  later /trade, /balance, /agent, etc).
-  // /pool and /vault have been retired. Dashboard (the operator one) is
-  // still gated in functions/_middleware.js; the sidebar "Dashboard" entry
-  // is a public placeholder for the future user dashboard.
+  //   2. bootApp() — left sidebar app shell. Operator surfaces (/trade,
+  //                  /balance, /agent, /history, /token, etc).
+  // Dashboard (the operator one) is still gated in functions/_middleware.js;
+  // the sidebar "Dashboard" entry is a public placeholder for the future
+  // user dashboard.
 
   function navTabs(active) {
     return [

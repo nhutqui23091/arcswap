@@ -38,8 +38,6 @@
         multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
         tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
         messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
-        // Circle USYC Teller — ERC-4626 style subscribe/redeem between USDC (asset) and USYC (share)
-        usycTeller:          '0x9fdF14c5B14173D74C08Af27AebFf39240dC105A',
         fxEscrow:            '0x867650F5eAe8df91445971f14d89fd84F0C9a9f8',
         gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
         gatewayMinter:       '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
@@ -193,13 +191,6 @@
         decimals: 6,
         icon: 'https://assets.coingecko.com/coins/images/26045/small/euro.png',
       },
-      USYC: {
-        symbol: 'USYC',
-        name: 'US Yield Coin',
-        address: '0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C',
-        decimals: 6,
-        icon: 'https://assets.coingecko.com/coins/images/32800/small/USYC_icon.png',
-      },
     },
     sepolia: {
       USDC: {
@@ -312,33 +303,6 @@
     gatewayMinter: [
       'function gatewayMint(bytes attestationPayload, bytes signature)',
       'event Minted(address indexed token, address indexed recipient, uint256 value)',
-    ],
-    usycTeller: [
-      // ERC-4626-like subscribe / redeem
-      'function asset() view returns (address)',
-      'function share() view returns (address)',
-      'function totalAssets() view returns (uint256)',
-      'function mintPrice() view returns (int256)',
-      'function convertToShares(uint256 assets) view returns (uint256)',
-      'function convertToAssets(uint256 shares) view returns (uint256)',
-      'function previewDeposit(uint256 assets) view returns (uint256)',
-      'function previewMint(uint256 shares) view returns (uint256)',
-      'function previewRedeem(uint256 shares) view returns (uint256)',
-      'function previewWithdraw(uint256 assets) view returns (uint256)',
-      'function maxDeposit(address account) view returns (uint256)',
-      'function maxMint(address account) view returns (uint256)',
-      'function maxRedeem(address account) view returns (uint256)',
-      'function maxWithdraw(address account) view returns (uint256)',
-      'function subscriptionFeeRate(address account) view returns (uint256)',
-      'function redemptionFeeRate(address account) view returns (uint256)',
-      'function deposit(uint256 assets, address receiver) returns (uint256)',
-      'function mint(uint256 shares, address receiver) returns (uint256)',
-      'function redeem(uint256 shares, address receiver, address account) returns (uint256)',
-      'function withdraw(uint256 assets, address receiver, address account) returns (uint256)',
-      'function afterHourTrading() view returns (uint256)',
-      'function isDST() view returns (bool)',
-      'function todayTimestamp() view returns (uint256)',
-      'function oracle() view returns (address)',
     ],
   };
 

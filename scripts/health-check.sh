@@ -10,7 +10,7 @@ ARC_RPC="${ARC_RPC:-https://rpc.testnet.arc.network}"
 IRIS_BASE="${IRIS_BASE:-https://iris-api-sandbox.circle.com/v2}"
 APP_URL="${APP_URL:-https://arcswap.net}"
 APP_BACKUP_URL="${APP_BACKUP_URL:-https://arcswap.eth.limo}"
-USYC_TELLER="${USYC_TELLER:-0x9fdF14c5B14173D74C08Af27AebFf39240dC105A}"
+GATEWAY_WALLET="${GATEWAY_WALLET:-0x0077777d7EBA4688BDeF3E311b846F25870A19B9}"
 
 # Webhook for Discord/Slack alerting (optional — set in env)
 ALERT_WEBHOOK="${ALERT_WEBHOOK:-}"
@@ -93,16 +93,16 @@ else
   check "Arc RPC" "❌" "no response"
 fi
 
-# ─── 4. USYC Teller reachable (read-only call) ───────────────────────────────
-# Calls totalAssets() — selector 0x01e1d114
-TELLER_RES=$(curl -s --max-time 10 -X POST "$ARC_RPC" \
+# ─── 4. GatewayWallet reachable (read-only EXTCODESIZE probe) ────────────────
+# Verify the contract exists at the deterministic address on Arc.
+GW_RES=$(curl -s --max-time 10 -X POST "$ARC_RPC" \
   -H "content-type: application/json" \
-  -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$USYC_TELLER\",\"data\":\"0x01e1d114\"},\"latest\"],\"id\":1}" \
+  -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$GATEWAY_WALLET\",\"latest\"],\"id\":1}" \
   2>/dev/null || echo "")
-if echo "$TELLER_RES" | grep -q '"result":"0x'; then
-  check "USYC Teller" "✓"
+if echo "$GW_RES" | grep -q '"result":"0x[0-9a-f]'; then
+  check "Gateway Wallet" "✓"
 else
-  check "USYC Teller" "❌" "eth_call failed"
+  check "Gateway Wallet" "❌" "eth_getCode failed or empty"
 fi
 
 # ─── 5. IRIS (CCTP attestation API) reachable ────────────────────────────────

@@ -3,16 +3,12 @@
 // Locks the (operator) Dashboard page so only the operator can view it.
 // Credentials come from Cloudflare Pages env vars (Settings → Environment
 // variables → Production):
-//   POOL_AUTH_USER  — username (anything you want)
+//   POOL_AUTH_USER  — username (anything you want; legacy var name from
+//                     when /pool was the gated surface — kept for stability)
 //   POOL_AUTH_PASS  — password
 //
 // If either env var is missing, the gate FAILS CLOSED (503) rather than
 // silently exposing the page.
-//
-// History: /pool and /vault used to live here too — both have been retired
-// and removed from the nav. The remaining HTML files (pool.html, vault.html)
-// are unreachable via UI but kept un-gated to avoid 401-ing any external
-// bookmarks; they'll get cleaned up in a follow-up.
 //
 // The sidebar "Dashboard" entry is a public placeholder for the FUTURE
 // user dashboard (marked "Coming soon"); /dashboard itself remains the
@@ -56,7 +52,7 @@ export async function onRequest(context) {
 
   if (!user || !pass) {
     return new Response(
-      'Pool access is not configured. Set POOL_AUTH_USER and POOL_AUTH_PASS in Cloudflare Pages env vars.',
+      'Dashboard access is not configured. Set POOL_AUTH_USER and POOL_AUTH_PASS in Cloudflare Pages env vars.',
       { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
     );
   }
