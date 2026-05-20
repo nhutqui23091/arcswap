@@ -66,8 +66,11 @@ html{scroll-behavior:smooth}
 .chain-row.header{background:rgba(255,255,255,0.04);font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:11px 18px}
 .chain-row:hover:not(.header){background:rgba(255,255,255,0.025)}
 .chain-info{display:flex;align-items:center;gap:12px;min-width:0}
-.chain-dot{width:32px;height:32px;border-radius:9px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:800;font-size:12px;color:#0E1B2E;text-shadow:none;box-shadow:0 0 0 1px rgba(255,255,255,0.06),0 1px 2px rgba(0,0,0,.18)}
-.chain-dot img{width:100%;height:100%;object-fit:cover;display:block}
+/* Chain logos: circular frame for consistency with how blockchain brands
+   present their marks in wallets / explorers. 32px disc on a neutral bg —
+   PNG art fills the circle via object-fit:cover. */
+.chain-dot{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:800;font-size:12px;color:#0E1B2E;text-shadow:none;box-shadow:0 0 0 1px rgba(255,255,255,0.06),0 1px 2px rgba(0,0,0,.18)}
+.chain-dot img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
 .chain-dot.fallback{background:linear-gradient(135deg,#4DD6DB,#4A7BEC);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
 .chain-name{font-size:14px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis}
 .chain-name small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
@@ -310,7 +313,7 @@ html{scroll-behavior:smooth}
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="/assets/arc-core.js?v=9.6.2"></script>
+<script src="/assets/arc-core.js?v=9.6.3"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
 <script src="/assets/arc-ui.js?v=9.7.6"></script>
 <script>

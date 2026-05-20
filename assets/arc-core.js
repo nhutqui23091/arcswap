@@ -762,12 +762,10 @@
   };
 
   // ───────── CHAIN ICONS ─────────
-  // Hand-crafted SVG data URIs — recognizable brand marks for each chain.
-  // Inline so they always render (no CDN dependency, no CSP changes needed).
-  // Keep them minimal but distinctive so users can scan the picker visually.
+  // Brand-matched PNG logos hosted locally (see /assets/logos/).
+  // All 8 chains have user-supplied artwork — kept on disk so we don't
+  // pay a CDN round-trip and don't widen img-src in our CSP.
   const CHAIN_ICONS = {
-    // Brand-matched PNG logos hosted locally (see /assets/logos/).
-    // unichain has no user-supplied asset yet → keep inline SVG fallback.
     arc: "/assets/logos/arc.png",
     avalancheFuji: "/assets/logos/avalanche.png",
     arbitrumSepolia: "/assets/logos/arbitrum.png",
@@ -775,7 +773,7 @@
     baseSepolia: "/assets/logos/base.png",
     optimismSepolia: "/assets/logos/optimism.png",
     polygonAmoy: "/assets/logos/polygon.png",
-    unichainSepolia: "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23FF007A'/%3E%3Cpath fill='white' d='M14.5 7c-.3 4 .3 6 1.5 7-1.5-.5-3-2-3.5-4 .5 4 2.5 6 5 6.5-1 .5-3 .5-4-.5 1 1.5 2.5 2.5 4.5 2.5-1 1-2.5 1.5-4.5 1.5C16 22 19 20 19.5 16c.5 4-1 7-3.5 8.5C19 24 22 21 22 16.5 22 11 18 7 14.5 7z'/%3E%3C/svg%3E",
+    unichainSepolia: "/assets/logos/unichain.png",
   };
   function chainIcon(chainKey) {
     return CHAIN_ICONS[chainKey] || CHAIN_ICONS.arc;
