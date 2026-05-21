@@ -25,12 +25,12 @@ ArcSwap is a **non-custodial stablecoin terminal** built on the [Arc Layer 1](ht
 
 | Surface | When | Notes |
 |---|---|---|
-| **Dashboard** | Q2 2026 | Operator console: portfolio, balances, agents, activity — one view. |
-| **Circle Wallets onboarding** | Q3 2026 | Embedded sign-in (Circle Programmable Wallets) for non-crypto users. |
-| **StableFX** | Q4 2026 | RFQ-driven USDC ⇄ EURC PvP settlement via Arc FxEscrow. |
-| **Nanopayments + Agent SDK** | 2027+ | Streaming USDC primitives + Agent SDK GA. |
+| **Balance + Agent + Trade** | Q2 2026 | Unified balance flow polish, Agent UX hardening (intents, approvals, revoke), and route/quote optimization. |
+| **Dashboard** | Q3 2026 | Public operator console with portfolio, balances, agents, and activity in one unified view. |
+| **Circle Wallets onboarding** | Q4 2026 | Embedded sign-in via Circle Programmable Wallets for non-crypto users, plus mobile onboarding support. |
+| **StableFX + Nanopayments + Agent SDK** | 2027+ | RFQ-driven stablecoin settlement, streaming USDC primitives, and Agent SDK general availability. |
 
-> All four surfaces are built on **Arc Testnet** first. Production cutover follows Arc Mainnet (targeted Summer 2026 per Circle's Arc whitepaper).
+> All surfaces are built on **Arc Testnet** first. Production cutover follows **Arc Mainnet** (targeted Summer 2026 per Circle’s Arc whitepaper).
 
 You always retain custody. ArcSwap never holds funds, and the agent backend executes only within EIP-712-signed bounds you can revoke at any time.
 
