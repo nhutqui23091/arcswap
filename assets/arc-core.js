@@ -208,7 +208,7 @@
         name: 'Circle Bitcoin',
         address: '0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF',
         decimals: 8,
-        icon: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
+        icon: '/assets/logos/cirBTC.png',
       },
     },
     sepolia: {
@@ -232,7 +232,7 @@
         name: 'Circle Bitcoin',
         address: '0x3a3fe695F684Bf9b9e43CF43C2b895Ea5e392bB3',
         decimals: 8,
-        icon: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
+        icon: '/assets/logos/cirBTC.png',
       },
     },
     baseSepolia: {
@@ -748,7 +748,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.5.3',
+    version: '9.6.4',
   };
 
   // ───────── CHAIN ICONS ─────────
