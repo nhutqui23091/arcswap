@@ -546,10 +546,28 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   }
   function mergeCustomTokens() {
     for (const chainKey of ALL_CHAINS) {
-      loadCustomTokens(chainKey).forEach(tok => {
+      const native = Object.values(TOKENS[chainKey] || {});
+      const custom = loadCustomTokens(chainKey);
+      const stale = [];
+      custom.forEach(tok => {
+        // Native wins: skip any custom entry whose address is already covered natively
+        if (native.find(n => n.address.toLowerCase() === tok.address.toLowerCase())) {
+          stale.push(tok);
+          return;
+        }
         if (!TOKENS[chainKey]) TOKENS[chainKey] = {};
         TOKENS[chainKey][tok.symbol] = tok;
       });
+      // Auto-clean stale entries from localStorage (e.g. tokens promoted to native)
+      if (stale.length) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(CUSTOM_LS_KEY) || '{}');
+          saved[chainKey] = (saved[chainKey] || []).filter(
+            t => !stale.find(s => s.address.toLowerCase() === t.address.toLowerCase())
+          );
+          localStorage.setItem(CUSTOM_LS_KEY, JSON.stringify(saved));
+        } catch {}
+      }
     }
   }
   mergeCustomTokens();
