@@ -138,6 +138,12 @@ html{scroll-behavior:smooth}
   .chain-row.header{display:none}
   .chain-actions{grid-column:1/-1;justify-content:flex-start}
 }
+/* Loading shimmer while refreshAll() is fetching */
+.chain-table.loading .chain-row:not(.header){animation:bal-shimmer .9s ease-in-out infinite;pointer-events:none}
+@keyframes bal-shimmer{0%,100%{opacity:.6}50%{opacity:.25}}
+/* Max button shared style */
+.max-btn{padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.05em;transition:all .15s}
+.max-btn:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
 </style>
 </head>
 <body>
@@ -232,7 +238,7 @@ html{scroll-behavior:smooth}
     </div>
     <div class="gw-label">Source chain</div>
     <select id="deposit-chain" class="gw-select"></select>
-    <div class="gw-label">Amount</div>
+    <div class="gw-label" style="display:flex;justify-content:space-between;align-items:center">Amount<button id="deposit-max" class="max-btn" type="button">Max</button></div>
     <input id="deposit-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
     <div class="gw-row"><span>Wallet balance</span><strong id="deposit-walbal">—</strong></div>
     <div class="gw-row"><span>Currently in Gateway</span><strong id="deposit-gwbal">—</strong></div>
@@ -250,7 +256,7 @@ html{scroll-behavior:smooth}
     </div>
     <div class="gw-label">Chain</div>
     <select id="withdraw-chain" class="gw-select"></select>
-    <div class="gw-label">Amount</div>
+    <div class="gw-label" style="display:flex;justify-content:space-between;align-items:center">Amount<button id="withdraw-max" class="max-btn" type="button">Max</button></div>
     <input id="withdraw-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
     <div class="gw-row"><span>Available in Gateway</span><strong id="withdraw-gwbal">—</strong></div>
     <div class="gw-row"><span>Withdrawal delay</span><strong id="withdraw-delay">—</strong></div>
@@ -284,7 +290,7 @@ html{scroll-behavior:smooth}
 
     <div class="gw-label">To (destination chain — USDC will be minted here)</div>
     <select id="spend-dst" class="gw-select"></select>
-    <div class="gw-label">Amount</div>
+    <div class="gw-label" style="display:flex;justify-content:space-between;align-items:center">Amount<button id="spend-max" class="max-btn" type="button">Max</button></div>
     <input id="spend-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
     <div class="gw-label">Recipient</div>
     <input id="spend-recipient" class="gw-input" type="text" placeholder="0x… (defaults to your wallet)"/>
@@ -302,7 +308,10 @@ html{scroll-behavior:smooth}
 
     <button id="spend-go" class="gw-action" type="button">Sign intent + mint</button>
     <div id="spend-status" class="gw-status"></div>
-    <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.55">
+    <div id="spend-trade-cta" style="display:none;margin-top:8px;text-align:center">
+      <a href="/trade" style="display:inline-block;padding:8px 20px;border-radius:10px;background:rgba(77,214,219,.1);border:1px solid rgba(77,214,219,.3);color:var(--arc1);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s">→ Trade on Arc</a>
+    </div>
+    <div id="spend-mode-explanation" style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.55">
       <strong style="color:var(--text)">Unified mode</strong> spends from multiple chains in one transfer. You'll sign once per source chain (e.g. 3 sigs if 3 chains contribute), then receive ONE attestation that mints the combined amount on the destination — exactly like having a single cross-chain balance.
     </div>
   </div>
@@ -458,6 +467,7 @@ html{scroll-behavior:smooth}
         else openWithdrawModal(k);
       };
     });
+    table.classList.remove('loading');
   }
 
   function refreshTotal() {
@@ -512,7 +522,7 @@ html{scroll-behavior:smooth}
         btn.disabled = true; btn.textContent = 'Finalizing…';
         try {
           await ARC.gateway.finalizeWithdrawal(p.chainKey);
-          alert('Withdrawal finalized!');
+          ArcUI.toast('success', 'Withdrawal finalized', 'Funds returned to your wallet.');
           refreshAll();
         } catch (err) {
           alert('Failed: ' + ARC.explainError(err));
@@ -565,6 +575,7 @@ html{scroll-behavior:smooth}
   async function refreshAll() {
     if (!state.addr) { renderTable(); refreshTotal(); return; }
     document.getElementById('ub-sub').textContent = 'Loading…';
+    document.getElementById('chain-table').classList.add('loading');
     await Promise.all([refreshBalances(), refreshWallets()]);
     renderTable(); refreshTotal();
     refreshPending().catch(() => {});
@@ -645,6 +656,36 @@ html{scroll-behavior:smooth}
     }
   };
 
+  // ───── Max buttons ─────
+  document.getElementById('deposit-max').onclick = () => {
+    const k = document.getElementById('deposit-chain').value;
+    const tok = ARC.TOKENS[k]?.USDC;
+    const wal = state.walletBals[k];
+    if (tok && wal !== undefined) document.getElementById('deposit-amount').value = human(wal, tok.decimals);
+  };
+  document.getElementById('withdraw-max').onclick = () => {
+    const k = document.getElementById('withdraw-chain').value;
+    const bal = state.balances.find(b => b.chainKey === k);
+    if (bal) document.getElementById('withdraw-amount').value = bal.display;
+  };
+  document.getElementById('spend-max').onclick = () => {
+    if (spendMode === 'manual') return;
+    if (spendMode === 'single') {
+      const k = document.getElementById('spend-src').value;
+      const bal = state.balances.find(b => b.chainKey === k);
+      if (bal) {
+        const burnable = ARC.gateway.maxBurnableFromBalance(bal.canonical);
+        document.getElementById('spend-amount').value = ARC.formatAmt(burnable, 6, 4);
+      }
+    } else {
+      const dst = document.getElementById('spend-dst').value;
+      const eligible = state.balances.filter(b => b.chainKey !== dst);
+      const spendable = ARC.gateway.totalSpendable(eligible);
+      document.getElementById('spend-amount').value = ARC.formatAmt(spendable, 6, 4);
+      refreshSpendBreakdown();
+    }
+  };
+
   // ───── Withdraw modal ─────
   async function openWithdrawModal(chainKey) {
     if (!state.addr) { alert('Connect wallet first'); return; }
@@ -700,6 +741,7 @@ html{scroll-behavior:smooth}
     document.getElementById('spend-recipient').value = state.addr;
     document.getElementById('spend-amount').value = '';
     clearStatus('spend-status');
+    document.getElementById('spend-trade-cta').style.display = 'none';
     if (state.balances.length) {
       const best = [...state.balances].sort((a,b) => (b.canonical > a.canonical ? 1 : -1))[0];
       document.getElementById('spend-src').value = best.chainKey;
@@ -818,11 +860,12 @@ html{scroll-behavior:smooth}
         });
       }
       setStatus('spend-status', 'ok', '✅ Cross-chain spend complete');
+      document.getElementById('spend-trade-cta').style.display = 'block';
       // Real-metrics telemetry — mint tx hash on destination chain so the
       // status page can deep-link to dst chain's explorer.
       const mintHash = spendResult?.mint?.tx?.hash || null;
       try { ARC.track('spend', dst, Number(amtStr), mintHash, 'balance'); } catch {}
-      setTimeout(() => closeModal('modal-spend'), 1500);
+      setTimeout(() => closeModal('modal-spend'), 2500);
       refreshAll();
     } catch (e) {
       console.error(e); setStatus('spend-status', 'err', '❌ ' + ARC.explainError(e));
