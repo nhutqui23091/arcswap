@@ -352,6 +352,8 @@ html{scroll-behavior:smooth}
     balances: [],         // [{chainKey, canonical, raw, display, depositor}]
     walletBals: {},       // chainKey → raw bigint of wallet's USDC (separate from Gateway escrow)
     pending: [],          // [{chainKey, value, withdrawableAfter}]
+    txPending: [],        // [{chainKey, amountCanonical, type, startedAt, txHash, balanceAtPending}]
+    isCachedData: false,
     lastSyncMs: 0,
   };
 
@@ -363,6 +365,52 @@ html{scroll-behavior:smooth}
     try { return ARC.formatAmt(raw, decimals, 4); } catch { return '0'; }
   };
 
+  // ───── localStorage helpers (BigInt-safe) ─────
+  const lsSet = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val, (k, v) => typeof v === 'bigint' ? {__bi: v.toString()} : v)); } catch {} };
+  const lsGet = (key) => { try { const r = localStorage.getItem(key); if (!r) return null; return JSON.parse(r, (k, v) => (v && typeof v === 'object' && '__bi' in v) ? BigInt(v.__bi) : v); } catch { return null; } };
+  const cacheKey = () => `arcswap:balanceCache:${state.addr}`;
+  const txPendingKey = () => `arcswap:txPending:${state.addr}`;
+  const withdrawalFlagKey = () => `arcswap:hasActiveWithdrawals:${state.addr}`;
+  const withdrawalFlag = () => { try { return localStorage.getItem(withdrawalFlagKey()); } catch { return null; } };
+  const setWithdrawalFlag = (val) => { if (!state.addr) return; try { localStorage.setItem(withdrawalFlagKey(), val ? 'true' : 'false'); } catch {} };
+
+  function saveBalanceCache() {
+    if (!state.addr) return;
+    lsSet(cacheKey(), { balances: state.balances, walletBals: state.walletBals, savedAt: Date.now() });
+  }
+  function loadBalanceCache() {
+    if (!state.addr) return false;
+    const cached = lsGet(cacheKey());
+    if (!cached || !Array.isArray(cached.balances)) return false;
+    state.balances = cached.balances;
+    state.walletBals = cached.walletBals || {};
+    state.lastSyncMs = cached.savedAt;
+    state.isCachedData = true;
+    renderTable();
+    refreshTotal();
+    return true;
+  }
+  function loadTxPending() {
+    state.txPending = state.addr ? (lsGet(txPendingKey()) || []) : [];
+  }
+  function saveTxPending() {
+    if (!state.addr) return;
+    lsSet(txPendingKey(), state.txPending);
+  }
+  function pruneTxPending() {
+    if (!state.addr || !state.txPending.length) return;
+    let changed = false;
+    state.txPending = state.txPending.filter(p => {
+      const bal = state.balances.find(b => b.chainKey === p.chainKey);
+      if (!bal) return true;
+      const cur = bal.canonical;
+      if (p.type === 'deposit' && cur >= p.balanceAtPending + p.amountCanonical) { changed = true; return false; }
+      if (p.type === 'spend' && p.balanceAtPending >= p.amountCanonical && cur <= p.balanceAtPending - p.amountCanonical) { changed = true; return false; }
+      return true;
+    });
+    if (changed) saveTxPending();
+  }
+
   const chainKeys = ARC.gateway.gatewayChains();
 
   // ───── Wallet ─────
@@ -373,10 +421,14 @@ html{scroll-behavior:smooth}
     const s = ARC.wallet.snapshot();
     if (s.connected) {
       state.addr = s.address;
+      loadTxPending();
+      loadBalanceCache();
       refreshAll();
     } else {
       state.addr = null;
       state.balances = [];
+      state.txPending = [];
+      state.isCachedData = false;
       renderTable();
       refreshTotal();
     }
@@ -454,9 +506,25 @@ html{scroll-behavior:smooth}
       const depositTitle = depositOff
         ? 'Direct deposit unavailable on Arc — USDC here is the native gas token. Spend cross-chain to mint USDC on Arc instead.'
         : '';
-      const balCell = pendDisp
-        ? `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small><div style="font-size:11px;color:#FFB454;font-weight:500;margin-top:2px">+ ${pendDisp} pending</div></div>`
-        : `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small></div>`;
+      const pendingLines = [];
+      if (connected && pendDisp) pendingLines.push(`<div style="font-size:11px;color:#FFB454;font-weight:500;margin-top:2px">+ ${pendDisp} pending</div>`);
+      if (connected) {
+        const nowMs = Date.now();
+        const STALE_MS = 30 * 60 * 1000;
+        const depP = state.txPending.filter(p => p.chainKey === k && p.type === 'deposit');
+        if (depP.length) {
+          const tot = depP.reduce((a, p) => a + p.amountCanonical, 0n);
+          const stale = depP.some(p => nowMs - p.startedAt > STALE_MS);
+          pendingLines.push(`<div style="font-size:11px;color:${stale ? 'var(--muted)' : '#FFB454'};font-weight:500;margin-top:2px"${stale ? ' title="Taking longer than expected. Check transaction on explorer."' : ''}>+ ${fmtBig(tot)} USDC deposit pending${stale ? ' ⚠' : ''}</div>`);
+        }
+        const spP = state.txPending.filter(p => p.chainKey === k && p.type === 'spend');
+        if (spP.length) {
+          const tot = spP.reduce((a, p) => a + p.amountCanonical, 0n);
+          const stale = spP.some(p => nowMs - p.startedAt > STALE_MS);
+          pendingLines.push(`<div style="font-size:11px;color:${stale ? 'var(--muted)' : '#FF9999'};font-weight:500;margin-top:2px"${stale ? ' title="Taking longer than expected. Check transaction on explorer."' : ''}>- ${fmtBig(tot)} USDC spend pending${stale ? ' ⚠' : ''}</div>`);
+        }
+      }
+      const balCell = `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small>${pendingLines.join('')}</div>`;
       const iconUrl = ARC.chainIcon ? ARC.chainIcon(k) : '';
       const shortLabel = chainShort(k).slice(0, 3);
       const dotHtml = iconUrl
@@ -497,6 +565,11 @@ html{scroll-behavior:smooth}
     if (!state.lastSyncMs) return;
     const n = state.balances.filter(b => b.canonical > 0n).length;
     let s = `Across ${n} chain${n!==1?'s':''} · Last sync ${new Date(state.lastSyncMs).toLocaleTimeString()}`;
+    if (state.isCachedData) {
+      const ageMs = Date.now() - state.lastSyncMs;
+      const ageStr = ageMs < 60000 ? 'just now' : ageMs < 300000 ? `${Math.round(ageMs/60000)}m ago` : `${Math.round(ageMs/3600000*10)/10}h ago`;
+      s += ` <span style="font-size:11px;font-family:var(--mono);color:${ageMs > 300000 ? 'var(--warn)' : 'var(--muted)'}">(cached · ${ageStr})</span>`;
+    }
     if (totalPending > 0n) {
       const pendDisp = ARC.formatAmt(totalPending, 6, 4);
       s += ` <span style="color:#FFB454;font-weight:600">· +${pendDisp} USDC pending finality (~12-15 min)</span>`;
@@ -517,6 +590,7 @@ html{scroll-behavior:smooth}
       } catch { /* chain may not respond */ }
     }));
     state.pending = all;
+    setWithdrawalFlag(all.length > 0);
     const wrap = document.getElementById('pending-wrap');
     const list = document.getElementById('pending-list');
     if (all.length === 0) { wrap.style.display = 'none'; return; }
@@ -592,8 +666,11 @@ html{scroll-behavior:smooth}
     document.getElementById('ub-sub').textContent = 'Loading…';
     document.getElementById('chain-table').classList.add('loading');
     await Promise.all([refreshBalances(), refreshWallets()]);
+    state.isCachedData = false;
+    pruneTxPending();
+    saveBalanceCache();
     renderTable(); refreshTotal();
-    refreshPending().catch(() => {});
+    if (withdrawalFlag() !== 'false') refreshPending().catch(() => {});
   }
 
   document.getElementById('ub-refresh').onclick = refreshAll;
@@ -656,8 +733,19 @@ html{scroll-behavior:smooth}
     if (value <= 0n) { setStatus('deposit-status', 'err', 'Invalid amount'); return; }
     const btn = document.getElementById('deposit-go');
     btn.disabled = true; btn.textContent = 'Working…';
+    // Normalize to 6-decimal canonical for Gateway balance comparison
+    let amtCanonical = value;
+    if (tok.decimals > 6) amtCanonical = value / (10n ** BigInt(tok.decimals - 6));
+    else if (tok.decimals < 6) amtCanonical = value * (10n ** BigInt(6 - tok.decimals));
+    const balSnap = state.balances.find(b => b.chainKey === k)?.canonical || 0n;
+    const pendingEntry = { chainKey: k, amountCanonical: amtCanonical, type: 'deposit', startedAt: Date.now(), txHash: null, balanceAtPending: balSnap };
+    state.txPending.push(pendingEntry);
+    saveTxPending();
+    renderTable();
     try {
       const result = await ARC.gateway.deposit(k, value, { onStep: (m) => setStatus('deposit-status', '', m) });
+      pendingEntry.txHash = result?.tx?.hash || null;
+      saveTxPending();
       setStatus('deposit-status', 'ok', '✅ Deposit confirmed');
       // Real-metrics telemetry — pass tx hash so the status page can deep-link
       // to the source chain's explorer ("view ↗" in Latest Activity).
@@ -665,6 +753,9 @@ html{scroll-behavior:smooth}
       setTimeout(() => closeModal('modal-deposit'), 1200);
       refreshAll();
     } catch (e) {
+      state.txPending = state.txPending.filter(p => p !== pendingEntry);
+      saveTxPending();
+      renderTable();
       console.error(e); setStatus('deposit-status', 'err', '❌ ' + ARC.explainError(e));
     } finally {
       btn.disabled = false; btn.textContent = 'Deposit';
@@ -735,6 +826,7 @@ html{scroll-behavior:smooth}
     try {
       await ARC.gateway.initiateWithdrawal(k, value, { onStep: (m) => setStatus('withdraw-status', '', m) });
       setStatus('withdraw-status', 'ok', '✅ Withdrawal initiated. Check pending list.');
+      setWithdrawalFlag(true);
       setTimeout(() => closeModal('modal-withdraw'), 1500);
       refreshAll();
     } catch (e) {
@@ -973,6 +1065,7 @@ html{scroll-behavior:smooth}
     const btn = document.getElementById('spend-go');
     btn.disabled = true; btn.textContent = 'Working…';
     let spendResult = null;
+    let spentSources = null;
     try {
       if (spendMode === 'unified') {
         // Auto-pick sources from all chains except destination
@@ -986,6 +1079,7 @@ html{scroll-behavior:smooth}
           sources: plan, dstChainKey: dst, recipient,
           onStep: (m) => setStatus('spend-status', '', m),
         });
+        spentSources = plan;
       } else if (spendMode === 'manual') {
         const eligible = state.balances.filter(b => b.chainKey !== dst);
         const sources = [];
@@ -1001,6 +1095,7 @@ html{scroll-behavior:smooth}
           sources, dstChainKey: dst, recipient,
           onStep: (m) => setStatus('spend-status', '', m),
         });
+        spentSources = sources;
       } else {
         // Single-chain mode (legacy)
         const src = document.getElementById('spend-src').value;
@@ -1009,12 +1104,22 @@ html{scroll-behavior:smooth}
           srcChainKey: src, dstChainKey: dst, recipient, valueCanonical,
           onStep: (m) => setStatus('spend-status', '', m),
         });
+        spentSources = [{ chainKey: src, valueCanonical }];
       }
       setStatus('spend-status', 'ok', '✅ Cross-chain spend complete');
       document.getElementById('spend-trade-cta').style.display = 'block';
+      const mintHash = spendResult?.mint?.tx?.hash || null;
+      // Record tx-pending per source chain — Gateway REST lags on-chain by minutes
+      if (spentSources) {
+        spentSources.forEach(s => {
+          const snap = state.balances.find(b => b.chainKey === s.chainKey)?.canonical || 0n;
+          state.txPending.push({ chainKey: s.chainKey, amountCanonical: s.valueCanonical, type: 'spend', startedAt: Date.now(), txHash: mintHash, balanceAtPending: snap });
+        });
+        saveTxPending();
+        renderTable();
+      }
       // Real-metrics telemetry — mint tx hash on destination chain so the
       // status page can deep-link to dst chain's explorer.
-      const mintHash = spendResult?.mint?.tx?.hash || null;
       try { ARC.track('spend', dst, Number(amtStr), mintHash, 'balance'); } catch {}
       setTimeout(() => closeModal('modal-spend'), 2500);
       refreshAll();
@@ -1031,6 +1136,8 @@ html{scroll-behavior:smooth}
   // ArcUI.bootApp already kicked off autoConnect; check if it landed in time.
   if (ARC.wallet.address) {
     state.addr = ARC.wallet.address;
+    loadTxPending();
+    loadBalanceCache();
     refreshAll();
     startAutoRefresh();
   }
