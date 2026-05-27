@@ -693,6 +693,7 @@ export async function advanceCctpState(env, p) {
         console.log(`[cctp] mint_pending check: mintCircleTxId=${p.mintCircleTxId} circleState=${tx?.state || 'null'}`);
         if (checkCircleFailure(tx, 'mint')) break;
         if (!isCircleComplete(tx)) break;
+        p.mintTxHash = tx.txHash || null;
         p.state = 'done';
         console.log(`[cctp] DONE — $${p.amountHuman} delivered to ${p.recipient} on ${p.destChainKey}`);
         break;

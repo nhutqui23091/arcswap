@@ -168,12 +168,12 @@ async function _metricsPushRecent(kv, eventData) {
   }
 }
 
-async function incrMetric(kv, event, chain, amount) {
+async function incrMetric(kv, event, chain, amount, txHash = null) {
   try {
     const ts = Date.now();
     const day = _metricsUtcDate(ts);
     const rand = Math.random().toString(36).slice(2, 10);
-    const eventData = { event, chain, amount: amount ?? null, txHash: null, surface: 'cron', ts };
+    const eventData = { event, chain, amount: amount ?? null, txHash: txHash || null, surface: 'cron', ts };
     const incr = async (key) => {
       const cur = parseInt((await kv.get(key)) || '0', 10);
       await kv.put(key, String(cur + 1));
@@ -1233,10 +1233,11 @@ async function handleCronTick(req, kv, env) {
     const cctpBefore = JSON.stringify(agent.pendingCctp || []);
     await advancePendingCctpForAgent(kv, env, agent);
     const cctpDirty = JSON.stringify(agent.pendingCctp || []) !== cctpBefore;
+    const metricsDirty = await sweepPendingMetrics(kv, env, agent);
 
     const shouldFire = (agent.nextRun && agent.nextRun <= now);
     if (!shouldFire) {
-      if (cctpDirty) await putJSON(kv, `agent:${id}`, agent);
+      if (cctpDirty || metricsDirty) await putJSON(kv, `agent:${id}`, agent);
       summary.skipped++;
       continue;
     }
@@ -1256,6 +1257,7 @@ async function handleCronTick(req, kv, env) {
     const cctpBefore = JSON.stringify(agent.pendingCctp || []);
     await advancePendingCctpForAgent(kv, env, agent);
     const cctpDirty = JSON.stringify(agent.pendingCctp || []) !== cctpBefore;
+    const metricsDirty = await sweepPendingMetrics(kv, env, agent);
 
     // Two gates:
     //   1. THROTTLE — minimum gap between fires (safety net against a
@@ -1268,14 +1270,14 @@ async function handleCronTick(req, kv, env) {
     const THROTTLE_MS = 30 * 60 * 1000;
     const throttleOK = !agent.lastTrigger || now - agent.lastTrigger > THROTTLE_MS;
     if (!throttleOK) {
-      if (cctpDirty) await putJSON(kv, `agent:${id}`, agent);
+      if (cctpDirty || metricsDirty) await putJSON(kv, `agent:${id}`, agent);
       summary.skipped++;
       continue;
     }
 
     const needs = await topupTargetBelowFloor(env, agent);
     if (!needs) {
-      if (cctpDirty) await putJSON(kv, `agent:${id}`, agent);
+      if (cctpDirty || metricsDirty) await putJSON(kv, `agent:${id}`, agent);
       summary.skipped++;
       continue;
     }
@@ -1284,6 +1286,41 @@ async function handleCronTick(req, kv, env) {
   }
 
   return json(200, summary);
+}
+
+/**
+ * Sweep pending same-chain metric entries on an agent. For each entry,
+ * polls Circle for the on-chain tx hash; once confirmed calls incrMetric
+ * with the real hash and drops the entry. Stale or malformed entries are
+ * also dropped. Called from cron-tick alongside advancePendingCctpForAgent.
+ * Mutates agent.pendingMetrics in place. Returns true if it changed.
+ */
+async function sweepPendingMetrics(kv, env, agent) {
+  if (!agent.pendingMetrics?.length) return false;
+  const STALE_MS = 30 * 60 * 1000;
+  const now = Date.now();
+  const remaining = [];
+  let changed = false;
+  for (const m of agent.pendingMetrics) {
+    if (!m.circleTxId || (now - m.startedAt > STALE_MS)) { changed = true; continue; }
+    try {
+      const tx = await getTransaction(env, m.circleTxId);
+      const s = tx?.state || '';
+      if (s === 'COMPLETE' || s === 'CONFIRMED') {
+        await incrMetric(kv, 'agent-exec', m.chain, m.amount, tx.txHash || null);
+        changed = true;
+      } else if (s === 'FAILED' || s === 'CANCELLED') {
+        changed = true;
+      } else {
+        remaining.push(m);
+      }
+    } catch (e) {
+      console.warn(`[cron] sweepPendingMetrics error for circleTxId=${m.circleTxId}:`, e?.message || e);
+      remaining.push(m);
+    }
+  }
+  if (changed) agent.pendingMetrics = remaining.slice(-50);
+  return changed;
 }
 
 /**
@@ -1340,9 +1377,14 @@ async function fireAgentInCron(kv, env, agent, summary, now) {
           state: t.state,
           flow: t.flow,
         });
-        // Real-metrics: track successful agent execution (server-side write).
-        // No CORS, no PII — just event + chain + amount.
-        await incrMetric(kv, 'agent-exec', t.source || 'arc', Number(t.amount));
+        // Defer metric tracking until Circle confirms the on-chain tx hash.
+        // If no circleTxId (unusual), fall back to immediate tracking with no hash.
+        if (t.circleTxId) {
+          if (!agent.pendingMetrics) agent.pendingMetrics = [];
+          agent.pendingMetrics.push({ circleTxId: t.circleTxId, chain: t.source || 'arc', amount: Number(t.amount), startedAt: Date.now() });
+        } else {
+          await incrMetric(kv, 'agent-exec', t.source || 'arc', Number(t.amount));
+        }
       }
     }
     agent.totalSent = (agent.totalSent || 0) + (result.totalSent || 0);
@@ -1463,6 +1505,10 @@ async function advancePendingCctpForAgent(kv, env, agent) {
         // time the funds hadn't actually landed yet.
         if (advanced.state === 'done') {
           agent.totalSent = (agent.totalSent || 0) + Number(advanced.amountHuman || 0);
+          // Track CCTP completion with real on-chain hash: prefer mint tx on
+          // destination (confirms USDC arrived), fall back to burn tx on source.
+          const txHashForMetric = advanced.mintTxHash || advanced.burnTxHash || null;
+          await incrMetric(kv, 'agent-exec', advanced.destChainKey, Number(advanced.amountHuman || 0), txHashForMetric);
         }
       }
     } catch (e) {
