@@ -276,10 +276,11 @@ html{scroll-behavior:smooth}
       <button class="gw-modal-close" data-close>×</button>
     </div>
 
-    <!-- Mode toggle: Unified (auto-pick from all chains) vs Single (one chain) -->
+    <!-- Mode toggle: Auto / Single / Manual -->
     <div style="display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:14px">
-      <button id="spend-mode-unified" class="spend-mode-tab active" type="button" style="flex:1;padding:8px;border-radius:8px;background:linear-gradient(135deg,var(--arc1),var(--arc2));color:var(--bg);border:none;font-weight:700;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">⚡ Unified (auto)</button>
-      <button id="spend-mode-single" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:transparent;color:var(--muted);border:none;font-weight:600;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">Single chain</button>
+      <button id="spend-mode-unified" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:linear-gradient(135deg,var(--arc1),var(--arc2));color:var(--bg);border:none;font-weight:700;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">⚡ Auto</button>
+      <button id="spend-mode-single" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:transparent;color:var(--muted);border:none;font-weight:600;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">Single</button>
+      <button id="spend-mode-manual" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:transparent;color:var(--muted);border:none;font-weight:600;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">Manual</button>
     </div>
 
     <!-- Single chain mode (hidden by default) -->
@@ -305,6 +306,20 @@ html{scroll-behavior:smooth}
     <div class="gw-row" id="spend-srcbal-row" style="display:none"><span>Source available</span><strong id="spend-srcbal">—</strong></div>
     <!-- Unified totals (default) -->
     <div class="gw-row" id="spend-totals-row"><span>Spendable cross-chain (after fee headroom)</span><strong id="spend-total-bal">—</strong></div>
+
+    <!-- Manual source section -->
+    <div id="spend-manual-section" style="display:none;margin-top:4px">
+      <div class="gw-label" style="margin-top:4px">Source allocation</div>
+      <div id="spend-manual-rows"></div>
+      <div style="padding:10px 13px;border-radius:10px;background:var(--surface);border:1px solid var(--border);font-size:13px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--muted)">Allocated</span>
+          <strong id="spend-manual-total-text" style="font-family:var(--mono)">0.00 / — USDC</strong>
+        </div>
+        <div id="spend-manual-error" style="display:none;font-size:12px;margin-top:4px"></div>
+      </div>
+      <div class="gw-row" id="spend-manual-fee-row" style="display:none;margin-top:6px"><span>Max relayer fee (Circle Gateway)</span><strong id="spend-manual-fee">—</strong></div>
+    </div>
 
     <button id="spend-go" class="gw-action" type="button">Sign intent + mint</button>
     <div id="spend-status" class="gw-status"></div>
@@ -751,20 +766,28 @@ html{scroll-behavior:smooth}
   }
   function setSpendMode(mode) {
     spendMode = mode;
-    const isUni = mode === 'unified';
-    document.getElementById('spend-mode-unified').style.background = isUni
-      ? 'linear-gradient(135deg,var(--arc1),var(--arc2))' : 'transparent';
-    document.getElementById('spend-mode-unified').style.color = isUni ? 'var(--bg)' : 'var(--muted)';
-    document.getElementById('spend-mode-single').style.background = !isUni
-      ? 'linear-gradient(135deg,var(--arc1),var(--arc2))' : 'transparent';
-    document.getElementById('spend-mode-single').style.color = !isUni ? 'var(--bg)' : 'var(--muted)';
-    document.getElementById('spend-single-section').style.display = isUni ? 'none' : 'block';
-    document.getElementById('spend-srcbal-row').style.display = isUni ? 'none' : 'flex';
-    document.getElementById('spend-totals-row').style.display = isUni ? 'flex' : 'none';
+    const activeGrad = 'linear-gradient(135deg,var(--arc1),var(--arc2))';
+    ['unified','single','manual'].forEach(m => {
+      const btn = document.getElementById(`spend-mode-${m}`);
+      btn.style.background = m === mode ? activeGrad : 'transparent';
+      btn.style.color = m === mode ? 'var(--bg)' : 'var(--muted)';
+      btn.style.fontWeight = m === mode ? '700' : '600';
+    });
+    document.getElementById('spend-single-section').style.display = mode === 'single' ? 'block' : 'none';
+    document.getElementById('spend-manual-section').style.display = mode === 'manual' ? 'block' : 'none';
+    document.getElementById('spend-srcbal-row').style.display = mode === 'single' ? 'flex' : 'none';
+    document.getElementById('spend-totals-row').style.display = mode === 'unified' ? 'flex' : 'none';
+    document.getElementById('spend-mode-explanation').style.display = mode === 'unified' ? 'block' : 'none';
+    document.getElementById('spend-max').style.display = mode === 'manual' ? 'none' : '';
+    // Manual mode: button stays disabled until syncManualTotal confirms exact allocation.
+    // Auto/single: button is always enabled (validation is on-click).
+    document.getElementById('spend-go').disabled = mode === 'manual';
+    if (mode === 'manual') renderManualRows();
     syncSpendInfo();
   }
   document.getElementById('spend-mode-unified').onclick = () => setSpendMode('unified');
   document.getElementById('spend-mode-single').onclick = () => setSpendMode('single');
+  document.getElementById('spend-mode-manual').onclick = () => setSpendMode('manual');
 
   function syncSpendInfo() {
     if (spendMode === 'single') {
@@ -774,6 +797,7 @@ html{scroll-behavior:smooth}
       document.getElementById('spend-breakdown').style.display = 'none';
       return;
     }
+    if (spendMode === 'manual') { syncManualTotal(); return; }
     // Unified mode — show *spendable* total (raw balance minus fee headroom
     // we have to leave on each source for Circle's per-intent maxFee check).
     // Excludes the destination chain since no point burning on the same chain
@@ -822,8 +846,120 @@ html{scroll-behavior:smooth}
       </div>
       <div style="margin-top:6px;font-size:11px;color:var(--muted)">${plan.length} signature${plan.length>1?'s':''} required → 1 attestation → 1 mint tx</div>`;
   }
-  document.getElementById('spend-amount').addEventListener('input', refreshSpendBreakdown);
-  document.getElementById('spend-dst').addEventListener('change', refreshSpendBreakdown);
+
+  function renderManualRows() {
+    const container = document.getElementById('spend-manual-rows');
+    const dst = document.getElementById('spend-dst').value;
+    const eligible = state.balances.filter(b => b.chainKey !== dst);
+    container.innerHTML = '';
+    if (!eligible.length) {
+      container.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px 0">No Gateway balances available. Refresh or deposit first.</div>';
+      syncManualTotal();
+      return;
+    }
+    eligible.forEach(b => {
+      const burnable = ARC.gateway.maxBurnableFromBalance(b.canonical);
+      const usable = burnable > 0n;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:18px 1fr 110px;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--border)';
+      if (!usable) row.style.opacity = '0.35';
+      const cid = `smc-${b.chainKey}`;
+      const iid = `smi-${b.chainKey}`;
+      row.innerHTML = `
+        <input type="checkbox" id="${cid}" data-chain="${b.chainKey}" ${usable ? '' : 'disabled'}
+          style="width:16px;height:16px;cursor:${usable ? 'pointer' : 'default'};accent-color:var(--arc1);flex-shrink:0">
+        <label for="${cid}" style="cursor:${usable ? 'pointer' : 'default'};display:flex;flex-direction:column;gap:1px">
+          <span style="font-size:14px;font-weight:600;color:var(--text)">${chainName(b.chainKey)}</span>
+          <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">Max ${ARC.formatAmt(burnable, 6, 4)} USDC</span>
+        </label>
+        <input type="text" id="${iid}" data-chain="${b.chainKey}" placeholder="0.00" disabled inputmode="decimal"
+          style="padding:6px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;text-align:right;outline:none;width:100%;transition:border .15s;opacity:.4">`;
+      const check = row.querySelector(`#${cid}`);
+      const inp = row.querySelector(`#${iid}`);
+      check.addEventListener('change', () => {
+        inp.disabled = !check.checked;
+        inp.style.opacity = check.checked ? '1' : '.4';
+        if (!check.checked) { inp.value = ''; inp.style.borderColor = 'var(--border)'; }
+        else inp.focus();
+        syncManualTotal();
+      });
+      inp.addEventListener('input', syncManualTotal);
+      inp.addEventListener('focus', () => { inp.style.borderColor = 'var(--arc1)'; });
+      inp.addEventListener('blur', () => { inp.style.borderColor = 'var(--border)'; });
+      container.appendChild(row);
+    });
+    syncManualTotal();
+  }
+
+  function syncManualTotal() {
+    if (spendMode !== 'manual') return;
+    const dst = document.getElementById('spend-dst').value;
+    const eligible = state.balances.filter(b => b.chainKey !== dst);
+    const amtStr = document.getElementById('spend-amount').value.trim();
+    const errEl = document.getElementById('spend-manual-error');
+    const totalEl = document.getElementById('spend-manual-total-text');
+    const feeRow = document.getElementById('spend-manual-fee-row');
+    const goBtn = document.getElementById('spend-go');
+    if (!amtStr) {
+      totalEl.textContent = '0.00 / — USDC';
+      totalEl.style.color = 'var(--text)';
+      errEl.style.display = 'none';
+      feeRow.style.display = 'none';
+      goBtn.disabled = true;
+      return;
+    }
+    const targetCanonical = ARC.parseAmt(amtStr, 6);
+    if (targetCanonical <= 0n) { goBtn.disabled = true; return; }
+    let allocated = 0n;
+    let totalFee = 0n;
+    let overCap = false;
+    eligible.forEach(b => {
+      const check = document.getElementById(`smc-${b.chainKey}`);
+      const inp = document.getElementById(`smi-${b.chainKey}`);
+      if (!check?.checked) return;
+      const val = ARC.parseAmt(inp.value.trim() || '0', 6);
+      const burnable = ARC.gateway.maxBurnableFromBalance(b.canonical);
+      if (val > burnable) {
+        overCap = true;
+        inp.style.borderColor = 'var(--danger)';
+      } else {
+        inp.style.borderColor = 'var(--border)';
+      }
+      if (val > 0n) { allocated += val; totalFee += ARC.gateway.defaultMaxFee(val); }
+    });
+    totalEl.textContent = `${ARC.formatAmt(allocated, 6, 4)} / ${ARC.formatAmt(targetCanonical, 6, 4)} USDC`;
+    if (overCap) {
+      totalEl.style.color = 'var(--danger)';
+      errEl.textContent = 'Amount exceeds available balance on one or more chains';
+      errEl.style.cssText = 'display:block;color:var(--danger);font-size:12px;margin-top:4px';
+      feeRow.style.display = 'none'; goBtn.disabled = true;
+    } else if (allocated < targetCanonical) {
+      const diff = targetCanonical - allocated;
+      totalEl.style.color = 'var(--warn)';
+      errEl.textContent = `Still need ${ARC.formatAmt(diff, 6, 4)} USDC`;
+      errEl.style.cssText = 'display:block;color:var(--warn);font-size:12px;margin-top:4px';
+      feeRow.style.display = 'none'; goBtn.disabled = true;
+    } else if (allocated > targetCanonical) {
+      const diff = allocated - targetCanonical;
+      totalEl.style.color = 'var(--danger)';
+      errEl.textContent = `Over by ${ARC.formatAmt(diff, 6, 4)} USDC`;
+      errEl.style.cssText = 'display:block;color:var(--danger);font-size:12px;margin-top:4px';
+      feeRow.style.display = 'none'; goBtn.disabled = true;
+    } else {
+      totalEl.style.color = 'var(--arc4)';
+      errEl.style.display = 'none';
+      document.getElementById('spend-manual-fee').textContent = `≤ ${ARC.formatAmt(totalFee, 6, 4)} USDC`;
+      feeRow.style.display = 'flex';
+      goBtn.disabled = false;
+    }
+  }
+
+  document.getElementById('spend-amount').addEventListener('input', () => {
+    if (spendMode === 'manual') syncManualTotal(); else refreshSpendBreakdown();
+  });
+  document.getElementById('spend-dst').addEventListener('change', () => {
+    if (spendMode === 'manual') { renderManualRows(); } else { refreshSpendBreakdown(); }
+  });
   document.getElementById('spend-src').onchange = syncSpendInfo;
 
   document.getElementById('spend-go').onclick = async () => {
@@ -848,6 +984,21 @@ html{scroll-behavior:smooth}
         }
         spendResult = await ARC.gateway.multiSpend({
           sources: plan, dstChainKey: dst, recipient,
+          onStep: (m) => setStatus('spend-status', '', m),
+        });
+      } else if (spendMode === 'manual') {
+        const eligible = state.balances.filter(b => b.chainKey !== dst);
+        const sources = [];
+        eligible.forEach(b => {
+          const check = document.getElementById(`smc-${b.chainKey}`);
+          const input = document.getElementById(`smi-${b.chainKey}`);
+          if (!check?.checked) return;
+          const val = ARC.parseAmt(input.value.trim() || '0', 6);
+          if (val > 0n) sources.push({ chainKey: b.chainKey, valueCanonical: val });
+        });
+        if (!sources.length) throw new Error('No sources selected');
+        spendResult = await ARC.gateway.multiSpend({
+          sources, dstChainKey: dst, recipient,
           onStep: (m) => setStatus('spend-status', '', m),
         });
       } else {
