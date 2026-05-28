@@ -396,6 +396,12 @@
       'app.keplr': 95,
     },
 
+    // Reown AppKit instance — set async once esm.sh import resolves
+    _appkit: null,
+    _appkitReady: false,
+    _appkitNetworks: null,
+    _appkitManaging: false, // true when AppKit is managing the current session
+
     /**
      * Returns all detected wallets, sorted by EVM priority (MetaMask → OKX → ...).
      * Each entry: { info: {name, rdns, icon, uuid}, provider }.
@@ -470,15 +476,16 @@
       return 'No wallet extension detected. Install MetaMask (metamask.io), Rabby, or OKX Wallet, then reload this page.';
     },
 
-    async connect(rdns) {
+    // Legacy EIP-6963 connect — used when a specific RDNS is requested or AppKit is not yet ready.
+    async _connectLegacy(rdns) {
       const eth = this.eip1193(rdns);
       if (!eth) throw new Error(this._noWalletReason());
-      // Remember which wallet for next time so user doesn't keep re-picking
       try {
         const info = this.listProviders().find(p => p.provider === eth)?.info;
         if (info?.rdns) localStorage.setItem('arc.wallet.rdns', info.rdns);
       } catch {}
       this._eth = eth;
+      this._appkitManaging = false;
       const accounts = await eth.request({ method: 'eth_requestAccounts' });
       if (!accounts || !accounts.length) throw new Error('Wallet returned no accounts');
       this.provider = new BrowserProvider(eth, 'any');
@@ -506,8 +513,44 @@
       return this.snapshot();
     },
 
+    async connect(rdns) {
+      // Named RDNS → EIP-6963 picker path (legacy wallets / desktop extensions)
+      if (rdns) return this._connectLegacy(rdns);
+      if (!this._appkitReady) return this._connectLegacy();
+      if (this.address) return this.snapshot();
+
+      // Open AppKit modal; resolve/reject when the modal closes
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        let modalWasOpen = false;
+        const settle = (fn) => { if (settled) return; settled = true; fn(); };
+        const cleanup = () => { try { u1(); } catch {} try { u2(); } catch {} };
+
+        const u1 = this._appkit.subscribeProvider(({ address, isConnected }) => {
+          if (isConnected && address) {
+            // Defer one tick so the global subscribeProvider fires first and sets wallet state
+            setTimeout(() => settle(() => { cleanup(); resolve(this.snapshot()); }), 0);
+          }
+        });
+        const u2 = this._appkit.subscribeState(({ open }) => {
+          if (open) { modalWasOpen = true; return; }
+          if (!modalWasOpen) return; // ignore initial closed state before modal opened
+          setTimeout(() => settle(() => {
+            cleanup();
+            if (this.address) resolve(this.snapshot());
+            else reject(new Error('Connection cancelled'));
+          }), 150);
+        });
+        this._appkit.open();
+      });
+    },
+
     disconnect() {
-      this.provider = null; this.signer = null; this.address = null; this.chainKey = null;
+      if (this._appkitReady) {
+        try { this._appkit.adapter?.connectionControllerClient?.disconnect(); } catch {}
+      }
+      this._appkitManaging = false;
+      this.provider = null; this.signer = null; this.address = null; this.chainKey = null; this._eth = null;
       try { localStorage.removeItem('arc.wallet.autoconnect'); } catch {}
       this._emit();
     },
@@ -525,7 +568,7 @@
     },
 
     async ensureChain(chainKey) {
-      const eth = this.eip1193(); if (!eth) throw new Error('No wallet');
+      const eth = this._eth || this.eip1193(); if (!eth) throw new Error('No wallet');
       const c = CHAINS[chainKey]; if (!c) throw new Error('Unknown chain ' + chainKey);
       const current = await eth.request({ method: 'eth_chainId' });
       if (parseInt(current, 16) === c.id) return;
@@ -750,7 +793,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.6.5',
+    version: '9.7.0',
   };
 
   // ───────── CHAIN ICONS ─────────
@@ -770,4 +813,78 @@
   function chainIcon(chainKey) {
     return CHAIN_ICONS[chainKey] || CHAIN_ICONS.arc;
   }
+
+  // ── REOWN APPKIT ASYNC INIT ──────────────────────────────────────────────
+  // Loads Reown AppKit from esm.sh to enable WalletConnect + mobile deep-link
+  // connections. Falls back gracefully to EIP-6963 only if loading fails.
+  (async () => {
+    try {
+      const [{ createAppKit, defineChain }, { EthersAdapter }] = await Promise.all([
+        import('https://esm.sh/@reown/appkit@1.8.20'),
+        import('https://esm.sh/@reown/appkit-adapter-ethers@1.8.20'),
+      ]);
+
+      const { BrowserProvider: BP, getAddress: GA } = global.ethers;
+
+      const mkNet = (k) => {
+        const c = CHAINS[k];
+        return defineChain({
+          id: c.id,
+          caipNetworkId: `eip155:${c.id}`,
+          chainNamespace: 'eip155',
+          name: c.name,
+          nativeCurrency: { name: c.native.name, symbol: c.native.symbol, decimals: c.native.decimals },
+          rpcUrls: { default: { http: [c.rpc] } },
+          blockExplorers: { default: { name: c.name, url: c.explorer } },
+        });
+      };
+      const networks = Object.keys(CHAINS).map(mkNet);
+
+      const appkit = createAppKit({
+        adapters: [new EthersAdapter()],
+        networks,
+        projectId: '28193c7e36d0ebbd3cdf183a53d17697',
+        metadata: {
+          name: 'ArcSwap',
+          description: 'USDC routing on Arc Testnet',
+          url: 'https://arcswap.net',
+          icons: ['https://arcswap.net/assets/logos/arclogo.png'],
+        },
+        defaultNetwork: networks[0],
+        features: { analytics: false, swaps: false, onramp: false },
+        enableReconnect: true,
+      });
+
+      wallet._appkit = appkit;
+      wallet._appkitReady = true;
+      wallet._appkitNetworks = networks;
+
+      // Sync AppKit connection state → ARC.wallet whenever provider changes
+      appkit.subscribeProvider(async ({ address, chainId, isConnected, provider }) => {
+        if (isConnected && address && provider) {
+          try {
+            wallet._eth = provider;
+            wallet._appkitManaging = true;
+            wallet.address = GA(address);
+            wallet.chainKey = chainKeyById(chainId) || wallet.chainKey;
+            wallet.provider = new BP(provider, chainId);
+            wallet.signer = await wallet.provider.getSigner();
+            try { localStorage.setItem('arc.wallet.autoconnect', '1'); } catch {}
+            wallet._emit();
+          } catch (e) {
+            console.warn('[arc-core] AppKit provider sync failed:', e?.message);
+          }
+        } else if (!isConnected && wallet._appkitManaging) {
+          wallet._appkitManaging = false;
+          wallet.provider = null; wallet.signer = null;
+          wallet.address = null; wallet.chainKey = null; wallet._eth = null;
+          try { localStorage.removeItem('arc.wallet.autoconnect'); } catch {}
+          wallet._emit();
+        }
+      });
+
+    } catch (e) {
+      console.warn('[arc-core] AppKit init failed, using EIP-6963 only:', e?.message);
+    }
+  })();
 })(window);
