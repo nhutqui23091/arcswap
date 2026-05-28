@@ -528,6 +528,26 @@
 
       if (this.address) return this.snapshot();
 
+      // Wait for AppKit to finish its init/auto-reconnect cycle before opening
+      // the modal. Without this wait, enableReconnect:true sends an in-flight
+      // WC session_proposal to MetaMask; a second proposal from appkit.open()
+      // causes MetaMask to reject both with "previous request still active".
+      const currentState = this._appkit.getState();
+      if (!currentState.initialized) {
+        await new Promise((resolve) => {
+          const timer = setTimeout(resolve, 2000);
+          const unsub = this._appkit.subscribeState(({ initialized }) => {
+            if (initialized) { clearTimeout(timer); unsub(); resolve(); }
+          });
+        });
+      }
+
+      // Auto-reconnect may have succeeded during the wait
+      if (this.address) return this.snapshot();
+
+      // Wipe any stale WC session so the modal always starts a fresh session
+      this._clearWCStorage();
+
       // Open AppKit modal; resolve/reject when the modal closes
       return new Promise((resolve, reject) => {
         let settled = false;
@@ -554,15 +574,7 @@
       });
     },
 
-    disconnect() {
-      // Tell AppKit to send WC session_delete to the relay / wallet app
-      if (this._appkitReady) {
-        try { this._appkit.disconnect().catch(() => {}); } catch {}
-      }
-      // Wipe all WC v2 + AppKit session keys from localStorage so the NEXT
-      // connect() always starts a fresh session. Without this, a stale
-      // wc@2:client:* entry causes MetaMask to report "previous request
-      // still active" when the user tries to reconnect.
+    _clearWCStorage() {
       try {
         const toRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
@@ -575,6 +587,14 @@
         }
         toRemove.forEach(k => { try { localStorage.removeItem(k); } catch {} });
       } catch {}
+    },
+
+    disconnect() {
+      // Tell AppKit to send WC session_delete to the relay / wallet app
+      if (this._appkitReady) {
+        try { this._appkit.disconnect().catch(() => {}); } catch {}
+      }
+      this._clearWCStorage();
       this._appkitManaging = false;
       this.provider = null; this.signer = null; this.address = null; this.chainKey = null; this._eth = null;
       try { localStorage.removeItem('arc.wallet.autoconnect'); } catch {}
@@ -819,7 +839,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.7.6',
+    version: '9.7.7',
   };
 
   // ───────── CHAIN ICONS ─────────
