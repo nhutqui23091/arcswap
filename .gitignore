@@ -20,8 +20,8 @@ secrets/
 
 # ─── Build artifacts ─────────────────────────────────────────────────────────
 dist/
-build/
 out/
+build/node_modules/
 .cache/
 .parcel-cache/
 .vite/

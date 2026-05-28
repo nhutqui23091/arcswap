@@ -1,0 +1,11 @@
+{
+  "name": "arcswap-build",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@reown/appkit": "latest",
+    "@reown/appkit-adapter-ethers": "latest",
+    "ethers": "^6.0.0"
+  }
+}
