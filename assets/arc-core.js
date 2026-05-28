@@ -535,9 +535,9 @@
         const settle = (fn) => { if (settled) return; settled = true; fn(); };
         const cleanup = () => { try { u1(); } catch {} try { u2(); } catch {} };
 
-        const u1 = this._appkit.subscribeProvider(({ address, isConnected }) => {
+        const u1 = this._appkit.subscribeAccount(({ address, isConnected }) => {
           if (isConnected && address) {
-            // Defer one tick so the global subscribeProvider fires first and sets wallet state
+            // Defer one tick so the global subscribeAccount fires first and sets wallet state
             setTimeout(() => settle(() => { cleanup(); resolve(this.snapshot()); }), 0);
           }
         });
@@ -556,7 +556,7 @@
 
     disconnect() {
       if (this._appkitReady) {
-        try { this._appkit.adapter?.connectionControllerClient?.disconnect(); } catch {}
+        try { this._appkit.disconnect().catch(() => {}); } catch {}
       }
       this._appkitManaging = false;
       this.provider = null; this.signer = null; this.address = null; this.chainKey = null; this._eth = null;
@@ -802,7 +802,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.7.3',
+    version: '9.7.4',
   };
 
   // ───────── CHAIN ICONS ─────────
@@ -865,19 +865,22 @@
     wallet._appkitReady = true;
     wallet._appkitNetworks = networks;
 
-    appkit.subscribeProvider(async ({ address, chainId, isConnected, provider }) => {
-      if (isConnected && address && provider) {
+    appkit.subscribeAccount(async ({ address, isConnected }) => {
+      if (isConnected && address) {
         try {
-          wallet._eth = provider;
+          const rawProvider = appkit.getProvider('eip155');
+          const chainId = appkit.getChainId();
+          if (!rawProvider) throw new Error('No EIP-155 provider from AppKit');
+          wallet._eth = rawProvider;
           wallet._appkitManaging = true;
           wallet.address = GA(address);
           wallet.chainKey = chainKeyById(chainId) || wallet.chainKey;
-          wallet.provider = new BP(provider, chainId);
+          wallet.provider = new BP(rawProvider, 'any');
           wallet.signer = await wallet.provider.getSigner();
           try { localStorage.setItem('arc.wallet.autoconnect', '1'); } catch {}
           wallet._emit();
         } catch (e) {
-          console.warn('[arc-core] AppKit provider sync failed:', e?.message);
+          console.warn('[arc-core] AppKit account sync failed:', e?.message);
         }
       } else if (!isConnected && wallet._appkitManaging) {
         wallet._appkitManaging = false;
