@@ -111,7 +111,7 @@ export async function initAppKit() {
   // Prefer the provider from Reown AppKit (the wallet the user actually
   // connected to). window.ethereum may be a different extension entirely
   // when multiple wallets are installed (e.g. MetaMask + OKX).
-  const provider = (typeof ARC !== 'undefined' && ARC.wallet?._eth) || window.ethereum;
+  const provider = window.ethereum; // diagnostic: bypass Reown wrapper, use native injected provider
   if (!provider) {
     throw new Error('No wallet provider found. Please connect a wallet first.');
   }

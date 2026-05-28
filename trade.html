@@ -475,7 +475,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       + '<span>App Kit unavailable — using Uniswap V2 fallback (testnet pools may be thin).</span>';
   }
   try {
-    APPKIT = await import('/assets/arc-appkit.js?v=9.1.22');
+    APPKIT = await import('/assets/arc-appkit.js?v=9.1.23');
     if (!APPKIT.isAppKitReady()) {
       console.warn('[arcswap] App Kit config missing or placeholder — same-chain swaps will fall back to Uniswap (likely empty pools).');
       APPKIT = null;
