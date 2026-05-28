@@ -402,6 +402,7 @@
     _appkitNetworks: null,
     _appkitManaging: false, // true when AppKit is managing the current session
     _appkitInitPromise: null, // resolves when AppKit is ready or has failed
+    _appkitError: null,       // set if AppKit init fails — visible in console for debugging
 
     /**
      * Returns all detected wallets, sorted by EVM priority (MetaMask → OKX → ...).
@@ -810,7 +811,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.7.1',
+    version: '9.7.2',
   };
 
   // ───────── CHAIN ICONS ─────────
@@ -837,8 +838,8 @@
   wallet._appkitInitPromise = (async () => {
     try {
       const [{ createAppKit, defineChain }, { EthersAdapter }] = await Promise.all([
-        import('https://esm.sh/@reown/appkit@1.8.20'),
-        import('https://esm.sh/@reown/appkit-adapter-ethers@1.8.20'),
+        import('https://esm.sh/@reown/appkit@1.8.20?bundle'),
+        import('https://esm.sh/@reown/appkit-adapter-ethers@1.8.20?bundle'),
       ]);
 
       const { BrowserProvider: BP, getAddress: GA } = global.ethers;
@@ -901,7 +902,8 @@
       });
 
     } catch (e) {
-      console.warn('[arc-core] AppKit init failed, using EIP-6963 only:', e?.message);
+      console.error('[arc-core] AppKit init failed:', e);
+      wallet._appkitError = e?.message || String(e);
     }
   })(); // promise stored in wallet._appkitInitPromise so connect() can await it
 })(window);
