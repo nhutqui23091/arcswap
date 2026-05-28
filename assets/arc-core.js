@@ -528,13 +528,6 @@
 
       if (this.address) return this.snapshot();
 
-      // Cancel any lingering WC session or in-flight proposal before opening
-      // a fresh modal. appkit.disconnect() sends session_delete to the relay,
-      // which clears the pending proposal on the wallet app side.
-      try { await this._appkit.disconnect(); } catch {}
-      this._clearWCStorage();
-      await new Promise(r => setTimeout(r, 300));
-
       // Open AppKit modal; resolve/reject when the modal closes
       return new Promise((resolve, reject) => {
         let settled = false;
@@ -826,7 +819,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.7.8',
+    version: '9.7.9',
   };
 
   // ───────── CHAIN ICONS ─────────
