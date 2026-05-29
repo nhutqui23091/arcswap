@@ -150,14 +150,10 @@ export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn, opts = {})
   // Use GET /quote with explicit on-chain addresses instead.
   if (opts.tokenInAddress && opts.tokenOutAddress) {
     const chainName = opts.chain || window.ARC_APPKIT_CONFIG?.network || 'Arc_Testnet';
-    let userAddress;
-    if (window.ethereum) {
-      try {
-        const accs = await window.ethereum.request({ method: 'eth_accounts' });
-        userAddress = accs && accs[0];
-      } catch {}
-    }
-    const addr = userAddress || '0x0000000000000000000000000000000000000001';
+    // GET /quote works fine with a dummy address — confirmed on Arc Testnet.
+    // Do NOT call window.ethereum.request() here: that can hang if the wallet
+    // extension is initializing, freezing the entire quote pipeline.
+    const addr = '0x0000000000000000000000000000000000000001';
     // Circle API amounts are always 6-decimal base units for USDC/EURC stablecoins
     const amountBaseUnits = Math.round(parseFloat(amountIn) * 1e6).toString();
     const qs = new URLSearchParams({
@@ -171,7 +167,7 @@ export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn, opts = {})
     });
     console.log('[arc-appkit] estimateSwap via GET /quote:', { tokenIn, tokenOut, amountBaseUnits, chainName });
     const resp = await fetch(`${PROXY_PREFIX}/v1/stablecoinKits/quote?${qs}`, {
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(5000),
     });
     const json = await resp.json();
     if (!resp.ok) throw new Error(`Circle quote ${resp.status}: ${json.message || JSON.stringify(json)}`);
