@@ -59,8 +59,9 @@ fi
 # ─── 4. No hardcoded secrets ─────────────────────────────────────────────────
 echo "[4/6] No hardcoded secrets…"
 SECRETS=$(grep -rEi '(api[_-]?key|secret|bearer|authorization)\s*[:=]\s*["'\''][^"'\'']{8,}' \
-  --include="*.html status/*.html" --include="*.js" --include="*.json" \
-  --exclude-dir=node_modules --exclude-dir=.git . 2>/dev/null || true)
+  --include="*.html" --include="*.js" --include="*.json" \
+  --exclude="*.bundle.js" --exclude="*.min.js" \
+  --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=build . 2>/dev/null || true)
 if [[ -z "$SECRETS" ]]; then
   ok "No obvious secrets in tracked files"
 else
