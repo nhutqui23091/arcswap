@@ -1374,8 +1374,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           time: '~5 s',
         };
       } catch (e) {
-        console.warn('[arcswap] App Kit estimate failed, falling back to Uniswap:', e?.message || e);
-        // Fall through to Uniswap path below
+        // Do not fall back to Uniswap for App Kit-supported pairs: the Arc Testnet
+        // Uniswap pool has wrong reserves (decimal mismatch from seeding) that
+        // produce a ~9x incorrect rate. Surface the error instead.
+        throw e;
       }
     }
     // ── Uniswap V2 fallback (legacy — pools may be thin on Arc Testnet) ────
