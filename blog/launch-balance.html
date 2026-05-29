@@ -116,6 +116,13 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 .foot a:hover{color:var(--arc1)}
 
 @media(max-width:768px){.wrap{padding:100px 18px 60px}.nav-links{display:none}h1.title{font-size:32px}article h2{font-size:24px}}
+
+.walkthrough{margin:32px 0 44px;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.wt-step{display:flex;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border);align-items:flex-start}
+.wt-step:last-child{border-bottom:none}
+.wt-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--gateway);background:rgba(56,189,248,0.10);border:1px solid rgba(56,189,248,0.20);border-radius:6px;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.wt-body{font-size:15px;color:#D8DFEA;line-height:1.65}
+.wt-body strong{color:var(--text)}
 </style>
 </head>
 <body>
@@ -159,7 +166,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
   <article>
 
-    <p>Balance is ArcSwap's interface to Circle's Unified Balance. Deposit USDC from any supported testnet and it enters a single, chain-agnostic pool backed by Circle Gateway. From that point forward, the USDC does not live on a specific chain. It lives in the pool. When you spend, you pick a destination and an amount. The routing is handled for you, or you configure it yourself.</p>
+    <p><a href="/balance">Balance</a> is ArcSwap's interface to Circle's Unified Balance. Deposit USDC from any supported testnet and it enters a single, chain-agnostic pool backed by Circle Gateway. From that point forward, the USDC does not live on a specific chain. It lives in the pool. When you spend, you pick a destination and an amount. The routing is handled for you, or you configure it yourself.</p>
 
     <div class="callout">
       <div class="callout-title">TL;DR</div>
@@ -174,7 +181,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <p>This design eliminates the fragmentation problem that arises when the same asset exists in separate wallets on separate chains. Instead of managing eight wallet balances across eight networks, you manage one number. The physical USDC sits in Gateway's escrow wherever you deposited it. The spend operation instructs Gateway to release the appropriate amount on your chosen destination chain.</p>
 
-    <p>ArcSwap's Balance page surfaces three deposit operations and three spend modes. The underlying mechanism in each case is the same Circle Gateway contract. What differs is how the source funds are selected when you initiate a spend.</p>
+    <p>ArcSwap's <a href="/balance">Balance page</a> surfaces three deposit operations and three spend modes. The underlying mechanism in each case is the same Circle Gateway contract. What differs is how the source funds are selected when you initiate a spend.</p>
 
     <h2>Supported chains</h2>
 
@@ -218,9 +225,44 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <p>All three modes deliver USDC to the same destination: the recipient address on the chain you specify. The difference is upstream only. The recipient receives a standard USDC transfer regardless of which spend mode was used.</p>
 
+    <h2>Walkthrough: spending 12 USDC to Arc Testnet</h2>
+
+    <p>Starting state: 10 USDC deposited from Ethereum Sepolia, 5 USDC deposited from Base Sepolia. Total Unified Balance: 15 USDC. Goal: send 12 USDC to a wallet on Arc Testnet using Auto mode.</p>
+
+    <div class="walkthrough">
+      <div class="wt-step">
+        <div class="wt-num">1</div>
+        <div class="wt-body">Open <a href="/balance">arcswap.net/balance</a> and connect your wallet.</div>
+      </div>
+      <div class="wt-step">
+        <div class="wt-num">2</div>
+        <div class="wt-body">Your Unified Balance total shows <strong>15 USDC</strong>. The per-chain breakdown shows 10 USDC on Ethereum Sepolia and 5 USDC on Base Sepolia.</div>
+      </div>
+      <div class="wt-step">
+        <div class="wt-num">3</div>
+        <div class="wt-body">Click <strong>Spend</strong>. Set the amount to <strong>12 USDC</strong>, destination chain to <strong>Arc Testnet</strong>, and enter the recipient address.</div>
+      </div>
+      <div class="wt-step">
+        <div class="wt-num">4</div>
+        <div class="wt-body">Select <strong>Auto</strong> mode. Gateway draws from whichever chains hold sufficient balance: 10 USDC from Ethereum Sepolia and 2 USDC from Base Sepolia.</div>
+      </div>
+      <div class="wt-step">
+        <div class="wt-num">5</div>
+        <div class="wt-body">Confirm in your wallet. Gateway initiates the USDC burn on each source chain.</div>
+      </div>
+      <div class="wt-step">
+        <div class="wt-num">6</div>
+        <div class="wt-body">Circle's attestation service verifies each burn and authorizes a mint on Arc Testnet.</div>
+      </div>
+      <div class="wt-step">
+        <div class="wt-num">7</div>
+        <div class="wt-body">The recipient receives <strong>12 USDC</strong> on Arc Testnet as a standard transfer. Your remaining Unified Balance is <strong>3 USDC</strong> (leftover from Base Sepolia).</div>
+      </div>
+    </div>
+
     <h2>Depositing USDC</h2>
 
-    <p>The deposit flow on ArcSwap's Balance page follows a consistent pattern. Connect a wallet, switch to the network you want to deposit from, enter an amount, and confirm the transaction. The Gateway escrow contract holds the USDC on that source chain and your Unified Balance increases.</p>
+    <p>The deposit flow on ArcSwap's <a href="/balance">Balance page</a> follows a consistent pattern. Connect a wallet, switch to the network you want to deposit from, enter an amount, and confirm the transaction. The Gateway escrow contract holds the USDC on that source chain and your Unified Balance increases.</p>
 
     <p>There is no minimum deposit. There is no lock-up period. USDC deposited into Unified Balance can be spent immediately after the deposit transaction confirms.</p>
 
@@ -238,7 +280,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <p>Arc Testnet uses USDC as its native gas token. Every transaction on the network settles fees in USDC. This means your Unified Balance is directly connected to the gas economics of Arc. USDC in Gateway escrow on Arc can cover transaction costs, and USDC arriving from other chains via a Gateway spend lands on Arc ready to pay gas immediately.</p>
 
-    <p>For protocols building on Arc, Unified Balance provides a programmable way to fund wallets across all eight supported chains from a single USDC position. The Circle App Kit exposes deposit, spend, and balance query as SDK calls. ArcSwap's Balance page is built on top of that same kit.</p>
+    <p>For protocols building on Arc, Unified Balance provides a programmable way to fund wallets across all eight supported chains from a single USDC position. The Circle App Kit exposes deposit, spend, and balance query as SDK calls. ArcSwap's <a href="/balance">Balance page</a> is built on top of that same kit.</p>
 
     <div class="cta-card">
       <h3>One pool. Eight chains. Three spend modes.</h3>
