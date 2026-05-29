@@ -1599,7 +1599,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           const inputStr = formatAmt(runAmt, tInTok.decimals);
           modal.set(stepId, 'active', `Swap ${step.tIn} → ${step.tOut}…`);
           if (APPKIT && appKitSupports('arc', tInTok, tOutTok)) {
-            const result = await APPKIT.appKitSwap("USDC", "EURC", "10.00"); // DEBUG: hardcoded to isolate format issue
+            console.log('[swap-debug] tIn:', JSON.stringify(step.tIn), typeof step.tIn, '| tOut:', JSON.stringify(step.tOut), typeof step.tOut, '| inputStr:', JSON.stringify(inputStr), typeof inputStr, '| runAmt:', String(runAmt));
+            const result = await APPKIT.appKitSwap(step.tIn, step.tOut, inputStr);
             const txHash = result?.txHash || result?.transactionHash || result?.hash || '';
             if (txHash) { lastTxHash = txHash; lastTxChain = 'arc'; }
             modal.set(stepId, 'done', txHash
