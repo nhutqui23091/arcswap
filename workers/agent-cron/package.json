@@ -2,7 +2,7 @@
   "name": "arcswap-agent-cron",
   "private": true,
   "version": "0.1.0",
-  "description": "Cloudflare Worker that fires the ArcSwap agent cron-tick endpoint every minute via service binding to the Pages project.",
+  "description": "Cloudflare Worker that fires the OneSet agent cron-tick endpoint every minute via service binding to the Pages project.",
   "main": "src/index.js",
   "type": "module",
   "scripts": {

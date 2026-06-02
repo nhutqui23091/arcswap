@@ -7,14 +7,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
-<meta name="description" content="ArcSwap launches the Auto-Replenish Agent in preview — sign once, your agent keeps any wallet topped up or runs scheduled USDC transfers across 8 chains via Circle Programmable Wallets and CCTP V2."/>
+<meta name="description" content="OneSet launches the Auto-Replenish Agent in preview — sign once, your agent keeps any wallet topped up or runs scheduled USDC transfers across 8 chains via Circle Programmable Wallets and CCTP V2."/>
 <link rel="canonical" href="https://arcswap.net/blog/launch-agent"/>
 <meta property="og:title" content="Meet the Auto-Replenish Agent — USDC moves itself now"/>
 <meta property="og:description" content="Sign once. Your agent keeps wallets topped up or sends USDC on a schedule across 8 chains. Powered by Circle Programmable Wallets, CCTP V2 fast finality, and Paymaster-sponsored gas. Preview on Arc Testnet."/>
 <meta property="og:image" content="https://arcswap.net/assets/social/blog-agent-banner.svg"/>
 <meta property="og:url" content="https://arcswap.net/blog/launch-agent"/>
 <meta property="og:type" content="article"/>
-<title>Meet the Auto-Replenish Agent | ArcSwap Blog</title>
+<title>Meet the Auto-Replenish Agent | OneSet Blog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
@@ -146,7 +146,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
 <nav>
   <a class="nav-logo" href="/">
-    <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="ArcSwap" width="129" height="28"/>
+    <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="OneSet" width="129" height="28"/>
     <span class="logo-tag">Blog</span>
   </a>
   <div class="nav-links">
@@ -170,7 +170,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
   <p class="lead">Sign once. Your agent keeps a wallet topped up when it runs low, or sends USDC on a fixed schedule — across eight chains, to as many target wallets as you want. Powered by Circle Programmable Wallets, CCTP V2 for cross-chain delivery, and Paymaster-sponsored gas. Available today in preview on Arc Testnet.</p>
 
   <div class="byline">
-    <span class="byline-author">ArcSwap Team</span>
+    <span class="byline-author">OneSet Team</span>
     <span class="byline-sep">·</span>
     <span>May 20, 2026</span>
     <span class="byline-sep">·</span>
@@ -179,7 +179,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
     <span class="byline-pill"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--agent)"></span>Preview</span>
   </div>
 
-  <img class="banner" src="/assets/social/blog-agent-banner.svg" alt="ArcSwap Auto-Replenish Agent — preview launch"/>
+  <img class="banner" src="/assets/social/blog-agent-banner.svg" alt="OneSet Auto-Replenish Agent — preview launch"/>
 
   <article>
 
@@ -275,7 +275,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <h2>Why this design</h2>
 
-    <p>We could have built a "ArcSwap-managed wallet that holds your USDC and sends it on a schedule". We didn't. Custody-style scheduled-send products already exist; <strong>they require trusting the operator</strong>. ArcSwap is non-custodial by construction, and the agent had to stay that way.</p>
+    <p>We could have built a "OneSet-managed wallet that holds your USDC and sends it on a schedule". We didn't. Custody-style scheduled-send products already exist; <strong>they require trusting the operator</strong>. OneSet is non-custodial by construction, and the agent had to stay that way.</p>
 
     <p>The shape that emerged: <strong>your EOA stays your EOA</strong>. The agent's smart account holds no balance you didn't permit. The permit caps the blast radius. The cron Worker can be compromised tomorrow and the worst case is bounded by what you signed — not "all your USDC drained".</p>
 
@@ -298,7 +298,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <h2>What's next</h2>
 
-    <p>The agent is the first ArcSwap product where reliability matters more than features. The next few weeks are reliability work:</p>
+    <p>The agent is the first OneSet product where reliability matters more than features. The next few weeks are reliability work:</p>
 
     <ol>
       <li><strong>Observability.</strong> Per-execution traces, public uptime dashboard for the cron worker, alerting on the failure-rate KPI.</li>
@@ -320,12 +320,12 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
       <a class="alt" href="/docs#agent">Read the docs</a>
     </div>
 
-    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>ArcSwap is a non-custodial frontend currently on Arc Testnet. The Auto-Replenish Agent is in preview — expect rough edges and report them. Nothing here is real money or financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
+    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>OneSet is a non-custodial frontend currently on Arc Testnet. The Auto-Replenish Agent is in preview — expect rough edges and report them. Nothing here is real money or financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
 
   </article>
 
   <div class="foot">
-    <span>© 2026 ArcSwap · Built on Arc Testnet</span>
+    <span>© 2026 OneSet · Built on Arc Testnet</span>
     <div>
       <a href="/blog">← Back to blog</a> &nbsp;·&nbsp;
       <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">X</a> &nbsp;·&nbsp;

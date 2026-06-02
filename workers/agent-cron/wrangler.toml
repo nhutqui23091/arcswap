@@ -1,4 +1,4 @@
-# ArcSwap Agent Cron — Cloudflare Worker config.
+# OneSet Agent Cron — Cloudflare Worker config.
 #
 # Deploy with:
 #   cd workers/agent-cron

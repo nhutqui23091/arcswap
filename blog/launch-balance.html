@@ -10,11 +10,11 @@
 <meta name="description" content="Unified Balance pools your USDC across eight chains via Circle Gateway. Deposit from any chain, spend from one balance with Auto routing, Single source, or Manual allocation."/>
 <link rel="canonical" href="https://arcswap.net/blog/launch-balance"/>
 <meta property="og:title" content="Unified Balance: Manage USDC Across Every Chain"/>
-<meta property="og:description" content="Deposit USDC from any of eight chains into a single Circle Gateway pool. Spend with Auto routing, a Single source, or Manual per-chain allocation. Now live on ArcSwap."/>
+<meta property="og:description" content="Deposit USDC from any of eight chains into a single Circle Gateway pool. Spend with Auto routing, a Single source, or Manual per-chain allocation. Now live on OneSet."/>
 <meta property="og:image" content="https://arcswap.net/assets/social/blog-balance-banner.svg"/>
 <meta property="og:url" content="https://arcswap.net/blog/launch-balance"/>
 <meta property="og:type" content="article"/>
-<title>Unified Balance: Manage USDC Across Every Chain | ArcSwap Blog</title>
+<title>Unified Balance: Manage USDC Across Every Chain | OneSet Blog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
@@ -131,7 +131,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
 <nav>
   <a class="nav-logo" href="/">
-    <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="ArcSwap" width="129" height="28"/>
+    <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="OneSet" width="129" height="28"/>
     <span class="logo-tag">Blog</span>
   </a>
   <div class="nav-links">
@@ -155,7 +155,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
   <p class="lead">USDC deposited from any of eight testnets pools into a single Circle Gateway balance. Spend from that one balance to any destination using Auto routing, a Single source chain, or a Manual per-chain split.</p>
 
   <div class="byline">
-    <span class="byline-author">ArcSwap Team</span>
+    <span class="byline-author">OneSet Team</span>
     <span class="byline-sep">·</span>
     <span>May 28, 2026</span>
     <span class="byline-sep">·</span>
@@ -166,7 +166,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
   <article>
 
-    <p><a href="/balance">Balance</a> is ArcSwap's interface to Circle's Unified Balance. Deposit USDC from any supported testnet and it enters a single, chain-agnostic pool backed by Circle Gateway. From that point forward, the USDC does not live on a specific chain. It lives in the pool. When you spend, you pick a destination and an amount. The routing is handled for you, or you configure it yourself.</p>
+    <p><a href="/balance">Balance</a> is OneSet's interface to Circle's Unified Balance. Deposit USDC from any supported testnet and it enters a single, chain-agnostic pool backed by Circle Gateway. From that point forward, the USDC does not live on a specific chain. It lives in the pool. When you spend, you pick a destination and an amount. The routing is handled for you, or you configure it yourself.</p>
 
     <div class="callout">
       <div class="callout-title">TL;DR</div>
@@ -181,11 +181,11 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <p>This design eliminates the fragmentation problem that arises when the same asset exists in separate wallets on separate chains. Instead of managing eight wallet balances across eight networks, you manage one number. The physical USDC sits in Gateway's escrow wherever you deposited it. The spend operation instructs Gateway to release the appropriate amount on your chosen destination chain.</p>
 
-    <p>ArcSwap's <a href="/balance">Balance page</a> surfaces three deposit operations and three spend modes. The underlying mechanism in each case is the same Circle Gateway contract. What differs is how the source funds are selected when you initiate a spend.</p>
+    <p>OneSet's <a href="/balance">Balance page</a> surfaces three deposit operations and three spend modes. The underlying mechanism in each case is the same Circle Gateway contract. What differs is how the source funds are selected when you initiate a spend.</p>
 
     <h2>Supported chains</h2>
 
-    <p>Unified Balance on ArcSwap is connected to eight testnets. Deposits from any of these networks enter the same pool.</p>
+    <p>Unified Balance on OneSet is connected to eight testnets. Deposits from any of these networks enter the same pool.</p>
 
     <table class="t">
       <tr><th>Network</th><th>Chain ID</th></tr>
@@ -203,7 +203,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <h2>Three ways to spend</h2>
 
-    <p>When you initiate a spend from Unified Balance, you choose how the source funds are allocated. ArcSwap offers three modes.</p>
+    <p>When you initiate a spend from Unified Balance, you choose how the source funds are allocated. OneSet offers three modes.</p>
 
     <div class="spend-grid">
       <div class="sp-card">
@@ -262,11 +262,11 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <h2>Depositing USDC</h2>
 
-    <p>The deposit flow on ArcSwap's <a href="/balance">Balance page</a> follows a consistent pattern. Connect a wallet, switch to the network you want to deposit from, enter an amount, and confirm the transaction. The Gateway escrow contract holds the USDC on that source chain and your Unified Balance increases.</p>
+    <p>The deposit flow on OneSet's <a href="/balance">Balance page</a> follows a consistent pattern. Connect a wallet, switch to the network you want to deposit from, enter an amount, and confirm the transaction. The Gateway escrow contract holds the USDC on that source chain and your Unified Balance increases.</p>
 
     <p>There is no minimum deposit. There is no lock-up period. USDC deposited into Unified Balance can be spent immediately after the deposit transaction confirms.</p>
 
-    <p>ArcSwap shows your balance across all connected chains in a single view. You can see how much USDC you hold in Unified Balance total, and how much is held in Gateway's escrow on each individual chain. This breakdown matters when you use Single or Manual spend modes, since those modes draw from specific chain allocations.</p>
+    <p>OneSet shows your balance across all connected chains in a single view. You can see how much USDC you hold in Unified Balance total, and how much is held in Gateway's escrow on each individual chain. This breakdown matters when you use Single or Manual spend modes, since those modes draw from specific chain allocations.</p>
 
     <h2>How spending settles</h2>
 
@@ -280,26 +280,26 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <p>Arc Testnet uses USDC as its native gas token. Every transaction on the network settles fees in USDC. This means your Unified Balance is directly connected to the gas economics of Arc. USDC in Gateway escrow on Arc can cover transaction costs, and USDC arriving from other chains via a Gateway spend lands on Arc ready to pay gas immediately.</p>
 
-    <p>For protocols building on Arc, Unified Balance provides a programmable way to fund wallets across all eight supported chains from a single USDC position. The Circle App Kit exposes deposit, spend, and balance query as SDK calls. ArcSwap's <a href="/balance">Balance page</a> is built on top of that same kit.</p>
+    <p>For protocols building on Arc, Unified Balance provides a programmable way to fund wallets across all eight supported chains from a single USDC position. The Circle App Kit exposes deposit, spend, and balance query as SDK calls. OneSet's <a href="/balance">Balance page</a> is built on top of that same kit.</p>
 
     <div class="cta-card">
       <h3>One pool. Eight chains. Three spend modes.</h3>
-      <p>Unified Balance is live on ArcSwap. Deposit USDC from any supported testnet and spend to any destination.</p>
+      <p>Unified Balance is live on OneSet. Deposit USDC from any supported testnet and spend to any destination.</p>
       <a href="/balance">Open Balance</a>
       <a class="alt" href="/trade">Try Trade</a>
     </div>
 
     <div class="callout warn">
       <div class="callout-title">Testnet only. No real money.</div>
-      <div class="callout-body">Everything on ArcSwap today runs on <strong>testnets</strong>. Unified Balance uses testnet USDC on <strong>Arc Testnet</strong> and seven other test networks. <strong>Never send mainnet USDC to a testnet address.</strong> Funds sent to a testnet address are unrecoverable.</div>
+      <div class="callout-body">Everything on OneSet today runs on <strong>testnets</strong>. Unified Balance uses testnet USDC on <strong>Arc Testnet</strong> and seven other test networks. <strong>Never send mainnet USDC to a testnet address.</strong> Funds sent to a testnet address are unrecoverable.</div>
     </div>
 
-    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>ArcSwap is a non-custodial frontend currently on testnet networks. Unified Balance is powered by Circle Gateway. Nothing here is real money or financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
+    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>OneSet is a non-custodial frontend currently on testnet networks. Unified Balance is powered by Circle Gateway. Nothing here is real money or financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
 
   </article>
 
   <div class="foot">
-    <span>© 2026 ArcSwap · Built on Arc Testnet</span>
+    <span>© 2026 OneSet · Built on Arc Testnet</span>
     <div>
       <a href="/blog">← Back to blog</a> &nbsp;·&nbsp;
       <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">X</a> &nbsp;·&nbsp;

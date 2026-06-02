@@ -1,4 +1,4 @@
-# ArcSwap
+# OneSet
 
 > **The stablecoin command center on Arc.**
 > One USDC. One Balance. Everywhere.
@@ -11,7 +11,7 @@ Unified balance across 8 chains · cross-chain settlement in ~30s · bounded aut
 
 ## What is this?
 
-ArcSwap is a **non-custodial stablecoin terminal** built on the [Arc Layer 1](https://arc.network) — Circle's institutional EVM chain where USDC is the native gas token. We treat USDC as **one programmable balance** rather than dozens of siloed per-chain wallets.
+OneSet is a **non-custodial stablecoin terminal** built on the [Arc Layer 1](https://arc.network) — Circle's institutional EVM chain where USDC is the native gas token. We treat USDC as **one programmable balance** rather than dozens of siloed per-chain wallets.
 
 ### What ships today on Arc Testnet
 
@@ -32,7 +32,7 @@ ArcSwap is a **non-custodial stablecoin terminal** built on the [Arc Layer 1](ht
 
 > All surfaces are built on **Arc Testnet** first. Production cutover follows **Arc Mainnet** (targeted Summer 2026 per Circle’s Arc whitepaper).
 
-You always retain custody. ArcSwap never holds funds, and the agent backend executes only within EIP-712-signed bounds you can revoke at any time.
+You always retain custody. OneSet never holds funds, and the agent backend executes only within EIP-712-signed bounds you can revoke at any time.
 
 ---
 
@@ -186,7 +186,7 @@ Contact: `security@arcswap.net` (PGP key in `SECURITY.md`).
 
 ## Roadmap
 
-ArcSwap builds on **Arc Testnet** today. The calendar quarters below reflect
+OneSet builds on **Arc Testnet** today. The calendar quarters below reflect
 testnet engineering milestones we control. **Production cutover to Arc Mainnet
 follows Arc's own launch** — Circle targets **Summer 2026** per the Arc whitepaper.
 
@@ -205,15 +205,15 @@ See live roadmap on the [homepage](https://arcswap.net/#roadmap).
 
 ## Disclaimer
 
-ArcSwap is **testnet-only** software. All assets are testnet tokens with no monetary value. Indicative yields and execution timings are not guarantees — actual results depend on Circle infrastructure, network conditions, and on-chain liquidity.
+OneSet is **testnet-only** software. All assets are testnet tokens with no monetary value. Indicative yields and execution timings are not guarantees — actual results depend on Circle infrastructure, network conditions, and on-chain liquidity.
 
-We use third-party smart contracts (Circle Gateway, Circle CCTP, Uniswap V2 deployed by Arc Foundation) audited by their respective teams. ArcSwap itself does not own or operate any of these contracts.
+We use third-party smart contracts (Circle Gateway, Circle CCTP, Uniswap V2 deployed by Arc Foundation) audited by their respective teams. OneSet itself does not own or operate any of these contracts.
 
 ---
 
 ## License
 
-License decision pending. Until then, all rights reserved by the ArcSwap team. When we decide (likely **MIT** for the frontend, **Apache-2.0** for backend functions), this section will update.
+License decision pending. Until then, all rights reserved by the OneSet team. When we decide (likely **MIT** for the frontend, **Apache-2.0** for backend functions), this section will update.
 
 ---
 

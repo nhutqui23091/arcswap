@@ -1,4 +1,4 @@
-/* ArcSwap Circle Gateway client
+/* OneSet Circle Gateway client
  * Wraps:
  *  - REST `/v1/balances`  → unified read across N chains in one request
  *  - REST `/v1/transfer`  → submit signed BurnIntent → receive attestation

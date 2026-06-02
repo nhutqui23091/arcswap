@@ -1,6 +1,6 @@
-# Incident Response Policy — ArcSwap
+# Incident Response Policy — OneSet
 
-This document is the **public summary** of how ArcSwap classifies, contains, and
+This document is the **public summary** of how OneSet classifies, contains, and
 communicates security incidents. The internal playbook (with on-call contacts,
 specific tooling, and rotation schedules) is maintained privately.
 
@@ -34,7 +34,7 @@ person wears multiple hats:
 
 ## Containment principles
 
-ArcSwap is a frontend over third-party contracts. Containment options follow
+OneSet is a frontend over third-party contracts. Containment options follow
 that architecture:
 
 - **Configuration-level**: edge headers and redirects can be reverted in
@@ -57,7 +57,7 @@ underlying Uniswap V2 contracts, liquidity removal on the same).
 
 ## Communication
 
-For any SEV-1 or SEV-2, ArcSwap will publish updates in this order and cadence:
+For any SEV-1 or SEV-2, OneSet will publish updates in this order and cadence:
 
 1. **Status page** — initial banner within the SLA above
 2. **Public channels** ([@arc_swap](https://x.com/arc_swap) on X, Discord) — same content, no DMs (avoids impersonation)
@@ -89,7 +89,7 @@ The vendors and their disclosure channels are listed in
 
 ## Drills and review
 
-ArcSwap runs internal incident-response drills on a recurring cadence. Each
+OneSet runs internal incident-response drills on a recurring cadence. Each
 drill covers one of the threat scenarios in
 [`SECURITY_CHECKLIST.md`](../SECURITY_CHECKLIST.md#threat-model)
 and updates the internal playbook based on what is learned.

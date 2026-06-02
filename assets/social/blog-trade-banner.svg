@@ -79,7 +79,7 @@
 
   <!-- Headline -->
   <g transform="translate(80 200)">
-    <text x="0" y="0" font-family="DM Mono, monospace" font-size="14" font-weight="600" fill="#FF6F61" letter-spacing="3">// ArcSwap Trade</text>
+    <text x="0" y="0" font-family="DM Mono, monospace" font-size="14" font-weight="600" fill="#FF6F61" letter-spacing="3">// OneSet Trade</text>
     <text x="0" y="84" font-family="Inter, sans-serif" font-size="88" font-weight="900" fill="#F5F7FB" letter-spacing="-4">Trade.</text>
     <text x="0" y="156" font-family="Inter, sans-serif" font-size="21" font-weight="400" fill="url(#brand)" letter-spacing="-0.5">One interface. Three settlement routes.</text>
     <text x="0" y="188" font-family="Inter, sans-serif" font-size="18" font-weight="400" fill="#8CA0BD">Swap, bridge, or spend USDC across eight chains.</text>
@@ -87,7 +87,7 @@
 
   <!-- Brand bottom -->
   <g transform="translate(80 540)">
-    <text x="0" y="0" font-family="Inter, sans-serif" font-size="20" font-weight="900" fill="#F5F7FB" letter-spacing="-.5">ArcSwap</text>
+    <text x="0" y="0" font-family="Inter, sans-serif" font-size="20" font-weight="900" fill="#F5F7FB" letter-spacing="-.5">OneSet</text>
     <text x="100" y="0" font-family="DM Mono, monospace" font-size="13" fill="#8CA0BD" letter-spacing="2">// arcswap.net/trade  ·  May 28, 2026</text>
   </g>
 </svg>

@@ -1,6 +1,6 @@
 # Deployment — IPFS + ENS
 
-ArcSwap targets **immutable, decentralized hosting** for production. This means:
+OneSet targets **immutable, decentralized hosting** for production. This means:
 
 - Build artifacts pinned to **IPFS** (content-addressed, can't be silently swapped)
 - DNS-equivalent via **ENS** (`arcswap.eth` → resolves to latest IPFS CID)

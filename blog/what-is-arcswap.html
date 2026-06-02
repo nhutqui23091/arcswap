@@ -7,14 +7,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
-<meta name="description" content="What is ArcSwap? The stablecoin command center on Arc — Unified Balance, native Trade, instant token creation. The design thesis."/>
+<meta name="description" content="What is OneSet? The stablecoin command center on Arc — Unified Balance, native Trade, instant token creation. The design thesis."/>
 <link rel="canonical" href="https://arcswap.net/blog/what-is-arcswap"/>
-<meta property="og:title" content="What is ArcSwap?"/>
+<meta property="og:title" content="What is OneSet?"/>
 <meta property="og:description" content="The stablecoin command center on Arc — Unified Balance via Circle Gateway, native Trade, and one-click token creation. The design thesis."/>
 <meta property="og:image" content="https://arcswap.net/assets/social/blog-arcswap-banner.svg"/>
 <meta property="og:url" content="https://arcswap.net/blog/what-is-arcswap"/>
 <meta property="og:type" content="article"/>
-<title>What is ArcSwap? — ArcSwap Blog</title>
+<title>What is OneSet? — OneSet Blog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
@@ -121,7 +121,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
 <nav>
   <a class="nav-logo" href="/">
-    <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="ArcSwap" width="129" height="28"/>
+    <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="OneSet" width="129" height="28"/>
     <span class="logo-tag">Blog</span>
   </a>
   <div class="nav-links">
@@ -139,24 +139,24 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
 <div class="wrap">
 
-  <div class="crumb"><a href="/">Home</a> &nbsp;/&nbsp; <a href="/blog">Blog</a> &nbsp;/&nbsp; What is ArcSwap?</div>
+  <div class="crumb"><a href="/">Home</a> &nbsp;/&nbsp; <a href="/blog">Blog</a> &nbsp;/&nbsp; What is OneSet?</div>
   <div class="eyebrow">Product Note</div>
-  <h1 class="title">What is <span class="grad">ArcSwap</span>?</h1>
+  <h1 class="title">What is <span class="grad">OneSet</span>?</h1>
   <p class="lead">The stablecoin command center on Arc — spend USDC from any chain, trade and bridge native, and ship a token in one click. Here's the design thesis.</p>
 
   <div class="byline">
-    <span class="byline-author">ArcSwap Team</span>
+    <span class="byline-author">OneSet Team</span>
     <span class="byline-sep">·</span>
     <span>May 10, 2026</span>
     <span class="byline-sep">·</span>
     <span>6 min read</span>
   </div>
 
-  <img class="banner" src="/assets/social/blog-arcswap-banner.svg?v=2" alt="What is ArcSwap"/>
+  <img class="banner" src="/assets/social/blog-arcswap-banner.svg?v=2" alt="What is OneSet"/>
 
   <article>
 
-    <p>ArcSwap is a <strong>non-custodial DeFi frontend</strong> on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc</a> Layer 1 blockchain. The pitch in one sentence: <em>spend stablecoins on Arc as if they were already there, no matter which chain they actually live on.</em></p>
+    <p>OneSet is a <strong>non-custodial DeFi frontend</strong> on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc</a> Layer 1 blockchain. The pitch in one sentence: <em>spend stablecoins on Arc as if they were already there, no matter which chain they actually live on.</em></p>
 
     <p>That's still vague. Let me be specific.</p>
 
@@ -179,7 +179,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <p>What if your USDC just <em>worked</em>? Whatever chain it's sitting on, you can spend it on Arc — instantly. Whatever stablecoin you need, you can swap into it. Whatever token you want to launch, you ship it without a deploy script. One interface, one balance, one mental model.</p>
 
-    <p>That's ArcSwap today. Three public products plus an Auto-Replenish Agent in preview, all tightly integrated:</p>
+    <p>That's OneSet today. Three public products plus an Auto-Replenish Agent in preview, all tightly integrated:</p>
 
     <div class="feature-grid">
       <div class="fcard">
@@ -211,14 +211,14 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
       <li><strong>EVM compatible.</strong> Solidity, Hardhat, Foundry, Viem all work. Circle already deployed CCTP V2 and Gateway. Uniswap V2 router was deployed by the foundation. The infra was waiting.</li>
     </ol>
 
-    <p>We didn't have to build any of the protocols ArcSwap surfaces. They all exist on Arc. <strong>ArcSwap is a UX layer, not a protocol</strong> — and that's deliberate.</p>
+    <p>We didn't have to build any of the protocols OneSet surfaces. They all exist on Arc. <strong>OneSet is a UX layer, not a protocol</strong> — and that's deliberate.</p>
 
     <h2>What we are NOT</h2>
 
     <p>To set expectations clearly:</p>
 
     <ul>
-      <li><strong>We don't custody funds.</strong> Your wallet is your wallet. ArcSwap can't pause, freeze, or move anything you own.</li>
+      <li><strong>We don't custody funds.</strong> Your wallet is your wallet. OneSet can't pause, freeze, or move anything you own.</li>
       <li><strong>We don't have our own token.</strong> No ASWP. No airdrop campaign. No governance vote. Anyone telling you otherwise is running a scam.</li>
       <li><strong>We don't run our own bridge or AMM contracts.</strong> We call into Circle (CCTP, Gateway) and the Arc Foundation's Uniswap deployment. They run the infra; we run the UI.</li>
       <li><strong>We don't take fees</strong> on swaps, bridges, or Gateway flows (current testnet stage). The fees you see come from the underlying protocols (Uniswap LP fee, CCTP relayer, etc.).</li>
@@ -253,7 +253,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
       <tr><td>2027+</td><td>StableFX (RFQ-driven USDC ⇄ EURC ⇄ USDP via Arc <code>FxEscrow</code>) + Nanopayments + Agent SDK + Treasury API + <strong>mainnet</strong></td></tr>
     </table>
 
-    <p>If even half of this ships, ArcSwap becomes the default place to hold, move, and automate USDC on Arc. That's the bet.</p>
+    <p>If even half of this ships, OneSet becomes the default place to hold, move, and automate USDC on Arc. That's the bet.</p>
 
     <h2>Try it</h2>
 
@@ -266,12 +266,12 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
       <a href="/trade">Trade &amp; Bridge</a>
     </div>
 
-    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>ArcSwap is a non-custodial frontend currently on Arc Testnet. Figures are indicative — not financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
+    <p style="font-size:13px;color:var(--muted);margin-top:48px;border-top:1px solid var(--border);padding-top:18px"><em>OneSet is a non-custodial frontend currently on Arc Testnet. Figures are indicative — not financial advice. We don't custody funds; you always retain control of your wallet.</em></p>
 
   </article>
 
   <div class="foot">
-    <span>© 2026 ArcSwap · Built on Arc Testnet</span>
+    <span>© 2026 OneSet · Built on Arc Testnet</span>
     <div>
       <a href="/blog">← Back to blog</a> &nbsp;·&nbsp;
       <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">X</a> &nbsp;·&nbsp;

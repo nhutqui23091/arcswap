@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-  <!-- ArcSwap X / Twitter avatar — wordmark only, matches the in-app flat logo style -->
+  <!-- OneSet X / Twitter avatar — wordmark only, matches the in-app flat logo style -->
   <defs>
     <radialGradient id="bgGrad" cx="50%" cy="40%" r="78%">
       <stop offset="0%"  stop-color="#15315A"/>
@@ -36,7 +36,7 @@
   <circle cx="220" cy="240" r="170" fill="url(#orb3)"/>
 
   <!-- Wordmark — "Arc" white + "Swap" teal→blue gradient.
-       This mirrors the in-app flat ArcSwap logo. -->
+       This mirrors the in-app flat OneSet logo. -->
   <g font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
      font-weight="900"
      font-size="86"

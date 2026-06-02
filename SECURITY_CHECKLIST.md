@@ -1,6 +1,6 @@
-# ArcSwap — Security Posture
+# OneSet — Security Posture
 
-A public summary of the security controls that ship with every build of ArcSwap,
+A public summary of the security controls that ship with every build of OneSet,
 and the principles we apply across the lifecycle of the project.
 
 For vulnerability reporting, see [`SECURITY.md`](SECURITY.md).
@@ -10,7 +10,7 @@ For multi-sig governance, see [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md).
 
 ## Threat model
 
-ArcSwap is a **non-custodial frontend** for stablecoin primitives on Arc Testnet.
+OneSet is a **non-custodial frontend** for stablecoin primitives on Arc Testnet.
 It owns no smart contracts of its own; users always sign their own transactions
 against third-party protocols (Hashnote USYC, Circle CCTP / Gateway, Uniswap V2).
 
@@ -102,7 +102,7 @@ to gate access for any reason.
 
 ## Vendor surfaces & their disclosure channels
 
-ArcSwap composes third-party contracts. Vulnerabilities in those contracts are
+OneSet composes third-party contracts. Vulnerabilities in those contracts are
 out of scope for our bounty — please report them upstream:
 
 | Surface | Owner | Report to |
@@ -120,7 +120,7 @@ proxies), see [`SECURITY.md`](SECURITY.md).
 
 ## Mainnet readiness
 
-ArcSwap is currently **testnet-only**. Before any mainnet release, the project
+OneSet is currently **testnet-only**. Before any mainnet release, the project
 will additionally complete:
 
 - Public security audit by an established firm

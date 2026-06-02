@@ -1,7 +1,7 @@
 # Deploying `status.arcswap.net`
 
 This runbook walks through creating the **separate Cloudflare Pages project**
-that serves the ArcSwap status dashboard at `status.arcswap.net`.
+that serves the OneSet status dashboard at `status.arcswap.net`.
 
 Why a separate project? Two reasons:
 

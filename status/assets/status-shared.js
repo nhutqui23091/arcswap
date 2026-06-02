@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   ArcSwap Status — shared helpers across all status.arcswap.net pages.
+   OneSet Status — shared helpers across all status.arcswap.net pages.
 
    Exposes window.ArcStatus with:
      - API_BASE         → cross-origin base URL ('' on localhost, 'https://arcswap.net' on prod)
@@ -143,7 +143,7 @@
 
   // ── Catalogs
   const SERVICES = [
-    { id: 'frontend', name: 'ArcSwap Frontend',      probe: () => probeUrl((API_BASE || '') + '/', { method: 'HEAD', cache: 'no-store' }), uptime: 99.98, hint: 'Cloudflare Pages' },
+    { id: 'frontend', name: 'OneSet Frontend',      probe: () => probeUrl((API_BASE || '') + '/', { method: 'HEAD', cache: 'no-store' }), uptime: 99.98, hint: 'Cloudflare Pages' },
     { id: 'balance',  name: 'Unified Balance API',   probe: () => probeUrl(API_BASE + '/api/gateway-proxy/health', { method: 'HEAD' }), uptime: 99.92, hint: 'Circle Gateway' },
     { id: 'trade',    name: 'Trade Engine',          probe: () => probeRpc('https://rpc.testnet.arc.network'), uptime: 99.85, hint: 'Arc L1 RPC' },
     { id: 'agent',    name: 'Agent System',          probe: () => probeUrl(API_BASE + '/api/agent/health', { method: 'HEAD' }), uptime: 99.74, hint: 'Cloudflare KV' },
@@ -169,11 +169,11 @@
     return `
       <nav class="topnav" id="topnav">
         <a class="nav-logo" href="/">
-          <img class="logo-img" src="/assets/wordmark-arcswap.png?v=2" alt="ArcSwap" width="101" height="22"/>
+          <img class="logo-img" src="/assets/wordmark-arcswap.png?v=2" alt="OneSet" width="101" height="22"/>
           <span class="logo-sub">Status</span>
         </a>
         <div class="nav-right">
-          <a class="btn-back" href="https://arcswap.net" target="_blank" rel="noopener noreferrer">← Back to ArcSwap</a>
+          <a class="btn-back" href="https://arcswap.net" target="_blank" rel="noopener noreferrer">← Back to OneSet</a>
           <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
         </div>
       </nav>

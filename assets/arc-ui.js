@@ -1,4 +1,4 @@
-/* ArcSwap shared UI widgets — navbar, toast, modal, cursor. Requires arc-core.js */
+/* OneSet shared UI widgets — navbar, toast, modal, cursor. Requires arc-core.js */
 (function (global) {
   'use strict';
   if (!global.ARC) { console.error('[arc-ui] ARC core not loaded'); return; }
@@ -34,7 +34,7 @@
       const tabs = navTabs(active);
       nav.innerHTML = `
         <a class="nav-logo" href="/">
-          <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="ArcSwap" width="129" height="28"/>
+          <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="OneSet" width="129" height="28"/>
           <span class="logo-badge">TESTNET</span>
         </a>
         <div class="nav-tabs">
@@ -364,8 +364,8 @@
 
       side.innerHTML = `
         <div class="arc-side-head">
-          <a class="arc-side-brand" href="/" aria-label="ArcSwap home">
-            <img class="arc-side-logo" src="/assets/logos/wordmark-arcswap.png?v=2" alt="ArcSwap" width="138" height="30"/>
+          <a class="arc-side-brand" href="/" aria-label="OneSet home">
+            <img class="arc-side-logo" src="/assets/logos/wordmark-arcswap.png?v=2" alt="OneSet" width="138" height="30"/>
             <span class="arc-side-pill">TESTNET</span>
           </a>
           <button class="arc-side-toggle" type="button" aria-label="Toggle sidebar">

@@ -5,10 +5,10 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://arcswap.net https://www.arcswap.net https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="description" content="ArcSwap Chain Activity — testnet RPC probes, block heights, settlement counts, and liquidity distribution across Arc and 7 EVM testnets supported by Circle Gateway and CCTP V2."/>
+<meta name="description" content="OneSet Chain Activity — testnet RPC probes, block heights, settlement counts, and liquidity distribution across Arc and 7 EVM testnets supported by Circle Gateway and CCTP V2."/>
 <meta name="theme-color" content="#0A1628"/>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-<title>Chains — ArcSwap Status</title>
+<title>Chains — OneSet Status</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
@@ -24,7 +24,7 @@
   <div class="page-head fade-in">
     <div class="eyebrow">03 · Chain activity</div>
     <h1>Chains</h1>
-    <div class="slogan">Realtime <strong>RPC probes</strong> of every testnet chain ArcSwap operates on — block heights, latency, settlement counts, and liquidity distribution. All probed from your browser, no backend.</div>
+    <div class="slogan">Realtime <strong>RPC probes</strong> of every testnet chain OneSet operates on — block heights, latency, settlement counts, and liquidity distribution. All probed from your browser, no backend.</div>
   </div>
 
   <!-- Top stats: per-chain summary -->
@@ -104,7 +104,7 @@ async function renderChains() {
           <div class="chain-status-dot ${cls}"></div>
         </div>
         <div class="chain-grid">
-          <div class="chain-stat"><div class="k">ArcSwap Tx · today</div><div class="v tab-num">${A.fmtNum(txCount)}</div></div>
+          <div class="chain-stat"><div class="k">OneSet Tx · today</div><div class="v tab-num">${A.fmtNum(txCount)}</div></div>
           <div class="chain-stat"><div class="k">RPC Latency</div><div class="v ${p.ok ? A.latBucket(p.latencyMs) : ''} tab-num">${lat}</div></div>
           <div class="chain-stat"><div class="k">Tx Share</div><div class="v tab-num">${totalToday > 0 ? share + '%' : '—'}</div></div>
           <div class="chain-stat"><div class="k">Status</div><div class="v">${p.ok ? (p.latencyMs > 1500 ? 'Slow' : 'Healthy') : 'Probing'}</div></div>
@@ -124,8 +124,8 @@ async function renderChains() {
   document.getElementById('chains-summary').innerHTML = [
     { lbl: 'Total Chains',          ic: '⌖', val: A.CHAINS.length.toString(),               tr: 'all live' },
     { lbl: 'Healthy Now',           ic: '✓', val: healthy + '/' + A.CHAINS.length,           tr: 'realtime' },
-    { lbl: 'ArcSwap Tx · today',    ic: '∑', val: A.fmtNum(totalTx),                          tr: isLive ? 'live · real' : '—' },
-    { lbl: 'ArcSwap Tx · lifetime', ic: '◐', val: A.fmtNum(lifetimeTotal),                    tr: isLive ? 'live · real' : '—' },
+    { lbl: 'OneSet Tx · today',    ic: '∑', val: A.fmtNum(totalTx),                          tr: isLive ? 'live · real' : '—' },
+    { lbl: 'OneSet Tx · lifetime', ic: '◐', val: A.fmtNum(lifetimeTotal),                    tr: isLive ? 'live · real' : '—' },
     { lbl: 'Avg RPC Latency',       ic: '⏱', val: (isNaN(avgLatency) ? '—' : avgLatency + 'ms'), tr: 'realtime' },
   ].map(s => `
     <div class="stat-card">

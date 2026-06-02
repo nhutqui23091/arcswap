@@ -17,7 +17,7 @@
 // Note on logout: HTTP Basic Auth has no real logout. Close the browser /
 // use an incognito window if you need to clear credentials.
 
-const REALM = 'ArcSwap — Private';
+const REALM = 'OneSet — Private';
 
 function isProtected(pathname) {
   return (

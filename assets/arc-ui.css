@@ -1,4 +1,4 @@
-/* ArcSwap shared UI — navbar, cursor, aurora, toast, glass primitives */
+/* OneSet shared UI — navbar, cursor, aurora, toast, glass primitives */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   /* Arc.network-inspired palette — deep navy base, teal/cyan accent, peach horizon.
@@ -198,7 +198,7 @@ aside.arc-side{
 body.arc-side-collapsed aside.arc-side{width:var(--side-w-c)}
 
 /* Sidebar HEAD — brand + toggle.
-   Brand is "ArcSwap" big + small TESTNET pill stacked. No mark glyph —
+   Brand is "OneSet" big + small TESTNET pill stacked. No mark glyph —
    the sidebar itself is the brand. When collapsed, brand hides and the
    toggle button takes center stage. */
 .arc-side-head{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 16px 18px 22px;border-bottom:1px solid var(--border);min-height:84px;gap:10px}

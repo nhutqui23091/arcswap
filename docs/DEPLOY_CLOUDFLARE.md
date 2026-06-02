@@ -1,6 +1,6 @@
 # Deploy to Cloudflare Pages — `arcswap.net`
 
-This is the **primary deployment path** for ArcSwap. You bought `arcswap.net` on Cloudflare,
+This is the **primary deployment path** for OneSet. You bought `arcswap.net` on Cloudflare,
 which means DNS, CDN, SSL, and hosting all live under one account — zero glue code.
 
 > Looking for the decentralized path (IPFS + ENS)? See `DEPLOYMENT.md`. That's an optional

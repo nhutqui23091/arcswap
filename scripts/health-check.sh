@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# health-check.sh — sanity probe for ArcSwap production endpoints
+# health-check.sh — sanity probe for OneSet production endpoints
 #
 # Run from cron / Better Stack / GitHub Actions every 5 min.
 # Exit 0 = healthy, exit 1 = degraded (page on-call).
@@ -17,7 +17,7 @@ ALERT_WEBHOOK="${ALERT_WEBHOOK:-}"
 
 # User-Agent cho curl — giống browser thật để bypass Cloudflare Bot Fight Mode
 # khi chạy từ datacenter IP (vd GitHub Actions runner).
-UA="Mozilla/5.0 (compatible; ArcSwap-HealthCheck/1.0; +https://arcswap.net)"
+UA="Mozilla/5.0 (compatible; OneSet-HealthCheck/1.0; +https://arcswap.net)"
 
 # Helper: curl với UA + timeout chuẩn
 cf_curl() { curl -sA "$UA" --max-time 10 "$@"; }
@@ -128,7 +128,7 @@ if [[ -n "$LATEST_RELEASE" ]]; then
 fi
 
 # ─── Print report ────────────────────────────────────────────────────────────
-echo "ArcSwap health — $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+echo "OneSet health — $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
 printf '  %s\n' "${CHECKS[@]}"
 echo
 
@@ -140,7 +140,7 @@ if [[ $FAILED -gt 0 ]]; then
   if [[ -n "$ALERT_WEBHOOK" ]]; then
     curl -s -X POST "$ALERT_WEBHOOK" \
       -H "content-type: application/json" \
-      -d "$(jq -n --arg c "🚨 ArcSwap health: $FAILED check(s) failed\n\n$REPORT" '{content: $c}')" \
+      -d "$(jq -n --arg c "🚨 OneSet health: $FAILED check(s) failed\n\n$REPORT" '{content: $c}')" \
       >/dev/null
   fi
   exit 1

@@ -1,4 +1,4 @@
-# RFC 9116 — security.txt for ArcSwap
+# RFC 9116 — security.txt for OneSet
 # https://www.rfc-editor.org/rfc/rfc9116
 
 Contact: mailto:security@arcswap.net

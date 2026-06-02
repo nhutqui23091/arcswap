@@ -1,4 +1,4 @@
-# Governance & Multi-sig Policy — ArcSwap
+# Governance & Multi-sig Policy — OneSet
 
 This document defines who controls what, and how changes are made.
 **Every privileged key MUST be a multi-sig.** No single person can move funds,

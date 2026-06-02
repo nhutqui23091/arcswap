@@ -53,7 +53,7 @@
   <g transform="translate(80 230)">
     <text x="0" y="0" font-family="DM Mono, monospace" font-size="14" font-weight="600" fill="#4DD6DB" letter-spacing="3">// PRODUCT NOTE</text>
     <text x="0" y="78" font-family="Inter, sans-serif" font-size="76" font-weight="900" fill="#F5F7FB" letter-spacing="-3">What is</text>
-    <text x="0" y="156" font-family="Inter, sans-serif" font-size="76" font-weight="900" fill="url(#brand)" letter-spacing="-3">ArcSwap?</text>
+    <text x="0" y="156" font-family="Inter, sans-serif" font-size="76" font-weight="900" fill="url(#brand)" letter-spacing="-3">OneSet?</text>
     <text x="0" y="210" font-family="Inter, sans-serif" font-size="22" font-weight="400" fill="#8CA0BD">The stablecoin command center on Arc —</text>
     <text x="0" y="240" font-family="Inter, sans-serif" font-size="22" font-weight="400" fill="#8CA0BD">spend from any chain, trade native, ship a token.</text>
   </g>
@@ -69,7 +69,7 @@
 
   <!-- Brand bottom -->
   <g transform="translate(80 540)">
-    <text x="0" y="0" font-family="Inter, sans-serif" font-size="20" font-weight="900" fill="#F5F7FB" letter-spacing="-.5">ArcSwap</text>
+    <text x="0" y="0" font-family="Inter, sans-serif" font-size="20" font-weight="900" fill="#F5F7FB" letter-spacing="-.5">OneSet</text>
     <text x="100" y="0" font-family="DM Mono, monospace" font-size="13" fill="#8CA0BD" letter-spacing="2">// arcswap.net</text>
   </g>
 </svg>

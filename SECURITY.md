@@ -1,6 +1,6 @@
-# Security Policy — ArcSwap
+# Security Policy — OneSet
 
-ArcSwap is the Yield Terminal for stablecoins on **Arc Testnet**. We take security
+OneSet is the Yield Terminal for stablecoins on **Arc Testnet**. We take security
 seriously and welcome responsible disclosure from researchers.
 
 ---

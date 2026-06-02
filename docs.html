@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/icon-arcswap.png?v=1"/>
 <link rel="apple-touch-icon" href="/assets/logos/icon-arcswap.png?v=1"/>
-<meta name="description" content="ArcSwap Documentation — the engineering reference for the unified stablecoin terminal on Arc. Covers Trade, Unified Balance (Circle Gateway), the Auto-Replenish Agent, History, Create Token, Dashboard, plus the full contract / API surface."/>
-<title>Documentation — ArcSwap</title>
+<meta name="description" content="OneSet Documentation — the engineering reference for the unified stablecoin terminal on Arc. Covers Trade, Unified Balance (Circle Gateway), the Auto-Replenish Agent, History, Create Token, Dashboard, plus the full contract / API surface."/>
+<title>Documentation — OneSet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
@@ -261,7 +261,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
 <!-- NAV -->
 <nav>
   <a class="nav-logo" href="/">
-    <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="ArcSwap" width="129" height="28"/>
+    <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="OneSet" width="129" height="28"/>
     <span class="logo-tag">Docs</span>
   </a>
   <div class="nav-links">
@@ -328,10 +328,10 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
   <main class="docs-main">
 
     <div class="docs-breadcrumb"><a href="/">Home</a> &nbsp;/&nbsp; Documentation</div>
-    <h1 class="docs-h1">ArcSwap <span class="grad">Documentation</span></h1>
+    <h1 class="docs-h1">OneSet <span class="grad">Documentation</span></h1>
     <p class="docs-lead">
       The engineering reference for the unified stablecoin terminal on Arc.
-      ArcSwap puts Circle's stablecoin stack — <strong>Gateway, CCTP V2, Programmable Wallets,
+      OneSet puts Circle's stablecoin stack — <strong>Gateway, CCTP V2, Programmable Wallets,
       USDC, EURC</strong> — behind a single non-custodial UI on the Arc Layer&nbsp;1. This guide covers
       every live product surface, the on-chain contract registry, the proxy API, and the security baseline.
     </p>
@@ -356,14 +356,14 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       </a>
       <a class="qcard" href="#contracts">
         <div class="qcard-title">→ Contract addresses</div>
-        <div class="qcard-desc">Every Circle and Arc contract ArcSwap touches, verifiable on-explorer.</div>
+        <div class="qcard-desc">Every Circle and Arc contract OneSet touches, verifiable on-explorer.</div>
       </a>
     </div>
 
     <!-- ─── INTRODUCTION ─── -->
     <h2 class="docs-h2" id="introduction">Introduction</h2>
     <p class="docs-p">
-      <strong>ArcSwap</strong> is a non-custodial frontend that brings Circle's stablecoin stack together
+      <strong>OneSet</strong> is a non-custodial frontend that brings Circle's stablecoin stack together
       under a single UX on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc Layer&nbsp;1</a>.
       Six surfaces, one balance, zero custody:
     </p>
@@ -383,12 +383,12 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <li><strong>Multi-chain treasurers</strong> who want one place to see, move, and automate USDC across the Circle ecosystem.</li>
       <li><strong>Arc-native traders</strong> swapping USDC ⇄ EURC inside the L1 with sub-second finality and predictable USD-denominated gas.</li>
       <li><strong>Agent operators</strong> who want sign-once / run-forever USDC plumbing — auto top-ups, scheduled payouts — across any of 8 Circle-supported chains.</li>
-      <li><strong>Builders</strong> using ArcSwap as a reference implementation for Circle Gateway, CCTP V2, App Kit Swap, and Programmable Wallets integrations.</li>
+      <li><strong>Builders</strong> using OneSet as a reference implementation for Circle Gateway, CCTP V2, App Kit Swap, and Programmable Wallets integrations.</li>
     </ul>
 
     <h3 class="docs-h3">Design principles</h3>
     <ul class="docs-ul">
-      <li><strong>Custody never leaves you.</strong> ArcSwap holds no funds and has no admin path that can pause your access. Every state-changing call is signed by your wallet against a third-party contract.</li>
+      <li><strong>Custody never leaves you.</strong> OneSet holds no funds and has no admin path that can pause your access. Every state-changing call is signed by your wallet against a third-party contract.</li>
       <li><strong>No build pipeline.</strong> The frontend is plain HTML/CSS/vanilla JS plus <code>ethers.js v6</code> — every served byte is reviewable, every CDN script is SRI-pinned.</li>
       <li><strong>Strict CSP, locked CDNs.</strong> Every page ships with a Content-Security-Policy. The only third-party origins reachable are the RPCs and Circle endpoints we explicitly trust.</li>
       <li><strong>Reads through proxies.</strong> Reads to Circle's Gateway and IRIS APIs route through Cloudflare Pages Functions to keep the browser's <code>connect-src</code> tight and to dodge CORS quirks.</li>
@@ -397,13 +397,13 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <!-- ─── ARCHITECTURE ─── -->
     <h2 class="docs-h2" id="architecture">Architecture</h2>
     <p class="docs-p">
-      ArcSwap is a thin frontend over Circle's stablecoin stack and the Arc Layer&nbsp;1. There is no
-      ArcSwap-owned smart contract on any chain. What lives on our origin is static HTML, a few KB of
+      OneSet is a thin frontend over Circle's stablecoin stack and the Arc Layer&nbsp;1. There is no
+      OneSet-owned smart contract on any chain. What lives on our origin is static HTML, a few KB of
       shared JavaScript, a handful of stateless proxy routes, and a single Cloudflare Worker that
       executes scheduled agent runs.
     </p>
 
-    <pre class="arch"><span class="meta"># ArcSwap layered architecture</span>
+    <pre class="arch"><span class="meta"># OneSet layered architecture</span>
 <span class="layer-name">┌─ UI Layer ────────────────────────────────────────────────────────────┐</span>
 <span class="item">│  index · trade · balance · agent · history · token · dashboard        │</span>
 <span class="meta">│   plain HTML + CSS + vanilla JS, no framework, no build step          │</span>
@@ -439,7 +439,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <h3 class="docs-h3">What "non-custodial" means in practice</h3>
     <ul class="docs-ul">
       <li>Every state-changing user action is a transaction signed by <em>your</em> wallet against a third-party contract (Circle's Gateway, CCTP, App Kit Swap router, or an ERC-20 you just deployed).</li>
-      <li>ArcSwap has no privileged role on any of these contracts: no <code>owner</code>, no <code>admin</code>, no upgrade path. Read the verified source on the Arc explorer.</li>
+      <li>OneSet has no privileged role on any of these contracts: no <code>owner</code>, no <code>admin</code>, no upgrade path. Read the verified source on the Arc explorer.</li>
       <li>The agent runner moves funds only along the rules you signed, via a Circle Programmable Wallet you authorized via EIP-2612 permit. You can pause or revoke any agent in one click — that yanks the permit and stops every future execution.</li>
       <li>The proxy routes (<code>/api/*</code>) only reformulate read requests to Circle's public APIs. They cannot move funds, sign messages, or hold custody.</li>
     </ul>
@@ -464,14 +464,14 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <!-- ─── WALLET SETUP ─── -->
     <h2 class="docs-h2" id="wallet-setup">Wallet setup</h2>
     <p class="docs-p">
-      ArcSwap uses <strong>EIP-6963</strong> for wallet discovery — the multi-injector standard that
+      OneSet uses <strong>EIP-6963</strong> for wallet discovery — the multi-injector standard that
       replaced the old <code>window.ethereum</code> singleton. Any wallet that announces itself via
       <code>eip6963:announceProvider</code> appears in our wallet picker, ranked by RDNS so the choice
       is deterministic when multiple wallets are installed.
     </p>
     <p class="docs-p">
       Once connected, the session is held entirely in browser memory. There is no auth cookie, no
-      JWT, no session token issued by ArcSwap.
+      JWT, no session token issued by OneSet.
     </p>
 
     <h3 class="docs-h3">Adding Arc Testnet manually</h3>
@@ -525,7 +525,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <li>Enter USDC amount and recipient address (defaults to your own).</li>
       <li>Pick a finality mode — <strong>Fast</strong> (~20 s, small Circle fee) or <strong>Standard</strong> (13–19 min, zero fee).</li>
       <li><strong>Burn</strong> on source — calls <code>TokenMessengerV2.depositForBurn(amount, destDomain, recipient, burnToken, ...)</code>.</li>
-      <li>Wait for Circle's IRIS attestation, then <strong>mint</strong> on destination — calls <code>MessageTransmitterV2.receiveMessage(message, attestation)</code>. ArcSwap submits the receive automatically when the attestation arrives.</li>
+      <li>Wait for Circle's IRIS attestation, then <strong>mint</strong> on destination — calls <code>MessageTransmitterV2.receiveMessage(message, attestation)</code>. OneSet submits the receive automatically when the attestation arrives.</li>
     </ol>
 
     <h3 class="docs-h3">Trade panel features</h3>
@@ -545,7 +545,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <!-- ─── BALANCE ─── -->
     <h2 class="docs-h2" id="balance">Unified Balance</h2>
     <p class="docs-p">
-      The <a href="/balance"><code>/balance</code></a> page is the centerpiece of ArcSwap. It uses
+      The <a href="/balance"><code>/balance</code></a> page is the centerpiece of OneSet. It uses
       <a href="#circle-gateway">Circle Gateway V1</a> to give you a single USDC balance that's
       spendable on every supported chain — no bridge clicks, no chain switching, no wrapped tokens.
     </p>
@@ -711,7 +711,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <ul class="docs-ul">
       <li><strong>USDC-denominated gas.</strong> Transaction fees are paid in USDC, so costs are predictable in USD terms regardless of any token's price action.</li>
       <li><strong>Sub-second deterministic finality.</strong> No reorgs, no probabilistic finality. Once a transaction is finalized, it cannot revert.</li>
-      <li><strong>Opt-in privacy.</strong> Confidential transfers and selective disclosure for regulated counterparties (not yet integrated by ArcSwap).</li>
+      <li><strong>Opt-in privacy.</strong> Confidential transfers and selective disclosure for regulated counterparties (not yet integrated by OneSet).</li>
     </ul>
     <p class="docs-p">
       Arc is fully EVM-compatible: existing Solidity contracts, Hardhat / Foundry / Viem / ethers
@@ -772,7 +772,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <h2 class="docs-h2" id="programmable-wallets">Programmable Wallets &amp; Paymaster</h2>
     <p class="docs-p">
       Circle <strong>Programmable Wallets</strong> are smart-account wallets Circle issues on demand
-      via REST API. ArcSwap's <a href="#agent">Auto-Replenish Agent</a> uses them as the executor
+      via REST API. OneSet's <a href="#agent">Auto-Replenish Agent</a> uses them as the executor
       account — every scheduled or threshold-triggered USDC move is a userOp signed by a Programmable
       Wallet under server-side custody, paid for by <strong>Circle Paymaster</strong>.
     </p>
@@ -823,7 +823,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <!-- ─── SUPPORTED CHAINS ─── -->
     <h2 class="docs-h2" id="supported-chains">Supported chains</h2>
     <p class="docs-p">
-      ArcSwap surfaces eight testnets — Arc as the home chain plus seven external chains for
+      OneSet surfaces eight testnets — Arc as the home chain plus seven external chains for
       Unified Balance, CCTP bridging, and the Auto-Replenish Agent.
     </p>
     <table class="docs-table">
@@ -840,7 +840,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
 
     <!-- ─── CONTRACTS ─── -->
     <h2 class="docs-h2" id="contracts">Contract addresses</h2>
-    <p class="docs-p">All contracts ArcSwap interacts with on Arc Testnet (chain ID 5042002):</p>
+    <p class="docs-p">All contracts OneSet interacts with on Arc Testnet (chain ID 5042002):</p>
 
     <h3 class="docs-h3">Tokens</h3>
     <table class="docs-table">
@@ -881,14 +881,14 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     </table>
 
     <p class="docs-p" style="font-size:13px;color:var(--muted);margin-top:8px">
-      <em>ArcSwap does not own or operate any smart contracts. All contracts above are operated by
+      <em>OneSet does not own or operate any smart contracts. All contracts above are operated by
       Circle or the Arc Foundation, and verified on the Arc explorer.</em>
     </p>
 
     <!-- ─── API ─── -->
     <h2 class="docs-h2" id="api">API endpoints</h2>
     <p class="docs-p">
-      ArcSwap exposes a handful of Cloudflare Pages Functions. Two are read-only proxies to Circle's
+      OneSet exposes a handful of Cloudflare Pages Functions. Two are read-only proxies to Circle's
       public APIs; the others are the minimal backend the <a href="#agent">Auto-Replenish Agent</a>
       needs (rule storage, cron triggers, execution log). None hold private keys, none custody funds.
     </p>
@@ -990,10 +990,10 @@ POST <span class="code-key">/api/agent/</span><span class="code-str">{id}</span>
     <!-- ─── SECURITY ─── -->
     <h2 class="docs-h2" id="security">Security</h2>
     <p class="docs-p">
-      ArcSwap takes a defense-in-depth approach. Highlights:
+      OneSet takes a defense-in-depth approach. Highlights:
     </p>
     <ul class="docs-ul">
-      <li><strong>Non-custodial.</strong> No user funds ever flow through ArcSwap-controlled addresses. The agent executor is a Circle Programmable Wallet bound to permits you explicitly signed.</li>
+      <li><strong>Non-custodial.</strong> No user funds ever flow through OneSet-controlled addresses. The agent executor is a Circle Programmable Wallet bound to permits you explicitly signed.</li>
       <li><strong>Open source.</strong> The entire frontend is published. Verify the served build matches the committed source.</li>
       <li><strong>Strict CSP.</strong> A <code>Content-Security-Policy</code> header constrains script, style, image, font, and connect origins per page. There is no <code>'unsafe-eval'</code>.</li>
       <li><strong>SRI on every CDN script.</strong> ethers.js (and any other CDN asset) carries a SHA-384 integrity hash; CDN tampering fails closed.</li>
@@ -1042,15 +1042,15 @@ POST <span class="code-key">/api/agent/</span><span class="code-str">{id}</span>
       public address and the typed-data signature.
     </p>
 
-    <h3 class="docs-h3">Does ArcSwap have its own token?</h3>
+    <h3 class="docs-h3">Does OneSet have its own token?</h3>
     <p class="docs-p">
-      No. ArcSwap is a frontend, not a protocol. There is no ASWP token, no airdrop campaign, no
+      No. OneSet is a frontend, not a protocol. There is no ASWP token, no airdrop campaign, no
       governance token sale. Anyone telling you otherwise is running a scam.
     </p>
 
     <h3 class="docs-h3">When mainnet?</h3>
     <p class="docs-p">
-      Arc mainnet is governed by the Arc Foundation; ArcSwap deploys on mainnet shortly after Arc
+      Arc mainnet is governed by the Arc Foundation; OneSet deploys on mainnet shortly after Arc
       launches. See the <a href="/#roadmap">homepage roadmap</a> for current milestones.
     </p>
 
@@ -1085,7 +1085,7 @@ POST <span class="code-key">/api/agent/</span><span class="code-str">{id}</span>
 
     <!-- ─── FOOTER ─── -->
     <div class="docs-foot">
-      <span>© 2026 ArcSwap · Arc Testnet · v0.10.0</span>
+      <span>© 2026 OneSet · Arc Testnet · v0.10.0</span>
       <div>
         <a href="/">Home</a> &nbsp;·&nbsp;
         <a href="/blog">Blog</a> &nbsp;·&nbsp;

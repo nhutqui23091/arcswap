@@ -1,5 +1,5 @@
 /**
- * ArcSwap Agent API — Cloudflare Pages Function.
+ * OneSet Agent API — Cloudflare Pages Function.
  *
  * Stores Auto-Replenish / Scheduled Send agent rules signed by users.
  * Backed by Cloudflare KV (binding: AGENT_KV).

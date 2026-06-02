@@ -1,4 +1,4 @@
-/* ArcSwap shared core
+/* OneSet shared core
  * Wallet / chain / RPC / token / format helpers built on ethers v6 (UMD).
  * Consumers must load ethers UMD before this file.
  */
@@ -873,7 +873,7 @@
       networks,
       projectId: '28193c7e36d0ebbd3cdf183a53d17697',
       metadata: {
-        name: 'ArcSwap',
+        name: 'OneSet',
         description: 'USDC routing on Arc Testnet',
         url: 'https://arcswap.net',
         icons: ['https://arcswap.net/assets/logos/arclogo.png'],

@@ -11,7 +11,7 @@ FAIL=0
 ok()   { echo "  ✓ $1"; PASS=$((PASS+1)); }
 fail() { echo "  ✗ $1"; FAIL=$((FAIL+1)); }
 
-echo "🔍 ArcSwap pre-flight check"
+echo "🔍 OneSet pre-flight check"
 echo
 
 # ─── 1. CSP meta tag in every HTML ───────────────────────────────────────────
