@@ -103,7 +103,7 @@ nav.topnav.scrolled{background:rgba(10,22,40,0.88);backdrop-filter:blur(20px);-w
 .hero-stat::before{content:'';position:absolute;top:0;right:0;bottom:0;left:0;background:radial-gradient(circle at 90% 0%,rgba(77,214,219,.10),transparent 50%);pointer-events:none}
 .hero-stat-left{position:relative;z-index:1}
 .hero-stat-label{font-size:11.5px;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;font-family:var(--mono);display:flex;align-items:center;gap:8px}
-.hero-stat-label::after{content:'\2022 ARCSWAP TESTNET';opacity:.5}
+.hero-stat-label::after{content:'\2022 ONELIQ TESTNET';opacity:.5}
 .hero-stat-value{font-family:var(--display);font-size:clamp(48px,7vw,82px);font-weight:700;letter-spacing:-.03em;line-height:.95;background:linear-gradient(180deg,var(--text) 0%,rgba(245,247,251,.82) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1}
 .hero-stat-meta{font-size:13px;color:var(--muted);margin-top:14px;font-family:var(--mono);display:flex;gap:20px;flex-wrap:wrap}
 .hero-stat-meta span strong{color:var(--green);font-weight:600}
