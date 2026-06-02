@@ -43,12 +43,8 @@ p,span,div,button,input,select,textarea,a{font-family:var(--font)}
 .body-sm{font-size:13px;font-weight:400;line-height:1.6;color:var(--muted)}
 
 html{scroll-behavior:smooth}
-body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;cursor:none}
+body{font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden}
 
-/* CUSTOM CURSOR */
-.cursor{position:fixed;pointer-events:none;z-index:9999;mix-blend-mode:difference}
-.cursor-dot{width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);transition:transform .1s}
-.cursor-ring{width:36px;height:36px;border:1.5px solid rgba(255,255,255,0.5);border-radius:50%;transform:translate(-50%,-50%);transition:all .15s ease;position:fixed;pointer-events:none;z-index:9998}
 
 /* NOISE OVERLAY */
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");opacity:.4;pointer-events:none;z-index:9997}
@@ -394,10 +390,6 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
 </style>
 </head>
 <body>
-
-<!-- CURSOR -->
-<div class="cursor cursor-dot" id="cursor-dot"></div>
-<div class="cursor-ring" id="cursor-ring"></div>
 
 <!-- AURORA -->
 <div class="aurora-bg">
@@ -844,17 +836,6 @@ HIDDEN_END -->
 </style>
 
 <script>
-// CURSOR
-const dot=document.getElementById('cursor-dot');
-const ring=document.getElementById('cursor-ring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px'});
-function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing)}
-animRing();
-document.querySelectorAll('button,a,.token-pill,.flip-btn,.sw-settings').forEach(el=>{
-  el.addEventListener('mouseenter',()=>{ring.style.transform='translate(-50%,-50%) scale(1.5)';ring.style.opacity='.5'});
-  el.addEventListener('mouseleave',()=>{ring.style.transform='translate(-50%,-50%) scale(1)';ring.style.opacity='1'});
-});
 
 // NAVBAR SCROLL
 window.addEventListener('scroll',()=>{

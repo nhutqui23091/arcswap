@@ -251,31 +251,7 @@
     document.body.insertBefore(d, document.body.firstChild);
   }
 
-  function renderCursor() {
-    if (window.matchMedia('(pointer:coarse)').matches) return;
-    document.body.classList.add('cursor-none');
-    const dot = document.createElement('div'); dot.className = 'cursor-dot';
-    const ring = document.createElement('div'); ring.className = 'cursor-ring';
-    document.body.appendChild(dot); document.body.appendChild(ring);
-    let rx = 0, ry = 0, tx = 0, ty = 0;
-    document.addEventListener('mousemove', (e) => {
-      dot.style.left = e.clientX + 'px'; dot.style.top = e.clientY + 'px';
-      tx = e.clientX; ty = e.clientY;
-    });
-    function tick() {
-      rx += (tx - rx) * 0.2; ry += (ty - ry) * 0.2;
-      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-      requestAnimationFrame(tick);
-    } tick();
-    document.addEventListener('mouseover', (e) => {
-      if (e.target.closest('a,button,input,select,textarea,[data-hover]')) {
-        ring.style.width = '56px'; ring.style.height = '56px'; ring.style.borderColor = 'rgba(0,207,255,.6)';
-      }
-    });
-    document.addEventListener('mouseout', () => {
-      ring.style.width = '36px'; ring.style.height = '36px'; ring.style.borderColor = 'rgba(255,255,255,.5)';
-    });
-  }
+
 
   // ── SIDEBAR (app shell) ─────────────────────────────────
   // Used by operator surfaces (/history, future /trade /balance /agent).
@@ -415,7 +391,6 @@
   // ── BOOT ───────────────────────────────────────────────
   async function boot(activeTab) {
     renderAurora();
-    renderCursor();
     renderNav(activeTab);
     await ARC.wallet.autoConnect().catch(() => null);
   }
@@ -424,7 +399,6 @@
   // pages can style around the sidebar's reserved width.
   async function bootApp(activeTab) {
     renderAurora();
-    renderCursor();
     document.body.classList.add('arc-app');
     renderSidebar(activeTab);
     await ARC.wallet.autoConnect().catch(() => null);

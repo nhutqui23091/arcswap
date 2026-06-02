@@ -256,7 +256,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .slip-summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;margin-top:14px}
 .slip-summary-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
 .slip-summary-pill:hover,.slip-summary-pill.open{border-color:var(--arc2);background:rgba(77,214,219,.08)}
-.slip-pill-caret{color:var(--muted);font-size:10px;transition:transform .15s}
+.slip-pill-caret{color:var(--text);font-size:14px;transition:transform .2s ease;display:inline-block}
 .slip-summary-pill.open .slip-pill-caret{transform:rotate(180deg)}
 .slip-dropdown{display:none;padding:6px 2px 2px}
 .slip-dropdown.open{display:block}
@@ -265,15 +265,15 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .info-summary{display:flex;justify-content:space-between;align-items:center;padding:4px 2px;margin-top:4px}
 .info-summary-line{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-family:var(--mono);flex:1;min-width:0;flex-wrap:wrap;line-height:1.6}
 .info-dot{opacity:.35;margin:0 1px}
-.info-chevron-btn{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 7px;border-radius:6px;transition:all .15s;flex-shrink:0;line-height:1}
-.info-chevron-btn:hover{color:var(--text);background:var(--surface2)}
+.info-chevron-btn{background:none;border:none;color:var(--text);font-size:16px;cursor:pointer;padding:0;border-radius:6px;transition:color .15s;flex-shrink:0;line-height:1;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:flex-end}
+.info-chevron-btn:hover{color:var(--arc1)}
 .info-details{overflow:hidden;transition:max-height .25s ease;max-height:0}
 .info-details.open{max-height:500px}
 
 /* Send to another wallet toggle */
-.send-other-wrap{padding:8px 2px 0}
-.send-other-btn{background:none;border:none;color:var(--arc2);font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;transition:opacity .15s;font-family:var(--font)}
-.send-other-btn:hover{opacity:.7}
+.send-other-wrap{padding:8px 0 0;text-align:right}
+.send-other-btn{background:none;border:none;color:rgba(160,180,210,.75);font-size:12px;font-weight:500;cursor:pointer;padding:3px 0;transition:color .15s;font-family:var(--font)}
+.send-other-btn:hover{color:var(--arc1);text-decoration:underline}
 
 /* Execute */
 .exec-btn{width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:700;border:1px solid rgba(255,255,255,0.22);cursor:pointer;transition:all .2s;margin-top:14px;background:rgba(255,255,255,0.1);color:var(--text);letter-spacing:.02em}
