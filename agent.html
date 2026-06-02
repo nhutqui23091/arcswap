@@ -10,7 +10,7 @@
 <title>Oneliq — Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.8.1"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.8.2"/>
 <style>
 :root{
   /* /agent used to ship a violet primary that clashed with the rest of the
@@ -380,11 +380,11 @@ select option:checked{background:#1a2c4a;color:#fff}
       <!-- MODE TABS -->
       <div class="mode-tabs">
         <button class="mode-tab active" data-mode="topup" onclick="setMode('topup')">
-          <div class="mode-tab-h"><span class="mode-tab-ico">⚡</span>Auto Top-Up</div>
+          <div class="mode-tab-h"><span class="mode-tab-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>Auto Top-Up</div>
           <div class="mode-tab-d">Refill a wallet when it drops below a balance threshold</div>
         </button>
         <button class="mode-tab" data-mode="schedule" onclick="setMode('schedule')">
-          <div class="mode-tab-h"><span class="mode-tab-ico">⏱</span>Scheduled Send</div>
+          <div class="mode-tab-h"><span class="mode-tab-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg></span>Scheduled Send</div>
           <div class="mode-tab-d">Send USDC on a fixed schedule — once, daily, weekly, monthly</div>
         </button>
       </div>
@@ -741,7 +741,7 @@ select option:checked{background:#1a2c4a;color:#fff}
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.7.10"></script>
-<script src="/assets/arc-ui.js?v=9.8.1"></script>
+<script src="/assets/arc-ui.js?v=9.8.2"></script>
 <script>
 (async () => {
   await ArcUI.bootApp('agent');

@@ -10,7 +10,7 @@
 <title>Trade · Swap & Bridge — Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.8.1"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.8.2"/>
 <style>
 main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:44px 28px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
 @media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding:40px 20px 80px}}
@@ -343,8 +343,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       <p>Swap within Arc · Bridge USDC across chains · All-in-one</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <span class="hero-chip" id="gas-pill">⛽ Arc base ≈ — Gwei</span>
-      <span class="hero-chip" id="block-pill">⏱ block —</span>
+      <span class="hero-chip" id="gas-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="12" height="20" rx="2"/><rect x="5" y="6" width="5" height="4" rx="1"/><path d="M14 8h3v9l-2 2"/><path d="M17 8V6"/></svg><span id="gas-pill-txt">Arc base ≈ — Gwei</span></span>
+      <span class="hero-chip" id="block-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg><span id="block-pill-txt">block —</span></span>
     </div>
   </div>
 
@@ -465,9 +465,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         <div class="info-summary-line">
           <span id="m-rate-inline">—</span>
           <span class="info-dot">·</span>
-          <span>🕐</span><span id="m-time-inline"> —</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg><span id="m-time-inline"> —</span>
           <span class="info-dot">·</span>
-          <span>⛽</span><span id="m-fee-inline"> —</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><rect x="2" y="2" width="12" height="20" rx="2"/><rect x="5" y="6" width="5" height="4" rx="1"/><path d="M14 8h3v9l-2 2"/><path d="M17 8V6"/></svg><span id="m-fee-inline"> —</span>
         </div>
         <button class="info-chevron-btn" id="info-chevron-btn" type="button" aria-label="Toggle details"><span class="chev-icon" id="chev-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l7 7 7-7"/></svg></span></button>
       </div>
@@ -506,7 +506,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.7.10"></script>
-<script src="/assets/arc-ui.js?v=9.8.1"></script>
+<script src="/assets/arc-ui.js?v=9.8.2"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
@@ -755,7 +755,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     const unifiedTotal = gwFunded.reduce((acc, s) => acc + s.canonical, 0n);
     const unifiedRow = (gwFunded.length >= 2) ? `
       <button class="src-row src-row-unified ${isUnifiedActive ? 'active' : ''}" type="button" data-src="unified:unified" style="background:linear-gradient(135deg,rgba(255,180,84,0.14) 0%,rgba(255,180,84,0.05) 100%);border-color:rgba(255,180,84,0.45);margin-bottom:8px">
-        <span class="src-row-dot" style="background:linear-gradient(135deg,#FFB454,#F4C89A);box-shadow:0 4px 12px rgba(244,200,154,.3)">⚡</span>
+        <span class="src-row-dot" style="background:linear-gradient(135deg,#FFB454,#F4C89A);box-shadow:0 4px 12px rgba(244,200,154,.3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
         <span class="src-row-info">
           <span class="src-row-name" style="color:#FFB454;font-weight:700">Unified Balance</span>
         </span>
@@ -777,7 +777,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         <div class="src-modal-body">
           <div class="src-cols">
             <div class="src-col wallet">
-              <div class="src-col-head">💼 Wallet<button class="src-help-btn" type="button" data-help="wallet" aria-label="What is Wallet?">?</button>
+              <div class="src-col-head"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-right:6px"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h7A1.5 1.5 0 0 1 17 4.5V6"/><circle cx="17" cy="13" r="2"/></svg>Wallet<button class="src-help-btn" type="button" data-help="wallet" aria-label="What is Wallet?">?</button>
                 <span class="src-col-sub">USDC sitting in your MetaMask</span>
                 <div class="src-help-pop" id="src-help-wallet">
                   <span class="pill wl">Wallet</span> = USDC sitting in your MetaMask on each chain. To move it cross-chain we use <strong>CCTP burn-and-mint</strong> (~30s fast mode with a tiny fee, or ~13 min standard mode for free).
@@ -787,7 +787,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
               <div class="src-list">${wallet.length ? wallet.map(s => rowHtml(s, isActive(s))).join('') : emptyHtml}</div>
             </div>
             <div class="src-col gateway">
-              <div class="src-col-head">⚡ Gateway<button class="src-help-btn" type="button" data-help="gateway" aria-label="What is Gateway?">?</button>
+              <div class="src-col-head"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Gateway<button class="src-help-btn" type="button" data-help="gateway" aria-label="What is Gateway?">?</button>
                 <span class="src-col-sub">Pre-deposited · spend instantly anywhere</span>
                 <div class="src-help-pop" id="src-help-gateway">
                   <span class="pill gw">Gateway</span> = USDC you've pre-deposited into Circle's instant pool. Spend across any chain in <strong>~30s</strong>, no bridge tx, no wrapped tokens.
@@ -1945,8 +1945,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       const p = rpcProvider('arc');
       const [feeData, bn] = await Promise.all([p.getFeeData(), p.getBlockNumber()]);
       const gp = feeData.gasPrice ? Number(feeData.gasPrice) / 1e9 : null;
-      document.getElementById('gas-pill').textContent = gp ? `⛽ Arc base ≈ ${gp.toFixed(1)} Gwei` : '⛽ Arc —';
-      document.getElementById('block-pill').textContent = `⏱ block #${bn}`;
+      document.getElementById('gas-pill-txt').textContent = gp ? `Arc base ≈ ${gp.toFixed(1)} Gwei` : 'Arc —';
+      document.getElementById('block-pill-txt').textContent = `block #${bn}`;
     } catch {}
   }
   tick(); setInterval(tick, 8000);
