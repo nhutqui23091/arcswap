@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 129 28" width="129" height="28">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="#4DD6DB"/>
+      <stop offset="100%" stop-color="#4A7BEC"/>
+    </linearGradient>
+  </defs>
+  <text x="0" y="22"
+        font-family="Inter, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-weight="900"
+        font-size="24"
+        letter-spacing="-0.8">
+    <tspan fill="#F5F7FB">One</tspan><tspan fill="url(#g)">liq</tspan>
+  </text>
+</svg>

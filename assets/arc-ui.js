@@ -34,7 +34,7 @@
       const tabs = navTabs(active);
       nav.innerHTML = `
         <a class="nav-logo" href="/">
-          <img class="logo-img" src="/assets/logos/wordmark-arcswap.png?v=2" alt="Oneliq" width="129" height="28"/>
+          <img class="logo-img" src="/assets/logos/wordmark-oneliq.svg" alt="Oneliq" width="129" height="28"/>
           <span class="logo-badge">TESTNET</span>
         </a>
         <div class="nav-tabs">
@@ -365,7 +365,7 @@
       side.innerHTML = `
         <div class="arc-side-head">
           <a class="arc-side-brand" href="/" aria-label="Oneliq home">
-            <img class="arc-side-logo" src="/assets/logos/wordmark-arcswap.png?v=2" alt="Oneliq" width="138" height="30"/>
+            <img class="arc-side-logo" src="/assets/logos/wordmark-oneliq.svg" alt="Oneliq" width="138" height="30"/>
             <span class="arc-side-pill">TESTNET</span>
           </a>
           <button class="arc-side-toggle" type="button" aria-label="Toggle sidebar">
