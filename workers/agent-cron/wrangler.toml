@@ -33,7 +33,7 @@ crons = ["* * * * *"]
 # We do NOT use a service binding here. Wrangler v3 doesn't fully support
 # Worker→Pages-project service bindings (the API returns "Worker not found"
 # even when the Pages project exists with that name). Instead the Worker
-# fetches the public URL https://arcswap.net/api/agent/cron-tick directly.
+# fetches the public URL https://oneliq.xyz/api/agent/cron-tick directly.
 #
 # Why this still works (vs GitHub Actions hitting the same URL):
 # Cloudflare Workers running inside the CF network are NOT subject to

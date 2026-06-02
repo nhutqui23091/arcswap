@@ -1750,7 +1750,7 @@ select option:checked{background:#1a2c4a;color:#fff}
         ? 'Saved locally · enable backend to persist'
         : (rule.mode === 'topup' ? 'Auto Top-Up active' : `Scheduled · ${rule.params.cadence}`);
       ArcUI.toast('success', 'Agent deployed', subLine);
-      // Real-metrics telemetry (status.arcswap.net real counters). Non-blocking.
+      // Real-metrics telemetry (status.oneliq.xyz real counters). Non-blocking.
       // 'arc' chain since agent Programmable Wallets always anchor on Arc Testnet.
       try { ARC.track('agent-create', 'arc', null, null, 'agent'); } catch {}
       await refreshAgentsFromBackend();

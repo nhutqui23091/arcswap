@@ -60,7 +60,7 @@ async function tick(env) {
   // on /api/agent/cron-tick is the safety net.
   let res;
   try {
-    res = await fetch('https://arcswap.net/api/agent/cron-tick', {
+    res = await fetch('https://oneliq.xyz/api/agent/cron-tick', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${env.CRON_SECRET}`,

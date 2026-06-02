@@ -92,6 +92,6 @@
   <!-- Brand bottom -->
   <g transform="translate(80 540)">
     <text x="0" y="0" font-family="Inter, sans-serif" font-size="20" font-weight="900" fill="#F5F7FB" letter-spacing="-.5">Oneliq</text>
-    <text x="100" y="0" font-family="DM Mono, monospace" font-size="13" fill="#8CA0BD" letter-spacing="2">// arcswap.net/agent  ·  May 20, 2026</text>
+    <text x="100" y="0" font-family="DM Mono, monospace" font-size="13" fill="#8CA0BD" letter-spacing="2">// oneliq.xyz/agent  ·  May 20, 2026</text>
   </g>
 </svg>

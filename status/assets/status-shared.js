@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Oneliq Status — shared helpers across all status.arcswap.net pages.
+   Oneliq Status — shared helpers across all status.oneliq.xyz pages.
 
    Exposes window.ArcStatus with:
-     - API_BASE         → cross-origin base URL ('' on localhost, 'https://arcswap.net' on prod)
+     - API_BASE         → cross-origin base URL ('' on localhost, 'https://oneliq.xyz' on prod)
      - rng              → daily-seeded mulberry32 (stable values per UTC day)
      - ri, rf, pick     → seeded helpers
      - fmtNum, fmtUsd, fmtAgo, shortHash
@@ -16,7 +16,7 @@
   'use strict';
 
   // ── API base (cross-origin probe target)
-  const API_BASE = /^status\./.test(global.location.hostname) ? 'https://arcswap.net' : '';
+  const API_BASE = /^status\./.test(global.location.hostname) ? 'https://oneliq.xyz' : '';
 
   // ── Daily-seeded RNG (mulberry32)
   function seededRng(seed) {
@@ -105,7 +105,7 @@
     return 'op';
   }
 
-  // ── Real-metrics fetchers (cross-origin to arcswap.net/api/metrics/*)
+  // ── Real-metrics fetchers (cross-origin to oneliq.xyz/api/metrics/*)
   // Both return null on failure so callers can fall back to seeded data.
   async function fetchSummary() {
     // No `cache: 'no-cache'` — that header forces edge revalidation on every
@@ -173,7 +173,7 @@
           <span class="logo-sub">Status</span>
         </a>
         <div class="nav-right">
-          <a class="btn-back" href="https://arcswap.net" target="_blank" rel="noopener noreferrer">← Back to Oneliq</a>
+          <a class="btn-back" href="https://oneliq.xyz" target="_blank" rel="noopener noreferrer">← Back to Oneliq</a>
           <div class="testnet-pill"><div class="tnet-dot"></div>Arc Testnet</div>
         </div>
       </nav>
@@ -206,10 +206,10 @@
     return `
       <div class="footer">
         <div class="footer-left">
-          <a href="https://arcswap.net/">arcswap.net</a>
+          <a href="https://oneliq.xyz/">oneliq.xyz</a>
           <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">@arc_swap</a>
           <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
-          <a href="https://arcswap.net/.well-known/security.txt">security.txt</a>
+          <a href="https://oneliq.xyz/.well-known/security.txt">security.txt</a>
         </div>
         <div>Built on Arc · Powered by Circle · <span id="footer-ts">—</span></div>
       </div>

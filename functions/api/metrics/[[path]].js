@@ -54,9 +54,14 @@
  */
 
 const ALLOWED_ORIGINS = [
+  'https://oneliq.xyz',
+  'https://www.oneliq.xyz',
+  'https://arcswap.pages.dev',
+  'https://status.oneliq.xyz',
+  // Transition window — old domains kept ~1 week for browsers caching old HTML.
+  // Safe to remove after 2026-06-09.
   'https://arcswap.net',
   'https://www.arcswap.net',
-  'https://arcswap.pages.dev',
   'https://status.arcswap.net',
 ];
 

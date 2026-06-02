@@ -8,7 +8,7 @@ seriously and welcome responsible disclosure from researchers.
 ## Scope
 
 ### In-scope
-- Frontend: `https://arcswap.net` and all subdomains
+- Frontend: `https://oneliq.xyz` and all subdomains
 - IPFS-pinned builds (CIDs published in releases)
 - Public assets at `/assets/*`
 
@@ -25,7 +25,7 @@ seriously and welcome responsible disclosure from researchers.
 
 ## Reporting a vulnerability
 
-**Preferred channel**: encrypted email to **security@arcswap.net** (PGP key below).
+**Preferred channel**: encrypted email to **security@oneliq.xyz** (PGP key below).
 
 **Do NOT**:
 - Open a public GitHub issue

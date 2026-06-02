@@ -1,4 +1,4 @@
-# Headers for status.arcswap.net — a separate Cloudflare Pages project rooted
+# Headers for status.oneliq.xyz — a separate Cloudflare Pages project rooted
 # at /status. Tighter than the main site's _headers because this page does not
 # load Circle App Kit, ethers.js CDN, or any non-self scripts.
 #
@@ -7,13 +7,13 @@
 
 /*
   # Defense-in-depth CSP (matches the <meta> in index.html plus frame-ancestors).
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://arcswap.net https://www.arcswap.net https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://oneliq.xyz https://www.oneliq.xyz https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'
 
   # Never embeddable
   X-Frame-Options: DENY
 
   # HTTPS for 1 year. NOT preloading separately — subdomain inherits from
-  # arcswap.net's preload entry once that's submitted to the browser preload list.
+  # oneliq.xyz's preload entry once that's submitted to the browser preload list.
   Strict-Transport-Security: max-age=31536000; includeSubDomains
 
   # No MIME sniffing

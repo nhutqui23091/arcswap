@@ -19,7 +19,7 @@ The threats we design against:
 | Threat | Why it matters | Where we defend |
 |---|---|---|
 | **Frontend supply-chain compromise** | Attacker swaps served JS → injects malicious approve / transfer | CSP, SRI, host integrity, multi-host failover |
-| **DNS / domain hijack** | Attacker points `arcswap.net` to a phishing build | Cloudflare 2FA + multi-sig over decentralized backup (ENS) |
+| **DNS / domain hijack** | Attacker points `oneliq.xyz` to a phishing build | Cloudflare 2FA + multi-sig over decentralized backup (ENS) |
 | **Reflected / persistent XSS** | Script execution leads to wallet drain | CSP, no `innerHTML` for user input, SRI on all CDN scripts |
 | **API key extraction** | Attacker exfiltrates Circle Kit Key from client JS | Server-side proxy via Cloudflare Pages Functions |
 | **Transaction tampering at sign-time** | UI lies about tx parameters | Show full target + calldata in confirmations; encourage hardware-wallet review |
@@ -54,13 +54,13 @@ Anyone can verify these controls on a live deploy:
 
 ```bash
 # Security headers
-curl -sI https://arcswap.net | grep -iE 'content-security|strict-transport|x-frame|referrer-policy|permissions-policy'
+curl -sI https://oneliq.xyz | grep -iE 'content-security|strict-transport|x-frame|referrer-policy|permissions-policy'
 
 # CSP meta tag in HTML
-curl -s https://arcswap.net | grep -oE '<meta http-equiv="Content-Security-Policy"[^>]*>'
+curl -s https://oneliq.xyz | grep -oE '<meta http-equiv="Content-Security-Policy"[^>]*>'
 
 # SRI on every CDN script
-curl -s https://arcswap.net | grep -oE '<script[^>]*src="https://[^"]*"[^>]*integrity="[^"]*"'
+curl -s https://oneliq.xyz | grep -oE '<script[^>]*src="https://[^"]*"[^>]*integrity="[^"]*"'
 ```
 
 For local development, run the preflight script before pushing:

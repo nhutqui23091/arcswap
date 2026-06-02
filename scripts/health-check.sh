@@ -8,7 +8,7 @@ set -uo pipefail
 
 ARC_RPC="${ARC_RPC:-https://rpc.testnet.arc.network}"
 IRIS_BASE="${IRIS_BASE:-https://iris-api-sandbox.circle.com/v2}"
-APP_URL="${APP_URL:-https://arcswap.net}"
+APP_URL="${APP_URL:-https://oneliq.xyz}"
 APP_BACKUP_URL="${APP_BACKUP_URL:-https://arcswap.eth.limo}"
 GATEWAY_WALLET="${GATEWAY_WALLET:-0x0077777d7EBA4688BDeF3E311b846F25870A19B9}"
 
@@ -17,7 +17,7 @@ ALERT_WEBHOOK="${ALERT_WEBHOOK:-}"
 
 # User-Agent cho curl — giống browser thật để bypass Cloudflare Bot Fight Mode
 # khi chạy từ datacenter IP (vd GitHub Actions runner).
-UA="Mozilla/5.0 (compatible; Oneliq-HealthCheck/1.0; +https://arcswap.net)"
+UA="Mozilla/5.0 (compatible; Oneliq-HealthCheck/1.0; +https://oneliq.xyz)"
 
 # Helper: curl với UA + timeout chuẩn
 cf_curl() { curl -sA "$UA" --max-time 10 "$@"; }

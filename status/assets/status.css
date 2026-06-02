@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Oneliq Status — shared design system across all status.arcswap.net pages.
-   Design tokens identical to main arcswap.net (/index, /trade, /balance).
+   Oneliq Status — shared design system across all status.oneliq.xyz pages.
+   Design tokens identical to main oneliq.xyz (/index, /trade, /balance).
    ═══════════════════════════════════════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{

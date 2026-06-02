@@ -22,8 +22,8 @@
 
 # Status page lives on its own subdomain (separate Cloudflare Pages project for
 # cache isolation + independent uptime). Forward any legacy /status URLs.
-/status     https://status.arcswap.net/   301
-/status/*   https://status.arcswap.net/:splat   301
+/status     https://status.oneliq.xyz/   301
+/status/*   https://status.oneliq.xyz/:splat   301
 
 # Blog posts giờ là file thật trong /blog/<slug>.html
 # Cloudflare Pages tự strip .html → URL đẹp /blog/<slug>. KHÔNG dùng 200 rewrite

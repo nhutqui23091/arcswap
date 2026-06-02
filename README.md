@@ -5,7 +5,7 @@
 
 Unified balance across 8 chains · cross-chain settlement in ~30s · bounded autonomous agents — all native USDC, no wrappers.
 
-🌐 Live at **[arcswap.net](https://arcswap.net)** · 🐦 [@arc_swap](https://x.com/arc_swap) · 💬 [Discord](https://discord.gg/7XUPdWWrGk)
+🌐 Live at **[oneliq.xyz](https://oneliq.xyz)** · 🐦 [@arc_swap](https://x.com/arc_swap) · 💬 [Discord](https://discord.gg/7XUPdWWrGk)
 
 ---
 
@@ -180,7 +180,7 @@ arcswap/
 - Multi-sig governance for any privileged action (see [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md))
 
 **Found a vulnerability?** See [`SECURITY.md`](SECURITY.md). Bounties from $100 to $50,000.
-Contact: `security@arcswap.net` (PGP key in `SECURITY.md`).
+Contact: `security@oneliq.xyz` (PGP key in `SECURITY.md`).
 
 ---
 
@@ -199,7 +199,7 @@ follows Arc's own launch** — Circle targets **Summer 2026** per the Arc whitep
 
 > **Production cutover.** When Arc launches Mainnet (targeted Summer 2026), Unified Balance, Trade, and Agent migrate to Arc Mainnet production in lock-step, and Circle Wallets embedded sign-in activates for non-crypto users.
 
-See live roadmap on the [homepage](https://arcswap.net/#roadmap).
+See live roadmap on the [homepage](https://oneliq.xyz/#roadmap).
 
 ---
 

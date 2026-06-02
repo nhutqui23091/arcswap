@@ -147,7 +147,7 @@ Commit + push. This file is the **public audit trail**.
 For users without IPFS-aware browsers, point a CNAME:
 
 ```
-arcswap.net  CNAME  arcswap.eth.limo
+oneliq.xyz  CNAME  arcswap.eth.limo
 ```
 
 `eth.limo` is a free public gateway that resolves ENS → IPFS → HTTPS. Alternatives: `eth.link`, `dweb.link`, or self-hosted.
@@ -182,4 +182,4 @@ This is faster and safer than a Web2 rollback because the previous build is alwa
 
 ---
 
-_For questions: ops@arcswap.net_
+_For questions: ops@oneliq.xyz_

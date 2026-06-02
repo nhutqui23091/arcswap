@@ -1,12 +1,12 @@
-# Deploying `status.arcswap.net`
+# Deploying `status.oneliq.xyz`
 
 This runbook walks through creating the **separate Cloudflare Pages project**
-that serves the Oneliq status dashboard at `status.arcswap.net`.
+that serves the Oneliq status dashboard at `status.oneliq.xyz`.
 
 Why a separate project? Two reasons:
 
 1. **Cache isolation** — deploying a tweak to the status page does not bust
-   cache for the main `arcswap.net` site, and vice versa.
+   cache for the main `oneliq.xyz` site, and vice versa.
 2. **Scoping** — when the main site has an incident (build error, function
    crash, CSP rollback), the status page keeps serving so users can see what's
    going on. The status page's CSP is tighter and it has no access to main-site
@@ -15,7 +15,7 @@ Why a separate project? Two reasons:
 The code already lives in this repo at [`status/`](../status/) — just the HTML,
 favicon, and `_headers`. No Functions. The status page **cross-origin probes**
 the main site's Pages Functions for health (the main project's
-`_circle.js`/`gateway-proxy`/`agent` routes have `status.arcswap.net` on their
+`_circle.js`/`gateway-proxy`/`agent` routes have `status.oneliq.xyz` on their
 origin allowlist and expose a lightweight `/health` endpoint).
 
 ---
@@ -42,7 +42,7 @@ started"** → **"Import an existing Git repository"**.
 >
 > 1. **Functions isolation.** If Root is the repo root, Cloudflare scans the
 >    repo's `/functions` directory and uploads those Functions onto
->    `status.arcswap.net` too — that's wrong; we want Functions to live only on
+>    `status.oneliq.xyz` too — that's wrong; we want Functions to live only on
 >    the main `arcswap` project. Setting Root directory to `status` makes
 >    Cloudflare `cd status/` before scanning, so `../functions` is invisible.
 >
@@ -65,13 +65,13 @@ A correct build log shows:
 
 ---
 
-## Step 2 — Add custom domain `status.arcswap.net`
+## Step 2 — Add custom domain `status.oneliq.xyz`
 
 Still in the Cloudflare Dashboard, open the new `arcswap-status` project:
 
 1. Go to **Custom domains → Set up a custom domain**
-2. Enter `status.arcswap.net`
-3. Cloudflare auto-detects that `arcswap.net` is on your account and offers to
+2. Enter `status.oneliq.xyz`
+3. Cloudflare auto-detects that `oneliq.xyz` is on your account and offers to
    create the CNAME for you — accept it.
 4. SSL provisioning takes 30–60 seconds. When the status shows **Active**, the
    subdomain is live.
@@ -90,7 +90,7 @@ After the custom domain shows **Active**, run:
 
 ```bash
 # Page serves
-curl -sI https://status.arcswap.net | grep -iE 'HTTP|content-security|strict-transport|x-frame'
+curl -sI https://status.oneliq.xyz | grep -iE 'HTTP|content-security|strict-transport|x-frame'
 
 # Should see:
 # HTTP/2 200
@@ -98,19 +98,19 @@ curl -sI https://status.arcswap.net | grep -iE 'HTTP|content-security|strict-tra
 # strict-transport-security: max-age=31536000; includeSubDomains
 # x-frame-options: DENY
 
-# Cross-origin probes work — main site allowlist includes status.arcswap.net
-curl -sI -H "Origin: https://status.arcswap.net" https://arcswap.net/api/gateway-proxy/health
+# Cross-origin probes work — main site allowlist includes status.oneliq.xyz
+curl -sI -H "Origin: https://status.oneliq.xyz" https://oneliq.xyz/api/gateway-proxy/health
 # Should see:
 # HTTP/2 204
-# access-control-allow-origin: https://status.arcswap.net
+# access-control-allow-origin: https://status.oneliq.xyz
 
 # Legacy /status on main site forwards
-curl -sI https://arcswap.net/status | grep -i location
+curl -sI https://oneliq.xyz/status | grep -i location
 # Should see:
-# location: https://status.arcswap.net/
+# location: https://status.oneliq.xyz/
 ```
 
-Open `https://status.arcswap.net` in a browser. All 8 service cards should
+Open `https://status.oneliq.xyz` in a browser. All 8 service cards should
 show **Operational** with real latency numbers; chain cards should show real
 block numbers from public testnet RPCs.
 
@@ -118,11 +118,11 @@ block numbers from public testnet RPCs.
 
 ## Step 4 — (Optional) Monitor the status page itself
 
-The status page should be monitored externally — if `status.arcswap.net` is
+The status page should be monitored externally — if `status.oneliq.xyz` is
 itself down, no one can see your incident page. Recommended:
 
 - **Better Stack** (free tier) — 30-second HTTP check against
-  `https://status.arcswap.net`. Alerts via Slack/email/SMS.
+  `https://status.oneliq.xyz`. Alerts via Slack/email/SMS.
 - **UptimeRobot** (free tier) — 5-minute HTTP check, similar.
 
 This is the only piece of infrastructure that must NOT live on Cloudflare
@@ -170,9 +170,9 @@ If you later decide to consolidate (unlikely but possible), the migration is
 trivial because there is no state in the status project:
 
 1. Move `status/index.html` back to `/status.html` (or a `/status/` subdir)
-2. Update nav links from `https://status.arcswap.net` back to `/status`
+2. Update nav links from `https://status.oneliq.xyz` back to `/status`
 3. Delete the `_redirects` entries forwarding to the subdomain
-4. Remove `status.arcswap.net` from origin allowlists in the 3 Functions
+4. Remove `status.oneliq.xyz` from origin allowlists in the 3 Functions
 5. Delete the `arcswap-status` Pages project + remove the DNS CNAME
 
 ---

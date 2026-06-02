@@ -26,11 +26,16 @@ export async function onRequest(context) {
   // for browsers, but adding explicit check protects against bypass attempts.)
   const origin = request.headers.get('Origin') || '';
   const ALLOWED_ORIGINS = [
+    'https://oneliq.xyz',
+    'https://www.oneliq.xyz',
+    'https://arcswap.pages.dev',
+    // status.oneliq.xyz is a separate Pages project for the status dashboard.
+    // It cross-origin probes /api/circle-proxy/health for the App Kit row.
+    'https://status.oneliq.xyz',
+    // Transition window — old domains kept ~1 week for browsers caching old HTML.
+    // Safe to remove after 2026-06-09.
     'https://arcswap.net',
     'https://www.arcswap.net',
-    'https://arcswap.pages.dev',
-    // status.arcswap.net is a separate Pages project for the status dashboard.
-    // It cross-origin probes /api/circle-proxy/health for the App Kit row.
     'https://status.arcswap.net',
     // Allow Cloudflare Pages preview deploys (*.arcswap.pages.dev)
   ];
@@ -60,7 +65,7 @@ export async function onRequest(context) {
   }
   const circlePath = proxyPathMatch[1];
 
-  // Health endpoint for status.arcswap.net dashboard — returns 204 with CORS
+  // Health endpoint for status.oneliq.xyz dashboard — returns 204 with CORS
   // headers so cross-origin probes can read up/down. No upstream call, no
   // KIT_KEY required (so this still works in environments where the secret
   // isn't configured yet).

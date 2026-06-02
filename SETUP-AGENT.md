@@ -102,7 +102,7 @@ cron is a no-op (safe default).
 ### Wire up the cron trigger — Cloudflare Worker
 
 **Why a Worker?** External HTTP cron services (GitHub Actions,
-cron-job.org, EasyCron, etc.) all hit `https://arcswap.net/api/agent/
+cron-job.org, EasyCron, etc.) all hit `https://oneliq.xyz/api/agent/
 cron-tick` from outside Cloudflare. On the **Free plan**, Cloudflare's
 basic Bot Fight Mode intercepts non-browser User-Agents and serves a
 JavaScript challenge — which means our cron sees HTTP 403 instead of

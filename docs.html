@@ -450,7 +450,7 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
 
     <ol class="steps">
       <li><strong>Install a wallet.</strong> MetaMask, Rabby, Coinbase Wallet, Frame, or any EIP-6963-compliant browser wallet. See <a href="#wallets">Supported wallets</a>.</li>
-      <li><strong>Add Arc Testnet.</strong> Open <a href="/trade">arcswap.net/trade</a>, click <em>Connect</em>, and approve the network prompt. Manual params are in the <a href="#network-info">Network info</a> table below.</li>
+      <li><strong>Add Arc Testnet.</strong> Open <a href="/trade">oneliq.xyz/trade</a>, click <em>Connect</em>, and approve the network prompt. Manual params are in the <a href="#network-info">Network info</a> table below.</li>
       <li><strong>Get testnet USDC.</strong> Use the <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">Circle faucet</a> on your address. Arc uses USDC as native gas, so one faucet drip covers both spending and gas fees. The same USDC works for Trade, Balance, and Agent.</li>
       <li><strong>Open <a href="/balance">Balance</a>.</strong> Deposit USDC from any supported chain (Sepolia, Base, Fuji, Arbitrum, OP, Polygon, Unichain) into the Gateway. Your unified balance updates in seconds.</li>
       <li><strong>Spend from <a href="/trade">Trade</a>.</strong> Pick a destination chain and recipient. Multi-source unified spend pulls from N chains in one transfer and mints native USDC on the destination.</li>
@@ -937,7 +937,7 @@ POST <span class="code-key">/api/agent/</span><span class="code-str">{id}</span>
 
     <h3 class="docs-h3">/api/metrics/*</h3>
     <p class="docs-p">
-      Read-only telemetry rollup used by <code>status.arcswap.net</code>. Compute-on-write so a
+      Read-only telemetry rollup used by <code>status.oneliq.xyz</code>. Compute-on-write so a
       single <code>/summary</code> call doesn't trigger 273× KV reads.
     </p>
 

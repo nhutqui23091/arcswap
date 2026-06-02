@@ -26,7 +26,7 @@ Cost: free to deploy (~$5-20 in gas), no ongoing fees.
 | Key | What it controls | Threshold | Signers |
 |---|---|---|---|
 | **Treasury Safe** | Bug bounty pool, ops budget, emergency funds | 3 of 5 | Founders + community |
-| **Cloudflare account** | `arcswap.net` DNS + Pages deployment (the production frontend) | N/A (account-level 2FA) | Hardware key + recovery codes |
+| **Cloudflare account** | `oneliq.xyz` DNS + Pages deployment (the production frontend) | N/A (account-level 2FA) | Hardware key + recovery codes |
 | **Future: ENS Controller Safe** | `arcswap.eth` contenthash (decentralized backup frontend) | 2 of 3 | Founders only |
 | **Future: Pinning provider accounts** (web3.storage, Pinata) | IPFS pin lifecycle | N/A (account-level 2FA) | Same hardware key |
 | **Future: Contract Owner Safe** | When we deploy own contracts (admin, pause, upgrade) | 4 of 7 | Founders + advisors + auditors |

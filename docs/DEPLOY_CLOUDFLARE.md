@@ -1,6 +1,6 @@
-# Deploy to Cloudflare Pages — `arcswap.net`
+# Deploy to Cloudflare Pages — `oneliq.xyz`
 
-This is the **primary deployment path** for Oneliq. You bought `arcswap.net` on Cloudflare,
+This is the **primary deployment path** for Oneliq. You bought `oneliq.xyz` on Cloudflare,
 which means DNS, CDN, SSL, and hosting all live under one account — zero glue code.
 
 > Looking for the decentralized path (IPFS + ENS)? See `DEPLOYMENT.md`. That's an optional
@@ -10,7 +10,7 @@ which means DNS, CDN, SSL, and hosting all live under one account — zero glue 
 
 ## What you'll get
 
-- `https://arcswap.net` serving the static site (HTTPS by default, free)
+- `https://oneliq.xyz` serving the static site (HTTPS by default, free)
 - Auto-deploy on every push to `main` (or any branch you choose)
 - Preview deploys for every PR (unique URL per branch)
 - Cloudflare's global CDN (no extra config)
@@ -25,7 +25,7 @@ which means DNS, CDN, SSL, and hosting all live under one account — zero glue 
 
 ### Prerequisites
 
-- [x] `arcswap.net` registered in your Cloudflare account
+- [x] `oneliq.xyz` registered in your Cloudflare account
 - [ ] Repo pushed to GitHub (or GitLab/Bitbucket)
 - [ ] You're logged into Cloudflare dashboard
 
@@ -56,25 +56,25 @@ headers applied.
 
 ---
 
-### Step 2 — Wire up `arcswap.net` (5 min)
+### Step 2 — Wire up `oneliq.xyz` (5 min)
 
 1. Inside the Pages project → tab **Custom domains** → **Set up a custom domain**
-2. Type `arcswap.net` → **Continue**
+2. Type `oneliq.xyz` → **Continue**
 3. Cloudflare detects the domain is in your account → asks to **Activate** the domain
-4. It auto-creates a `CNAME` record pointing `arcswap.net` → `arcswap.pages.dev`
+4. It auto-creates a `CNAME` record pointing `oneliq.xyz` → `arcswap.pages.dev`
 5. SSL cert provisions automatically (Universal SSL — free, ~1 minute)
 
 6. **Repeat for `www`** (recommended):
-   - Add custom domain `www.arcswap.net`
+   - Add custom domain `www.oneliq.xyz`
    - Cloudflare creates the CNAME
 
-7. **Add www → apex redirect** (so `www.arcswap.net` and `arcswap.net` resolve to the same canonical URL):
+7. **Add www → apex redirect** (so `www.oneliq.xyz` and `oneliq.xyz` resolve to the same canonical URL):
    - Go to your domain in Cloudflare → tab **Rules** → **Redirect Rules**
    - Create rule:
      - Field: `Hostname`
      - Operator: `equals`
-     - Value: `www.arcswap.net`
-     - Then: `Dynamic` → Expression: `concat("https://arcswap.net", http.request.uri.path)`
+     - Value: `www.oneliq.xyz`
+     - Then: `Dynamic` → Expression: `concat("https://oneliq.xyz", http.request.uri.path)`
      - Status: `301`
    - Save & deploy
 
@@ -84,24 +84,24 @@ headers applied.
 
 ```bash
 # 1. Site loads with HTTPS
-curl -I https://arcswap.net
+curl -I https://oneliq.xyz
 # Expect: HTTP/2 200, with cf-ray header
 
 # 2. Security headers present (the ones from _headers)
-curl -I https://arcswap.net | grep -iE 'content-security|strict-transport|x-frame|referrer-policy'
+curl -I https://oneliq.xyz | grep -iE 'content-security|strict-transport|x-frame|referrer-policy'
 
 # 3. Clean URLs work (from _redirects)
-curl -I https://arcswap.net/docs
-curl -I https://arcswap.net/vault
+curl -I https://oneliq.xyz/docs
+curl -I https://oneliq.xyz/vault
 # Expect: HTTP/2 200 (NOT 301 — these are rewrite-style proxies, not redirects)
 
 # 4. Old aliases redirect
-curl -I https://arcswap.net/swap
+curl -I https://oneliq.xyz/swap
 # Expect: HTTP/2 301, location: /trade
 
 # 5. www → apex
-curl -I https://www.arcswap.net
-# Expect: HTTP/2 301, location: https://arcswap.net/
+curl -I https://www.oneliq.xyz
+# Expect: HTTP/2 301, location: https://oneliq.xyz/
 ```
 
 If any of these fail → see **Troubleshooting** below.
@@ -125,7 +125,7 @@ git push origin main
 # Watch: https://dash.cloudflare.com → arcswap → Deployments
 
 # 4. Verify the new build is live
-curl -s https://arcswap.net/ | grep -oE 'version[^"]*' | head -3
+curl -s https://oneliq.xyz/ | grep -oE 'version[^"]*' | head -3
 bash scripts/health-check.sh
 ```
 
@@ -174,16 +174,16 @@ TXT    @       v=spf1 -all            DNS     Auto   (block email spoofing)
 The orange-cloud (`Proxied`) is what makes Cloudflare's CDN + DDoS protection active.
 Don't turn it grey unless you have a specific reason.
 
-### Email — IMPORTANT for `security@arcswap.net`
-You promised `security@arcswap.net` in `SECURITY.md` and `.well-known/security.txt`.
+### Email — IMPORTANT for `security@oneliq.xyz`
+You promised `security@oneliq.xyz` in `SECURITY.md` and `.well-known/security.txt`.
 Make it real:
 
 1. Cloudflare dashboard → your domain → **Email** → **Email Routing** → enable
 2. Add destination address: your personal email (will receive forwarded mail)
-3. Add custom address: `security@arcswap.net` → forwards to your destination
+3. Add custom address: `security@oneliq.xyz` → forwards to your destination
 4. Cloudflare auto-adds the MX + SPF records
 5. Verify destination email
-6. Test by sending an email to `security@arcswap.net` from another account
+6. Test by sending an email to `security@oneliq.xyz` from another account
 
 Free, takes 5 minutes.
 
@@ -227,7 +227,7 @@ Cloudflare needs to be the authoritative nameserver. Check:
 ### Security headers missing
 - Verify `_headers` file is in the **build output directory** (= repo root for us)
 - Cloudflare reads it from the deployed root, not from `/public` or `/dist`
-- Test: `curl -I https://arcswap.net` should show all headers
+- Test: `curl -I https://oneliq.xyz` should show all headers
 
 ### `/docs` or `/vault` returns 404
 - Verify `_redirects` is in the deployed root
@@ -252,7 +252,7 @@ For each release:
 - [ ] `bash scripts/preflight-check.sh` passes (6/6)
 - [ ] Commit + push to `main`
 - [ ] Cloudflare deployment goes green (~30s)
-- [ ] `curl -I https://arcswap.net` returns 200 with security headers
+- [ ] `curl -I https://oneliq.xyz` returns 200 with security headers
 - [ ] Spot-check 3 pages: `/`, `/docs`, `/vault`
 - [ ] `bash scripts/health-check.sh` passes
 - [ ] Update `releases/RELEASE-YYYY-MM-DD.json` with deploy ID from Cloudflare

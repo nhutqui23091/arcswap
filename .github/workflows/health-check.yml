@@ -34,7 +34,7 @@ jobs:
         env:
           ALERT_WEBHOOK: ${{ secrets.ALERT_WEBHOOK }}
           # Ping Pages URL trực tiếp để bypass Cloudflare WAF + Bot Fight Mode.
-          # Better Stack đã monitor arcswap.net từ residential IPs (CF whitelist) —
+          # Better Stack đã monitor oneliq.xyz từ residential IPs (CF whitelist) —
           # GitHub Actions chỉ cần verify origin (Pages) còn sống + RPC/Teller OK.
           APP_URL: https://arcswap.pages.dev
         run: bash scripts/health-check.sh

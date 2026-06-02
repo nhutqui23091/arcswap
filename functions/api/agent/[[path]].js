@@ -1541,7 +1541,7 @@ export async function onRequest(context) {
     });
   }
 
-  // Health endpoint for status.arcswap.net dashboard. Returns 204 with CORS
+  // Health endpoint for status.oneliq.xyz dashboard. Returns 204 with CORS
   // header — checks the Function is reachable but does NOT require KV binding
   // (so this still reports "up" if AGENT_KV isn't bound yet in some preview
   // environments). Placed BEFORE the KV guard intentionally.

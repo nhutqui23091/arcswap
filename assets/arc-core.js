@@ -781,7 +781,7 @@
 
   // ───────── METRICS TELEMETRY ─────────
   // Fire-and-forget reporter — runs after a successful user action so the
-  // status page (status.arcswap.net) can show real numbers, not seeded mocks.
+  // status page (status.oneliq.xyz) can show real numbers, not seeded mocks.
   //
   //   event   : 'trade' | 'deposit' | 'spend' | 'bridge' | 'agent-create'
   //             | 'agent-exec' | 'failure'   (validated server-side too)
@@ -875,8 +875,8 @@
       metadata: {
         name: 'Oneliq',
         description: 'USDC routing on Arc Testnet',
-        url: 'https://arcswap.net',
-        icons: ['https://arcswap.net/assets/logos/arclogo.png'],
+        url: 'https://oneliq.xyz',
+        icons: ['https://oneliq.xyz/assets/logos/arclogo.png'],
       },
       defaultNetwork: networks[0],
       features: {
