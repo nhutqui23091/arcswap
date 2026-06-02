@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -7,11 +7,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/mark-oneliq.png"/>
 <link rel="apple-touch-icon" href="/assets/logos/mark-oneliq.png"/>
-<meta name="description" content="Oneliq Unified Balance — deposit USDC from any chain, spend on Arc instantly. Powered by Circle Gateway."/>
-<title>Unified Balance — Oneliq</title>
+<meta name="description" content="Oneliq Unified Balance â€” deposit USDC from any chain, spend on Arc instantly. Powered by Circle Gateway."/>
+<title>Unified Balance â€” Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.7.7"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.7.9"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -24,7 +24,7 @@
   --display:'Space Grotesk','Inter',system-ui,sans-serif; --font:'DM Sans','Inter',system-ui,sans-serif;--mono:'Space Mono','DM Mono',ui-monospace,monospace;
 }
 html{scroll-behavior:smooth}
-/* Body styling comes from arc-ui.css — do NOT redeclare line-height here:
+/* Body styling comes from arc-ui.css â€” do NOT redeclare line-height here:
    it would cascade into the shared sidebar (which inherits line-height) and
    make /balance's sidebar items taller than /trade, /agent, /history. */
 .aurora-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
@@ -34,7 +34,7 @@ html{scroll-behavior:smooth}
     linear-gradient(180deg,#0A1628 0%,#0E1F39 50%,#0A1628 100%);
 }
 
-/* Top nav removed — sidebar provides chrome via ArcUI.bootApp('balance'). */
+/* Top nav removed â€” sidebar provides chrome via ArcUI.bootApp('balance'). */
 
 .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:44px 28px 80px;line-height:1.6}
 @media(max-width:900px){.wrap{padding:72px 18px 60px}}
@@ -67,7 +67,7 @@ html{scroll-behavior:smooth}
 .chain-row:hover:not(.header){background:rgba(255,255,255,0.025)}
 .chain-info{display:flex;align-items:center;gap:12px;min-width:0}
 /* Chain logos: circular frame for consistency with how blockchain brands
-   present their marks in wallets / explorers. 32px disc on a neutral bg —
+   present their marks in wallets / explorers. 32px disc on a neutral bg â€”
    PNG art fills the circle via object-fit:cover. */
 .chain-dot{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:800;font-size:12px;color:#0E1B2E;text-shadow:none;box-shadow:0 0 0 1px rgba(255,255,255,0.06),0 1px 2px rgba(0,0,0,.18)}
 .chain-dot img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
@@ -107,7 +107,7 @@ html{scroll-behavior:smooth}
 .gw-input:focus{border-color:var(--arc1)}
 .gw-input.amount{font-size:24px;font-weight:600;padding:14px;text-align:right}
 .gw-select{width:100%;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:14px;outline:none;cursor:pointer;font-family:var(--font);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238CA0BD' d='M6 9L1 4h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
-/* Native <option> popup colors — Windows/Chrome default to white-on-white in
+/* Native <option> popup colors â€” Windows/Chrome default to white-on-white in
    dark themes, so we explicitly paint the dropdown items dark. */
 .gw-select option{background:#0F1E36;color:var(--text);padding:6px}
 .gw-select option:checked,.gw-select option:hover{background:#1a2c4a;color:#fff}
@@ -153,22 +153,22 @@ html{scroll-behavior:smooth}
 <div class="wrap">
 
   <div class="hero-strip">
-    <div class="eyebrow">Unified Balance · Powered by Circle Gateway</div>
+    <div class="eyebrow">Unified Balance Â· Powered by Circle Gateway</div>
     <h1>Balance</h1>
-    <p>One USDC balance, spendable on any supported chain. Deposit from Sepolia, Base, Arbitrum, Optimism, Polygon — settle on Arc in seconds. No bridge clicks, no chain switching, no wrapped tokens.</p>
+    <p>One USDC balance, spendable on any supported chain. Deposit from Sepolia, Base, Arbitrum, Optimism, Polygon â€” settle on Arc in seconds. No bridge clicks, no chain switching, no wrapped tokens.</p>
   </div>
 
   <!-- TOTAL CARD -->
   <div class="balance-card">
     <div class="balance-label">Total Unified Balance</div>
     <div>
-      <span class="balance-amount" id="ub-total">—</span>
+      <span class="balance-amount" id="ub-total">â€”</span>
       <span class="balance-token">USDC</span>
     </div>
     <div class="balance-sub" id="ub-sub">Connect wallet to view your balance across all Gateway chains.</div>
     <div class="balance-actions">
-      <button class="act-btn primary" id="ub-refresh" type="button">↻ Refresh</button>
-      <button class="act-btn" id="ub-spend-top" type="button">↗ Spend cross-chain</button>
+      <button class="act-btn primary" id="ub-refresh" type="button">â†» Refresh</button>
+      <button class="act-btn" id="ub-spend-top" type="button">â†— Spend cross-chain</button>
     </div>
   </div>
 
@@ -176,7 +176,7 @@ html{scroll-behavior:smooth}
   <div class="chain-table" id="chain-table">
     <div class="chain-row header">
       <div>Chain</div>
-      <div>Available · Pending</div>
+      <div>Available Â· Pending</div>
       <div>Wallet (USDC)</div>
       <div style="text-align:right">Actions</div>
     </div>
@@ -190,13 +190,13 @@ html{scroll-behavior:smooth}
 
   <div class="info-strip" style="margin-top:32px">
     <strong>Unified Balance is NOT a single shared pool.</strong> Each supported chain has its own
-    <code>GatewayWallet</code> contract (same address <code>0x0077…19b9</code>, deployed independently).
+    <code>GatewayWallet</code> contract (same address <code>0x0077â€¦19b9</code>, deployed independently).
     Depositing on Sepolia stores your USDC in Sepolia's contract; depositing on Fuji stores it in Fuji's. Circle's
     REST API then <strong>sums all of them</strong> into one number = "Unified Balance".
     <br><br>
     <strong>To spend cross-chain</strong>: pick a source chain (USDC will be burned from its GatewayWallet) and a
-    destination chain (USDC minted there). Whole flow takes ~30s with a single EIP-712 signature — no bridge tx, no
-    wrapped tokens. <strong>Tip</strong>: deposit on <strong>Avalanche Fuji</strong> — credits in ~30s vs ~12-15min for
+    destination chain (USDC minted there). Whole flow takes ~30s with a single EIP-712 signature â€” no bridge tx, no
+    wrapped tokens. <strong>Tip</strong>: deposit on <strong>Avalanche Fuji</strong> â€” credits in ~30s vs ~12-15min for
     Sepolia / L2 chains (block-finality bottleneck).
   </div>
 
@@ -217,7 +217,7 @@ html{scroll-behavior:smooth}
       <div class="how-card">
         <div class="how-step">// STEP 3</div>
         <h3>Spend instantly</h3>
-        <p>Sign an EIP-712 burn intent → submit to <code>/v1/transfer</code> → receive an attestation → call <code>gatewayMint</code> on the destination. Done in seconds.</p>
+        <p>Sign an EIP-712 burn intent â†’ submit to <code>/v1/transfer</code> â†’ receive an attestation â†’ call <code>gatewayMint</code> on the destination. Done in seconds.</p>
       </div>
       <div class="how-card">
         <div class="how-step">// STEP 4</div>
@@ -229,37 +229,37 @@ html{scroll-behavior:smooth}
 
 </div>
 
-<!-- ──────── DEPOSIT MODAL ──────── -->
+<!-- â”€â”€â”€â”€â”€â”€â”€â”€ DEPOSIT MODAL â”€â”€â”€â”€â”€â”€â”€â”€ -->
 <div class="gw-modal-bg" id="modal-deposit">
   <div class="gw-modal">
     <div class="gw-modal-head">
       <div class="gw-modal-title">Deposit USDC</div>
-      <button class="gw-modal-close" data-close>×</button>
+      <button class="gw-modal-close" data-close>Ã—</button>
     </div>
     <div class="gw-label">Source chain</div>
     <select id="deposit-chain" class="gw-select"></select>
     <div class="gw-label" style="display:flex;justify-content:space-between;align-items:center">Amount<button id="deposit-max" class="max-btn" type="button">Max</button></div>
     <input id="deposit-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
-    <div class="gw-row"><span>Wallet balance</span><strong id="deposit-walbal">—</strong></div>
-    <div class="gw-row"><span>Currently in Gateway</span><strong id="deposit-gwbal">—</strong></div>
+    <div class="gw-row"><span>Wallet balance</span><strong id="deposit-walbal">â€”</strong></div>
+    <div class="gw-row"><span>Currently in Gateway</span><strong id="deposit-gwbal">â€”</strong></div>
     <button id="deposit-go" class="gw-action" type="button">Deposit</button>
     <div id="deposit-status" class="gw-status"></div>
   </div>
 </div>
 
-<!-- ──────── WITHDRAW MODAL ──────── -->
+<!-- â”€â”€â”€â”€â”€â”€â”€â”€ WITHDRAW MODAL â”€â”€â”€â”€â”€â”€â”€â”€ -->
 <div class="gw-modal-bg" id="modal-withdraw">
   <div class="gw-modal">
     <div class="gw-modal-head">
       <div class="gw-modal-title">Withdraw USDC</div>
-      <button class="gw-modal-close" data-close>×</button>
+      <button class="gw-modal-close" data-close>Ã—</button>
     </div>
     <div class="gw-label">Chain</div>
     <select id="withdraw-chain" class="gw-select"></select>
     <div class="gw-label" style="display:flex;justify-content:space-between;align-items:center">Amount<button id="withdraw-max" class="max-btn" type="button">Max</button></div>
     <input id="withdraw-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
-    <div class="gw-row"><span>Available in Gateway</span><strong id="withdraw-gwbal">—</strong></div>
-    <div class="gw-row"><span>Withdrawal delay</span><strong id="withdraw-delay">—</strong></div>
+    <div class="gw-row"><span>Available in Gateway</span><strong id="withdraw-gwbal">â€”</strong></div>
+    <div class="gw-row"><span>Withdrawal delay</span><strong id="withdraw-delay">â€”</strong></div>
     <button id="withdraw-go" class="gw-action" type="button">Initiate withdrawal</button>
     <div id="withdraw-status" class="gw-status"></div>
     <div class="info-strip" style="margin-top:14px;font-size:12px">
@@ -268,17 +268,17 @@ html{scroll-behavior:smooth}
   </div>
 </div>
 
-<!-- ──────── SPEND MODAL ──────── -->
+<!-- â”€â”€â”€â”€â”€â”€â”€â”€ SPEND MODAL â”€â”€â”€â”€â”€â”€â”€â”€ -->
 <div class="gw-modal-bg" id="modal-spend">
   <div class="gw-modal">
     <div class="gw-modal-head">
       <div class="gw-modal-title">Spend cross-chain</div>
-      <button class="gw-modal-close" data-close>×</button>
+      <button class="gw-modal-close" data-close>Ã—</button>
     </div>
 
     <!-- Mode toggle: Auto / Single / Manual -->
     <div style="display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:14px">
-      <button id="spend-mode-unified" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:linear-gradient(135deg,var(--arc1),var(--arc2));color:var(--bg);border:none;font-weight:700;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">⚡ Auto</button>
+      <button id="spend-mode-unified" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:linear-gradient(135deg,var(--arc1),var(--arc2));color:var(--bg);border:none;font-weight:700;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">âš¡ Auto</button>
       <button id="spend-mode-single" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:transparent;color:var(--muted);border:none;font-weight:600;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">Single</button>
       <button id="spend-mode-manual" class="spend-mode-tab" type="button" style="flex:1;padding:8px;border-radius:8px;background:transparent;color:var(--muted);border:none;font-weight:600;font-size:12.5px;cursor:pointer;font-family:var(--font);transition:all .15s">Manual</button>
     </div>
@@ -289,23 +289,23 @@ html{scroll-behavior:smooth}
       <select id="spend-src" class="gw-select"></select>
     </div>
 
-    <div class="gw-label">To (destination chain — USDC will be minted here)</div>
+    <div class="gw-label">To (destination chain â€” USDC will be minted here)</div>
     <select id="spend-dst" class="gw-select"></select>
     <div class="gw-label" style="display:flex;justify-content:space-between;align-items:center">Amount<button id="spend-max" class="max-btn" type="button">Max</button></div>
     <input id="spend-amount" class="gw-input amount" type="text" inputmode="decimal" placeholder="0.00"/>
     <div class="gw-label">Recipient</div>
-    <input id="spend-recipient" class="gw-input" type="text" placeholder="0x… (defaults to your wallet)"/>
+    <input id="spend-recipient" class="gw-input" type="text" placeholder="0xâ€¦ (defaults to your wallet)"/>
 
-    <!-- Source breakdown (Unified mode) — shows which chains will be drawn from -->
+    <!-- Source breakdown (Unified mode) â€” shows which chains will be drawn from -->
     <div id="spend-breakdown" style="display:none;margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(244,200,154,.06);border:1px solid rgba(244,200,154,.22);font-size:12.5px;color:var(--muted);line-height:1.6">
-      <div style="font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#FFB454;margin-bottom:6px">⚡ Unified spend plan</div>
+      <div style="font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#FFB454;margin-bottom:6px">âš¡ Unified spend plan</div>
       <div id="spend-breakdown-rows"></div>
     </div>
 
     <!-- Single chain available (only in single mode) -->
-    <div class="gw-row" id="spend-srcbal-row" style="display:none"><span>Source available</span><strong id="spend-srcbal">—</strong></div>
+    <div class="gw-row" id="spend-srcbal-row" style="display:none"><span>Source available</span><strong id="spend-srcbal">â€”</strong></div>
     <!-- Unified totals (default) -->
-    <div class="gw-row" id="spend-totals-row"><span>Spendable cross-chain (after fee headroom)</span><strong id="spend-total-bal">—</strong></div>
+    <div class="gw-row" id="spend-totals-row"><span>Spendable cross-chain (after fee headroom)</span><strong id="spend-total-bal">â€”</strong></div>
 
     <!-- Manual source section -->
     <div id="spend-manual-section" style="display:none;margin-top:4px">
@@ -314,20 +314,20 @@ html{scroll-behavior:smooth}
       <div style="padding:10px 13px;border-radius:10px;background:var(--surface);border:1px solid var(--border);font-size:13px;margin-top:8px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="color:var(--muted)">Allocated</span>
-          <strong id="spend-manual-total-text" style="font-family:var(--mono)">0.00 / — USDC</strong>
+          <strong id="spend-manual-total-text" style="font-family:var(--mono)">0.00 / â€” USDC</strong>
         </div>
         <div id="spend-manual-error" style="display:none;font-size:12px;margin-top:4px"></div>
       </div>
-      <div class="gw-row" id="spend-manual-fee-row" style="display:none;margin-top:6px"><span>Max relayer fee (Circle Gateway)</span><strong id="spend-manual-fee">—</strong></div>
+      <div class="gw-row" id="spend-manual-fee-row" style="display:none;margin-top:6px"><span>Max relayer fee (Circle Gateway)</span><strong id="spend-manual-fee">â€”</strong></div>
     </div>
 
     <button id="spend-go" class="gw-action" type="button">Sign intent + mint</button>
     <div id="spend-status" class="gw-status"></div>
     <div id="spend-trade-cta" style="display:none;margin-top:8px;text-align:center">
-      <a href="/trade" style="display:inline-block;padding:8px 20px;border-radius:10px;background:rgba(77,214,219,.1);border:1px solid rgba(77,214,219,.3);color:var(--arc1);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s">→ Trade on Arc</a>
+      <a href="/trade" style="display:inline-block;padding:8px 20px;border-radius:10px;background:rgba(77,214,219,.1);border:1px solid rgba(77,214,219,.3);color:var(--arc1);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s">â†’ Trade on Arc</a>
     </div>
     <div id="spend-mode-explanation" style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.55">
-      <strong style="color:var(--text)">Unified mode</strong> spends from multiple chains in one transfer. You'll sign once per source chain (e.g. 3 sigs if 3 chains contribute), then receive ONE attestation that mints the combined amount on the destination — exactly like having a single cross-chain balance.
+      <strong style="color:var(--text)">Unified mode</strong> spends from multiple chains in one transfer. You'll sign once per source chain (e.g. 3 sigs if 3 chains contribute), then receive ONE attestation that mints the combined amount on the destination â€” exactly like having a single cross-chain balance.
     </div>
   </div>
 </div>
@@ -339,7 +339,7 @@ html{scroll-behavior:smooth}
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.7.10"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
-<script src="/assets/arc-ui.js?v=9.7.8"></script>
+<script src="/assets/arc-ui.js?v=9.7.9"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -347,11 +347,11 @@ html{scroll-behavior:smooth}
   // Sidebar chrome (aurora + cursor + nav + wallet button live in sidebar foot)
   await ArcUI.bootApp('balance');
 
-  // ───── State ─────
+  // â”€â”€â”€â”€â”€ State â”€â”€â”€â”€â”€
   const state = {
     addr: null,
     balances: [],         // [{chainKey, canonical, raw, display, depositor}]
-    walletBals: {},       // chainKey → raw bigint of wallet's USDC (separate from Gateway escrow)
+    walletBals: {},       // chainKey â†’ raw bigint of wallet's USDC (separate from Gateway escrow)
     pending: [],          // [{chainKey, value, withdrawableAfter}]
     txPending: [],        // [{chainKey, amountCanonical, type, startedAt, txHash, balanceAtPending}]
     isCachedData: false,
@@ -359,14 +359,14 @@ html{scroll-behavior:smooth}
   };
 
   const fmtBig = (canonical) => {
-    // canonical is 6-decimal BigInt → human readable
+    // canonical is 6-decimal BigInt â†’ human readable
     try { return ARC.formatAmt(canonical, 6, 4); } catch { return '0'; }
   };
   const human = (raw, decimals) => {
     try { return ARC.formatAmt(raw, decimals, 4); } catch { return '0'; }
   };
 
-  // ───── localStorage helpers (BigInt-safe) ─────
+  // â”€â”€â”€â”€â”€ localStorage helpers (BigInt-safe) â”€â”€â”€â”€â”€
   const lsSet = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val, (k, v) => typeof v === 'bigint' ? {__bi: v.toString()} : v)); } catch {} };
   const lsGet = (key) => { try { const r = localStorage.getItem(key); if (!r) return null; return JSON.parse(r, (k, v) => (v && typeof v === 'object' && '__bi' in v) ? BigInt(v.__bi) : v); } catch { return null; } };
   const cacheKey = () => `arcswap:balanceCache:${state.addr}`;
@@ -421,7 +421,7 @@ html{scroll-behavior:smooth}
 
   const chainKeys = ARC.gateway.gatewayChains();
 
-  // ───── Wallet ─────
+  // â”€â”€â”€â”€â”€ Wallet â”€â”€â”€â”€â”€
   // Connect/disconnect lives in the sidebar foot (rendered by ArcUI.bootApp).
   // We just need to react to state changes here so the page refreshes when
   // the user connects or disconnects from the sidebar button.
@@ -442,7 +442,7 @@ html{scroll-behavior:smooth}
     }
   });
 
-  // ───── Modal helpers ─────
+  // â”€â”€â”€â”€â”€ Modal helpers â”€â”€â”€â”€â”€
   function openModal(id) { document.getElementById(id).classList.add('show'); }
   function closeModal(id) { document.getElementById(id).classList.remove('show'); }
   document.querySelectorAll('.gw-modal-bg').forEach(bg => {
@@ -459,10 +459,10 @@ html{scroll-behavior:smooth}
     document.getElementById(elId).textContent = '';
   }
 
-  // ───── Populate chain selects ─────
+  // â”€â”€â”€â”€â”€ Populate chain selects â”€â”€â”€â”€â”€
   // Sync time per chain (for sorting + recommendation labels). Faster chains
-  // surface first because their deposit→credit time is dramatically shorter.
-  // Arc / Fuji finalize in ~3s → credited in ~30s; L2 testnets need 12-15min.
+  // surface first because their depositâ†’credit time is dramatically shorter.
+  // Arc / Fuji finalize in ~3s â†’ credited in ~30s; L2 testnets need 12-15min.
   const SYNC_RANK = { avalancheFuji: 1, arc: 2, polygonAmoy: 3, sepolia: 4, baseSepolia: 4, optimismSepolia: 4, arbitrumSepolia: 4, unichainSepolia: 4 };
   const SYNC_LABEL = { avalancheFuji: '~30s', arc: '~30s', polygonAmoy: '~3min', sepolia: '~12-15min', baseSepolia: '~12-15min', optimismSepolia: '~12-15min', arbitrumSepolia: '~12-15min', unichainSepolia: '~12-15min' };
   function fillSelect(elId, opts = {}) {
@@ -472,13 +472,13 @@ html{scroll-behavior:smooth}
       ? [...filtered].sort((a, b) => (SYNC_RANK[a] || 99) - (SYNC_RANK[b] || 99) || ARC.CHAINS[a].name.localeCompare(ARC.CHAINS[b].name))
       : filtered;
     el.innerHTML = sorted.map(k => {
-      const tag = opts.bySync && k === 'avalancheFuji' ? ' ⚡ Recommended (fastest sync)'
-                : opts.bySync ? ` · ${SYNC_LABEL[k] || ''} sync` : '';
+      const tag = opts.bySync && k === 'avalancheFuji' ? ' âš¡ Recommended (fastest sync)'
+                : opts.bySync ? ` Â· ${SYNC_LABEL[k] || ''} sync` : '';
       return `<option value="${k}">${ARC.CHAINS[k].name}${tag}</option>`;
     }).join('');
   }
   // Deposit modal sorts by sync speed so users land on the fastest chain first.
-  // Filter out chains where direct deposit can't work (e.g. Arc — native-gas
+  // Filter out chains where direct deposit can't work (e.g. Arc â€” native-gas
   // USDC isn't transferable via standard ERC-20 transferFrom).
   const depositable = (k) => !ARC.CHAINS[k]?.gatewayDepositDisabled;
   fillSelect('deposit-chain', { bySync: true, filter: depositable });
@@ -488,7 +488,7 @@ html{scroll-behavior:smooth}
   // default destination = Arc
   document.getElementById('spend-dst').value = 'arc';
 
-  // ───── Render table rows ─────
+  // â”€â”€â”€â”€â”€ Render table rows â”€â”€â”€â”€â”€
   function chainShort(k) { return ARC.CHAINS[k]?.short || k.slice(0, 4).toUpperCase(); }
   function chainName(k) { return ARC.CHAINS[k]?.name || k; }
   function chainColor(k) { return ARC.CHAINS[k]?.iconGrad || 'linear-gradient(135deg,#4DD6DB,#4A7BEC)'; }
@@ -505,14 +505,14 @@ html{scroll-behavior:smooth}
       const row = document.createElement('div');
       row.className = 'chain-row';
       const bal = state.balances.find(b => b.chainKey === k);
-      const gwDisp = connected ? (bal ? bal.display : '0') : '—';
+      const gwDisp = connected ? (bal ? bal.display : '0') : 'â€”';
       const pendDisp = (connected && bal && bal.pending > 0n) ? bal.pendingDisplay : null;
       const wal = state.walletBals[k];
-      const walDisp = (connected && wal !== undefined) ? human(wal, tok?.decimals || 6) : '—';
+      const walDisp = (connected && wal !== undefined) ? human(wal, tok?.decimals || 6) : 'â€”';
       const isZero = !bal || bal.canonical === 0n;
       const depositOff = !!ARC.CHAINS[k]?.gatewayDepositDisabled;
       const depositTitle = depositOff
-        ? 'Direct deposit unavailable on Arc — USDC here is the native gas token. Spend cross-chain to mint USDC on Arc instead.'
+        ? 'Direct deposit unavailable on Arc â€” USDC here is the native gas token. Spend cross-chain to mint USDC on Arc instead.'
         : '';
       const pendingLines = [];
       if (connected && pendDisp) pendingLines.push(`<div style="font-size:11px;color:#FFB454;font-weight:500;margin-top:2px">+ ${pendDisp} pending</div>`);
@@ -523,13 +523,13 @@ html{scroll-behavior:smooth}
         if (depP.length) {
           const tot = depP.reduce((a, p) => a + p.amountCanonical, 0n);
           const stale = depP.some(p => nowMs - p.startedAt > STALE_MS);
-          pendingLines.push(`<div style="font-size:11px;color:${stale ? 'var(--muted)' : '#FFB454'};font-weight:500;margin-top:2px"${stale ? ' title="Taking longer than expected. Check transaction on explorer."' : ''}>+ ${fmtBig(tot)} USDC deposit pending${stale ? ' ⚠' : ''}</div>`);
+          pendingLines.push(`<div style="font-size:11px;color:${stale ? 'var(--muted)' : '#FFB454'};font-weight:500;margin-top:2px"${stale ? ' title="Taking longer than expected. Check transaction on explorer."' : ''}>+ ${fmtBig(tot)} USDC deposit pending${stale ? ' âš ' : ''}</div>`);
         }
         const spP = state.txPending.filter(p => p.chainKey === k && p.type === 'spend');
         if (spP.length) {
           const tot = spP.reduce((a, p) => a + p.amountCanonical, 0n);
           const stale = spP.some(p => nowMs - p.startedAt > STALE_MS);
-          pendingLines.push(`<div style="font-size:11px;color:${stale ? 'var(--muted)' : '#FF9999'};font-weight:500;margin-top:2px"${stale ? ' title="Taking longer than expected. Check transaction on explorer."' : ''}>- ${fmtBig(tot)} USDC spend pending${stale ? ' ⚠' : ''}</div>`);
+          pendingLines.push(`<div style="font-size:11px;color:${stale ? 'var(--muted)' : '#FF9999'};font-weight:500;margin-top:2px"${stale ? ' title="Taking longer than expected. Check transaction on explorer."' : ''}>- ${fmtBig(tot)} USDC spend pending${stale ? ' âš ' : ''}</div>`);
         }
       }
       const balCell = `<div class="chain-bal ${isZero?'zero':''}">${gwDisp}<small>USDC</small>${pendingLines.join('')}</div>`;
@@ -572,20 +572,20 @@ html{scroll-behavior:smooth}
     }
     if (!state.lastSyncMs) return;
     const n = state.balances.filter(b => b.canonical > 0n).length;
-    let s = `Across ${n} chain${n!==1?'s':''} · Last sync ${new Date(state.lastSyncMs).toLocaleTimeString()}`;
+    let s = `Across ${n} chain${n!==1?'s':''} Â· Last sync ${new Date(state.lastSyncMs).toLocaleTimeString()}`;
     if (state.isCachedData) {
       const ageMs = Date.now() - state.lastSyncMs;
       const ageStr = ageMs < 60000 ? 'just now' : ageMs < 300000 ? `${Math.round(ageMs/60000)}m ago` : `${Math.round(ageMs/3600000*10)/10}h ago`;
-      s += ` <span style="font-size:11px;font-family:var(--mono);color:${ageMs > 300000 ? 'var(--warn)' : 'var(--muted)'}">(cached · ${ageStr})</span>`;
+      s += ` <span style="font-size:11px;font-family:var(--mono);color:${ageMs > 300000 ? 'var(--warn)' : 'var(--muted)'}">(cached Â· ${ageStr})</span>`;
     }
     if (totalPending > 0n) {
       const pendDisp = ARC.formatAmt(totalPending, 6, 4);
-      s += ` <span style="color:#FFB454;font-weight:600">· +${pendDisp} USDC pending finality (~12-15 min)</span>`;
+      s += ` <span style="color:#FFB454;font-weight:600">Â· +${pendDisp} USDC pending finality (~12-15 min)</span>`;
     }
     subEl.innerHTML = s;
   }
 
-  // ───── Pending withdrawals ─────
+  // â”€â”€â”€â”€â”€ Pending withdrawals â”€â”€â”€â”€â”€
   async function refreshPending() {
     if (!state.addr) { document.getElementById('pending-wrap').style.display = 'none'; return; }
     const all = [];
@@ -612,11 +612,11 @@ html{scroll-behavior:smooth}
       card.className = 'pending-card';
       card.innerHTML = `
         <strong>${human(p.withdrawing, tok.decimals)}</strong> USDC on <strong>${chainName(p.chainKey)}</strong>
-        — ${ready ? '✅ Ready to finalize' : `⏳ ${blocksLeft} block${blocksLeft!==1?'s':''} left (block #${p.blockReady})`}
+        â€” ${ready ? 'âœ… Ready to finalize' : `â³ ${blocksLeft} block${blocksLeft!==1?'s':''} left (block #${p.blockReady})`}
         <button data-chain="${p.chainKey}" ${ready?'':'disabled'}>Finalize</button>`;
       card.querySelector('button').onclick = async (e) => {
         const btn = e.target;
-        btn.disabled = true; btn.textContent = 'Finalizing…';
+        btn.disabled = true; btn.textContent = 'Finalizingâ€¦';
         try {
           const finResult = await ARC.gateway.finalizeWithdrawal(p.chainKey);
           ArcUI.toast('success', 'Withdrawal finalized', 'Funds returned to your wallet.');
@@ -631,7 +631,7 @@ html{scroll-behavior:smooth}
     });
   }
 
-  // ───── Refresh ─────
+  // â”€â”€â”€â”€â”€ Refresh â”€â”€â”€â”€â”€
   async function refreshBalances() {
     if (!state.addr) return;
     try {
@@ -672,7 +672,7 @@ html{scroll-behavior:smooth}
 
   async function refreshAll() {
     if (!state.addr) { renderTable(); refreshTotal(); return; }
-    document.getElementById('ub-sub').textContent = 'Loading…';
+    document.getElementById('ub-sub').textContent = 'Loadingâ€¦';
     document.getElementById('chain-table').classList.add('loading');
     await Promise.all([refreshBalances(), refreshWallets()]);
     state.isCachedData = false;
@@ -684,7 +684,7 @@ html{scroll-behavior:smooth}
 
   document.getElementById('ub-refresh').onclick = refreshAll;
 
-  // Auto-refresh every 15s while page is visible — Circle's operator can take
+  // Auto-refresh every 15s while page is visible â€” Circle's operator can take
   // 12-15min to credit deposits (Sepolia/L2 finality), so the page should keep
   // checking on its own instead of forcing the user to click.
   let _autoRefreshTimer = null;
@@ -698,7 +698,7 @@ html{scroll-behavior:smooth}
     if (document.visibilityState === 'visible' && state.addr) refreshAll();
   });
 
-  // ───── Top-bar Spend button ─────
+  // â”€â”€â”€â”€â”€ Top-bar Spend button â”€â”€â”€â”€â”€
   document.getElementById('ub-spend-top').onclick = async () => {
     if (!state.addr) {
       try { await ARC.wallet.connect(); }
@@ -710,9 +710,9 @@ html{scroll-behavior:smooth}
     openSpendModal();
   };
 
-  // ───── Deposit modal ─────
+  // â”€â”€â”€â”€â”€ Deposit modal â”€â”€â”€â”€â”€
   // Default chain: if user clicked from a per-chain row use that. Otherwise
-  // default to Avalanche Fuji — fastest finality (~30s) so the user's first
+  // default to Avalanche Fuji â€” fastest finality (~30s) so the user's first
   // deposit credits in seconds instead of waiting 12-15min on Sepolia/L2.
   function openDepositModal(chainKey) {
     if (!state.addr) { alert('Connect wallet first'); return; }
@@ -729,7 +729,7 @@ html{scroll-behavior:smooth}
     const tok = ARC.TOKENS[k].USDC;
     const wal = state.walletBals[k];
     const bal = state.balances.find(b => b.chainKey === k);
-    document.getElementById('deposit-walbal').textContent = (wal !== undefined) ? human(wal, tok.decimals) + ' USDC' : '—';
+    document.getElementById('deposit-walbal').textContent = (wal !== undefined) ? human(wal, tok.decimals) + ' USDC' : 'â€”';
     document.getElementById('deposit-gwbal').textContent = (bal ? bal.display : '0') + ' USDC';
   }
   document.getElementById('deposit-chain').onchange = syncDepositInfo;
@@ -741,7 +741,7 @@ html{scroll-behavior:smooth}
     const value = ARC.parseAmt(amtStr, tok.decimals);
     if (value <= 0n) { setStatus('deposit-status', 'err', 'Invalid amount'); return; }
     const btn = document.getElementById('deposit-go');
-    btn.disabled = true; btn.textContent = 'Working…';
+    btn.disabled = true; btn.textContent = 'Workingâ€¦';
     // Normalize to 6-decimal canonical for Gateway balance comparison
     let amtCanonical = value;
     if (tok.decimals > 6) amtCanonical = value / (10n ** BigInt(tok.decimals - 6));
@@ -755,10 +755,10 @@ html{scroll-behavior:smooth}
       const result = await ARC.gateway.deposit(k, value, { onStep: (m) => setStatus('deposit-status', '', m) });
       pendingEntry.txHash = result?.tx?.hash || null;
       saveTxPending();
-      setStatus('deposit-status', 'ok', '✅ Deposit confirmed');
+      setStatus('deposit-status', 'ok', 'âœ… Deposit confirmed');
       pushToHistory('bridge', k, result?.tx?.hash || null, `Deposit ${amtStr} USDC on ${chainName(k)}`);
-      // Real-metrics telemetry — pass tx hash so the status page can deep-link
-      // to the source chain's explorer ("view ↗" in Latest Activity).
+      // Real-metrics telemetry â€” pass tx hash so the status page can deep-link
+      // to the source chain's explorer ("view â†—" in Latest Activity).
       try { ARC.track('deposit', k, Number(amtStr), result?.tx?.hash || null, 'balance'); } catch {}
       setTimeout(() => closeModal('modal-deposit'), 1200);
       refreshAll();
@@ -766,13 +766,13 @@ html{scroll-behavior:smooth}
       state.txPending = state.txPending.filter(p => p !== pendingEntry);
       saveTxPending();
       renderTable();
-      console.error(e); setStatus('deposit-status', 'err', '❌ ' + ARC.explainError(e));
+      console.error(e); setStatus('deposit-status', 'err', 'âŒ ' + ARC.explainError(e));
     } finally {
       btn.disabled = false; btn.textContent = 'Deposit';
     }
   };
 
-  // ───── Max buttons ─────
+  // â”€â”€â”€â”€â”€ Max buttons â”€â”€â”€â”€â”€
   document.getElementById('deposit-max').onclick = () => {
     const k = document.getElementById('deposit-chain').value;
     const tok = ARC.TOKENS[k]?.USDC;
@@ -802,7 +802,7 @@ html{scroll-behavior:smooth}
     }
   };
 
-  // ───── Withdraw modal ─────
+  // â”€â”€â”€â”€â”€ Withdraw modal â”€â”€â”€â”€â”€
   async function openWithdrawModal(chainKey) {
     if (!state.addr) { alert('Connect wallet first'); return; }
     document.getElementById('withdraw-chain').value = chainKey || chainKeys[0];
@@ -821,7 +821,7 @@ html{scroll-behavior:smooth}
       const sec = Number(d);
       const human = sec >= 3600 ? `${(sec/3600).toFixed(1)} h` : sec >= 60 ? `${Math.round(sec/60)} min` : `${sec} s`;
       document.getElementById('withdraw-delay').textContent = human;
-    } catch { document.getElementById('withdraw-delay').textContent = '—'; }
+    } catch { document.getElementById('withdraw-delay').textContent = 'â€”'; }
   }
   document.getElementById('withdraw-chain').onchange = syncWithdrawInfo;
   document.getElementById('withdraw-go').onclick = async () => {
@@ -832,26 +832,26 @@ html{scroll-behavior:smooth}
     const value = ARC.parseAmt(amtStr, tok.decimals);
     if (value <= 0n) { setStatus('withdraw-status', 'err', 'Invalid amount'); return; }
     const btn = document.getElementById('withdraw-go');
-    btn.disabled = true; btn.textContent = 'Working…';
+    btn.disabled = true; btn.textContent = 'Workingâ€¦';
     try {
       await ARC.gateway.initiateWithdrawal(k, value, { onStep: (m) => setStatus('withdraw-status', '', m) });
-      setStatus('withdraw-status', 'ok', '✅ Withdrawal initiated. Check pending list.');
+      setStatus('withdraw-status', 'ok', 'âœ… Withdrawal initiated. Check pending list.');
       setWithdrawalFlag(true);
       setTimeout(() => closeModal('modal-withdraw'), 1500);
       refreshAll();
     } catch (e) {
-      console.error(e); setStatus('withdraw-status', 'err', '❌ ' + ARC.explainError(e));
+      console.error(e); setStatus('withdraw-status', 'err', 'âŒ ' + ARC.explainError(e));
     } finally {
       btn.disabled = false; btn.textContent = 'Initiate withdrawal';
     }
   };
 
-  // ───── Spend modal ─────
+  // â”€â”€â”€â”€â”€ Spend modal â”€â”€â”€â”€â”€
   // Two modes:
-  //   Unified  → user enters amount; app auto-picks the minimum set of chains
-  //              (largest first) to cover it. N signatures → 1 attestation → 1 mint.
+  //   Unified  â†’ user enters amount; app auto-picks the minimum set of chains
+  //              (largest first) to cover it. N signatures â†’ 1 attestation â†’ 1 mint.
   //              This is what makes "Unified Balance" actually behave unified.
-  //   Single   → classic single-chain burn (legacy fallback).
+  //   Single   â†’ classic single-chain burn (legacy fallback).
   let spendMode = 'unified';
   function openSpendModal() {
     if (!state.addr) { alert('Connect wallet first'); return; }
@@ -900,7 +900,7 @@ html{scroll-behavior:smooth}
       return;
     }
     if (spendMode === 'manual') { syncManualTotal(); return; }
-    // Unified mode — show *spendable* total (raw balance minus fee headroom
+    // Unified mode â€” show *spendable* total (raw balance minus fee headroom
     // we have to leave on each source for Circle's per-intent maxFee check).
     // Excludes the destination chain since no point burning on the same chain
     // we mint on.
@@ -925,13 +925,13 @@ html{scroll-behavior:smooth}
     if (!plan) {
       const spendable = ARC.gateway.totalSpendable(eligible);
       breakdown.style.display = 'block';
-      rows.innerHTML = `<div style="color:var(--danger)">Insufficient spendable balance — need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle Gateway per-intent fee headroom (~1.5 USDC reserved on each source).</div>`;
+      rows.innerHTML = `<div style="color:var(--danger)">Insufficient spendable balance â€” need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle Gateway per-intent fee headroom (~1.5 USDC reserved on each source).</div>`;
       return;
     }
     breakdown.style.display = 'block';
     // Sum the per-intent maxFees so the user sees the worst-case relayer fee
     // they're authorising. Each intent must clear Circle's per-intent minimum
-    // independently — fees do NOT pool across sources.
+    // independently â€” fees do NOT pool across sources.
     const totalFee = plan.reduce((acc, p) => acc + ARC.gateway.defaultMaxFee(p.valueCanonical), 0n);
     rows.innerHTML = plan.map(p => `
       <div style="display:flex;justify-content:space-between;padding:3px 0">
@@ -939,14 +939,14 @@ html{scroll-behavior:smooth}
         <strong style="color:var(--text);font-family:var(--mono)">${ARC.formatAmt(p.valueCanonical,6,4)} USDC</strong>
       </div>`).join('') +
       `<div style="display:flex;justify-content:space-between;padding:6px 0 0;border-top:1px solid rgba(255,180,84,.2);margin-top:4px">
-        <span style="color:var(--text)">→ Mint on <strong>${ARC.CHAINS[dst].name}</strong></span>
+        <span style="color:var(--text)">â†’ Mint on <strong>${ARC.CHAINS[dst].name}</strong></span>
         <strong style="color:#FFB454;font-family:var(--mono)">${ARC.formatAmt(valueCanonical,6,4)} USDC</strong>
       </div>
       <div style="display:flex;justify-content:space-between;padding:3px 0 0;font-size:11.5px;color:var(--muted)">
         <span>Max relayer fee (Circle Gateway)</span>
-        <span style="font-family:var(--mono)">≤ ${ARC.formatAmt(totalFee,6,4)} USDC</span>
+        <span style="font-family:var(--mono)">â‰¤ ${ARC.formatAmt(totalFee,6,4)} USDC</span>
       </div>
-      <div style="margin-top:6px;font-size:11px;color:var(--muted)">${plan.length} signature${plan.length>1?'s':''} required → 1 attestation → 1 mint tx</div>`;
+      <div style="margin-top:6px;font-size:11px;color:var(--muted)">${plan.length} signature${plan.length>1?'s':''} required â†’ 1 attestation â†’ 1 mint tx</div>`;
   }
 
   function renderManualRows() {
@@ -1003,7 +1003,7 @@ html{scroll-behavior:smooth}
     const feeRow = document.getElementById('spend-manual-fee-row');
     const goBtn = document.getElementById('spend-go');
     if (!amtStr) {
-      totalEl.textContent = '0.00 / — USDC';
+      totalEl.textContent = '0.00 / â€” USDC';
       totalEl.style.color = 'var(--text)';
       errEl.style.display = 'none';
       feeRow.style.display = 'none';
@@ -1050,7 +1050,7 @@ html{scroll-behavior:smooth}
     } else {
       totalEl.style.color = 'var(--arc4)';
       errEl.style.display = 'none';
-      document.getElementById('spend-manual-fee').textContent = `≤ ${ARC.formatAmt(totalFee, 6, 4)} USDC`;
+      document.getElementById('spend-manual-fee').textContent = `â‰¤ ${ARC.formatAmt(totalFee, 6, 4)} USDC`;
       feeRow.style.display = 'flex';
       goBtn.disabled = false;
     }
@@ -1073,7 +1073,7 @@ html{scroll-behavior:smooth}
     const valueCanonical = ARC.parseAmt(amtStr, 6);
     if (valueCanonical <= 0n) { setStatus('spend-status', 'err', 'Invalid amount'); return; }
     const btn = document.getElementById('spend-go');
-    btn.disabled = true; btn.textContent = 'Working…';
+    btn.disabled = true; btn.textContent = 'Workingâ€¦';
     let spendResult = null;
     let spentSources = null;
     try {
@@ -1116,10 +1116,10 @@ html{scroll-behavior:smooth}
         });
         spentSources = [{ chainKey: src, valueCanonical }];
       }
-      setStatus('spend-status', 'ok', '✅ Cross-chain spend complete');
+      setStatus('spend-status', 'ok', 'âœ… Cross-chain spend complete');
       document.getElementById('spend-trade-cta').style.display = 'block';
       const mintHash = spendResult?.mint?.tx?.hash || null;
-      // Record tx-pending per source chain — Gateway REST lags on-chain by minutes
+      // Record tx-pending per source chain â€” Gateway REST lags on-chain by minutes
       if (spentSources) {
         spentSources.forEach(s => {
           const snap = state.balances.find(b => b.chainKey === s.chainKey)?.canonical || 0n;
@@ -1128,8 +1128,8 @@ html{scroll-behavior:smooth}
         saveTxPending();
         renderTable();
       }
-      pushToHistory('bridge', dst, mintHash, `Cross-chain spend ${amtStr} USDC → ${chainName(dst)}`);
-      // Real-metrics telemetry — mint tx hash on destination chain so the
+      pushToHistory('bridge', dst, mintHash, `Cross-chain spend ${amtStr} USDC â†’ ${chainName(dst)}`);
+      // Real-metrics telemetry â€” mint tx hash on destination chain so the
       // status page can deep-link to dst chain's explorer.
       try {
         const sourcesPayload = spentSources && spentSources.length > 1
@@ -1140,13 +1140,13 @@ html{scroll-behavior:smooth}
       setTimeout(() => closeModal('modal-spend'), 2500);
       refreshAll();
     } catch (e) {
-      console.error(e); setStatus('spend-status', 'err', '❌ ' + ARC.explainError(e));
+      console.error(e); setStatus('spend-status', 'err', 'âŒ ' + ARC.explainError(e));
     } finally {
       btn.disabled = false; btn.textContent = 'Sign intent + mint';
     }
   };
 
-  // ───── Init ─────
+  // â”€â”€â”€â”€â”€ Init â”€â”€â”€â”€â”€
   renderTable();
   refreshTotal();
   // ArcUI.bootApp already kicked off autoConnect; check if it landed in time.

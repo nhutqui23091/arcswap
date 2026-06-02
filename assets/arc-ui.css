@@ -257,9 +257,8 @@ body.arc-side-collapsed .arc-side-foot .wallet-btn .dot{font-size:initial;width:
 .arc-side-hamb{display:none;position:fixed;top:14px;left:14px;z-index:1001;width:40px;height:40px;border-radius:11px;background:rgba(10,22,40,.85);backdrop-filter:blur(20px);border:1px solid var(--border);color:var(--text);align-items:center;justify-content:center;cursor:pointer;padding:0}
 .arc-side-hamb:hover{background:rgba(15,30,54,.95);border-color:var(--border2)}
 
-/* Mobile wallet CTA (top-right, mirrors hamburger position) */
-.arc-mob-wallet{display:none;position:fixed;top:14px;right:14px;z-index:1002;height:40px;padding:0 14px}
-@media(max-width:900px){.arc-mob-wallet{display:inline-flex}}
+/* Top-right wallet CTA — always visible on all viewports */
+.arc-mob-wallet{display:inline-flex;position:fixed;top:14px;right:14px;z-index:1002;height:44px;padding:0 18px;border-radius:999px}
 
 /* Mobile drawer backdrop */
 .arc-side-backdrop{position:fixed;inset:0;background:rgba(3,8,16,.66);backdrop-filter:blur(4px);z-index:999;opacity:0;pointer-events:none;transition:opacity .22s}

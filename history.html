@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -7,21 +7,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/mark-oneliq.png"/>
 <link rel="apple-touch-icon" href="/assets/logos/mark-oneliq.png"/>
-<meta name="description" content="History — every transfer reads like a receipt. Trade, Balance, and Agent moments across your Arc stablecoin activity."/>
-<title>History — Oneliq</title>
+<meta name="description" content="History â€” every transfer reads like a receipt. Trade, Balance, and Agent moments across your Arc stablecoin activity."/>
+<title>History â€” Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.7.7"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.7.9"/>
 <style>
 /* ============================================================
-   HISTORY — minimal receipt feed.
+   HISTORY â€” minimal receipt feed.
    One hero block, one segmented pill control, one feed list.
    No charts, no toolbar, no modal. Each row is a receipt.
 ============================================================ */
 
 .hist-wrap{position:relative;z-index:2;max-width:980px;margin:0 auto;padding:48px 36px 80px}
 
-/* HERO — one big glass card */
+/* HERO â€” one big glass card */
 .hist-hero{position:relative;padding:38px 40px 36px;border-radius:24px;background:var(--surface);border:1px solid var(--border);backdrop-filter:blur(20px);overflow:hidden;margin-bottom:22px}
 .hist-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 10%,rgba(77,214,219,.45) 50%,transparent 90%)}
 .hist-hero::after{content:'';position:absolute;right:-160px;top:-160px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(77,214,219,.10) 0%,transparent 60%);pointer-events:none}
@@ -30,7 +30,7 @@
 .hist-title .accent{background:linear-gradient(135deg,var(--arc1),var(--arc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
 .hist-sub{font-size:14.5px;color:var(--muted);max-width:560px;line-height:1.7}
 
-/* SEGMENTED CONTROL — pill tabs */
+/* SEGMENTED CONTROL â€” pill tabs */
 .hist-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px;border-radius:16px;background:var(--surface);border:1px solid var(--border);backdrop-filter:blur(20px);margin-bottom:18px}
 .hist-tab{padding:13px 18px;border-radius:12px;font-size:13.5px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;letter-spacing:-.005em;transition:all .18s;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font);position:relative}
 .hist-tab:hover{color:var(--text)}
@@ -121,7 +121,7 @@
   <section class="hist-hero">
     <span class="hist-eyebrow">History</span>
     <h1 class="hist-title">Every transfer should read like a <span class="accent">receipt feed</span>.</h1>
-    <p class="hist-sub">Not charts, not noise — just clear Trade, Balance, and Agent moments across your USDC activity on Arc.</p>
+    <p class="hist-sub">Not charts, not noise â€” just clear Trade, Balance, and Agent moments across your USDC activity on Arc.</p>
   </section>
 
   <!-- TABS -->
@@ -145,28 +145,28 @@
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.7.10"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
-<script src="/assets/arc-ui.js?v=9.7.8"></script>
+<script src="/assets/arc-ui.js?v=9.7.9"></script>
 <script>
 (async () => {
   /* ============================================================
-     History — minimal receipt feed.
+     History â€” minimal receipt feed.
 
      One feed, four tabs (All / Trade / Balance / Agent), nothing
      else. Each row is a single receipt: who, what, where, when.
-     Click a row → open its on-chain explorer record.
+     Click a row â†’ open its on-chain explorer record.
 
      Data merges two sources (the only two Oneliq itself owns):
-       1. localStorage 'arc.trade.activity.v1' — trade.html writes
+       1. localStorage 'arc.trade.activity.v1' â€” trade.html writes
           swap/bridge/transfer rows here. 'bridge' rows are Balance
           (Unified Balance settlements); other kinds are Trade.
-       2. /api/agent/list?owner + /api/agent/:id/executions — the
+       2. /api/agent/list?owner + /api/agent/:id/executions â€” the
           server-side agent log. Local fallback (arcswap_execs)
           mirrors the same shape when the backend is unconfigured.
   ============================================================ */
 
   await ArcUI.bootApp('history');
 
-  // ── CHAIN REGISTRY ────────────────────────────────────────────
+  // â”€â”€ CHAIN REGISTRY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const CHIPS = [
     { id:'base',     arcKey:'baseSepolia',     short:'Base',  color:'#0052FF' },
     { id:'arc',      arcKey:'arc',             short:'Arc',   color:'#4DD6DB' },
@@ -185,25 +185,25 @@
     return ARC?.CHAINS?.[arcKey]?.explorerTx?.(hash) || '';
   }
 
-  // ── STATE ─────────────────────────────────────────────────────
+  // â”€â”€ STATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const state = { addr: null, txs: [], tab: 'all' };
 
-  // ── UTILS ─────────────────────────────────────────────────────
+  // â”€â”€ UTILS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function shortHash(h, head = 7, tail = 5) {
     if (!h) return '';
-    return h.length > head + tail + 2 ? `${h.slice(0, head)}…${h.slice(-tail)}` : h;
+    return h.length > head + tail + 2 ? `${h.slice(0, head)}â€¦${h.slice(-tail)}` : h;
   }
   function fmtMoney(n, frac = 2) {
-    if (n == null || isNaN(n)) return '—';
+    if (n == null || isNaN(n)) return 'â€”';
     const v = Number(n);
-    if (!isFinite(v)) return '—';
+    if (!isFinite(v)) return 'â€”';
     return v.toLocaleString('en-US', { minimumFractionDigits: frac, maximumFractionDigits: frac });
   }
   function fmtRelTime(ts) {
-    if (!ts) return '—';
+    if (!ts) return 'â€”';
     const diff = Date.now() - ts;
     const s = Math.floor(diff / 1000);
     if (s < 60) return `${s}s ago`;
@@ -216,7 +216,7 @@
     return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
-  // ── BACKEND (mirrors agent.html contract) ─────────────────────
+  // â”€â”€ BACKEND (mirrors agent.html contract) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   let backendStatus = null;
   async function api(path) {
     if (backendStatus === 'fallback') return { _fallback: true };
@@ -234,21 +234,21 @@
     } catch (e) { console.warn('[history] api', path, e?.message || e); return null; }
   }
 
-  // ── NORMALIZE ─────────────────────────────────────────────────
+  // â”€â”€ NORMALIZE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Map every input row to a single shape. `tab` is what decides which
   // segmented-control pill the row appears under.
-  //   tab ∈ 'trade' | 'balance' | 'agent'
+  //   tab âˆˆ 'trade' | 'balance' | 'agent'
   function mapTradeRow(x, i) {
     // trade.html shape: { kind, chain, hash, status, text, at }
-    // - kind 'bridge'  → Balance tab (Unified Balance settlement)
-    // - kind 'swap' / 'transfer' → Trade tab
+    // - kind 'bridge'  â†’ Balance tab (Unified Balance settlement)
+    // - kind 'swap' / 'transfer' â†’ Trade tab
     const isBalance = x.kind === 'bridge';
     const tab = isBalance ? 'balance' : 'trade';
     const amtM = /(\d+(?:\.\d+)?)\s*USDC/i.exec(x.text || '');
     const amt = amtM ? parseFloat(amtM[1]) : null;
     // Sniff a dst chain out of the text (it's a free-form display string)
     let dst = '';
-    const dstM = /→\s+([A-Za-z][A-Za-z\s]*)/.exec(x.text || '');
+    const dstM = /â†’\s+([A-Za-z][A-Za-z\s]*)/.exec(x.text || '');
     if (dstM) {
       const guess = dstM[1].trim().toLowerCase().replace(/\s+/g,'');
       const c = CHIPS.find(c => c.short.toLowerCase() === guess || c.id === guess);
@@ -274,7 +274,7 @@
     if (e.type === 'error' || e.type === 'paused' || e.type === 'revoked') status = 'failed';
     else if (e.type === 'cctp_burn') status = 'processing';
     else if (e.simulated) status = 'pending';
-    const title = e.detail || (agent.name ? `${agent.name} · ${e.type}` : e.type);
+    const title = e.detail || (agent.name ? `${agent.name} Â· ${e.type}` : e.type);
     return {
       id: `agent-${agent.id}-${e.time || 0}-${Math.random().toString(36).slice(2,5)}`,
       tab: 'agent',
@@ -315,7 +315,7 @@
     } catch { return []; }
   }
 
-  // ── LOAD + RENDER ─────────────────────────────────────────────
+  // â”€â”€ LOAD + RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function loadAll() {
     if (!state.addr) { state.txs = []; render(); return; }
     showSkeleton();
@@ -352,25 +352,25 @@
     const icoCls = isFail ? 'k-fail' : `k-${t.tab}`;
     const glyph =
       isFail            ? '!' :
-      t.tab === 'trade' ? '⇄' :
-      t.tab === 'balance' ? '⊳' : '∞';
+      t.tab === 'trade' ? 'â‡„' :
+      t.tab === 'balance' ? 'âŠ³' : 'âˆž';
 
     const src = chainOf(t.srcChain), dst = chainOf(t.dstChain);
     const route = (src && dst && src.id !== dst.id)
-      ? `${chainTagHtml(t.srcChain)}<span class="hist-row-arr">→</span>${chainTagHtml(t.dstChain)}`
+      ? `${chainTagHtml(t.srcChain)}<span class="hist-row-arr">â†’</span>${chainTagHtml(t.dstChain)}`
       : (src ? chainTagHtml(t.srcChain) : '');
 
     const hashLink = (t.hash && t.srcChain)
-      ? `<a href="${explorerTx(t.srcChain, t.hash)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${shortHash(t.hash)} ↗</a>`
+      ? `<a href="${explorerTx(t.srcChain, t.hash)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${shortHash(t.hash)} â†—</a>`
       : '';
 
     const subParts = [route, hashLink, fmtRelTime(t.ts)].filter(Boolean);
-    const sub = subParts.join('<span class="dot-sep">·</span>');
+    const sub = subParts.join('<span class="dot-sep">Â·</span>');
 
     const amtClass = t.tab === 'balance' && t.title?.includes('Bridge') ? 'down' : '';
     const amt = (t.amount != null)
       ? `<div class="hist-row-amt ${amtClass}">${fmtMoney(t.amount)}<small>${t.asset || 'USDC'}</small></div>`
-      : `<div class="hist-row-amt" style="color:var(--muted-soft)">—</div>`;
+      : `<div class="hist-row-amt" style="color:var(--muted-soft)">â€”</div>`;
 
     const explorerHref = (t.hash && t.srcChain) ? explorerTx(t.srcChain, t.hash) : '';
 
@@ -378,7 +378,7 @@
       <div class="hist-row" data-href="${escapeHtml(explorerHref)}">
         <div class="hist-row-ico ${icoCls}">${glyph}</div>
         <div class="hist-row-main">
-          <div class="hist-row-title">${escapeHtml(t.title || '—')}</div>
+          <div class="hist-row-title">${escapeHtml(t.title || 'â€”')}</div>
           <div class="hist-row-sub">${sub}</div>
         </div>
         ${amt}
@@ -403,7 +403,7 @@
     if (!state.addr) {
       feed.innerHTML = `
         <div class="hist-empty">
-          <div class="hist-empty-ico">◇</div>
+          <div class="hist-empty-ico">â—‡</div>
           <div class="hist-empty-t">Connect your wallet</div>
           <div class="hist-empty-s">Once connected, every trade, balance settlement, and agent run will appear here as a clean receipt.</div>
           <button class="hist-empty-cta" id="hist-connect-btn" type="button">Connect Wallet</button>
@@ -415,13 +415,13 @@
     const rows = state.tab === 'all' ? state.txs : state.txs.filter(t => t.tab === state.tab);
 
     if (!rows.length) {
-      const cta = state.tab === 'trade'   ? { href: '/trade',   label: 'Make a trade →' }
-                : state.tab === 'balance' ? { href: '/balance', label: 'Open Unified Balance →' }
-                : state.tab === 'agent'   ? { href: '/agent',   label: 'Create an agent →' }
-                : { href: '/trade', label: 'Start trading →' };
+      const cta = state.tab === 'trade'   ? { href: '/trade',   label: 'Make a trade â†’' }
+                : state.tab === 'balance' ? { href: '/balance', label: 'Open Unified Balance â†’' }
+                : state.tab === 'agent'   ? { href: '/agent',   label: 'Create an agent â†’' }
+                : { href: '/trade', label: 'Start trading â†’' };
       feed.innerHTML = `
         <div class="hist-empty">
-          <div class="hist-empty-ico">◇</div>
+          <div class="hist-empty-ico">â—‡</div>
           <div class="hist-empty-t">No transactions found</div>
           <div class="hist-empty-s">Nothing in this tab yet. Your activity from Oneliq will land here automatically.</div>
           <a class="hist-empty-cta" href="${cta.href}">${cta.label}</a>
@@ -438,7 +438,7 @@
     });
   }
 
-  // ── TAB WIRING ────────────────────────────────────────────────
+  // â”€â”€ TAB WIRING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   document.querySelectorAll('#hist-tabs .hist-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#hist-tabs .hist-tab').forEach(b => {
@@ -452,7 +452,7 @@
     });
   });
 
-  // ── WALLET REACTIVITY ─────────────────────────────────────────
+  // â”€â”€ WALLET REACTIVITY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function onWalletChange() {
     const s = ARC.wallet.snapshot();
     state.addr = s.connected ? s.address : null;
@@ -461,7 +461,7 @@
   ARC.wallet.on(onWalletChange);
   onWalletChange();
 
-  // ── REALTIME: poll trade activity from localStorage every 8s ──
+  // â”€â”€ REALTIME: poll trade activity from localStorage every 8s â”€â”€
   setInterval(() => {
     if (!state.addr) return;
     const fresh = loadTradeActivity();
