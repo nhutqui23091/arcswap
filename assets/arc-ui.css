@@ -100,8 +100,8 @@ nav.arc-nav.scrolled{background:rgba(3,1,10,.85);backdrop-filter:blur(20px);bord
 .wallet-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:600;font-size:13px;transition:all .2s}
 .wallet-btn:hover{border-color:var(--border2);background:rgba(255,255,255,.08)}
 .wallet-btn .dot{width:7px;height:7px;border-radius:50%;background:var(--arc4);box-shadow:0 0 8px var(--arc4)}
-.wallet-btn.disconnected{background:linear-gradient(135deg,var(--arc1),var(--arc2));color:#0A1628;border-color:transparent;font-weight:700;box-shadow:0 0 16px rgba(77,214,219,.28)}
-.wallet-btn.disconnected:hover{background:linear-gradient(135deg,var(--arc2),var(--arc1));transform:translateY(-1px);box-shadow:0 0 24px rgba(77,214,219,.44)}
+.wallet-btn.disconnected{background:rgba(255,255,255,.08);color:var(--text);border-color:rgba(255,255,255,.2)}
+.wallet-btn.disconnected:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.32)}
 
 /* Toast */
 .toast-stack{position:fixed;top:90px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:10000;max-width:360px}

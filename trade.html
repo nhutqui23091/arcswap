@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -7,10 +7,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="icon" type="image/png" href="/assets/logos/mark-oneliq.png"/>
 <link rel="apple-touch-icon" href="/assets/logos/mark-oneliq.png"/>
-<title>Trade · Swap & Bridge — Oneliq</title>
+<title>Trade Â· Swap & Bridge â€” Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.7.9"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.8.0"/>
 <style>
 main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:44px 28px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
 @media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding:40px 20px 80px}}
@@ -69,9 +69,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .dst-select option{background:#0F1E36;color:var(--text);padding:8px}
 .dst-select option:checked{background:#1a2c4a;color:#fff}
 
-/* Custom 2-column source picker (Wallet | Gateway) ─ replaces native select.
+/* Custom 2-column source picker (Wallet | Gateway) â”€ replaces native select.
    Native <select> can't render two columns, can't show colour dots, can't
-   group meaningfully — and the kind distinction (wallet vs gateway) is the
+   group meaningfully â€” and the kind distinction (wallet vs gateway) is the
    most important UX choice on this page, so it deserves a dedicated panel. */
 .src-picker{position:relative}
 .src-trigger{
@@ -86,7 +86,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .src-trigger-caret{color:var(--muted);font-size:11px;transition:transform .15s}
 .src-trigger.open .src-trigger-caret{transform:rotate(180deg);color:var(--arc2)}
 
-/* Modal-style source picker — centered overlay with backdrop. Replaces the
+/* Modal-style source picker â€” centered overlay with backdrop. Replaces the
    inline dropdown so we have room for big logos, large balance numbers, and
    a clear two-column Wallet | Gateway layout. */
 .src-panel{
@@ -189,7 +189,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 
 .src-empty{padding:28px 14px;font-size:12.5px;color:var(--m-text-soft);text-align:center;border:1px dashed var(--m-border-strong);border-radius:12px;background:rgba(255,255,255,0.02)}
 
-/* "?" help icon next to each column header — toggles a small popover with
+/* "?" help icon next to each column header â€” toggles a small popover with
    the explanation. Replaces the old bottom-of-panel help block. */
 .src-help-btn{
   display:inline-flex;align-items:center;justify-content:center;
@@ -241,7 +241,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .metric-row .val.warn{color:var(--yellow)}
 .metric-row .val.danger{color:var(--red)}
 .metric-row .val.good{color:var(--arc4)}
-/* In-flight quote indicator — readable italic text instead of shimmer skeleton
+/* In-flight quote indicator â€” readable italic text instead of shimmer skeleton
    for the Rate row, so users learn WHY there's a 1-2s wait (real RFQ-style
    quote, not a static FX feed). */
 .metric-row .val .quoting-msg{font-family:var(--mono);font-size:11px;font-style:italic;font-weight:500;color:var(--muted);opacity:.9;letter-spacing:.01em}
@@ -252,7 +252,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .slip-btn.active{color:var(--text);border-color:var(--arc2);background:rgba(77,214,219,.1)}
 .slip-btn input{background:none;border:none;outline:none;width:42px;color:inherit;font-family:inherit;font-size:inherit}
 
-/* Slippage summary row — always visible, click to edit */
+/* Slippage summary row â€” always visible, click to edit */
 .slip-summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;margin-top:14px}
 .slip-summary-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
 .slip-summary-pill:hover,.slip-summary-pill.open{border-color:var(--arc2);background:rgba(77,214,219,.08)}
@@ -340,16 +340,16 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   <div class="hero-strip">
     <div>
       <h1>Trade</h1>
-      <p>Swap within Arc · Bridge USDC across chains · All-in-one</p>
+      <p>Swap within Arc Â· Bridge USDC across chains Â· All-in-one</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <span class="hero-chip" id="gas-pill">⛽ Arc base ≈ — Gwei</span>
-      <span class="hero-chip" id="block-pill">⏱ block —</span>
+      <span class="hero-chip" id="gas-pill">â›½ Arc base â‰ˆ â€” Gwei</span>
+      <span class="hero-chip" id="block-pill">â± block â€”</span>
     </div>
   </div>
 
   <!-- App Kit degraded-state warning (full-width above grid). Only renders when
-       App Kit SDK fails to load OR config is missing — then Uniswap V2 fallback
+       App Kit SDK fails to load OR config is missing â€” then Uniswap V2 fallback
        kicks in, which on Arc Testnet has thin pools so user needs the heads-up.
        In the normal ready state we render nothing (no news = good news). -->
   <div id="appkit-status" style="display:none;grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4"></div>
@@ -360,9 +360,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       <!-- FROM leg -->
       <div class="leg" id="from-leg">
         <div class="leg-head">
-          <span class="leg-lbl">You pay · Source</span>
+          <span class="leg-lbl">You pay Â· Source</span>
           <div style="display:flex;align-items:center;gap:5px">
-            <span class="leg-bal" id="from-bal">Balance: —</span>
+            <span class="leg-bal" id="from-bal">Balance: â€”</span>
             <button class="pct-btn" id="pct-20-btn" type="button">20%</button>
             <button class="pct-btn" id="pct-50-btn" type="button">50%</button>
             <button class="pct-btn max-btn" id="max-btn" type="button">MAX</button>
@@ -370,8 +370,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         </div>
         <div class="src-picker" id="from-source-wrap">
           <button class="src-trigger" id="from-source-btn" type="button">
-            <span class="src-current" id="from-source-current">Connect wallet…</span>
-            <span class="src-trigger-caret">▾</span>
+            <span class="src-current" id="from-source-current">Connect walletâ€¦</span>
+            <span class="src-trigger-caret">â–¾</span>
           </button>
           <div class="src-panel" id="from-source-panel"></div>
         </div>
@@ -379,12 +379,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         <div class="leg-row">
           <div style="min-width:0">
             <input id="amount-in" class="amt-in" placeholder="0.0" inputmode="decimal" autocomplete="off"/>
-            <div class="amt-usd" id="from-usd">≈ $0.00</div>
+            <div class="amt-usd" id="from-usd">â‰ˆ $0.00</div>
           </div>
           <button class="pick-btn" id="from-pick">
             <div class="token-ico" id="from-ico">?</div>
             <span id="from-sym">Select</span>
-            <span class="caret">▾</span>
+            <span class="caret">â–¾</span>
           </button>
         </div>
       </div>
@@ -398,26 +398,26 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       <!-- TO leg -->
       <div class="leg" id="to-leg">
         <div class="leg-head">
-          <span class="leg-lbl">You receive · Destination</span>
-          <span class="leg-bal" id="to-bal">Balance: —</span>
+          <span class="leg-lbl">You receive Â· Destination</span>
+          <span class="leg-bal" id="to-bal">Balance: â€”</span>
         </div>
         <select class="dst-select" id="to-dest" aria-label="Destination chain"></select>
         <div style="height:10px"></div>
         <div class="leg-row">
           <div style="min-width:0">
             <input id="amount-out" class="amt-in" placeholder="0.0" inputmode="decimal" autocomplete="off" readonly/>
-            <div class="amt-usd" id="to-usd">≈ $0.00</div>
+            <div class="amt-usd" id="to-usd">â‰ˆ $0.00</div>
           </div>
           <button class="pick-btn" id="to-pick">
             <div class="token-ico" id="to-ico">?</div>
             <span id="to-sym">Select</span>
-            <span class="caret">▾</span>
+            <span class="caret">â–¾</span>
           </button>
         </div>
 
         <div class="recipient-row" id="recipient-row" style="display:none">
           <span style="font-size:12px;color:var(--muted)">To address:</span>
-          <input id="recipient-input" placeholder="0x… (same as sender)" spellcheck="false"/>
+          <input id="recipient-input" placeholder="0xâ€¦ (same as sender)" spellcheck="false"/>
           <span class="recipient-toggle" id="use-self">Use mine</span>
         </div>
         <div class="send-other-wrap">
@@ -434,12 +434,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       <!-- CCTP Fast/Standard toggle (bridge only) -->
       <div class="fast-toggle" id="fast-toggle" style="display:none">
         <button class="fast-opt active" data-mode="fast">
-          <div class="head">⚡ Fast</div>
-          <div class="sub">~20 s · small Circle fee</div>
+          <div class="head">âš¡ Fast</div>
+          <div class="sub">~20 s Â· small Circle fee</div>
         </button>
         <button class="fast-opt" data-mode="standard">
-          <div class="head">🐢 Standard</div>
-          <div class="sub">13–19 min · 0 fee</div>
+          <div class="head">ðŸ¢ Standard</div>
+          <div class="sub">13â€“19 min Â· 0 fee</div>
         </button>
       </div>
 
@@ -456,27 +456,27 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           <button class="slip-btn" data-s="0.1">0.1%</button>
           <button class="slip-btn active" data-s="0.5">0.5%</button>
           <button class="slip-btn" data-s="1">1%</button>
-          <button class="slip-btn" data-s="custom"><input id="slip-custom" type="number" step="0.1" min="0.05" max="50" placeholder="…"/>%</button>
+          <button class="slip-btn" data-s="custom"><input id="slip-custom" type="number" step="0.1" min="0.05" max="50" placeholder="â€¦"/>%</button>
         </div>
       </div>
 
       <!-- Info summary + expandable details -->
       <div class="info-summary">
         <div class="info-summary-line">
-          <span id="m-rate-inline">—</span>
-          <span class="info-dot">·</span>
-          <span>🕐</span><span id="m-time-inline"> —</span>
-          <span class="info-dot">·</span>
-          <span>⛽</span><span id="m-fee-inline"> —</span>
+          <span id="m-rate-inline">â€”</span>
+          <span class="info-dot">Â·</span>
+          <span>ðŸ•</span><span id="m-time-inline"> â€”</span>
+          <span class="info-dot">Â·</span>
+          <span>â›½</span><span id="m-fee-inline"> â€”</span>
         </div>
         <button class="info-chevron-btn" id="info-chevron-btn" type="button" aria-label="Toggle details"><span class="chev-icon" id="chev-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l7 7 7-7"/></svg></span></button>
       </div>
       <div class="info-details" id="info-details">
-        <div class="metric-row"><span class="lbl">Rate</span><span class="val" id="m-rate">—</span></div>
-        <div class="metric-row"><span class="lbl">Price impact</span><span class="val" id="m-impact">—</span></div>
-        <div class="metric-row"><span class="lbl">Network fee</span><span class="val" id="m-netfee">—</span></div>
-        <div class="metric-row"><span class="lbl">Min received</span><span class="val" id="m-min">—</span></div>
-        <div class="metric-row"><span class="lbl">Estimated time</span><span class="val" id="m-time">—</span></div>
+        <div class="metric-row"><span class="lbl">Rate</span><span class="val" id="m-rate">â€”</span></div>
+        <div class="metric-row"><span class="lbl">Price impact</span><span class="val" id="m-impact">â€”</span></div>
+        <div class="metric-row"><span class="lbl">Network fee</span><span class="val" id="m-netfee">â€”</span></div>
+        <div class="metric-row"><span class="lbl">Min received</span><span class="val" id="m-min">â€”</span></div>
+        <div class="metric-row"><span class="lbl">Estimated time</span><span class="val" id="m-time">â€”</span></div>
       </div>
 
       <button class="exec-btn" id="exec-btn" disabled>Enter amount</button>
@@ -519,30 +519,30 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 
   await ArcUI.bootApp('trade');
 
-  // ── App Kit Swap (Circle) — dynamic import so trade page still loads if SDK fails
+  // â”€â”€ App Kit Swap (Circle) â€” dynamic import so trade page still loads if SDK fails
   let APPKIT = null;
   const appkitPill = document.getElementById('appkit-status');
   // Only shows the pill in the *degraded* state (SDK failed / kit key missing).
-  // Healthy state = no banner; the rate row already says "Querying Circle App Kit…"
+  // Healthy state = no banner; the rate row already says "Querying Circle App Kitâ€¦"
   // during quotes, which is enough confirmation the integration is live.
   function showAppkitFallbackPill() {
     if (!appkitPill) return;
     appkitPill.style.cssText = 'grid-column:1/-1;margin:0 0 8px;padding:8px 14px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.4;background:rgba(255,180,84,0.06);border:1px solid rgba(255,180,84,0.22);color:var(--text)';
     appkitPill.innerHTML = '<span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;color:#FFB454;white-space:nowrap">// LIMITED</span>'
-      + '<span>App Kit unavailable — using Uniswap V2 fallback (testnet pools may be thin).</span>';
+      + '<span>App Kit unavailable â€” using Uniswap V2 fallback (testnet pools may be thin).</span>';
   }
   try {
     APPKIT = await import('/assets/arc-appkit.js?v=9.1.23');
     if (!APPKIT.isAppKitReady()) {
-      console.warn('[arcswap] App Kit config missing or placeholder — same-chain swaps will fall back to Uniswap (likely empty pools).');
+      console.warn('[arcswap] App Kit config missing or placeholder â€” same-chain swaps will fall back to Uniswap (likely empty pools).');
       APPKIT = null;
       showAppkitFallbackPill();
     } else {
-      console.info('[arcswap] App Kit Swap ready — USDC/EURC swaps on Arc will route through Circle.');
-      // No pill in the healthy state — keep the chrome quiet.
+      console.info('[arcswap] App Kit Swap ready â€” USDC/EURC swaps on Arc will route through Circle.');
+      // No pill in the healthy state â€” keep the chrome quiet.
     }
   } catch (e) {
-    console.warn('[arcswap] App Kit module failed to load — falling back to Uniswap:', e?.message || e);
+    console.warn('[arcswap] App Kit module failed to load â€” falling back to Uniswap:', e?.message || e);
     showAppkitFallbackPill();
   }
   // Helper: check if a swap pair is supported by App Kit (Arc Testnet: USDC/EURC only)
@@ -557,9 +557,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     );
   }
 
-  // ── STATE ────────────────────────────────────────────
+  // â”€â”€ STATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // src.kind: 'wallet' (USDC sitting in user's wallet) or 'gateway' (USDC deposited
-  // in Circle's GatewayWallet contract on that chain — spendable cross-chain instantly).
+  // in Circle's GatewayWallet contract on that chain â€” spendable cross-chain instantly).
   const state = {
     src: { chainKey: 'arc', kind: 'wallet' },
     dst: { chainKey: 'arc' },
@@ -583,10 +583,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   const GATEWAY_CHAINS = ARC.gatewayChains();
   // All chains we know about (everything in CHAINS)
   const ALL_CHAINS = Object.keys(CHAINS);
-  // Chains where App Kit swap (USDC↔EURC etc.) works
+  // Chains where App Kit swap (USDCâ†”EURC etc.) works
   const SWAP_CHAINS = ['arc'];
 
-  // ── CUSTOM TOKENS ────────────────────────────────────
+  // â”€â”€ CUSTOM TOKENS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Per-chain user-imported tokens stored in localStorage so they persist
   // across sessions. Merged into TOKENS[chainKey] at startup and after import.
   const CUSTOM_LS_KEY = 'arcswap:customTokens';
@@ -634,8 +634,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   function chainShort(k) { return CHAINS[k]?.short || k; }
   function chainName(k) { return CHAINS[k]?.name || k; }
 
-  // ── SOURCE LOADER ────────────────────────────────────
-  // Loads, in parallel, USDC balances for every chain × {wallet, gateway}.
+  // â”€â”€ SOURCE LOADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Loads, in parallel, USDC balances for every chain Ã— {wallet, gateway}.
   // Wallet balances come from on-chain RPC (one per chain). Gateway balances
   // come from a single REST call (POST /v1/balances).
   async function loadAllSources() {
@@ -702,7 +702,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     renderSourceSelect();
   }
 
-  // ── SOURCE PICKER (custom 2-col panel) / DEST SELECT RENDERERS ──
+  // â”€â”€ SOURCE PICKER (custom 2-col panel) / DEST SELECT RENDERERS â”€â”€
   const fromTriggerEl  = document.getElementById('from-source-btn');
   const fromCurrentEl  = document.getElementById('from-source-current');
   const fromPanelEl    = document.getElementById('from-source-panel');
@@ -747,7 +747,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     const isUnifiedActive = state.src.kind === 'unified';
     const emptyHtml = '<div class="src-empty">No funded sources here yet</div>';
 
-    // "⚡ Unified Balance" virtual row — sums all gateway-funded chains. Only
+    // "âš¡ Unified Balance" virtual row â€” sums all gateway-funded chains. Only
     // appears when user has Gateway funds across 2+ chains. Selecting it triggers
     // the multi-burn pipeline (one signature per source chain, then ONE attestation,
     // then ONE mint on destination).
@@ -755,7 +755,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     const unifiedTotal = gwFunded.reduce((acc, s) => acc + s.canonical, 0n);
     const unifiedRow = (gwFunded.length >= 2) ? `
       <button class="src-row src-row-unified ${isUnifiedActive ? 'active' : ''}" type="button" data-src="unified:unified" style="background:linear-gradient(135deg,rgba(255,180,84,0.14) 0%,rgba(255,180,84,0.05) 100%);border-color:rgba(255,180,84,0.45);margin-bottom:8px">
-        <span class="src-row-dot" style="background:linear-gradient(135deg,#FFB454,#F4C89A);box-shadow:0 4px 12px rgba(244,200,154,.3)">⚡</span>
+        <span class="src-row-dot" style="background:linear-gradient(135deg,#FFB454,#F4C89A);box-shadow:0 4px 12px rgba(244,200,154,.3)">âš¡</span>
         <span class="src-row-info">
           <span class="src-row-name" style="color:#FFB454;font-weight:700">Unified Balance</span>
         </span>
@@ -772,26 +772,26 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
             <div class="src-modal-title">Pick funding source</div>
             <div class="src-modal-sub">Choose where USDC for this swap comes from</div>
           </div>
-          <button class="src-modal-close" type="button" id="src-modal-close" aria-label="Close">×</button>
+          <button class="src-modal-close" type="button" id="src-modal-close" aria-label="Close">Ã—</button>
         </div>
         <div class="src-modal-body">
           <div class="src-cols">
             <div class="src-col wallet">
-              <div class="src-col-head">💼 Wallet<button class="src-help-btn" type="button" data-help="wallet" aria-label="What is Wallet?">?</button>
+              <div class="src-col-head">ðŸ’¼ Wallet<button class="src-help-btn" type="button" data-help="wallet" aria-label="What is Wallet?">?</button>
                 <span class="src-col-sub">USDC sitting in your MetaMask</span>
                 <div class="src-help-pop" id="src-help-wallet">
                   <span class="pill wl">Wallet</span> = USDC sitting in your MetaMask on each chain. To move it cross-chain we use <strong>CCTP burn-and-mint</strong> (~30s fast mode with a tiny fee, or ~13 min standard mode for free).
-                  <br><br>Sync time: instant — what's in your wallet IS in your wallet.
+                  <br><br>Sync time: instant â€” what's in your wallet IS in your wallet.
                 </div>
               </div>
               <div class="src-list">${wallet.length ? wallet.map(s => rowHtml(s, isActive(s))).join('') : emptyHtml}</div>
             </div>
             <div class="src-col gateway">
-              <div class="src-col-head">⚡ Gateway<button class="src-help-btn" type="button" data-help="gateway" aria-label="What is Gateway?">?</button>
-                <span class="src-col-sub">Pre-deposited · spend instantly anywhere</span>
+              <div class="src-col-head">âš¡ Gateway<button class="src-help-btn" type="button" data-help="gateway" aria-label="What is Gateway?">?</button>
+                <span class="src-col-sub">Pre-deposited Â· spend instantly anywhere</span>
                 <div class="src-help-pop" id="src-help-gateway">
                   <span class="pill gw">Gateway</span> = USDC you've pre-deposited into Circle's instant pool. Spend across any chain in <strong>~30s</strong>, no bridge tx, no wrapped tokens.
-                  <br><br><strong style="color:#FFB454">⚡ Unified Balance</strong> spends from MULTIPLE Gateway chains at once — N intents → 1 attestation → 1 mint. Picks largest chains first to minimise signatures.
+                  <br><br><strong style="color:#FFB454">âš¡ Unified Balance</strong> spends from MULTIPLE Gateway chains at once â€” N intents â†’ 1 attestation â†’ 1 mint. Picks largest chains first to minimise signatures.
                   <br><br>Deposit sync: <strong>~30s on Fuji/Arc</strong>, <strong>~12-15 min on Sepolia / L2</strong> (block-finality bottleneck).
                 </div>
               </div>
@@ -803,7 +803,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 
     document.getElementById('src-modal-close').onclick = closeSourcePanel;
 
-    // Wire ? buttons — toggle popover, close on outside click within panel
+    // Wire ? buttons â€” toggle popover, close on outside click within panel
     fromPanelEl.querySelectorAll('.src-help-btn').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -846,23 +846,23 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     if (state.src.kind === 'unified') {
       const gwFunded = [...state.sources.values()].filter(s => s.kind === 'gateway' && s.canonical > 0n);
       const total = gwFunded.reduce((acc, s) => acc + s.canonical, 0n);
-      fromCurrentEl.textContent = `⚡ Unified Balance — ${ARC.formatAmt(total, 6, 4)} USDC across ${gwFunded.length} chains`;
+      fromCurrentEl.textContent = `âš¡ Unified Balance â€” ${ARC.formatAmt(total, 6, 4)} USDC across ${gwFunded.length} chains`;
       return;
     }
     const cur = state.sources.get(`${state.src.chainKey}:${state.src.kind}`);
     if (!cur) {
-      fromCurrentEl.textContent = wallet.address ? 'Pick a source…' : 'Connect wallet…';
+      fromCurrentEl.textContent = wallet.address ? 'Pick a sourceâ€¦' : 'Connect walletâ€¦';
       return;
     }
-    const kindIcon = cur.kind === 'gateway' ? '⚡ Gateway' : '💼 Wallet';
-    fromCurrentEl.textContent = `${chainName(cur.chainKey)} · ${kindIcon} — ${cur.display} USDC`;
+    const kindIcon = cur.kind === 'gateway' ? 'âš¡ Gateway' : 'ðŸ’¼ Wallet';
+    fromCurrentEl.textContent = `${chainName(cur.chainKey)} Â· ${kindIcon} â€” ${cur.display} USDC`;
   }
 
   function openSourcePanel() {
     renderSourcePanel();
     // Detach from .card so position:fixed works against the viewport.
     // .card has backdrop-filter:blur(20px) which creates a containing
-    // block for fixed descendants — that's why a "fixed" modal nested
+    // block for fixed descendants â€” that's why a "fixed" modal nested
     // inside it ends up sized/positioned relative to the card.
     if (fromPanelEl.parentNode !== document.body) {
       document.body.appendChild(fromPanelEl);
@@ -930,7 +930,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   }
   renderPickBtn('from'); renderPickBtn('to');
 
-  // ── TOKEN PICKER ─────────────────────────────────────
+  // â”€â”€ TOKEN PICKER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   document.getElementById('from-pick').onclick = () => openTokenPicker('from');
   document.getElementById('to-pick').onclick = () => openTokenPicker('to');
 
@@ -952,7 +952,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         async function render(q = '') {
           // If the search query is a valid contract address, trigger import flow
           if (isAddress(q.trim())) {
-            list.innerHTML = `<div style="padding:10px 0;color:var(--muted);font-size:13px">Looking up contract…</div>`;
+            list.innerHTML = `<div style="padding:10px 0;color:var(--muted);font-size:13px">Looking up contractâ€¦</div>`;
             try {
               const addr = getAddress(q.trim());
               const c = new Contract(addr, ABIS.erc20, rpcProvider(chainKey));
@@ -960,10 +960,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
               const tok = { symbol: sym, name, address: addr, decimals: Number(dec), custom: true };
               const already = tokens.find(t => t.address.toLowerCase() === addr.toLowerCase());
               list.innerHTML = `<div class="import-card">
-                <div class="import-warn">⚠ Unverified token — trade at your own risk</div>
-                <div class="import-meta">${sym} — ${name}</div>
+                <div class="import-warn">âš  Unverified token â€” trade at your own risk</div>
+                <div class="import-meta">${sym} â€” ${name}</div>
                 <div class="import-addr">${addr}</div>
-                <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Decimals: ${Number(dec)} · Chain: ${CHAINS[chainKey].short}</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Decimals: ${Number(dec)} Â· Chain: ${CHAINS[chainKey].short}</div>
                 <div class="import-btns">
                   <button class="import-btn confirm" id="import-confirm">${already ? 'Select' : 'Import & select'}</button>
                   <button class="import-btn cancel" id="import-cancel">Cancel</button>
@@ -993,7 +993,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
             <div class="token-row" data-addr="${t.address}">
               <div class="token-ico">${t.icon ? `<img src="${t.icon}" onerror="this.replaceWith(document.createTextNode('${t.symbol[0]}'))"/>` : t.symbol[0]}</div>
               <div class="token-meta"><div class="token-sym">${t.symbol}${t.custom ? '<span class="token-badge unverified">unverified</span>' : ''}</div><div class="token-name">${t.name}</div></div>
-              <div class="token-bal" data-bal="${t.address}">—</div>
+              <div class="token-bal" data-bal="${t.address}">â€”</div>
             </div>`).join('');
           list.querySelectorAll('.token-row').forEach(r => r.onclick = () => {
             const tok = filtered.find(x => x.address === r.dataset.addr);
@@ -1018,25 +1018,25 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     });
   }
 
-  // ── BALANCES ─────────────────────────────────────────
+  // â”€â”€ BALANCES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // For "from" side: balance shown depends on src.kind:
-  //   - wallet → on-chain ERC20 balance (or eth_getBalance for gas tokens)
-  //   - gateway → Circle Gateway availableBalance via REST cache (state.sources)
+  //   - wallet â†’ on-chain ERC20 balance (or eth_getBalance for gas tokens)
+  //   - gateway â†’ Circle Gateway availableBalance via REST cache (state.sources)
   // For "to" side: always on-chain balance of toToken on dst.chainKey
   async function updateBalances() {
     const addr = wallet.address;
     const fromBal = document.getElementById('from-bal');
     const toBal = document.getElementById('to-bal');
     if (!addr) { fromBal.textContent = 'Connect wallet'; toBal.textContent = ''; return; }
-    fromBal.innerHTML = `Balance: <span class="skel">—</span>`;
-    toBal.innerHTML = `Balance: <span class="skel">—</span>`;
+    fromBal.innerHTML = `Balance: <span class="skel">â€”</span>`;
+    toBal.innerHTML = `Balance: <span class="skel">â€”</span>`;
     try {
       let fb, fLabel;
       if (state.src.kind === 'unified') {
         // Sum all gateway balances in canonical 6-decimal, then convert to fromToken decimals
         const totalCanonical = [...state.sources.values()].filter(s => s.kind === 'gateway').reduce((acc, s) => acc + s.canonical, 0n);
         fb = ARC.fromCctpAmount(totalCanonical, state.fromToken);
-        fLabel = '⚡ Unified Gateway';
+        fLabel = 'âš¡ Unified Gateway';
       } else if (state.src.kind === 'gateway') {
         const cur = state.sources.get(`${state.src.chainKey}:gateway`);
         fb = cur ? cur.balance : 0n;
@@ -1073,7 +1073,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     }
   }
 
-  // ── SLIPPAGE ─────────────────────────────────────────
+  // â”€â”€ SLIPPAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function updateSlippagePill() {
     const bps = state.slippageBps;
     const pct = (bps % 100 === 0) ? (bps / 100).toFixed(1) : (bps / 100).toFixed(2);
@@ -1113,7 +1113,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     document.getElementById('slip-summary-pill').classList.toggle('open', !isOpen);
   };
 
-  // ── INFO COLLAPSE/EXPAND ──────────────────────────────
+  // â”€â”€ INFO COLLAPSE/EXPAND â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const infoDet = document.getElementById('info-details');
   const infoChevron = document.getElementById('info-chevron-btn');
   let infoExpanded = false;
@@ -1125,14 +1125,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     document.getElementById('chev-icon').classList.toggle('rotated', infoExpanded);
   };
 
-  // ── SEND TO ANOTHER WALLET ────────────────────────────
+  // â”€â”€ SEND TO ANOTHER WALLET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   document.getElementById('send-other-btn').onclick = () => {
     const row = document.getElementById('recipient-row');
     const btn = document.getElementById('send-other-btn');
     const isHidden = row.style.display === 'none' || row.style.display === '';
     if (isHidden) {
       row.style.display = 'flex';
-      btn.textContent = '← Use my wallet';
+      btn.textContent = 'â† Use my wallet';
       recInput.focus();
     } else {
       row.style.display = 'none';
@@ -1150,7 +1150,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     if (e.key === 'Escape') closeSlipDropdown();
   });
 
-  // ── CCTP MODE ────────────────────────────────────────
+  // â”€â”€ CCTP MODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   document.querySelectorAll('#fast-toggle .fast-opt').forEach(b => b.onclick = () => {
     document.querySelectorAll('#fast-toggle .fast-opt').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
@@ -1158,7 +1158,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     triggerQuote();
   });
 
-  // ── RECIPIENT ────────────────────────────────────────
+  // â”€â”€ RECIPIENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const recInput = document.getElementById('recipient-input');
 
   // Pre-fill the recipient field with the connected wallet address (muted style =
@@ -1190,8 +1190,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     refreshExec();
   };
 
-  // ── FLIP ─────────────────────────────────────────────
-  // Swaps source ↔ destination. Source kind defaults to 'wallet' since we don't
+  // â”€â”€ FLIP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Swaps source â†” destination. Source kind defaults to 'wallet' since we don't
   // know if the new source has Gateway funds (loadAllSources will refresh dropdown).
   document.getElementById('flip-btn').onclick = () => {
     const oldSrc = state.src;
@@ -1204,7 +1204,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     updateBalances(); triggerQuote();
   };
 
-  // ── AMOUNT INPUT ─────────────────────────────────────
+  // â”€â”€ AMOUNT INPUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const amtIn = document.getElementById('amount-in');
   amtIn.oninput = () => {
     const clean = amtIn.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\./g, '$1');
@@ -1214,32 +1214,32 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   };
   // Prefetch the App Kit SDK + adapter the moment the user touches the amount
   // input. The CDN bundle (~500-1500ms cold) and the ethers adapter init run
-  // in parallel with the user typing a number — by the time triggerQuote
+  // in parallel with the user typing a number â€” by the time triggerQuote
   // fires its first real estimate, the SDK is already loaded.
   // { once: true } so this only ever runs once per page load. Errors swallowed.
   amtIn.addEventListener('focus', () => {
     if (!APPKIT) return;
     if (APPKIT.prefetchSdk) APPKIT.prefetchSdk();
     if (window.ethereum && APPKIT.initAppKit) {
-      APPKIT.initAppKit().catch(() => { /* wallet not ready yet — fine */ });
+      APPKIT.initAppKit().catch(() => { /* wallet not ready yet â€” fine */ });
     }
   }, { once: true });
 
-  // ── ROUTE PLANNER ────────────────────────────────────
+  // â”€â”€ ROUTE PLANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Returns an array of pipeline steps that, executed in order, move the user's
-  // value from src → dst.
+  // value from src â†’ dst.
   // Step types:
-  //   { type:'swap',          chain, tIn, tOut }       — App Kit swap on Arc
-  //   { type:'gateway-spend', src,   dst   }           — Gateway burn+mint (instant)
-  //   { type:'cctp-bridge',   src,   dst   }           — CCTP V2 burn+attest+mint
-  //   { type:'transfer',      chain, token }           — same-chain ERC-20 transfer
+  //   { type:'swap',          chain, tIn, tOut }       â€” App Kit swap on Arc
+  //   { type:'gateway-spend', src,   dst   }           â€” Gateway burn+mint (instant)
+  //   { type:'cctp-bridge',   src,   dst   }           â€” CCTP V2 burn+attest+mint
+  //   { type:'transfer',      chain, token }           â€” same-chain ERC-20 transfer
   // Throws when there's no viable route (e.g. EURC destination outside Arc).
   function planRoute() {
     const srcKind = state.src.kind;
     const dstChain = state.dst.chainKey;
     const dstSym = state.toToken.symbol;
 
-    // ── UNIFIED MODE ── Multi-source spend across N Gateway chains.
+    // â”€â”€ UNIFIED MODE â”€â”€ Multi-source spend across N Gateway chains.
     // Skips per-chain pre-swap (unified is always USDC). Always emits ONE
     // gateway-multi-spend step + optional swap on dest (Arc only).
     if (srcKind === 'unified') {
@@ -1257,7 +1257,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     let runSym = srcSym;
     const steps = [];
 
-    // STEP A: pre-swap on Arc if source is non-USDC (e.g. EURC wallet on Arc → bridge to Sepolia)
+    // STEP A: pre-swap on Arc if source is non-USDC (e.g. EURC wallet on Arc â†’ bridge to Sepolia)
     if (runSym !== 'USDC') {
       if (runChain !== 'arc') throw new Error('Non-USDC source supported only on Arc');
       steps.push({ type: 'swap', chain: 'arc', tIn: runSym, tOut: 'USDC' });
@@ -1306,21 +1306,21 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     const stepsEl = document.getElementById('route-steps');
     if (!steps.length) {
       box.style.display = 'block';
-      stepsEl.innerHTML = `<span class="route-step">Same source & destination — pick a different chain or token, or set a recipient address</span>`;
+      stepsEl.innerHTML = `<span class="route-step">Same source & destination â€” pick a different chain or token, or set a recipient address</span>`;
       document.getElementById('fast-toggle').style.display = 'none';
       return;
     }
     const nodes = [];
-    nodes.push(`<span class="route-step">${state.fromToken.symbol} (${chainShort(state.src.chainKey)}${state.src.kind === 'gateway' ? ' · GW' : ''})</span>`);
+    nodes.push(`<span class="route-step">${state.fromToken.symbol} (${chainShort(state.src.chainKey)}${state.src.kind === 'gateway' ? ' Â· GW' : ''})</span>`);
     for (const s of steps) {
-      nodes.push('<span class="route-arrow">→</span>');
-      if (s.type === 'gateway-spend') nodes.push(`<span class="route-step" style="background:rgba(244,200,154,.1);border-color:rgba(244,200,154,.3)">⚡ Gateway ${chainShort(s.src)}→${chainShort(s.dst)}</span>`);
-      else if (s.type === 'gateway-multi-spend') nodes.push(`<span class="route-step" style="background:rgba(244,200,154,.15);border-color:rgba(244,200,154,.45);font-weight:700;color:#FFB454">⚡ Unified Multi-burn → ${chainShort(s.dst)}</span>`);
-      else if (s.type === 'cctp-bridge') nodes.push(`<span class="route-step">CCTP ${chainShort(s.src)}→${chainShort(s.dst)}</span>`);
-      else if (s.type === 'swap') nodes.push(`<span class="route-step">Swap ${s.tIn}→${s.tOut} on Arc</span>`);
+      nodes.push('<span class="route-arrow">â†’</span>');
+      if (s.type === 'gateway-spend') nodes.push(`<span class="route-step" style="background:rgba(244,200,154,.1);border-color:rgba(244,200,154,.3)">âš¡ Gateway ${chainShort(s.src)}â†’${chainShort(s.dst)}</span>`);
+      else if (s.type === 'gateway-multi-spend') nodes.push(`<span class="route-step" style="background:rgba(244,200,154,.15);border-color:rgba(244,200,154,.45);font-weight:700;color:#FFB454">âš¡ Unified Multi-burn â†’ ${chainShort(s.dst)}</span>`);
+      else if (s.type === 'cctp-bridge') nodes.push(`<span class="route-step">CCTP ${chainShort(s.src)}â†’${chainShort(s.dst)}</span>`);
+      else if (s.type === 'swap') nodes.push(`<span class="route-step">Swap ${s.tIn}â†’${s.tOut} on Arc</span>`);
       else if (s.type === 'transfer') nodes.push(`<span class="route-step">Transfer on ${chainShort(s.chain)}</span>`);
     }
-    nodes.push('<span class="route-arrow">→</span>');
+    nodes.push('<span class="route-arrow">â†’</span>');
     nodes.push(`<span class="route-step">${state.toToken.symbol} (${chainShort(state.dst.chainKey)})</span>`);
     stepsEl.innerHTML = nodes.join('');
     box.style.display = 'block';
@@ -1329,10 +1329,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     document.getElementById('fast-toggle').style.display = hasCctp ? 'flex' : 'none';
   }
 
-  // ── QUOTE ENGINE ─────────────────────────────────────
+  // â”€â”€ QUOTE ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   let quoteSeq = 0;
   let quoteTimer = null;
-  // 150ms debounce — tuned to feel responsive while still collapsing the
+  // 150ms debounce â€” tuned to feel responsive while still collapsing the
   // 5-7 keystrokes a user types per second into a single App Kit call.
   // Was 250ms; dropping to 150ms shaves ~100ms off perceived latency.
   function triggerQuote() { clearTimeout(quoteTimer); quoteTimer = setTimeout(quote, 150); }
@@ -1343,12 +1343,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     try {
       steps = planRoute();
     } catch (e) {
-      // Plan failed — show error in route box and reset metrics
+      // Plan failed â€” show error in route box and reset metrics
       const box = document.getElementById('route-box');
       box.style.display = 'block';
       document.getElementById('route-steps').innerHTML = `<span class="route-step" style="background:rgba(255,122,122,.1);border-color:rgba(255,122,122,.3);color:var(--red)">${e.message}</span>`;
       document.getElementById('fast-toggle').style.display = 'none';
-      setMetrics({ rate: 'No route', impact: '—', fee: '—', min: '—', time: '—' }, 'danger');
+      setMetrics({ rate: 'No route', impact: 'â€”', fee: 'â€”', min: 'â€”', time: 'â€”' }, 'danger');
       state.quote = null;
       document.getElementById('amount-out').value = '';
       refreshExec();
@@ -1357,20 +1357,20 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     showRoute(steps);
     const amt = parseAmt(state.amountIn, state.fromToken.decimals);
     if (amt === 0n) {
-      setMetrics({ rate: '—', impact: '—', fee: '—', min: '—', time: '—' });
+      setMetrics({ rate: 'â€”', impact: 'â€”', fee: 'â€”', min: 'â€”', time: 'â€”' });
       document.getElementById('amount-out').value = '';
-      document.getElementById('to-usd').textContent = '≈ $0.00';
+      document.getElementById('to-usd').textContent = 'â‰ˆ $0.00';
       state.quote = null; refreshExec(); return;
     }
-    // Inform users the quote is live (App Kit → aggregator round-trip ~1-2s).
+    // Inform users the quote is live (App Kit â†’ aggregator round-trip ~1-2s).
     // Other metrics stay shimmer-skeleton; only the rate row gets the message
     // because it's the field users actually look at while waiting.
     setMetrics({
-      rate: '<span class="quoting-msg">Querying Circle App Kit · routing aggregator</span>',
-      impact: '<span class="skel">—</span>',
-      fee:    '<span class="skel">—</span>',
-      min:    '<span class="skel">—</span>',
-      time:   '<span class="skel">—</span>',
+      rate: '<span class="quoting-msg">Querying Circle App Kit Â· routing aggregator</span>',
+      impact: '<span class="skel">â€”</span>',
+      fee:    '<span class="skel">â€”</span>',
+      min:    '<span class="skel">â€”</span>',
+      time:   '<span class="skel">â€”</span>',
     });
 
     try {
@@ -1390,7 +1390,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           runAmt = ARC.fromCctpAmount(canonical, dstTok);
           runChain = step.dst;
           totalSec += 30;
-          fees.push('Gateway · 0 fee');
+          fees.push('Gateway Â· 0 fee');
         } else if (step.type === 'gateway-multi-spend') {
           // Unified spend: pickSources greedily covers runAmt across all gateway chains.
           const dstTok = TOKENS[step.dst].USDC;
@@ -1402,7 +1402,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           runAmt = ARC.fromCctpAmount(canonical, dstTok);
           runChain = step.dst;
           totalSec += 30 + (plan.length * 3); // ~3s per signature popup
-          fees.push(`Gateway · ${plan.length} sig${plan.length>1?'s':''} → 1 attestation → 1 mint`);
+          fees.push(`Gateway Â· ${plan.length} sig${plan.length>1?'s':''} â†’ 1 attestation â†’ 1 mint`);
           // Stash plan on quote for execute() to reuse without re-picking
           step._plan = plan;
         } else if (step.type === 'cctp-bridge') {
@@ -1416,8 +1416,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           runChain = step.dst;
           totalSec += state.cctpMode === 'fast' ? 25 : 14 * 60;
           fees.push(state.cctpMode === 'fast'
-            ? `CCTP fast ≈ ${formatAmt(feeCanonical, 6, 4)} USDC`
-            : 'CCTP standard · 0 fee');
+            ? `CCTP fast â‰ˆ ${formatAmt(feeCanonical, 6, 4)} USDC`
+            : 'CCTP standard Â· 0 fee');
         } else if (step.type === 'swap') {
           const tInTok = TOKENS.arc[step.tIn];
           const tOutTok = TOKENS.arc[step.tOut];
@@ -1442,11 +1442,11 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 
       state.quote = { steps, amountOut: runAmt, minOut, fees, totalSec };
       document.getElementById('amount-out').value = formatAmt(runAmt, state.toToken.decimals);
-      document.getElementById('to-usd').textContent = '≈ $' + estimateUSD(runAmt, state.toToken);
-      document.getElementById('from-usd').textContent = '≈ $' + estimateUSD(amt, state.fromToken);
+      document.getElementById('to-usd').textContent = 'â‰ˆ $' + estimateUSD(runAmt, state.toToken);
+      document.getElementById('from-usd').textContent = 'â‰ˆ $' + estimateUSD(amt, state.fromToken);
       const timeLbl = totalSec < 60 ? `~${totalSec}s` : `~${Math.round(totalSec / 60)} min`;
       setMetrics({
-        rate: `1 ${state.fromToken.symbol} ≈ ${rateNum.toFixed(6)} ${state.toToken.symbol}`,
+        rate: `1 ${state.fromToken.symbol} â‰ˆ ${rateNum.toFixed(6)} ${state.toToken.symbol}`,
         impact: lastSwap ? (lastSwap.impact + ' %') : '0.00 %',
         fee: fees.join(' + '),
         min: formatAmt(minOut, state.toToken.decimals) + ' ' + state.toToken.symbol,
@@ -1455,7 +1455,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     } catch (e) {
       if (seq !== quoteSeq) return;
       console.warn('[trade] quote failed:', e?.message);
-      setMetrics({ rate: 'No route', impact: '—', fee: '—', min: '—', time: '—' }, 'danger');
+      setMetrics({ rate: 'No route', impact: 'â€”', fee: 'â€”', min: 'â€”', time: 'â€”' }, 'danger');
       state.quote = null;
       document.getElementById('amount-out').value = '';
     }
@@ -1488,12 +1488,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     return s.toFixed(2);
   }
 
-  // ── QUOTE HELPERS ────────────────────────────────────
+  // â”€â”€ QUOTE HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Used by quote() pipeline for the swap step. Returns { amountOut, minOut,
   // rate, feeLabel, time, impact, impactWarn, impactBad, provider, path }.
   async function quoteSwap(chainKey, tIn, tOut, amtIn) {
-    // ── App Kit Swap path (Circle's official liquidity on Arc Testnet) ─────
-    // Use App Kit for USDC/EURC pairs on Arc — Uniswap V2 pools on Arc Testnet
+    // â”€â”€ App Kit Swap path (Circle's official liquidity on Arc Testnet) â”€â”€â”€â”€â”€
+    // Use App Kit for USDC/EURC pairs on Arc â€” Uniswap V2 pools on Arc Testnet
     // are empty/stub, App Kit routes through Circle's third-party providers.
     if (appKitSupports(chainKey, tIn, tOut)) {
       const amountInStr = formatAmt(amtIn, tIn.decimals);
@@ -1524,12 +1524,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         const gasFee = fees.find(f => f.type === 'gas');
         const feeLabel = (providerFee && gasFee)
           ? `${providerFee.amount} ${providerFee.token} provider + ${parseFloat(gasFee.amount).toFixed(4)} ${gasFee.token} gas`
-          : 'Circle App Kit · 0.02% provider fee';
+          : 'Circle App Kit Â· 0.02% provider fee';
         return {
           amountOut: out, minOut,
           path: [tIn.address, tOut.address],
           provider: 'appkit',
-          rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
+          rate: `1 ${tIn.symbol} â‰ˆ ${rateNum.toFixed(6)} ${tOut.symbol}`,
           impact: '0.00', impactWarn: false, impactBad: false,
           feeLabel,
           time: '~5 s',
@@ -1540,7 +1540,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         throw e;
       }
     }
-    // ── Uniswap V2 fallback (non-App Kit pairs only: cirBTC, custom tokens) ────
+    // â”€â”€ Uniswap V2 fallback (non-App Kit pairs only: cirBTC, custom tokens) â”€â”€â”€â”€
     const provider = rpcProvider(chainKey);
     const router = new Contract(CHAINS[chainKey].contracts.router, ABIS.router, provider);
     // Try direct pair
@@ -1583,7 +1583,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     const rateNum = Number(formatAmt(out, tOut.decimals)) / Number(formatAmt(amtIn, tIn.decimals));
     return {
       amountOut: out, minOut, path,
-      rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
+      rate: `1 ${tIn.symbol} â‰ˆ ${rateNum.toFixed(6)} ${tOut.symbol}`,
       impact: impact.toFixed(2),
       impactWarn: impact > 1, impactBad: impact > 5,
       feeLabel: '~0.30 % pool + gas',
@@ -1591,10 +1591,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     };
   }
 
-  // (quoteBridge / quoteBridgeSwap / quoteSwapBridge removed — replaced by the
+  // (quoteBridge / quoteBridgeSwap / quoteSwapBridge removed â€” replaced by the
   //  pipeline-walking logic in quote() above which composes step quotes inline.)
 
-  // ── EXEC BUTTON STATE ────────────────────────────────
+  // â”€â”€ EXEC BUTTON STATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function refreshExec() {
     const btn = document.getElementById('exec-btn');
     const addr = wallet.address;
@@ -1604,7 +1604,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     if (!state.quote || !state.quote.steps) { btn.disabled = true; btn.textContent = 'No route'; return; }
 
     // Wallet must be on the chain of the FIRST step (gateway-spend / cctp-bridge / swap)
-    // — pipeline auto-switches between subsequent steps.
+    // â€” pipeline auto-switches between subsequent steps.
     const firstStep = state.quote.steps[0];
     let firstChain = state.src.chainKey;
     if (firstStep) {
@@ -1630,19 +1630,19 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       label = 'Nothing to do';
     } else if (steps.length === 1) {
       const s = steps[0];
-      if (s.type === 'gateway-spend') label = `⚡ Send ${state.fromToken.symbol}: ${chainShort(s.src)} → ${chainShort(s.dst)}`;
-      else if (s.type === 'gateway-multi-spend') label = `⚡ Unified spend → ${chainShort(s.dst)}`;
-      else if (s.type === 'cctp-bridge') label = `Bridge ${state.fromToken.symbol}: ${chainShort(s.src)} → ${chainShort(s.dst)}`;
-      else if (s.type === 'swap') label = `Swap ${s.tIn} → ${s.tOut}`;
+      if (s.type === 'gateway-spend') label = `âš¡ Send ${state.fromToken.symbol}: ${chainShort(s.src)} â†’ ${chainShort(s.dst)}`;
+      else if (s.type === 'gateway-multi-spend') label = `âš¡ Unified spend â†’ ${chainShort(s.dst)}`;
+      else if (s.type === 'cctp-bridge') label = `Bridge ${state.fromToken.symbol}: ${chainShort(s.src)} â†’ ${chainShort(s.dst)}`;
+      else if (s.type === 'swap') label = `Swap ${s.tIn} â†’ ${s.tOut}`;
       else if (s.type === 'transfer') label = `Transfer ${state.fromToken.symbol}`;
     } else {
-      const types = steps.map(s => s.type === 'gateway-spend' ? '⚡Gateway' : s.type === 'cctp-bridge' ? 'CCTP' : s.type === 'swap' ? 'Swap' : 'Transfer');
-      label = `${types.join(' + ')} → ${state.toToken.symbol} (${chainShort(state.dst.chainKey)})`;
+      const types = steps.map(s => s.type === 'gateway-spend' ? 'âš¡Gateway' : s.type === 'cctp-bridge' ? 'CCTP' : s.type === 'swap' ? 'Swap' : 'Transfer');
+      label = `${types.join(' + ')} â†’ ${state.toToken.symbol} (${chainShort(state.dst.chainKey)})`;
     }
     btn.disabled = false; btn.textContent = label; btn.onclick = execute;
   }
 
-  // ── EXECUTE PIPELINE ─────────────────────────────────
+  // â”€â”€ EXECUTE PIPELINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Walks the planned step array, executing each on-chain action sequentially.
   // Intermediate steps target the user's own wallet on the destination chain;
   // only the FINAL step honours the user's recipient address.
@@ -1654,7 +1654,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     let runChain = state.src.chainKey;
     let runTokSym = state.fromToken.symbol;
     // Track the last successful tx hash + chain in the pipeline so we can
-    // surface it on status.oneliq.xyz (Latest Activity → "view ↗" link).
+    // surface it on status.oneliq.xyz (Latest Activity â†’ "view â†—" link).
     let lastTxHash = null;
     let lastTxChain = state.dst.chainKey;
 
@@ -1670,13 +1670,13 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     const planRowsHtml = steps.map((s, i) => {
       const n = i + 1;
       let label;
-      if (s.type === 'gateway-spend')      label = `Gateway burn · ${chainShort(s.src)} → ${chainShort(s.dst)}`;
-      else if (s.type === 'cctp-burn')     label = `CCTP burn · ${chainShort(s.src)} → ${chainShort(s.dst)}`;
-      else if (s.type === 'swap')          label = `Swap ${s.tIn}→${s.tOut} on ${chainShort(s.chain)}`;
+      if (s.type === 'gateway-spend')      label = `Gateway burn Â· ${chainShort(s.src)} â†’ ${chainShort(s.dst)}`;
+      else if (s.type === 'cctp-burn')     label = `CCTP burn Â· ${chainShort(s.src)} â†’ ${chainShort(s.dst)}`;
+      else if (s.type === 'swap')          label = `Swap ${s.tIn}â†’${s.tOut} on ${chainShort(s.chain)}`;
       else                                 label = `${s.type} on ${chainShort(s.chain || s.src)}`;
       return `<div class="row"><span class="k">Step ${n}</span><span class="v">${label}</span></div>`;
     }).join('');
-    const recipShort = recipient.slice(0, 6) + '…' + recipient.slice(-4);
+    const recipShort = recipient.slice(0, 6) + 'â€¦' + recipient.slice(-4);
     const isOwnWallet = recipient.toLowerCase() === wallet.address.toLowerCase();
     const signCount = steps.filter(s => s.type === 'gateway-spend' || s.type === 'cctp-burn' || s.type === 'swap').length;
     const recipientHtml = isOwnWallet
@@ -1690,7 +1690,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       <div class="footer">You will sign <b>${signCount}</b> wallet transaction${signCount > 1 ? 's' : ''}. Click Cancel if anything looks wrong.</div>
     `;
     const ok = await ArcUI.confirm({
-      title: '🔐 Review before signing',
+      title: 'ðŸ” Review before signing',
       body: confirmBody,
       confirmLabel: 'Sign & continue',
       cancelLabel: 'Cancel',
@@ -1710,7 +1710,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       const isLast = i === steps.length - 1;
       const stepRecipient = isLast ? recipient : wallet.address;
       try {
-        modal.set(stepId, 'active', 'Working…');
+        modal.set(stepId, 'active', 'Workingâ€¦');
 
         if (step.type === 'gateway-spend') {
           await wallet.ensureChain(step.src);
@@ -1725,7 +1725,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           runAmt = ARC.fromCctpAmount(valueCanonical, dstTok);
           runChain = step.dst;
           runTokSym = 'USDC';
-          pushActivity({ kind: 'bridge', chain: step.src, hash: '', status: 'done', text: `⚡ Gateway ${formatAmt(valueCanonical, 6, 4)} USDC: ${chainShort(step.src)} → ${chainShort(step.dst)}` });
+          pushActivity({ kind: 'bridge', chain: step.src, hash: '', status: 'done', text: `âš¡ Gateway ${formatAmt(valueCanonical, 6, 4)} USDC: ${chainShort(step.src)} â†’ ${chainShort(step.dst)}` });
           modal.set(stepId, 'done', 'Minted on ' + chainShort(step.dst));
         }
         else if (step.type === 'gateway-multi-spend') {
@@ -1744,7 +1744,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           runAmt = ARC.fromCctpAmount(canonical, dstTok);
           runChain = step.dst;
           runTokSym = 'USDC';
-          pushActivity({ kind: 'bridge', chain: plan[0].chainKey, hash: '', status: 'done', text: `⚡ Unified ${formatAmt(canonical, 6, 4)} USDC from ${plan.length} chains → ${chainShort(step.dst)}` });
+          pushActivity({ kind: 'bridge', chain: plan[0].chainKey, hash: '', status: 'done', text: `âš¡ Unified ${formatAmt(canonical, 6, 4)} USDC from ${plan.length} chains â†’ ${chainShort(step.dst)}` });
           modal.set(stepId, 'done', `Minted ${formatAmt(canonical,6,4)} USDC on ${chainShort(step.dst)} from ${plan.length} sources`);
         }
         else if (step.type === 'cctp-bridge') {
@@ -1759,15 +1759,15 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           const tOutTok = TOKENS.arc[step.tOut];
           const balBefore = await tokenBalance('arc', tOutTok, wallet.address).catch(() => 0n);
           const inputStr = formatAmt(runAmt, tInTok.decimals);
-          modal.set(stepId, 'active', `Swap ${step.tIn} → ${step.tOut}…`);
+          modal.set(stepId, 'active', `Swap ${step.tIn} â†’ ${step.tOut}â€¦`);
           if (APPKIT && appKitSupports('arc', tInTok, tOutTok)) {
             const result = await APPKIT.appKitSwap(step.tIn, step.tOut, inputStr);
             const txHash = result?.txHash || result?.transactionHash || result?.hash || '';
             if (txHash) { lastTxHash = txHash; lastTxChain = 'arc'; }
             modal.set(stepId, 'done', txHash
-              ? `<a href="${CHAINS.arc.explorerTx(txHash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(txHash)} ↗</a>`
+              ? `<a href="${CHAINS.arc.explorerTx(txHash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(txHash)} â†—</a>`
               : 'Done');
-            pushActivity({ kind: 'swap', chain: 'arc', hash: txHash, status: 'done', text: `${inputStr} ${step.tIn} → ${step.tOut} (App Kit)` });
+            pushActivity({ kind: 'swap', chain: 'arc', hash: txHash, status: 'done', text: `${inputStr} ${step.tIn} â†’ ${step.tOut} (App Kit)` });
           } else {
             // Uniswap V2 fallback (rarely useful on Arc Testnet but kept as backstop)
             const sw = await quoteSwap('arc', tInTok, tOutTok, runAmt);
@@ -1779,9 +1779,9 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
             const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
             const tx = await r.swapExactTokensForTokens(runAmt, minOut, sw.path, wallet.address, deadline);
             lastTxHash = tx.hash; lastTxChain = 'arc';
-            modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} — waiting…`);
+            modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} â€” waitingâ€¦`);
             await tx.wait();
-            modal.set(stepId, 'done', `<a href="${CHAINS.arc.explorerTx(tx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(tx.hash)} ↗</a>`);
+            modal.set(stepId, 'done', `<a href="${CHAINS.arc.explorerTx(tx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(tx.hash)} â†—</a>`);
           }
           // Refresh runAmt from actual balance delta (App Kit's returned amount may not be exact)
           const balAfter = await tokenBalance('arc', tOutTok, wallet.address).catch(() => balBefore);
@@ -1795,10 +1795,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           const c = new Contract(tok.address, ABIS.erc20, wallet.signer);
           const tx = await c.transfer(stepRecipient, runAmt);
           lastTxHash = tx.hash; lastTxChain = step.chain;
-          modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} — waiting…`);
+          modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} â€” waitingâ€¦`);
           await tx.wait();
-          modal.set(stepId, 'done', `<a href="${CHAINS[step.chain].explorerTx(tx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(tx.hash)} ↗</a>`);
-          pushActivity({ kind: 'transfer', chain: step.chain, hash: tx.hash, status: 'done', text: `${formatAmt(runAmt, tok.decimals)} ${step.token} → ${shortAddr(stepRecipient)}` });
+          modal.set(stepId, 'done', `<a href="${CHAINS[step.chain].explorerTx(tx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(tx.hash)} â†—</a>`);
+          pushActivity({ kind: 'transfer', chain: step.chain, hash: tx.hash, status: 'done', text: `${formatAmt(runAmt, tok.decimals)} ${step.token} â†’ ${shortAddr(stepRecipient)}` });
         }
       } catch (e) {
         console.error(e);
@@ -1808,8 +1808,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       }
     }
     modal.finish();
-    ArcUI.toast('success', 'Trade complete', `Received ≈ ${formatAmt(runAmt, state.toToken.decimals)} ${state.toToken.symbol} on ${chainShort(state.dst.chainKey)}`);
-    // Real-metrics telemetry — uses the user-typed input amount (always USDC
+    ArcUI.toast('success', 'Trade complete', `Received â‰ˆ ${formatAmt(runAmt, state.toToken.decimals)} ${state.toToken.symbol} on ${chainShort(state.dst.chainKey)}`);
+    // Real-metrics telemetry â€” uses the user-typed input amount (always USDC
     // across this surface) and the LAST tx hash captured in the pipeline so
     // the status page can deep-link to the chain's native explorer.
     try {
@@ -1822,15 +1822,15 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   }
 
   function stepTitle(s) {
-    if (s.type === 'gateway-spend') return `⚡ Gateway ${chainShort(s.src)} → ${chainShort(s.dst)}`;
-    if (s.type === 'gateway-multi-spend') return `⚡ Unified Gateway → ${chainShort(s.dst)}`;
-    if (s.type === 'cctp-bridge') return `CCTP burn+mint ${chainShort(s.src)} → ${chainShort(s.dst)}`;
-    if (s.type === 'swap') return `Swap ${s.tIn} → ${s.tOut} on Arc`;
+    if (s.type === 'gateway-spend') return `âš¡ Gateway ${chainShort(s.src)} â†’ ${chainShort(s.dst)}`;
+    if (s.type === 'gateway-multi-spend') return `âš¡ Unified Gateway â†’ ${chainShort(s.dst)}`;
+    if (s.type === 'cctp-bridge') return `CCTP burn+mint ${chainShort(s.src)} â†’ ${chainShort(s.dst)}`;
+    if (s.type === 'swap') return `Swap ${s.tIn} â†’ ${s.tOut} on Arc`;
     if (s.type === 'transfer') return `Transfer on ${chainShort(s.chain)}`;
     return 'Step';
   }
 
-  // Standalone CCTP bridge (extracted from old execBridge — parametrized so the
+  // Standalone CCTP bridge (extracted from old execBridge â€” parametrized so the
   // pipeline can call it for arbitrary src/dst rather than reading state.fromChain).
   async function runCctpBridge(srcKey, dstKey, amt, recipient, modal, stepId) {
     const src = CHAINS[srcKey];
@@ -1845,30 +1845,30 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     const cctpAmt = ARC.toCctpAmount(amt, srcUSDC);
     const maxFee = state.cctpMode === 'fast' ? (cctpAmt / 10000n) + 1n : 0n;
     const minFinality = state.cctpMode === 'fast' ? 1000 : 2000;
-    modal.set(stepId, 'active', 'Sign burn tx…');
+    modal.set(stepId, 'active', 'Sign burn txâ€¦');
     const burnTx = await tm.depositForBurn(cctpAmt, dst.cctpDomain, mintRecipient32, srcUSDC.address, destCaller32, maxFee, minFinality);
-    modal.set(stepId, 'active', `Burn ${shortAddr(burnTx.hash)} — waiting receipt…`);
-    pushActivity({ kind: 'bridge', chain: srcKey, hash: burnTx.hash, status: 'pending', text: `Bridge ${formatAmt(amt, srcUSDC.decimals)} USDC → ${chainShort(dstKey)}` });
+    modal.set(stepId, 'active', `Burn ${shortAddr(burnTx.hash)} â€” waiting receiptâ€¦`);
+    pushActivity({ kind: 'bridge', chain: srcKey, hash: burnTx.hash, status: 'pending', text: `Bridge ${formatAmt(amt, srcUSDC.decimals)} USDC â†’ ${chainShort(dstKey)}` });
     await burnTx.wait();
-    modal.set(stepId, 'active', 'Polling Circle IRIS…');
+    modal.set(stepId, 'active', 'Polling Circle IRISâ€¦');
     const att = await pollAttestation(src.cctpDomain, burnTx.hash, (tries, total) => {
-      modal.set(stepId, 'active', `Polling Circle IRIS… (${tries}/${total})`);
+      modal.set(stepId, 'active', `Polling Circle IRISâ€¦ (${tries}/${total})`);
     });
-    modal.set(stepId, 'active', `Switch to ${chainShort(dstKey)}…`);
+    modal.set(stepId, 'active', `Switch to ${chainShort(dstKey)}â€¦`);
     await wallet.ensureChain(dstKey);
     const mt = new Contract(dst.contracts.messageTransmitterV2, ABIS.messageTransmitterV2, wallet.signer);
-    modal.set(stepId, 'active', 'Sign mint tx…');
+    modal.set(stepId, 'active', 'Sign mint txâ€¦');
     const mintTx = await mt.receiveMessage(att.message, att.attestation);
     await mintTx.wait();
     updateActivity(burnTx.hash, 'done');
     const fee = state.cctpMode === 'fast' ? cctpAmt / 10000n + 1n : 0n;
     const out = ARC.fromCctpAmount(cctpAmt - fee, dstUSDC);
-    modal.set(stepId, 'done', `<a href="${dst.explorerTx(mintTx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">mint ↗</a>`);
+    modal.set(stepId, 'done', `<a href="${dst.explorerTx(mintTx.hash)}" target="_blank" rel="noopener" style="color:var(--arc2)">mint â†—</a>`);
     return { amountOut: out, burnTxHash: burnTx.hash, mintTxHash: mintTx.hash };
   }
 
   // (execTransfer / execSwap / execBridge / execBridgeThenSwap / execSwapThenBridge
-  //  removed — replaced by the pipeline executor in execute() and runCctpBridge above.)
+  //  removed â€” replaced by the pipeline executor in execute() and runCctpBridge above.)
 
   async function pollAttestation(srcDomain, txHash, onTick) {
     const maxTries = 160; // ~8 minutes at 3s interval (good cap for both modes)
@@ -1883,10 +1883,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       onTick?.(i + 1, maxTries);
       await new Promise(r => setTimeout(r, 3000));
     }
-    throw new Error('Attestation timed out. It may still complete — retry "receive" from history.');
+    throw new Error('Attestation timed out. It may still complete â€” retry "receive" from history.');
   }
 
-  // ── PROGRESS MODAL ───────────────────────────────────
+  // â”€â”€ PROGRESS MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function openProgress(title, steps) {
     const body = document.createElement('div');
     body.innerHTML = `<div class="progress-steps">${steps.map(s => `
@@ -1903,8 +1903,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         const el = document.querySelector(`.pstep[data-id="${id}"]`); if (!el) return;
         el.classList.remove('active', 'done', 'fail');
         if (status) el.classList.add(status);
-        if (status === 'done') el.querySelector('.pstep-ic').textContent = '✓';
-        if (status === 'fail') el.querySelector('.pstep-ic').textContent = '✕';
+        if (status === 'done') el.querySelector('.pstep-ic').textContent = 'âœ“';
+        if (status === 'fail') el.querySelector('.pstep-ic').textContent = 'âœ•';
         if (status === 'active') el.querySelector('.pstep-ic').innerHTML = '<span class="spin"></span>';
         el.querySelector('.pstep-sub').innerHTML = sub || '';
       },
@@ -1913,7 +1913,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     };
   }
 
-  // ── ACTIVITY (localStorage) ──────────────────────────
+  // â”€â”€ ACTIVITY (localStorage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const ACT_KEY = 'arc.trade.activity.v1';
   function readAct() { try { return JSON.parse(localStorage.getItem(ACT_KEY) || '[]'); } catch { return []; } }
   function writeAct(xs) { try { localStorage.setItem(ACT_KEY, JSON.stringify(xs.slice(0, 30))); } catch {} }
@@ -1934,30 +1934,30 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         <div class="tx-head"><span style="font-weight:600">${x.kind.toUpperCase()}</span>
           <span class="tx-status ${x.status}">${x.status}</span></div>
         <div class="tx-sub">${x.text || ''}</div>
-        <a class="tx-link" target="_blank" rel="noopener noreferrer" href="${CHAINS[x.chain].explorerTx(x.hash)}">${shortAddr(x.hash)} ↗</a>
+        <a class="tx-link" target="_blank" rel="noopener noreferrer" href="${CHAINS[x.chain].explorerTx(x.hash)}">${shortAddr(x.hash)} â†—</a>
       </div>`).join('');
   }
   renderActivity();
 
-  // ── Gas / block tickers ──────────────────────────────
+  // â”€â”€ Gas / block tickers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function tick() {
     try {
       const p = rpcProvider('arc');
       const [feeData, bn] = await Promise.all([p.getFeeData(), p.getBlockNumber()]);
       const gp = feeData.gasPrice ? Number(feeData.gasPrice) / 1e9 : null;
-      document.getElementById('gas-pill').textContent = gp ? `⛽ Arc base ≈ ${gp.toFixed(1)} Gwei` : '⛽ Arc —';
-      document.getElementById('block-pill').textContent = `⏱ block #${bn}`;
+      document.getElementById('gas-pill').textContent = gp ? `â›½ Arc base â‰ˆ ${gp.toFixed(1)} Gwei` : 'â›½ Arc â€”';
+      document.getElementById('block-pill').textContent = `â± block #${bn}`;
     } catch {}
   }
   tick(); setInterval(tick, 8000);
 
-  // ── Wallet reactivity ────────────────────────────────
+  // â”€â”€ Wallet reactivity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ARC.wallet.on(async () => {
     await loadAllSources().catch(() => null);
     updateBalances(); refreshExec(); renderActivity();
     syncRecipientDisplay();
   });
-  // Initial load — fires after autoConnect resolves (ArcUI.boot already awaited it).
+  // Initial load â€” fires after autoConnect resolves (ArcUI.boot already awaited it).
   loadAllSources().catch(() => null).then(() => {
     updateBalances(); refreshExec();
     syncRecipientDisplay();
