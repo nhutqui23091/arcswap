@@ -10,7 +10,7 @@
 <title>Trade · Swap & Bridge — Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.8.4"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.8.5"/>
 <style>
 main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:44px 28px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
 @media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding:40px 20px 80px}}
@@ -130,7 +130,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   padding:20px 24px 16px;border-bottom:1px solid var(--m-border);
   background:linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
 }
-.src-modal-title{font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--m-text)}
+.src-modal-title{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--m-text);text-transform:uppercase}
 .src-modal-sub{display:block;font-size:13px;color:var(--m-text-soft);font-weight:400;margin-top:4px;font-family:var(--font);letter-spacing:0}
 .src-modal-close{
   width:34px;height:34px;border-radius:10px;
@@ -173,13 +173,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .src-row.active{background:var(--m-row-active-wallet);border-color:var(--m-wallet);box-shadow:0 0 0 2px rgba(91,211,217,.22)}
 .src-col.gateway .src-row.active{background:var(--m-row-active-gateway);border-color:var(--m-gateway);box-shadow:0 0 0 2px rgba(255,180,84,.22)}
 .src-row-icon{
-  width:38px;height:38px;flex-shrink:0;
+  width:34px;height:34px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  border-radius:50%;overflow:hidden;background:#fff;
+  border-radius:9px;overflow:hidden;
+  background:rgba(255,255,255,.07);padding:3px;
   box-shadow:0 0 0 1px rgba(255,255,255,.10);
 }
-.src-row-icon img{width:100%;height:100%;display:block;object-fit:cover}
-.src-row-dot{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff}
+.src-row-icon img{width:100%;height:100%;display:block;object-fit:contain}
+.src-row-dot{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff}
 .src-row-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .src-row-name{font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--m-text);letter-spacing:-.005em}
 .src-row-meta{display:flex;flex-direction:column;align-items:flex-end;min-width:0;gap:2px}
@@ -507,7 +508,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.7.10"></script>
-<script src="/assets/arc-ui.js?v=9.8.4"></script>
+<script src="/assets/arc-ui.js?v=9.8.5"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
