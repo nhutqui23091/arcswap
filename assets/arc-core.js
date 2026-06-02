@@ -832,14 +832,14 @@
   // All 8 chains have user-supplied artwork — kept on disk so we don't
   // pay a CDN round-trip and don't widen img-src in our CSP.
   const CHAIN_ICONS = {
-    arc: "/assets/logos/arc.png",
-    avalancheFuji: "/assets/logos/avalanche.png",
-    arbitrumSepolia: "/assets/logos/arbitrum.png",
-    sepolia: "/assets/logos/ethereum.png",
-    baseSepolia: "/assets/logos/base.png",
-    optimismSepolia: "/assets/logos/optimism.png",
-    polygonAmoy: "/assets/logos/polygon.png",
-    unichainSepolia: "/assets/logos/unichain.png",
+    arc: "/assets/logos/chains/arc.svg",
+    avalancheFuji: "/assets/logos/chains/avalanche.svg",
+    arbitrumSepolia: "/assets/logos/chains/arbitrum.svg",
+    sepolia: "/assets/logos/chains/ethereum.svg",
+    baseSepolia: "/assets/logos/chains/base.svg",
+    optimismSepolia: "/assets/logos/chains/optimism.svg",
+    polygonAmoy: "/assets/logos/chains/polygon.svg",
+    unichainSepolia: "/assets/logos/chains/unichain.svg",
   };
   function chainIcon(chainKey) {
     return CHAIN_ICONS[chainKey] || CHAIN_ICONS.arc;
