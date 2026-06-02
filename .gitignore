@@ -82,3 +82,6 @@ scripts/build_deck.py
 
 .preview-oneliq.png
 logo-preview.html
+.preview-trade.png
+.preview-agent.png
+.preview-balance.png
