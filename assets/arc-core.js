@@ -824,7 +824,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.8.0',
+    version: '9.8.1',
   };
 
   // ───────── CHAIN ICONS ─────────
@@ -832,12 +832,12 @@
   // All 8 chains have user-supplied artwork — kept on disk so we don't
   // pay a CDN round-trip and don't widen img-src in our CSP.
   const CHAIN_ICONS = {
-    arc: "/assets/logos/chains/arc.svg",
+    arc: "/assets/logos/arc.png",
     avalancheFuji: "/assets/logos/chains/avalanche.svg",
-    arbitrumSepolia: "/assets/logos/chains/arbitrum.svg",
-    sepolia: "/assets/logos/chains/ethereum.svg",
+    arbitrumSepolia: "/assets/logos/chains/arbitrum.png",
+    sepolia: "/assets/logos/chains/ethereum.png",
     baseSepolia: "/assets/logos/chains/base.svg",
-    optimismSepolia: "/assets/logos/chains/optimism.svg",
+    optimismSepolia: "/assets/logos/chains/optimism.png",
     polygonAmoy: "/assets/logos/chains/polygon.svg",
     unichainSepolia: "/assets/logos/chains/unichain.svg",
   };
