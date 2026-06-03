@@ -207,7 +207,7 @@
       <div class="footer">
         <div class="footer-left">
           <a href="https://oneliq.xyz/">oneliq.xyz</a>
-          <a href="https://x.com/arc_swap" target="_blank" rel="noopener noreferrer">@arc_swap</a>
+          <a href="https://x.com/oneliq" target="_blank" rel="noopener noreferrer">@oneliq</a>
           <a href="https://discord.gg/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Discord</a>
           <a href="https://oneliq.xyz/.well-known/security.txt">security.txt</a>
         </div>

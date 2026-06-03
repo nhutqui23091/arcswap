@@ -60,7 +60,7 @@ underlying Uniswap V2 contracts, liquidity removal on the same).
 For any SEV-1 or SEV-2, Oneliq will publish updates in this order and cadence:
 
 1. **Status page** — initial banner within the SLA above
-2. **Public channels** ([@arc_swap](https://x.com/arc_swap) on X, Discord) — same content, no DMs (avoids impersonation)
+2. **Public channels** ([@oneliq](https://x.com/oneliq) on X, Discord) — same content, no DMs (avoids impersonation)
 3. **Follow-up updates** — at least every 2 hours until resolution
 4. **Resolution notice** — once mitigated, with a one-line root cause
 5. **Public post-mortem** — within 7 days, with timeline, root cause, and action items

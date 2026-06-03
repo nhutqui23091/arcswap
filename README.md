@@ -5,7 +5,7 @@
 
 Unified balance across 8 chains · cross-chain settlement in ~30s · bounded autonomous agents - all native USDC, no wrappers.
 
-🌐 Live at **[oneliq.xyz](https://oneliq.xyz)** · 🐦 [@arc_swap](https://x.com/arc_swap) · 💬 [Discord](https://discord.gg/7XUPdWWrGk)
+🌐 Live at **[oneliq.xyz](https://oneliq.xyz)** · 🐦 [@oneliq](https://x.com/oneliq) · 💬 [Discord](https://discord.gg/7XUPdWWrGk)
 
 ---
 
