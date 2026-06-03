@@ -824,7 +824,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.8.3',
+    version: '9.8.4',
   };
 
   // ───────── CHAIN ICONS ─────────
@@ -834,7 +834,7 @@
   const CHAIN_ICONS = {
     arc: "/assets/logos/arc.png",
     avalancheFuji: "/assets/logos/chains/avalanche.svg",
-    arbitrumSepolia: "/assets/logos/chains/arbitrum.svg",
+    arbitrumSepolia: "/assets/logos/chains/arbitrum.png",
     sepolia: "/assets/logos/chains/ethereum.png",
     baseSepolia: "/assets/logos/chains/base.svg",
     optimismSepolia: "/assets/logos/chains/optimism.png",
