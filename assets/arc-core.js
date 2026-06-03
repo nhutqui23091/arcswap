@@ -824,7 +824,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.7.10',
+    version: '9.8.0',
   };
 
   // ───────── CHAIN ICONS ─────────

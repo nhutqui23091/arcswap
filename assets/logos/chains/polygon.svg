@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-  <rect width="40" height="40" rx="9" fill="#8247E5"/>
-  <polygon points="20,9 29.5,14.5 29.5,25.5 20,31 10.5,25.5 10.5,14.5" fill="none" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
-  <polygon points="20,14 25.5,17.3 25.5,23.7 20,27 14.5,23.7 14.5,17.3" fill="white" opacity="0.35"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><defs><linearGradient id="A" x1="-18.275%" x2="84.959%" y1="8.219%" y2="71.393%"><stop offset="0%" stop-color="#a229c5"/><stop offset="100%" stop-color="#7b3fe4"/></linearGradient></defs><rect width="28" height="28" fill="url(#A)"/><path fill="#fff" d="M18.049 17.021l3.96-2.287a.681.681 0 0 0 .34-.589V9.572a.683.683 0 0 0-.34-.59l-3.96-2.286a.682.682 0 0 0-.68 0l-3.96 2.287a.682.682 0 0 0-.34.589v8.173L10.29 19.35l-2.777-1.604v-3.207l2.777-1.604 1.832 1.058V11.84l-1.492-.861a.681.681 0 0 0-.68 0l-3.96 2.287a.681.681 0 0 0-.34.589v4.573c0 .242.13.468.34.59l3.96 2.286a.68.68 0 0 0 .68 0l3.96-2.286a.682.682 0 0 0 .34-.589v-8.174l.05-.028 2.728-1.575 2.777 1.603v3.208l-2.777 1.603-1.83-1.056v2.151l1.49.86a.68.68 0 0 0 .68 0z"/></svg>
