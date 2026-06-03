@@ -10,7 +10,7 @@
 <title>Trade · Swap & Bridge — Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.8.9"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.9.0"/>
 <style>
 main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:44px 28px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
 @media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding:40px 20px 80px}}
@@ -21,13 +21,13 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .hero-strip p{color:var(--muted);font-size:13px;margin-top:4px}
 .hero-chip{display:inline-flex;gap:6px;align-items:center;padding:6px 12px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:11.5px;color:var(--muted);font-family:var(--mono)}
 
-.card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:22px;backdrop-filter:blur(20px);position:relative}
-.card h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:18px;backdrop-filter:blur(20px);position:relative}
+.card h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px}
 
 /* leg (from/to) block */
-.leg{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:18px;padding:16px}
-.leg + .leg{margin-top:10px}
-.leg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+.leg{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:18px;padding:12px 14px}
+.leg + .leg{margin-top:8px}
+.leg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:12px;flex-wrap:wrap}
 .leg-lbl{font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:600}
 .leg-bal{font-size:11.5px;color:var(--muted);font-family:var(--mono)}
 .leg-bal b{color:var(--text);cursor:pointer}
@@ -41,7 +41,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .leg-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
 .amt-in{font-family:var(--mono);font-size:32px;font-weight:600;background:none;border:none;outline:none;color:var(--text);width:100%;min-width:0}
 .amt-in::placeholder{color:rgba(139,126,170,.4)}
-.amt-usd{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+.amt-usd{font-size:11px;color:var(--muted);margin-top:3px;font-family:var(--mono)}
 
 .pick-btn{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:all .2s;color:var(--text);font-weight:600;font-size:14px;min-width:fit-content}
 .pick-btn:hover{border-color:var(--border2);background:rgba(255,255,255,.08)}
@@ -225,7 +225,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .recipient-toggle:hover{background:var(--surface)}
 
 /* Route preview */
-.route-box{margin-top:16px;padding:14px 16px;border-radius:14px;background:rgba(77,214,219,.04);border:1px solid rgba(77,214,219,.15)}
+.route-box{margin-top:8px;padding:10px 14px;border-radius:12px;background:rgba(77,214,219,.04);border:1px solid rgba(77,214,219,.15)}
 .route-title{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#FF9F4A;font-weight:500;margin-bottom:8px;display:inline-block}
 .route-title::before{content:'{\00a0';opacity:.7}
 .route-title::after{content:'\00a0}';opacity:.7}
@@ -233,7 +233,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .route-step{padding:4px 10px;border-radius:100px;background:var(--surface2);border:1px solid var(--border)}
 .route-arrow{color:var(--muted);font-weight:700}
 
-.metric-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.04);font-size:12.5px}
+.metric-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.04);font-size:12.5px}
 .metric-row:last-child{border-bottom:none}
 .metric-row .lbl{color:var(--muted)}
 .metric-row .val{font-family:var(--mono);color:var(--text);font-weight:600;text-align:right}
@@ -261,7 +261,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .slip-dropdown.open{display:block}
 
 /* Info summary line (collapsed) + expandable details */
-.info-summary{display:flex;justify-content:space-between;align-items:center;padding:4px 2px;margin-top:4px}
+.info-summary{display:flex;justify-content:space-between;align-items:center;padding:3px 2px;margin-top:2px}
 .info-summary-line{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-family:var(--mono);flex:1;min-width:0;flex-wrap:wrap;line-height:1.6}
 .info-dot{opacity:.35;margin:0 1px}
 .info-chevron-btn{background:none;border:none;color:var(--text);cursor:pointer;padding:0;border-radius:6px;transition:color .15s;flex-shrink:0;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:flex-end}
@@ -277,7 +277,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 .send-other-btn:hover{color:var(--arc1);text-decoration:underline}
 
 /* Execute */
-.exec-btn{width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:700;border:1px solid rgba(255,255,255,0.22);cursor:pointer;transition:all .2s;margin-top:14px;background:rgba(255,255,255,0.1);color:var(--text);letter-spacing:.02em}
+.exec-btn{width:100%;padding:14px;border-radius:14px;font-size:15px;font-weight:700;border:1px solid rgba(255,255,255,0.22);cursor:pointer;transition:all .2s;margin-top:10px;background:rgba(255,255,255,0.1);color:var(--text);letter-spacing:.02em}
 .exec-btn:hover:not(:disabled){background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.35);transform:translateY(-1px)}
 .exec-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,0.04);color:var(--muted);border-color:rgba(255,255,255,0.08)}
 
@@ -424,12 +424,6 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         </div>
       </div>
 
-      <!-- Route -->
-      <div class="route-box" id="route-box" style="display:none">
-        <div class="route-title">Route</div>
-        <div class="route-steps" id="route-steps"></div>
-      </div>
-
       <!-- CCTP Fast/Standard toggle (bridge only) -->
       <div class="fast-toggle" id="fast-toggle" style="display:none">
         <button class="fast-opt active" data-mode="fast">
@@ -476,6 +470,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         <div class="metric-row"><span class="lbl">Network fee</span><span class="val" id="m-netfee">—</span></div>
         <div class="metric-row"><span class="lbl">Min received</span><span class="val" id="m-min">—</span></div>
         <div class="metric-row"><span class="lbl">Estimated time</span><span class="val" id="m-time">—</span></div>
+        <div class="route-box" id="route-box" style="display:none">
+          <div class="route-title">Route</div>
+          <div class="route-steps" id="route-steps"></div>
+        </div>
       </div>
 
       <button class="exec-btn" id="exec-btn" disabled>Enter amount</button>
@@ -505,7 +503,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.8.4"></script>
-<script src="/assets/arc-ui.js?v=9.8.9"></script>
+<script src="/assets/arc-ui.js?v=9.9.0"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
@@ -1306,6 +1304,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       box.style.display = 'block';
       stepsEl.innerHTML = `<span class="route-step">Same source & destination — pick a different chain or token, or set a recipient address</span>`;
       document.getElementById('fast-toggle').style.display = 'none';
+      if (infoExpanded) infoDet.style.maxHeight = infoDet.scrollHeight + 'px';
       return;
     }
     const nodes = [];
@@ -1325,6 +1324,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     // Show CCTP fast/standard toggle only if pipeline contains a CCTP bridge
     const hasCctp = steps.some(s => s.type === 'cctp-bridge');
     document.getElementById('fast-toggle').style.display = hasCctp ? 'flex' : 'none';
+    if (infoExpanded) infoDet.style.maxHeight = infoDet.scrollHeight + 'px';
   }
 
   // ── QUOTE ENGINE ─────────────────────────────────────
@@ -1346,6 +1346,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       box.style.display = 'block';
       document.getElementById('route-steps').innerHTML = `<span class="route-step" style="background:rgba(255,122,122,.1);border-color:rgba(255,122,122,.3);color:var(--red)">${e.message}</span>`;
       document.getElementById('fast-toggle').style.display = 'none';
+      if (infoExpanded) infoDet.style.maxHeight = infoDet.scrollHeight + 'px';
       setMetrics({ rate: 'No route', impact: '—', fee: '—', min: '—', time: '—' }, 'danger');
       state.quote = null;
       document.getElementById('amount-out').value = '';
