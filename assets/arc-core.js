@@ -356,6 +356,7 @@
     chainKey: null,
     _eth: null,
     _listeners: new Set(),
+    _intentionalDisconnect: false,
 
     on(cb) { this._listeners.add(cb); return () => this._listeners.delete(cb); },
     _emit() { for (const cb of this._listeners) { try { cb(this.snapshot()); } catch {} } },
@@ -497,6 +498,7 @@
       if (!eth._arcBound) {
         eth._arcBound = true;
         eth.on?.('accountsChanged', async (accs) => {
+          if (this._intentionalDisconnect) return;
           if (!accs || !accs.length) { this.disconnect(); return; }
           this.address = getAddress(accs[0]);
           if (this.provider) this.signer = await this.provider.getSigner();
@@ -570,6 +572,8 @@
     },
 
     disconnect() {
+      this._intentionalDisconnect = true;
+      setTimeout(() => { this._intentionalDisconnect = false; }, 1000);
       // Tell AppKit to send WC session_delete to the relay / wallet app
       if (this._appkitReady) {
         try { this._appkit.disconnect().catch(() => {}); } catch {}
@@ -902,6 +906,7 @@
 
     appkit.subscribeAccount(async ({ address, isConnected }) => {
       if (isConnected && address) {
+        if (wallet._intentionalDisconnect) return;
         try {
           const rawProvider = appkit.getProvider('eip155');
           const chainId = appkit.getChainId();

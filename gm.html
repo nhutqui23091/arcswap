@@ -12,7 +12,7 @@
 <title>GM | Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.5"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.6"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0A1628;--bg2:#0F1E36;--surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);--text:#F5F7FB;--muted:#A4B8D0;--muted-soft:#7E92AE;--arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;--display:'Space Grotesk','Inter',system-ui,sans-serif;--font:'DM Sans','Inter',system-ui,sans-serif;--mono:'Space Mono','DM Mono',ui-monospace,monospace}
@@ -40,6 +40,8 @@
 .gm-streak-num{font-family:var(--display);font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--text)}
 .gm-streak-lbl{font-size:11.5px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .gm-freezes{font-size:12px;color:var(--muted);margin-top:2px}
+.gm-flame-ico{display:flex;justify-content:center;animation:gm-flicker 1.2s ease-in-out infinite}
+@keyframes gm-flicker{0%,100%{transform:scale(1);opacity:1}35%{transform:scale(1.04) translateY(-1px);opacity:.9}65%{transform:scale(.98);opacity:.97}}
 
 /* BUTTON */
 .gm-btn-section{width:100%;display:flex;flex-direction:column;align-items:center;gap:9px}
@@ -107,9 +109,10 @@
       </div>
 
       <div class="gm-streak-card">
+        <span id="gmflame" class="gm-flame-ico" style="display:none"></span>
         <div class="gm-streak-num" id="snum">0</div>
         <div class="gm-streak-lbl">Day streak</div>
-        <div class="gm-freezes" id="ftxt">🧊 3 freezes left</div>
+        <div class="gm-freezes" id="ftxt">3 freezes left</div>
       </div>
 
       <div class="gm-btn-section">
@@ -152,7 +155,6 @@
     <div class="gm-badge-grid" id="gbadges"></div>
   </div>
 
-  <div class="gm-foot" id="gfoot"></div>
 
 </div>
 
@@ -161,7 +163,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.8.4"></script>
-<script src="/assets/arc-ui.js?v=9.10.5"></script>
+<script src="/assets/arc-ui.js?v=9.10.6"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -173,7 +175,6 @@
   const ftxt = document.getElementById('ftxt');
   const hint = document.getElementById('hint');
   const btn  = document.getElementById('gmbtn');
-  const gfoot= document.getElementById('gfoot');
 
   let gmState   = null;
   let discState = null;
@@ -194,13 +195,38 @@
   };
 
   // -- Streak display --
+  const SNOW_SVG = '<svg width="13" height="13" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;margin-right:3px"><g stroke="#7DD8E8" stroke-width="1.6" stroke-linecap="round"><line x1="8" y1="1" x2="8" y2="15"/><line x1="1" y1="4.5" x2="15" y2="11.5"/><line x1="15" y1="4.5" x2="1" y2="11.5"/><line x1="5" y1="3.5" x2="8" y2="5.5"/><line x1="11" y1="3.5" x2="8" y2="5.5"/><line x1="5" y1="12.5" x2="8" y2="10.5"/><line x1="11" y1="12.5" x2="8" y2="10.5"/></g></svg>';
+
   function renderStreak(s) {
     const n = s?.streak || 0;
     const freezes = typeof s?.freezes_left === 'number' ? s.freezes_left : 3;
+
+    // Flame icon
+    const flameEl = document.getElementById('gmflame');
+    if (flameEl) {
+      if (n <= 0) {
+        flameEl.innerHTML = '';
+        flameEl.style.display = 'none';
+      } else {
+        let gradStops;
+        if (n >= 100) {
+          gradStops = '<stop offset="0%" stop-color="#ff6b6b"/><stop offset="33%" stop-color="#ffd93d"/><stop offset="66%" stop-color="#6bff72"/><stop offset="100%" stop-color="#4dd6db"/>';
+        } else if (n >= 30) {
+          gradStops = '<stop offset="0%" stop-color="#B4E6FF"/><stop offset="100%" stop-color="#0066FF"/>';
+        } else if (n >= 7) {
+          gradStops = '<stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#FF4500"/>';
+        } else {
+          gradStops = '<stop offset="0%" stop-color="#FFD080"/><stop offset="100%" stop-color="#C81E1E"/>';
+        }
+        flameEl.style.display = '';
+        flameEl.innerHTML = '<svg viewBox="0 0 40 54" width="36" height="49" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gfg" x1="0" y1="1" x2="0" y2="0">' + gradStops + '</linearGradient></defs><path fill="url(#gfg)" d="M20,52 C12,47 5,37 8,24 C9,17 14,13 12,4 C16,12 18,10 17,3 L20,0 L23,3 C22,10 24,12 28,4 C26,13 31,17 32,24 C35,37 28,47 20,52Z"/></svg>';
+      }
+    }
+
+    // Number
     let label = n + '';
     let style = 'font-family:var(--display);font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:1;';
     if (n >= 100) {
-      label = n + '';
       style += 'background:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bff72,#4dd6db,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text';
     } else if (n >= 30) {
       style += 'color:#4DD6DB';
@@ -210,8 +236,8 @@
       style += 'color:var(--text)';
     }
     snum.style.cssText = style;
-    snum.textContent = (n > 0 ? '🔥 ' : '') + label;
-    ftxt.textContent = '🧊 ' + freezes + ' freeze' + (freezes !== 1 ? 's' : '') + ' left';
+    snum.textContent = label;
+    ftxt.innerHTML = SNOW_SVG + freezes + ' freeze' + (freezes !== 1 ? 's' : '') + ' left';
   }
 
   // -- Badges --
@@ -442,7 +468,6 @@
       hint.textContent = data.streak + ' day streak' + (data.freeze_used ? ' · freeze used' : '');
       renderStreak(data);
       renderBadges(data.badges);
-      if (data.daily_count) gfoot.textContent = 'Today: ' + data.daily_count + ' GMs';
 
       setTimeout(() => {
         drainEnergy();
@@ -476,7 +501,6 @@
       renderStreak(null); renderTasks(); renderBadges([]);
       btn.disabled = true; btn.className = 'gm-btn';
       btn.textContent = 'Hold to GM'; hint.textContent = 'Connect wallet to check in';
-      gfoot.textContent = '';
       return;
     }
     try {
@@ -491,7 +515,6 @@
     renderStreak(gmState);
     renderTasks();
     renderBadges(gmState?.badges);
-    if (gmState?.daily_count) gfoot.textContent = 'Today: ' + gmState.daily_count + ' GMs';
 
     if (gmState?.already_checked_in) {
       btn.disabled = true; btn.className = 'gm-btn checked';
