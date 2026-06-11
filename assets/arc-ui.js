@@ -61,7 +61,7 @@
       const btn = document.getElementById(id); if (!btn) return;
       if (s.connected) {
         btn.classList.remove('disconnected');
-        btn.innerHTML = `<span class="dot"></span>${ARC.shortAddr(s.address)}`;
+        btn.innerHTML = '<span class="dot"></span>Profile';
         btn.title = s.address;
       } else {
         btn.classList.add('disconnected');
@@ -73,7 +73,7 @@
 
   async function onWalletClick() {
     const s = ARC.wallet.snapshot();
-    if (s.connected) { openWalletMenu(); return; }
+    if (s.connected) { openProfileModal(); return; }
     // ARC.wallet.connect() opens the Reown AppKit modal (WalletConnect + injected wallets).
     // Falls back to EIP-6963 if AppKit hasn't loaded yet.
     try {
@@ -86,36 +86,129 @@
     }
   }
 
-  function openWalletMenu() {
+  function loadQrCode(cb) {
+    if (typeof QRCode !== 'undefined') { cb(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js';
+    s.crossOrigin = 'anonymous';
+    s.referrerPolicy = 'no-referrer';
+    s.onload = cb;
+    s.onerror = function() {};
+    document.head.appendChild(s);
+  }
+
+  function openProfileModal() {
     const addr = ARC.wallet.address;
+    const ck = ARC.wallet.chainKey || 'arc';
+    const explorerUrl = ARC.CHAINS[ck]?.explorerAddr?.(addr) || '#';
+    const savedX = localStorage.getItem('oneliq_profile_x_' + addr.toLowerCase()) || '';
+    const clientId = document.querySelector('meta[name="oneliq-discord-client-id"]')?.content || '';
+    const redirectUri = document.querySelector('meta[name="oneliq-discord-redirect"]')?.content
+      || (window.location.origin + '/auth/discord/callback');
+    const escapedX = savedX.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
     openModal({
-      title: 'Account',
+      title: 'Profile',
       body: `
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface)">
-            <div class="label-caps" style="margin-bottom:4px">Address</div>
-            <div class="mono" style="font-size:13px;word-break:break-all">${addr}</div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Address</div>
+            <div style="padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-family:var(--mono);font-size:12px;word-break:break-all;color:var(--text);line-height:1.55">${addr}</div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button id="pm-copy" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s">Copy</button>
+              <a href="${explorerUrl}" target="_blank" rel="noopener" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12.5px;font-weight:600;font-family:var(--font);text-align:center;text-decoration:none;display:block;transition:all .15s">Explorer</a>
+            </div>
+            <div id="pm-qr" style="display:flex;justify-content:center;margin-top:12px"></div>
           </div>
-          <a class="btn-ghost" href="/balance" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none">
-            <span>💰 Unified Balance</span>
-            <span style="font-family:var(--mono);font-size:10px;color:#FFB454;letter-spacing:.12em">// BETA</span>
-          </a>
-          <div style="display:flex;gap:8px">
-            <button class="btn-ghost" style="flex:1" id="arc-copy-addr">Copy</button>
-            <a class="btn-ghost" style="flex:1;text-align:center" id="arc-explorer-link" target="_blank" rel="noopener">View on Explorer ↗</a>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Discord</div>
+            <div id="pm-discord"><div style="font-size:13px;color:var(--muted)">Loading...</div></div>
           </div>
-          <button class="btn-ghost" id="arc-disconnect" style="color:var(--red);border-color:rgba(255,85,119,.3)">Disconnect</button>
+          <div>
+            <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">X / Twitter</div>
+            <div style="display:flex;gap:8px">
+              <input id="pm-x" type="text" placeholder="@handle" maxlength="50" value="${escapedX}" style="flex:1;padding:9px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border .15s"/>
+              <button id="pm-x-save" style="padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;white-space:nowrap">Save</button>
+            </div>
+            <div id="pm-x-hint" style="font-size:11px;margin-top:5px;min-height:15px"></div>
+          </div>
+          <button id="pm-disconnect" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,85,119,.3);background:rgba(255,85,119,.06);color:#FF5577;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s">Disconnect Wallet</button>
         </div>`,
       onOpen: () => {
-        document.getElementById('arc-copy-addr').onclick = () => {
-          navigator.clipboard.writeText(addr); toast('success', 'Copied');
+        // Copy address
+        document.getElementById('pm-copy').onclick = () => {
+          navigator.clipboard.writeText(addr).catch(() => {});
+          toast('success', 'Copied');
         };
-        const link = document.getElementById('arc-explorer-link');
-        const ck = ARC.wallet.chainKey || 'arc';
-        link.href = ARC.CHAINS[ck]?.explorerAddr(addr) || '#';
-        document.getElementById('arc-disconnect').onclick = () => {
+        // Disconnect
+        document.getElementById('pm-disconnect').onclick = () => {
           ARC.wallet.disconnect(); closeModal(); toast('', 'Disconnected');
         };
+        // X handle
+        const xInp = document.getElementById('pm-x');
+        const xHint = document.getElementById('pm-x-hint');
+        const saveX = () => {
+          let v = xInp.value.trim();
+          if (v && !v.startsWith('@')) v = '@' + v;
+          xInp.value = v;
+          localStorage.setItem('oneliq_profile_x_' + addr.toLowerCase(), v);
+          xHint.textContent = v ? 'Saved.' : 'Cleared.';
+          xHint.style.color = 'var(--arc4,#7BE495)';
+          setTimeout(() => { xHint.textContent = ''; }, 2000);
+        };
+        document.getElementById('pm-x-save').onclick = saveX;
+        xInp.addEventListener('keydown', e => { if (e.key === 'Enter') saveX(); });
+        xInp.addEventListener('focus', () => { xInp.style.borderColor = 'var(--arc1)'; });
+        xInp.addEventListener('blur', () => { xInp.style.borderColor = 'var(--border)'; });
+        // Discord
+        const discordEl = document.getElementById('pm-discord');
+        function dcBtn() {
+          return '<button id="pm-dc-btn" style="width:100%;padding:10px 16px;border-radius:10px;background:rgba(88,101,242,0.12);border:1px solid rgba(88,101,242,0.40);color:#7289DA;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s">Connect Discord</button>';
+        }
+        function dcWire() {
+          const btn = document.getElementById('pm-dc-btn');
+          if (!btn) return;
+          btn.onclick = () => {
+            if (!clientId) {
+              toast('warn', 'Not configured', 'Add DISCORD_CLIENT_ID to Cloudflare Pages environment variables to enable Discord.');
+              return;
+            }
+            window.location.href = 'https://discord.com/oauth2/authorize?client_id=' + encodeURIComponent(clientId)
+              + '&redirect_uri=' + encodeURIComponent(redirectUri)
+              + '&response_type=code&scope=identify&state=' + encodeURIComponent(addr.toLowerCase());
+          };
+        }
+        fetch('/auth/profile/' + addr.toLowerCase())
+          .then(r => r.ok ? r.json() : null)
+          .then(profile => {
+            if (profile && profile.discord_username) {
+              discordEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px"><span style="font-family:var(--mono);font-size:13px;color:var(--text)">@' + profile.discord_username + '</span><button id="pm-dc-unlink" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--font);padding:2px 6px">Unlink</button></div>';
+              document.getElementById('pm-dc-unlink').onclick = () => {
+                fetch('/auth/profile/' + addr.toLowerCase(), { method: 'DELETE' }).catch(() => {});
+                toast('', 'Discord unlinked');
+                discordEl.innerHTML = dcBtn();
+                dcWire();
+              };
+            } else {
+              discordEl.innerHTML = dcBtn();
+              dcWire();
+            }
+          })
+          .catch(() => {
+            discordEl.innerHTML = dcBtn();
+            dcWire();
+          });
+        // QR code (lazy-loaded from CDN)
+        const qrEl = document.getElementById('pm-qr');
+        loadQrCode(() => {
+          try {
+            const canvas = document.createElement('canvas');
+            qrEl.appendChild(canvas);
+            QRCode.toCanvas(canvas, addr, { width: 128, margin: 1 }, err => {
+              if (err) qrEl.innerHTML = '';
+            });
+          } catch (e) { qrEl.innerHTML = ''; }
+        });
       },
     });
   }
@@ -430,6 +523,12 @@
     document.body.classList.add('arc-app');
     renderSidebar(activeTab);
     await ARC.wallet.autoConnect().catch(() => null);
+    if (new URLSearchParams(window.location.search).get('discord_linked') === '1') {
+      toast('success', 'Discord linked', 'Your Discord account is connected to this wallet.');
+      const u = new URL(window.location.href);
+      u.searchParams.delete('discord_linked');
+      history.replaceState({}, '', u.toString());
+    }
   }
 
   global.ArcUI = { boot, bootApp, renderNav, renderSidebar, toast, openModal, closeModal, confirm };
