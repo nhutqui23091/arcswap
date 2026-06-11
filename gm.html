@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="oneliq-discord-client-id" content="1514587016157859900"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cryptologos.cc https://assets.coingecko.com https://*.walletconnect.com https://walletconnect.org https://*.reown.com; connect-src 'self' https://rpc.testnet.arc.network https://ethereum-sepolia-rpc.publicnode.com https://sepolia.base.org https://api.avax-test.network https://sepolia-rollup.arbitrum.io https://optimism-sepolia.publicnode.com https://rpc-amoy.polygon.technology https://sepolia.unichain.org https://iris-api-sandbox.circle.com https://gateway-api-testnet.circle.com https://*.circle.com https://api.circle.com https://esm.sh wss://relay.walletconnect.com wss://relay.walletconnect.org https://verify.walletconnect.com https://api.web3modal.org https://pulse.walletconnect.org https://explorer-api.walletconnect.com https://*.reown.com; base-uri 'self'; form-action 'self'; object-src 'none'"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<link rel="icon" type="image/png" href="/assets/logos/mark-oneliq.png"/>
+<link rel="apple-touch-icon" href="/assets/logos/mark-oneliq.png"/>
+<meta name="description" content="GM. Daily check-in and streak tracker on Oneliq Arc Testnet."/>
+<title>GM | Oneliq</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.0"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0A1628;--bg2:#0F1E36;--surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);--text:#F5F7FB;--muted:#A4B8D0;--muted-soft:#7E92AE;--arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;--display:'Space Grotesk','Inter',system-ui,sans-serif;--font:'DM Sans','Inter',system-ui,sans-serif;--mono:'Space Mono','DM Mono',ui-monospace,monospace}
+
+.gm-page{position:relative;z-index:1;max-width:500px;margin:0 auto;padding:44px 24px 80px;display:flex;flex-direction:column;align-items:center;gap:22px}
+@media(max-width:900px){.gm-page{padding:72px 18px 60px}}
+
+/* HERO */
+.gm-eyebrow{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--arc1);margin-bottom:10px;text-align:center}
+.gm-eyebrow::before{content:'// ';color:rgba(140,160,189,.5)}
+.gm-title{font-family:var(--display);font-size:clamp(72px,18vw,100px);font-weight:800;letter-spacing:-.05em;line-height:1;background:linear-gradient(135deg,var(--arc1),var(--arc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
+.gm-tagline{font-size:14.5px;color:var(--muted);text-align:center}
+
+/* HANG */
+.gm-hang{display:flex;flex-direction:column;align-items:center;gap:14px}
+.gm-rope-wrap{display:flex;flex-direction:column;align-items:center;animation:gm-sway 4s ease-in-out infinite;transform-origin:top center}
+.gm-rope{width:1px;height:80px;background:linear-gradient(to bottom,transparent,rgba(77,214,219,.3))}
+.gm-logo{width:76px;height:76px;border-radius:18px;box-shadow:0 8px 28px rgba(77,214,219,.25),0 3px 10px rgba(0,0,0,.45);animation:gm-bob 4s ease-in-out infinite}
+@keyframes gm-sway{0%,100%{transform:rotate(-1.8deg)}50%{transform:rotate(1.8deg)}}
+@keyframes gm-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.gm-energy-wrap{display:flex;flex-direction:column;align-items:center;gap:5px}
+.gm-energy-bar{width:200px;height:12px;border-radius:99px;background:rgba(255,255,255,.07);border:1px solid var(--border);overflow:hidden}
+.gm-energy-fill{height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--arc1),var(--arc2))}
+.gm-energy-pct{font-family:var(--mono);font-size:11px;color:var(--muted-soft);letter-spacing:.06em}
+
+/* STREAK */
+.gm-streak-card{width:100%;padding:22px;border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.025);display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.gm-streak-num{font-family:var(--display);font-size:68px;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--text)}
+.gm-streak-lbl{font-size:11.5px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.gm-freezes{font-size:13px;color:var(--muted);margin-top:2px}
+
+/* BUTTON */
+.gm-btn-section{width:100%;display:flex;flex-direction:column;align-items:center;gap:9px}
+.gm-hint{font-size:12px;color:var(--muted);min-height:17px;text-align:center}
+.gm-btn{width:100%;padding:15px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--text);font-family:var(--font);transition:border-color .2s,background .2s,box-shadow .2s;user-select:none;-webkit-user-select:none;touch-action:none}
+.gm-btn:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.26)}
+.gm-btn.active{border-color:var(--arc1);background:rgba(77,214,219,.1);box-shadow:0 0 22px rgba(77,214,219,.22)}
+.gm-btn.checked{background:rgba(123,228,149,.07);border-color:rgba(123,228,149,.28);color:var(--arc4);cursor:default}
+.gm-btn.success{border-color:var(--arc4);color:var(--arc4);animation:gm-pulse .55s ease-out}
+.gm-btn:disabled:not(.checked){opacity:.42;cursor:not-allowed}
+@keyframes gm-pulse{0%{transform:scale(1)}30%{transform:scale(1.03)}100%{transform:scale(1)}}
+
+/* CALENDAR */
+.gm-cal-wrap{width:100%}
+.gm-sec-label{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.gm-sec-label::before{content:'// ';color:rgba(140,160,189,.5);font-weight:400}
+.gm-cal{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.gm-day{aspect-ratio:1;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:var(--muted-soft);position:relative;transition:border-color .15s}
+.gm-day:hover::after{content:attr(data-d);position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#0F1E36;border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:9.5px;white-space:nowrap;pointer-events:none;color:var(--muted)}
+.gm-day.ck{background:rgba(123,228,149,.14);border-color:rgba(123,228,149,.38);color:var(--arc4)}
+.gm-day.tod{border-color:var(--arc1);background:rgba(77,214,219,.06);color:var(--arc1)}
+
+/* TASKS */
+.gm-tasks-wrap{width:100%;display:flex;flex-direction:column;gap:9px}
+.gm-task{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:11px;transition:border-color .2s}
+.gm-task.done{border-color:rgba(123,228,149,.3);background:rgba(123,228,149,.03)}
+.t-ico{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.t-ico.done{background:rgba(123,228,149,.14)}
+.t-body{flex:1;min-width:0}
+.t-name{font-size:13px;font-weight:600;color:var(--text)}
+.t-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.t-sub.ok{color:var(--arc4)}
+.t-acts{display:flex;gap:6px;flex-shrink:0}
+.t-acts a,.t-acts button{padding:5px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;font-family:var(--font);transition:all .15s;white-space:nowrap}
+.t-acts a:hover,.t-acts button:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
+
+.gm-foot{font-size:12px;font-family:var(--mono);color:var(--muted-soft);text-align:center}
+</style>
+</head>
+<body>
+
+<div class="gm-page">
+
+  <div style="text-align:center">
+    <div class="gm-eyebrow">Daily Check-in</div>
+    <div class="gm-title">GM</div>
+    <p class="gm-tagline">Daily check-in. Build the streak.</p>
+  </div>
+
+  <div class="gm-hang">
+    <div class="gm-rope-wrap">
+      <div class="gm-rope"></div>
+      <img src="/assets/logos/mark-oneliq.png" class="gm-logo" alt="Oneliq"/>
+    </div>
+    <div class="gm-energy-wrap">
+      <div class="gm-energy-bar"><div class="gm-energy-fill" id="ef"></div></div>
+      <div class="gm-energy-pct" id="ep">0%</div>
+    </div>
+  </div>
+
+  <div class="gm-streak-card">
+    <div class="gm-streak-num" id="snum">0</div>
+    <div class="gm-streak-lbl">Day streak</div>
+    <div class="gm-freezes" id="ftxt">🧊 3 freezes left</div>
+  </div>
+
+  <div class="gm-btn-section">
+    <div class="gm-hint" id="hint">Connect wallet to check in</div>
+    <button class="gm-btn" id="gmbtn" type="button" disabled>Hold to GM</button>
+  </div>
+
+  <div class="gm-cal-wrap">
+    <div class="gm-sec-label">Last 30 days</div>
+    <div class="gm-cal" id="gcal"></div>
+  </div>
+
+  <div class="gm-tasks-wrap">
+    <div class="gm-sec-label">Onboarding</div>
+
+    <div class="gm-task" id="td">
+      <div class="t-ico" id="td-ico">💬</div>
+      <div class="t-body">
+        <div class="t-name">Join Oneliq Discord</div>
+        <div class="t-sub" id="td-sub">Link Discord in Profile after joining</div>
+      </div>
+      <div class="t-acts" id="td-acts">
+        <a href="https://discord.com/invite/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Join</a>
+      </div>
+    </div>
+
+    <div class="gm-task" id="tx">
+      <div class="t-ico" id="tx-ico">𝕏</div>
+      <div class="t-body">
+        <div class="t-name">Follow Oneliq on X</div>
+        <div class="t-sub" id="tx-sub">Set X handle in Profile first</div>
+      </div>
+      <div class="t-acts" id="tx-acts">
+        <a href="https://x.com/oneliq_" target="_blank" rel="noopener noreferrer">Open X</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="gm-foot" id="gfoot"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
+        integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/assets/appkit.bundle.js?v=1.0.0"></script>
+<script src="/assets/arc-core.js?v=9.8.4"></script>
+<script src="/assets/arc-ui.js?v=9.10.0"></script>
+<script>
+(async () => {
+  const ARC = window.ARC;
+  await ArcUI.bootApp('gm');
+
+  const ef   = document.getElementById('ef');
+  const ep   = document.getElementById('ep');
+  const snum = document.getElementById('snum');
+  const ftxt = document.getElementById('ftxt');
+  const hint = document.getElementById('hint');
+  const btn  = document.getElementById('gmbtn');
+  const gcal = document.getElementById('gcal');
+  const gfoot= document.getElementById('gfoot');
+
+  let gmState   = null;
+  let discState = null;
+  let filling   = false;
+  let fillRaf   = null;
+  let fillStart = null;
+  const FILL_MS = 1200;
+
+  function addr()    { return ARC.wallet.address?.toLowerCase(); }
+  function utcDay()  { return new Date().toISOString().slice(0, 10); }
+
+  // ── Streak display ──────────────────────────────────────────────────────────
+  function renderStreak(s) {
+    const n = s?.streak || 0;
+    const freezes = typeof s?.freezes_left === 'number' ? s.freezes_left : 3;
+    let label = n + '';
+    let style = 'font-family:var(--display);font-size:68px;font-weight:800;letter-spacing:-.04em;line-height:1;';
+    if (n >= 100) {
+      label = n + '';
+      style += 'background:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bff72,#4dd6db,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text';
+    } else if (n >= 30) {
+      style += 'color:#4DD6DB';
+    } else if (n >= 7) {
+      style += 'color:#FFB454';
+    } else {
+      style += 'color:var(--text)';
+    }
+    snum.style.cssText = style;
+    snum.textContent = (n > 0 ? '🔥 ' : '') + label;
+    ftxt.textContent = '🧊 ' + freezes + ' freeze' + (freezes !== 1 ? 's' : '') + ' left';
+  }
+
+  // ── Calendar ────────────────────────────────────────────────────────────────
+  function renderCal(history) {
+    const hs    = new Set(history || []);
+    const today = utcDay();
+    let   html  = '';
+    for (let i = 29; i >= 0; i--) {
+      const d  = new Date();
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      const ck = hs.has(ds);
+      const td = !ck && ds === today;
+      let cls  = 'gm-day' + (ck ? ' ck' : td ? ' tod' : '');
+      html += `<div class="${cls}" data-d="${ds}">${ck ? '✓' : td ? '·' : ''}</div>`;
+    }
+    gcal.innerHTML = html;
+  }
+
+  // ── Tasks ───────────────────────────────────────────────────────────────────
+  function renderTasks() {
+    const a = addr();
+    if (!a) return;
+    const xHandle = (localStorage.getItem('oneliq_profile_x_' + a) || '');
+    const xDone   = gmState?.x_follow_done;
+    const dcDone  = !!(discState?.discord_username);
+
+    // Discord task
+    const tdCard = document.getElementById('td');
+    const tdIco  = document.getElementById('td-ico');
+    const tdSub  = document.getElementById('td-sub');
+    const tdActs = document.getElementById('td-acts');
+    if (dcDone) {
+      tdCard.classList.add('done'); tdIco.classList.add('done');
+      tdIco.textContent = '✓';
+      tdSub.textContent = discState.discord_username;
+      tdSub.classList.add('ok');
+      tdActs.innerHTML  = '';
+    } else {
+      tdCard.classList.remove('done'); tdIco.classList.remove('done');
+      tdIco.textContent = '💬';
+      tdSub.classList.remove('ok');
+      tdSub.textContent = 'Link Discord via Profile after joining';
+      tdActs.innerHTML  = '<a href="https://discord.com/invite/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Join</a>';
+    }
+
+    // X task
+    const txCard = document.getElementById('tx');
+    const txIco  = document.getElementById('tx-ico');
+    const txSub  = document.getElementById('tx-sub');
+    const txActs = document.getElementById('tx-acts');
+    if (xDone) {
+      txCard.classList.add('done'); txIco.classList.add('done');
+      txIco.textContent = '✓';
+      txSub.textContent = xHandle || 'Done';
+      txSub.classList.add('ok');
+      txActs.innerHTML  = '';
+    } else {
+      txCard.classList.remove('done'); txIco.classList.remove('done');
+      txIco.textContent = '𝕏';
+      txSub.classList.remove('ok');
+      if (xHandle) {
+        txSub.textContent = xHandle;
+        txActs.innerHTML  = '<a href="https://x.com/oneliq_" target="_blank" rel="noopener noreferrer">Open X</a><button id="xdone">Mark done</button>';
+        document.getElementById('xdone').onclick = markXDone;
+      } else {
+        txSub.textContent = 'Set X handle in Profile first';
+        txActs.innerHTML  = '<a href="https://x.com/oneliq_" target="_blank" rel="noopener noreferrer">Open X</a>';
+      }
+    }
+  }
+
+  async function markXDone() {
+    const a = addr(); if (!a) return;
+    try {
+      const r = await fetch('/auth/gm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'x_follow', address: a }) });
+      if (r.ok) { gmState = await r.json(); renderTasks(); ArcUI.toast('success', 'Done!', 'X follow marked.'); }
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Energy bar ──────────────────────────────────────────────────────────────
+  function setEnergy(pct) {
+    ef.style.width = (pct * 100).toFixed(1) + '%';
+    ep.textContent = Math.round(pct * 100) + '%';
+  }
+  function drainEnergy() {
+    ef.style.transition = 'width 0.5s ease';
+    setEnergy(0);
+    setTimeout(() => { ef.style.transition = 'none'; }, 520);
+  }
+
+  // ── Press-and-hold ──────────────────────────────────────────────────────────
+  function onDown(e) {
+    e.preventDefault();
+    if (btn.disabled || filling) return;
+    filling = true; fillStart = Date.now();
+    ef.style.transition = 'none';
+    btn.classList.add('active');
+    animFill();
+  }
+  function onUp() {
+    if (!filling) return;
+    filling = false;
+    if (fillRaf) cancelAnimationFrame(fillRaf);
+    btn.classList.remove('active');
+    drainEnergy();
+  }
+  function animFill() {
+    if (!filling) return;
+    const pct = Math.min((Date.now() - fillStart) / FILL_MS, 1);
+    setEnergy(pct);
+    if (pct < 1) { fillRaf = requestAnimationFrame(animFill); }
+    else { filling = false; btn.classList.remove('active'); triggerCheckin(); }
+  }
+  btn.addEventListener('pointerdown', onDown);
+  btn.addEventListener('pointerup',   onUp);
+  btn.addEventListener('pointerleave',onUp);
+  btn.addEventListener('pointercancel',onUp);
+
+  // ── Check-in flow ───────────────────────────────────────────────────────────
+  async function triggerCheckin() {
+    btn.disabled = true; btn.textContent = 'Signing...';
+    hint.textContent = 'Approve in your wallet';
+    try {
+      const a     = addr();
+      const today = utcDay();
+      const nonce = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const msg   = 'Oneliq GM check-in\nDate: ' + today + '\nWallet: ' + a + '\nNonce: ' + nonce;
+
+      if (!window.ethereum) throw new Error('No wallet provider found');
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer   = await provider.getSigner();
+      const sig      = await signer.signMessage(msg);
+
+      const res = await fetch('/auth/gm', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ address: a, signature: sig, date: today, nonce }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Server error');
+
+      gmState = data;
+      setEnergy(1);
+      btn.classList.add('success');
+      btn.textContent = '✓ GM! Day ' + data.streak;
+      hint.textContent = data.streak + ' day streak' + (data.freeze_used ? ' · freeze used' : '');
+      renderStreak(data);
+      renderCal(data.history);
+      if (data.daily_count) gfoot.textContent = 'Today: ' + data.daily_count + ' GMs';
+
+      setTimeout(() => {
+        drainEnergy();
+        btn.classList.remove('success');
+        btn.classList.add('checked');
+        btn.textContent = '✓ Checked in today. Come back tomorrow.';
+        btn.disabled = true;
+        hint.textContent = '';
+        ArcUI.toast('success', 'GM! Day ' + data.streak, data.freeze_used ? 'Freeze used.' : 'Keep it up.');
+      }, 2400);
+
+    } catch(e) {
+      drainEnergy();
+      btn.disabled = false;
+      const msg = e?.message || String(e);
+      if (/reject|denied|ACTION_REJECTED/i.test(msg)) {
+        btn.textContent = 'Hold to GM'; hint.textContent = 'Press and hold to check in';
+        ArcUI.toast('', 'Cancelled', 'Signature cancelled.');
+      } else {
+        btn.textContent = 'Try again'; hint.textContent = msg.slice(0, 80);
+        ArcUI.toast('error', 'Check-in failed', msg.slice(0, 60));
+      }
+    }
+  }
+
+  // ── Load ────────────────────────────────────────────────────────────────────
+  async function loadAll() {
+    const a = addr();
+    if (!a) {
+      gmState = discState = null;
+      renderStreak(null); renderCal([]); renderTasks();
+      btn.disabled = true; btn.className = 'gm-btn';
+      btn.textContent = 'Hold to GM'; hint.textContent = 'Connect wallet to check in';
+      gfoot.textContent = '';
+      return;
+    }
+    try {
+      const [gr, dr] = await Promise.all([
+        fetch('/auth/gm?address=' + a),
+        fetch('/auth/profile/' + a),
+      ]);
+      gmState   = gr.ok  ? await gr.json() : null;
+      discState = dr.ok  ? await dr.json() : null;
+    } catch(e) { console.warn('[gm] load:', e); }
+
+    renderStreak(gmState);
+    renderCal(gmState?.history);
+    renderTasks();
+    if (gmState?.daily_count) gfoot.textContent = 'Today: ' + gmState.daily_count + ' GMs';
+
+    if (gmState?.already_checked_in) {
+      btn.disabled = true; btn.className = 'gm-btn checked';
+      btn.textContent = '✓ Checked in today. Come back tomorrow.';
+      hint.textContent = '';
+    } else {
+      btn.disabled = false; btn.className = 'gm-btn';
+      btn.textContent = 'Hold to GM'; hint.textContent = 'Press and hold to check in';
+    }
+  }
+
+  ARC.wallet.on(loadAll);
+  renderCal([]);
+  if (ARC.wallet.address) loadAll();
+})();
+</script>
+</body>
+</html>

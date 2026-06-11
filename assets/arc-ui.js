@@ -120,6 +120,7 @@
             </div>
             <div id="pm-qr" style="display:flex;justify-content:center;margin-top:12px"></div>
           </div>
+          <div id="pm-streak-row"></div>
           <div>
             <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Discord</div>
             <div id="pm-discord"><div style="font-size:13px;color:var(--muted)">Loading...</div></div>
@@ -177,6 +178,19 @@
               + '&response_type=code&scope=identify&state=' + encodeURIComponent(addr.toLowerCase());
           };
         }
+        // Streak row (async, non-blocking)
+        fetch('/auth/gm?address=' + addr.toLowerCase())
+          .then(r => r.ok ? r.json() : null)
+          .then(gm => {
+            const el = document.getElementById('pm-streak-row');
+            if (!el) return;
+            if (gm && gm.streak > 0) {
+              el.innerHTML = '<a href="/gm" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;text-decoration:none;margin-bottom:2px"><span style="font-size:18px">🔥</span><span style="font-size:14px;font-weight:600;color:var(--text)">' + gm.streak + ' day streak</span><span style="margin-left:auto;font-size:11px;color:var(--arc1)">GM</span></a>';
+            } else {
+              el.innerHTML = '<a href="/gm" style="display:flex;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;text-decoration:none;font-size:13px;color:var(--muted);margin-bottom:2px">No streak yet. Check in daily →</a>';
+            }
+          })
+          .catch(() => {});
         fetch('/auth/profile/' + addr.toLowerCase())
           .then(r => r.ok ? r.json() : null)
           .then(profile => {
@@ -363,6 +377,7 @@
         { id: 'balance',   label: 'Balance',   icon: '◈', href: '/balance' },
         { id: 'agent',     label: 'Agent',     icon: '∞', href: '/agent',   badge: 'NEW'  },
         { id: 'history',   label: 'History',   icon: svgClock, href: '/history', badge: 'NEW'  },
+        { id: 'gm',        label: 'GM',        icon: '☕', href: '/gm', badge: 'NEW'  },
         { id: 'payment',   label: 'Payment',   icon: '⇢',                    badge: 'SOON', soon: true },
         { id: 'dashboard', label: 'Dashboard', icon: '▦',                    badge: 'SOON', soon: true },
       ],
