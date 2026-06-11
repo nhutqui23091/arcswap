@@ -11,7 +11,7 @@
 <title>Unified Balance | Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.9.2"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.9.6"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -157,21 +157,6 @@ html{scroll-behavior:smooth}
 @keyframes dfade{0%{opacity:1;transform:translateY(0)}85%{opacity:.7;transform:translateY(-2px)}100%{opacity:0;transform:translateY(-4px)}}
 .delta-badge.pos{color:var(--arc4);background:rgba(123,228,149,.13)}
 .delta-badge.neg{color:var(--danger);background:rgba(255,122,122,.13)}
-/* DEPOSIT ADDRESS MODAL */
-.dep-addr-chain{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.dep-addr-chain .chain-dot{width:36px;height:36px;border-radius:10px;font-size:13px;font-weight:800}
-.dep-addr-chain .chain-dot.fallback{border-radius:10px}
-.dep-addr-name{font-size:16px;font-weight:700;color:var(--text)}
-.dep-addr-wrap{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-top:6px;margin-bottom:4px}
-.dep-addr-txt{font-family:var(--mono);font-size:12px;color:var(--text);word-break:break-all;flex:1;line-height:1.55}
-.dep-copy-btn{flex-shrink:0;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;white-space:nowrap;margin-top:1px}
-.dep-copy-btn:hover{color:var(--text);border-color:var(--arc1)}
-.dep-copy-btn.copied{color:var(--arc4);border-color:rgba(123,228,149,.5)}
-.dep-qr{display:flex;justify-content:center;margin:14px 0 10px}
-.dep-qr canvas{border-radius:8px;border:6px solid #fff;display:block}
-.dep-note{font-size:12.5px;color:var(--muted);line-height:1.6;padding:10px 12px;background:rgba(77,214,219,.05);border:1px solid rgba(77,214,219,.15);border-radius:8px;margin-bottom:10px}
-.dep-mm-btn{width:100%;padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;margin-top:4px}
-.dep-mm-btn:hover{border-color:var(--arc1);background:rgba(77,214,219,.06)}
 </style>
 </head>
 <body>
@@ -361,38 +346,15 @@ html{scroll-behavior:smooth}
   </div>
 </div>
 
-<!-- ──────── DEPOSIT ADDRESS MODAL ──────── -->
-<div class="gw-modal-bg" id="modal-dep-addr">
-  <div class="gw-modal">
-    <div class="gw-modal-head">
-      <div class="gw-modal-title" id="dep-addr-title">Deposit address</div>
-      <button class="gw-modal-close" data-close>×</button>
-    </div>
-    <div class="dep-addr-chain">
-      <div class="chain-dot" id="dep-addr-icon"></div>
-      <div class="dep-addr-name" id="dep-addr-chain-name"></div>
-    </div>
-    <div class="gw-label">GatewayWallet contract address</div>
-    <div class="dep-addr-wrap">
-      <div class="dep-addr-txt" id="dep-addr-txt"></div>
-      <button class="dep-copy-btn" id="dep-copy-btn" type="button">Copy</button>
-    </div>
-    <div class="dep-qr" id="dep-qr"></div>
-    <div class="dep-note" id="dep-note">Send USDC to this address on this network. Funds will appear in your Unified Balance within approximately 30 seconds after the transaction confirms.</div>
-    <a href="/faucet" style="display:block;text-align:center;font-size:13px;color:var(--arc1);margin-bottom:10px;text-decoration:none;transition:opacity .15s" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">Need test USDC? → Get from faucet</a>
-    <button class="dep-mm-btn" id="dep-mm-btn" type="button">Switch network in MetaMask</button>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
         integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM"
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.8.4"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
-<script src="/assets/arc-ui.js?v=9.9.2"></script>
+<script src="/assets/arc-ui.js?v=9.9.6"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -607,7 +569,6 @@ html{scroll-behavior:smooth}
         <div class="chain-actions">
           <button data-act="deposit" data-chain="${k}" ${(connected && !depositOff)?'':'disabled'} title="${depositTitle}">Deposit</button>
           <button data-act="withdraw" data-chain="${k}" ${(connected && !isZero)?'':'disabled'}>Withdraw</button>
-          <button data-act="depaddr" data-chain="${k}" title="Show Gateway contract address for direct deposit">Address</button>
         </div>`;
       table.appendChild(row);
     });
@@ -616,7 +577,6 @@ html{scroll-behavior:smooth}
         const k = btn.dataset.chain;
         if (btn.dataset.act === 'deposit') openDepositModal(k);
         else if (btn.dataset.act === 'withdraw') openWithdrawModal(k);
-        else if (btn.dataset.act === 'depaddr') openDepAddrModal(k);
       };
     });
     table.classList.remove('loading');
@@ -961,85 +921,6 @@ html{scroll-behavior:smooth}
       btn.disabled = false; btn.textContent = 'Initiate withdrawal';
     }
   };
-
-  // ───── Deposit address modal ─────
-  function openDepAddrModal(chainKey) {
-    const chain = ARC.CHAINS[chainKey];
-    if (!chain) return;
-    const addr = chain.contracts?.gatewayWallet || '0x0077777d7EBA4688BDeF3E311b846F25870A19B9';
-    const short = (chain.short || chainKey).slice(0, 3).toUpperCase();
-    // Header
-    document.getElementById('dep-addr-title').textContent = `Deposit on ${chain.name}`;
-    document.getElementById('dep-addr-chain-name').textContent = chain.name;
-    const iconEl = document.getElementById('dep-addr-icon');
-    const iconUrl = ARC.chainIcon ? ARC.chainIcon(chainKey) : '';
-    if (iconUrl) {
-      iconEl.className = 'chain-dot';
-      iconEl.style.background = '#fff';
-      iconEl.innerHTML = `<img src="${iconUrl}" alt="${short}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.parentElement.classList.add('fallback');this.parentElement.style.background='${chain.iconGrad||''}';this.parentElement.textContent='${short}'"/>`;
-    } else {
-      iconEl.className = 'chain-dot fallback';
-      iconEl.style.background = chain.iconGrad || 'linear-gradient(135deg,#4DD6DB,#4A7BEC)';
-      iconEl.textContent = short;
-    }
-    // Address + copy
-    document.getElementById('dep-addr-txt').textContent = addr;
-    const copyBtn = document.getElementById('dep-copy-btn');
-    copyBtn.textContent = 'Copy';
-    copyBtn.className = 'dep-copy-btn';
-    copyBtn.onclick = () => {
-      navigator.clipboard.writeText(addr).then(() => {
-        copyBtn.textContent = 'Copied!';
-        copyBtn.classList.add('copied');
-        setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 2000);
-      }).catch(() => {
-        const r = document.createRange();
-        r.selectNodeContents(document.getElementById('dep-addr-txt'));
-        const sel = window.getSelection();
-        sel.removeAllRanges(); sel.addRange(r);
-      });
-    };
-    // Note (Arc: deposit disabled)
-    const noteEl = document.getElementById('dep-note');
-    if (chain.gatewayDepositDisabled) {
-      noteEl.textContent = 'Direct ERC-20 deposit is not supported on Arc - USDC here is the native gas token. Use cross-chain spend to mint USDC on Arc instead.';
-      noteEl.style.borderColor = 'rgba(255,180,84,.25)';
-      noteEl.style.background = 'rgba(255,180,84,.06)';
-    } else {
-      noteEl.textContent = 'Send USDC to this address on this network. Funds will appear in your Unified Balance within approximately 30 seconds after the transaction confirms.';
-      noteEl.style.borderColor = 'rgba(77,214,219,.15)';
-      noteEl.style.background = 'rgba(77,214,219,.05)';
-    }
-    // QR code
-    const qrEl = document.getElementById('dep-qr');
-    qrEl.innerHTML = '';
-    if (!chain.gatewayDepositDisabled && typeof QRCode !== 'undefined') {
-      const canvas = document.createElement('canvas');
-      qrEl.appendChild(canvas);
-      QRCode.toCanvas(canvas, addr, { width: 128, margin: 1 }, err => { if (err) canvas.style.display = 'none'; });
-    }
-    // MetaMask switch button
-    const mmBtn = document.getElementById('dep-mm-btn');
-    if (chain.gatewayDepositDisabled) {
-      mmBtn.style.display = 'none';
-    } else {
-      mmBtn.style.display = '';
-      mmBtn.textContent = `Switch to ${chain.name} in MetaMask`;
-      mmBtn.onclick = async () => {
-        if (!window.ethereum) { ArcUI.toast('error', 'No wallet', 'MetaMask not detected.'); return; }
-        try {
-          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chain.hex }] });
-        } catch (e) {
-          if (e.code === 4902) {
-            try {
-              await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chain.hex, chainName: chain.name, rpcUrls: [chain.rpc], nativeCurrency: chain.native }] });
-            } catch { /* ignore */ }
-          }
-        }
-      };
-    }
-    openModal('modal-dep-addr');
-  }
 
   // ───── Spend modal ─────
   // Two modes:
