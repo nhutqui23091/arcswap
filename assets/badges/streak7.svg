@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <radialGradient id="bg" cx="38%" cy="32%" r="70%">
+      <stop offset="0%" stop-color="#FFD080"/>
+      <stop offset="100%" stop-color="#C81E1E"/>
+    </radialGradient>
+    <radialGradient id="sh" cx="32%" cy="26%" r="55%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.36"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="96" cy="96" r="91" fill="none" stroke="#FF8C00" stroke-width="3" opacity="0.65"/>
+  <circle cx="96" cy="96" r="85" fill="url(#bg)"/>
+  <circle cx="96" cy="96" r="78" fill="none" stroke="rgba(255,210,100,0.6)" stroke-width="1.5"/>
+  <circle cx="96" cy="96" r="85" fill="url(#sh)"/>
+  <path fill="white" opacity="0.95" d="
+    M96,130
+    C80,124 66,110 70,90
+    C72,76 80,68 78,54
+    C84,66 86,64 84,52
+    L96,36
+    L108,52
+    C106,64 108,66 114,54
+    C112,68 120,76 122,90
+    C126,110 112,124 96,130Z"/>
+  <circle cx="120" cy="120" r="16" fill="white" opacity="0.97"/>
+  <text x="120" y="127" text-anchor="middle" font-family="'Space Grotesk',Arial Black,sans-serif" font-size="19" font-weight="800" fill="#E63946">7</text>
+</svg>

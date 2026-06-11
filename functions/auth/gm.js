@@ -118,8 +118,12 @@ async function handlePost(request, env) {
   if (isFirstCheckin && !badges.includes('welcome')) {
     badges.push('welcome');
   }
-  if (totalCheckins >= 100 && !badges.includes('tx100')) {
-    badges.push('tx100');
+  if (streak >= 7 && !badges.includes('streak7')) {
+    badges.push('streak7');
+  }
+  if (!badges.includes('tx100')) {
+    const txCount = await getArcTxCount(addr);
+    if (txCount >= 100) badges.push('tx100');
   }
 
   const newState = {
@@ -185,6 +189,25 @@ async function verifyArcTx(txHash, expectedFrom) {
 
 // -- helpers --
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function getArcTxCount(address) {
+  try {
+    const res = await fetch(ARC_RPC, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        jsonrpc: '2.0', id: 1,
+        method:  'eth_getTransactionCount',
+        params:  [address, 'latest'],
+      }),
+    });
+    const json = await res.json();
+    if (json.result) return parseInt(json.result, 16);
+  } catch(e) {
+    console.warn('[gm] getArcTxCount:', e?.message);
+  }
+  return 0;
+}
 
 async function getState(kv, addr) {
   try {
