@@ -159,6 +159,21 @@ async function handlePost(request, env) {
   const cnt    = parseInt(await kv.get(dayKey) || '0', 10);
   await kv.put(dayKey, String(cnt + 1), { expirationTtl: 86400 * 3 });
 
+  // Fire-and-forget: register this check-in in the metrics active-users fingerprint map
+  // so GM-only wallets are counted in the status page Active Users · today metric.
+  try {
+    const base = new URL(request.url).origin;
+    fetch(base + '/api/metrics/track', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'CF-Connecting-IP': request.headers.get('CF-Connecting-IP') || '',
+        'User-Agent': request.headers.get('User-Agent') || '',
+      },
+      body: JSON.stringify({ event: 'gm-checkin', chain: 'arc' }),
+    }).catch(() => {});
+  } catch {}
+
   return jsonRes({
     ...newState,
     already_checked_in: false,

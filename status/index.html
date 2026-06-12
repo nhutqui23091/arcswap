@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/status.css?v=8"/>
+<link rel="stylesheet" href="/assets/status.css?v=9"/>
 </head>
 <body>
 
@@ -138,7 +138,7 @@
   <div id="footer-mount"></div>
 </div>
 
-<script src="/assets/status-shared.js?v=7"></script>
+<script src="/assets/status-shared.js?v=8"></script>
 <script>
 'use strict';
 const A = window.ArcStatus;
@@ -203,15 +203,12 @@ async function renderHeroAndStats() {
       { lbl: 'Bridge Txns',          ic: '⇌', val: A.fmtNum(totals.bridge || 0) },
       { lbl: 'Agents Created',       ic: '⊞', val: A.fmtNum(totals['agent-create'] || 0) },
       { lbl: 'Active Users · today', ic: '◉', val: A.fmtNum(real.activeUsers || 0) },
-      { lbl: 'Failures · 30d',       ic: '✕', val: A.fmtNum(last30.failure || 0) },
       { lbl: 'Total · last 30d',     ic: '∑', val: A.fmtNum(seriesVals.reduce((a,b)=>a+b,0)) },
-      { lbl: 'Active Chains',        ic: '⌖', val: '8' },
     ];
     document.getElementById('key-stats').innerHTML = stats.map(s => `
       <div class="stat-card">
         <div class="lbl"><span class="ic">${s.ic}</span>${s.lbl}</div>
         <div class="val tab-num">${s.val}</div>
-        <div class="trend"><span>lifetime · real</span></div>
       </div>`).join('');
     return real;
   }
@@ -232,18 +229,16 @@ async function renderHeroAndStats() {
     { lbl: 'Balance Deposits',     ic: '↓', val: A.fmtNum(2_120 + A.ri(0, 180)),  tr: '+11.8%' },
     { lbl: 'Cross-chain Spends',   ic: '↗', val: A.fmtNum(1_840 + A.ri(0, 160)),  tr: '+27.6%' },
     { lbl: 'Agent Executions',     ic: '◆', val: A.fmtNum(3_120 + A.ri(0, 240)),  tr: '+34.2%' },
-    { lbl: 'Settlement Volume',    ic: '$', val: A.fmtUsd(1_840_000 + A.ri(0, 320_000)), tr: '+24.0%' },
-    { lbl: 'Unified Balance Vol',  ic: '◐', val: A.fmtUsd(2_640_000 + A.ri(0, 410_000)), tr: '+19.8%' },
-    { lbl: 'Active Users',         ic: '◉', val: A.fmtNum(742 + A.ri(0, 60)),     tr: '+13.5%' },
-    { lbl: 'Active Agents',        ic: '⬡', val: A.fmtNum(24 + A.ri(0, 12)),      tr: '+8.4%'  },
+    { lbl: 'Bridge Txns',          ic: '⇌', val: A.fmtNum(680 + A.ri(0, 80)),     tr: '+18.4%' },
     { lbl: 'Agents Created',       ic: '⊞', val: A.fmtNum(184 + A.ri(0, 16)),     tr: '+9.4%'  },
-    { lbl: 'Active Chains',        ic: '⌖', val: '8',                              tr: 'all live' },
+    { lbl: 'Active Users',         ic: '◉', val: A.fmtNum(742 + A.ri(0, 60)),     tr: '+13.5%' },
+    { lbl: 'Total · last 30d',     ic: '∑', val: A.fmtNum(13_800 + A.ri(0, 900)), tr: '+21.0%' },
   ];
   document.getElementById('key-stats').innerHTML = stats.map(s => `
     <div class="stat-card">
       <div class="lbl"><span class="ic">${s.ic}</span>${s.lbl}</div>
       <div class="val tab-num">${s.val}</div>
-      <div class="trend"><span class="${s.tr.startsWith('+') ? 'up' : ''}">${s.tr.startsWith('+') ? '▲' : ''} ${s.tr}</span><span>· 30d</span></div>
+      <div class="trend"><span class="${s.tr.startsWith('+') ? 'up' : ''}">${s.tr.startsWith('+') ? '▲' : ''} ${s.tr}</span></div>
     </div>`).join('');
   return null;
 }

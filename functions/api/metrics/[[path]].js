@@ -74,6 +74,7 @@ const EVENT_TYPES = [
   'agent-create',  // user created a new agent
   'agent-exec',    // agent execution succeeded (server-side write)
   'failure',       // any transaction failure caught at client
+  'gm-checkin',    // daily GM check-in on Arc Testnet
 ];
 const EVENT_ALLOWLIST = new Set(EVENT_TYPES);
 
