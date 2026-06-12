@@ -503,7 +503,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
-<script src="/assets/arc-core.js?v=9.9.2"></script>
+<script src="/assets/arc-core-v2.js?v=1"></script>
 <script src="/assets/arc-ui.js?v=9.10.24"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
 
@@ -1814,7 +1814,11 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     // the status page can deep-link to the chain's native explorer.
     try {
       const amtUsdc = parseFloat(state.amountIn) || 0;
-      const _tAddr = wallet.address || await wallet.signer?.getAddress?.().catch(() => null);
+      // Multi-source address resolution — most reliable first
+      let _tAddr = wallet.address;
+      if (!_tAddr) { try { _tAddr = await wallet.signer?.getAddress?.(); } catch {} }
+      if (!_tAddr) { try { const accs = await (wallet._eth || window.ethereum)?.request({ method: 'eth_accounts' }); _tAddr = accs?.[0] || null; } catch {} }
+      if (!_tAddr) { try { _tAddr = localStorage.getItem('arc.wallet.lastAddr'); } catch {} }
       ARC.track('trade', lastTxChain || state.dst.chainKey, amtUsdc, lastTxHash, 'trade', _tAddr ? { address: _tAddr } : null);
     } catch {}
     // Refresh sources and current-balance widgets

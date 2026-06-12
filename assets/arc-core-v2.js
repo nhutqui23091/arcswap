@@ -1,0 +1,968 @@
+/* Oneliq shared core
+ * Wallet / chain / RPC / token / format helpers built on ethers v6 (UMD).
+ * Consumers must load ethers UMD before this file.
+ */
+(function (global) {
+  'use strict';
+
+  if (!global.ethers) {
+    console.error('[arc-core] ethers UMD not found. Load ethers before arc-core.js');
+    return;
+  }
+  const { BrowserProvider, JsonRpcProvider, Contract, Interface, getAddress, isAddress,
+          formatUnits, parseUnits, keccak256, toUtf8Bytes, zeroPadValue, hexlify, toBeHex } = global.ethers;
+
+  // ───────── CHAIN REGISTRY ─────────
+  const CHAINS = {
+    arc: {
+      id: 5042002,
+      hex: '0x4cef52',
+      name: 'Arc Testnet',
+      short: 'Arc',
+      rpc: 'https://rpc.testnet.arc.network',
+      explorer: 'https://testnet.arcscan.app',
+      explorerTx: h => `https://testnet.arcscan.app/tx/${h}`,
+      explorerAddr: a => `https://testnet.arcscan.app/address/${a}`,
+      native: { symbol: 'USDC', name: 'USDC (Arc Gas)', decimals: 18 },
+      cctpDomain: 26,
+      iconGrad: 'linear-gradient(135deg,#6C3FFF,#00CFFF)',
+      // Arc's USDC is the native gas token - it lives in the L1 ledger, not in
+      // the ERC-20 wrapper at 0x3600…. Standard `approve` + `transferFrom`
+      // (which GatewayWallet.deposit relies on) cannot move native balance, so
+      // direct deposits revert with "ERC20: transfer amount exceeds balance".
+      // Users should fund Arc by spending cross-chain (mint on Arc) instead.
+      gatewayDepositDisabled: true,
+      contracts: {
+        router:              '0x48a9bd1644ac67fbef4183261c466bea3eb333fc',
+        factory:             '0x45dd35611179ae6663ae47791175d7d598ced086',
+        multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
+        tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+        messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        fxEscrow:            '0x867650F5eAe8df91445971f14d89fd84F0C9a9f8',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter:       '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    sepolia: {
+      id: 11155111,
+      hex: '0xaa36a7',
+      name: 'Ethereum Sepolia',
+      short: 'Sepolia',
+      rpc: 'https://ethereum-sepolia-rpc.publicnode.com',
+      explorer: 'https://sepolia.etherscan.io',
+      explorerTx: h => `https://sepolia.etherscan.io/tx/${h}`,
+      explorerAddr: a => `https://sepolia.etherscan.io/address/${a}`,
+      native: { symbol: 'ETH', name: 'Sepolia ETH', decimals: 18 },
+      cctpDomain: 0,
+      iconGrad: 'linear-gradient(135deg,#627EEA,#8A9CF0)',
+      contracts: {
+        multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
+        tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+        messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter:       '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    // ── Additional Gateway-supported EVM testnets ──
+    // GatewayWallet & GatewayMinter share the SAME address on every EVM chain
+    // (deterministic-deploy via CREATE2). USDC addresses confirmed from Circle docs.
+    baseSepolia: {
+      id: 84532, hex: '0x14a34',
+      name: 'Base Sepolia', short: 'Base',
+      rpc: 'https://sepolia.base.org',
+      explorer: 'https://sepolia.basescan.org',
+      explorerTx: h => `https://sepolia.basescan.org/tx/${h}`,
+      explorerAddr: a => `https://sepolia.basescan.org/address/${a}`,
+      native: { symbol: 'ETH', name: 'Base Sepolia ETH', decimals: 18 },
+      cctpDomain: 6,
+      iconGrad: 'linear-gradient(135deg,#0052FF,#62A5FF)',
+      contracts: {
+        multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
+        tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+        messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    avalancheFuji: {
+      id: 43113, hex: '0xa869',
+      name: 'Avalanche Fuji', short: 'Fuji',
+      rpc: 'https://api.avax-test.network/ext/bc/C/rpc',
+      explorer: 'https://testnet.snowtrace.io',
+      explorerTx: h => `https://testnet.snowtrace.io/tx/${h}`,
+      explorerAddr: a => `https://testnet.snowtrace.io/address/${a}`,
+      native: { symbol: 'AVAX', name: 'Fuji AVAX', decimals: 18 },
+      cctpDomain: 1,
+      iconGrad: 'linear-gradient(135deg,#E84142,#F87C7D)',
+      contracts: {
+        multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
+        tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+        messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    arbitrumSepolia: {
+      id: 421614, hex: '0x66eee',
+      name: 'Arbitrum Sepolia', short: 'Arb Sep',
+      rpc: 'https://sepolia-rollup.arbitrum.io/rpc',
+      explorer: 'https://sepolia.arbiscan.io',
+      explorerTx: h => `https://sepolia.arbiscan.io/tx/${h}`,
+      explorerAddr: a => `https://sepolia.arbiscan.io/address/${a}`,
+      native: { symbol: 'ETH', name: 'Arb Sepolia ETH', decimals: 18 },
+      cctpDomain: 3,
+      iconGrad: 'linear-gradient(135deg,#28A0F0,#80C8F8)',
+      contracts: {
+        multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
+        tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+        messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    optimismSepolia: {
+      id: 11155420, hex: '0xaa37dc',
+      name: 'OP Sepolia', short: 'OP Sep',
+      // sepolia.optimism.io throttles aggressively → "could not coalesce error".
+      // publicnode is more reliable for browser use.
+      rpc: 'https://optimism-sepolia.publicnode.com',
+      explorer: 'https://sepolia-optimism.etherscan.io',
+      explorerTx: h => `https://sepolia-optimism.etherscan.io/tx/${h}`,
+      explorerAddr: a => `https://sepolia-optimism.etherscan.io/address/${a}`,
+      native: { symbol: 'ETH', name: 'OP Sepolia ETH', decimals: 18 },
+      cctpDomain: 2,
+      iconGrad: 'linear-gradient(135deg,#FF0420,#FF6B7E)',
+      contracts: {
+        multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
+        tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+        messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    polygonAmoy: {
+      id: 80002, hex: '0x13882',
+      name: 'Polygon Amoy', short: 'Amoy',
+      rpc: 'https://rpc-amoy.polygon.technology',
+      explorer: 'https://amoy.polygonscan.com',
+      explorerTx: h => `https://amoy.polygonscan.com/tx/${h}`,
+      explorerAddr: a => `https://amoy.polygonscan.com/address/${a}`,
+      native: { symbol: 'POL', name: 'Polygon Amoy POL', decimals: 18 },
+      cctpDomain: 7,
+      iconGrad: 'linear-gradient(135deg,#8247E5,#B58CF0)',
+      contracts: {
+        multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
+        tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+        messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+    unichainSepolia: {
+      id: 1301, hex: '0x515',
+      name: 'Unichain Sepolia', short: 'Unichain',
+      rpc: 'https://sepolia.unichain.org',
+      explorer: 'https://sepolia.uniscan.xyz',
+      explorerTx: h => `https://sepolia.uniscan.xyz/tx/${h}`,
+      explorerAddr: a => `https://sepolia.uniscan.xyz/address/${a}`,
+      native: { symbol: 'ETH', name: 'Unichain Sep ETH', decimals: 18 },
+      cctpDomain: 10,
+      iconGrad: 'linear-gradient(135deg,#FF007A,#FF66B0)',
+      contracts: {
+        multicall3:          '0xcA11bde05977b3631167028862bE2a173976CA11',
+        tokenMessengerV2:    '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+        messageTransmitterV2:'0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+        gatewayWallet:       '0x0077777d7EBA4688BDeF3E311b846F25870A19B9',
+        gatewayMinter: '0x0022222ABE238Cc2C7Bb1f21003F0a260052475B',
+      },
+    },
+  };
+
+  // ───────── TOKEN REGISTRY ─────────
+  // Arc's USDC IS the native gas token - it stores balances internally at 18 decimals
+  // (same as ETH/wei on other EVM chains), even though the Circle USDC logical
+  // convention is 6. That means: balanceOf()/transfer()/approve() on 0x3600…0000
+  // all operate in 18-decimal raw units. We model it as decimals=18 for the UI and
+  // same-chain flows. For CCTP messages (canonical 6-decimal), we scale with
+  // `cctpDecimals` at the burn/mint boundary.
+  const TOKENS = {
+    arc: {
+      USDC: {
+        symbol: 'USDC',
+        name: 'USD Coin (Arc native)',
+        address: '0x3600000000000000000000000000000000000000',
+        decimals: 18,
+        cctpDecimals: 6,
+        isGasToken: true, // display hint - fees come from this balance
+        icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+      },
+      EURC: {
+        symbol: 'EURC',
+        name: 'Euro Coin',
+        address: '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a',
+        decimals: 6,
+        icon: 'https://assets.coingecko.com/coins/images/26045/small/euro.png',
+      },
+      cirBTC: {
+        symbol: 'cirBTC',
+        name: 'Circle Bitcoin',
+        address: '0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF',
+        decimals: 8,
+        icon: '/assets/logos/cirBTC.png',
+      },
+    },
+    sepolia: {
+      USDC: {
+        symbol: 'USDC',
+        name: 'USD Coin (CCTP v2)',
+        address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+        decimals: 6,
+        icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+      },
+      ETH: {
+        symbol: 'ETH',
+        name: 'Sepolia ETH',
+        address: '0x0000000000000000000000000000000000000000',
+        decimals: 18,
+        isGas: true,
+        icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+      },
+      cirBTC: {
+        symbol: 'cirBTC',
+        name: 'Circle Bitcoin',
+        address: '0x3a3fe695F684Bf9b9e43CF43C2b895Ea5e392bB3',
+        decimals: 8,
+        icon: '/assets/logos/cirBTC.png',
+      },
+    },
+    baseSepolia: {
+      USDC: { symbol:'USDC', name:'USD Coin (Base Sepolia)', address:'0x036CbD53842c5426634e7929541eC2318f3dCF7e', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    avalancheFuji: {
+      USDC: { symbol:'USDC', name:'USD Coin (Fuji)', address:'0x5425890298aed601595a70AB815c96711a31Bc65', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    arbitrumSepolia: {
+      USDC: { symbol:'USDC', name:'USD Coin (Arb Sepolia)', address:'0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    optimismSepolia: {
+      USDC: { symbol:'USDC', name:'USD Coin (OP Sepolia)', address:'0x5fd84259d66Cd46123540766Be93DFE6D43130D7', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    polygonAmoy: {
+      USDC: { symbol:'USDC', name:'USD Coin (Amoy)', address:'0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+    unichainSepolia: {
+      USDC: { symbol:'USDC', name:'USD Coin (Unichain Sep)', address:'0x31d0220469e10c4E71834a79b1f276d740d3768F', decimals:6, icon:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
+    },
+  };
+
+  // ───────── ABIs ─────────
+  const ABIS = {
+    erc20: [
+      'function name() view returns (string)',
+      'function symbol() view returns (string)',
+      'function decimals() view returns (uint8)',
+      'function totalSupply() view returns (uint256)',
+      'function balanceOf(address) view returns (uint256)',
+      'function allowance(address owner, address spender) view returns (uint256)',
+      'function approve(address spender, uint256 amount) returns (bool)',
+      'function transfer(address to, uint256 amount) returns (bool)',
+      'event Transfer(address indexed from, address indexed to, uint256 value)',
+      'event Approval(address indexed owner, address indexed spender, uint256 value)',
+    ],
+    factory: [
+      'function getPair(address tokenA, address tokenB) view returns (address)',
+      'function allPairsLength() view returns (uint256)',
+      'function allPairs(uint256) view returns (address)',
+      'event PairCreated(address indexed token0, address indexed token1, address pair, uint256)',
+    ],
+    pair: [
+      'function token0() view returns (address)',
+      'function token1() view returns (address)',
+      'function getReserves() view returns (uint112, uint112, uint32)',
+      'function totalSupply() view returns (uint256)',
+      'function balanceOf(address) view returns (uint256)',
+      'event Swap(address indexed sender, uint256 amount0In, uint256 amount1In, uint256 amount0Out, uint256 amount1Out, address indexed to)',
+      'event Mint(address indexed sender, uint256 amount0, uint256 amount1)',
+      'event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to)',
+    ],
+    router: [
+      'function getAmountsOut(uint256 amountIn, address[] path) view returns (uint256[] amounts)',
+      'function getAmountsIn(uint256 amountOut, address[] path) view returns (uint256[] amounts)',
+      'function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline) returns (uint256[] amounts)',
+      'function swapTokensForExactTokens(uint256 amountOut, uint256 amountInMax, address[] path, address to, uint256 deadline) returns (uint256[] amounts)',
+      'function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) returns (uint256, uint256, uint256)',
+      'function removeLiquidity(address tokenA, address tokenB, uint256 liquidity, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) returns (uint256, uint256)',
+    ],
+    multicall3: [
+      'function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[] returnData)',
+      'function getEthBalance(address) view returns (uint256)',
+      'function getBlockNumber() view returns (uint256)',
+      'function getCurrentBlockTimestamp() view returns (uint256)',
+    ],
+    tokenMessengerV2: [
+      'function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint32 minFinalityThreshold)',
+      'event DepositForBurn(address indexed burnToken, uint256 amount, address indexed depositor, bytes32 mintRecipient, uint32 destinationDomain, bytes32 destinationTokenMessenger, bytes32 destinationCaller, uint256 maxFee, uint32 indexed minFinalityThreshold, bytes hookData)',
+    ],
+    messageTransmitterV2: [
+      'function receiveMessage(bytes message, bytes attestation) returns (bool)',
+      'function usedNonces(bytes32) view returns (uint256)',
+      'event MessageReceived(address indexed caller, uint32 sourceDomain, bytes32 indexed nonce, bytes32 sender, uint32 indexed finalityThresholdExecuted, bytes messageBody)',
+    ],
+    // ── Circle Gateway ──
+    // Single GatewayWallet contract per chain holds user-deposited USDC and tracks
+    // it as a *unified balance* spendable via signed BurnIntent on any other chain.
+    gatewayWallet: [
+      // Verified against on-chain implementation 0xcf3F2Ab96967e755Cd56CeaCcEB276E437288858
+      'function deposit(address token, uint256 value)',
+      'function depositFor(address token, address depositor, uint256 value)',
+      'function initiateWithdrawal(address token, uint256 value)',
+      'function withdraw(address token)',
+      'function availableBalance(address token, address depositor) view returns (uint256)',
+      'function totalBalance(address token, address depositor) view returns (uint256)',
+      'function withdrawingBalance(address token, address depositor) view returns (uint256)',
+      'function withdrawableBalance(address token, address depositor) view returns (uint256)',
+      'function withdrawalBlock(address token, address depositor) view returns (uint256)',
+      'function withdrawalDelay() view returns (uint256)',
+      'function isTokenSupported(address token) view returns (bool)',
+      'event Deposited(address indexed token, address indexed depositor, address indexed sender, uint256 value)',
+    ],
+    gatewayMinter: [
+      'function gatewayMint(bytes attestationPayload, bytes signature)',
+      'event Minted(address indexed token, address indexed recipient, uint256 value)',
+    ],
+  };
+
+  // ───────── PROVIDERS ─────────
+  const rpcProviders = {};
+  function rpcProvider(chainKey) {
+    if (!rpcProviders[chainKey]) {
+      const c = CHAINS[chainKey];
+      if (!c) throw new Error('Unknown chain ' + chainKey);
+      rpcProviders[chainKey] = new JsonRpcProvider(c.rpc, { name: c.name, chainId: c.id }, { staticNetwork: true });
+    }
+    return rpcProviders[chainKey];
+  }
+
+  function chainKeyById(id) {
+    for (const [k, v] of Object.entries(CHAINS)) if (Number(v.id) === Number(id)) return k;
+    return null;
+  }
+
+  // ───────── WALLET ─────────
+  const wallet = {
+    provider: null,
+    signer: null,
+    address: null,
+    chainKey: null,
+    _eth: null,
+    _listeners: new Set(),
+    _intentionalDisconnect: false,
+
+    on(cb) { this._listeners.add(cb); return () => this._listeners.delete(cb); },
+    _emit() { for (const cb of this._listeners) { try { cb(this.snapshot()); } catch {} } },
+    snapshot() {
+      return { address: this.address, chainKey: this.chainKey, connected: !!this.address };
+    },
+
+    // EIP-6963 wallet discovery: modern standard that lets multiple wallets
+    // (MetaMask, Rabby, Coinbase, OKX, …) coexist without stomping on
+    // window.ethereum. Browsers without any wallet won't respond.
+    _eip6963Providers: [],
+    _eip6963Init() {
+      if (this._eip6963Bound) return;
+      this._eip6963Bound = true;
+      window.addEventListener('eip6963:announceProvider', (e) => {
+        const detail = e.detail; if (!detail?.provider) return;
+        if (!this._eip6963Providers.find(p => p.info?.uuid === detail.info?.uuid)) {
+          this._eip6963Providers.push(detail);
+        }
+      });
+      window.dispatchEvent(new Event('eip6963:requestProvider'));
+    },
+
+    // EVM-first priority. Phantom + Keplr support EVM but their primary chains
+    // are Solana / Cosmos, so they go LAST - users typically have them installed
+    // for those ecosystems and don't expect them to be the default for an EVM dApp.
+    _PROVIDER_PRIORITY: {
+      'io.metamask': 1,
+      'com.okxwallet': 2,
+      'io.rabby': 3,
+      'com.coinbase.wallet': 4,
+      'com.coinbase.coinbasewallet': 4,
+      'com.trustwallet.app': 5,
+      'com.brave.wallet': 6,
+      'walletconnect': 7,
+      // Multi-chain wallets - deprioritized for EVM dApps
+      'app.phantom': 90,
+      'app.keplr': 95,
+    },
+
+    // Reown AppKit instance - initialized synchronously from local bundle
+    _appkit: null,
+    _appkitReady: false,
+    _appkitNetworks: null,
+    _appkitManaging: false, // true when AppKit is managing the current session
+    _appkitError: null,       // set if AppKit init fails - visible in console for debugging
+
+    /**
+     * Returns all detected wallets, sorted by EVM priority (MetaMask → OKX → ...).
+     * Each entry: { info: {name, rdns, icon, uuid}, provider }.
+     * Includes a synthetic legacy entry for `window.ethereum` if it's NOT one of
+     * the EIP-6963 announcements (avoids dup) and looks like a real provider.
+     */
+    listProviders() {
+      this._eip6963Init();
+      const list = [...this._eip6963Providers];
+      // If window.ethereum exists but isn't in any 6963 announcement, add it as
+      // a fallback option (some wallet builds still don't announce 6963).
+      const legacy = global.ethereum;
+      if (legacy && !list.some(p => p.provider === legacy)) {
+        let name = 'Browser Wallet';
+        if (legacy.isMetaMask && !legacy.isRabby) name = 'MetaMask (legacy)';
+        else if (legacy.isRabby) name = 'Rabby (legacy)';
+        else if (legacy.isOkxWallet) name = 'OKX Wallet (legacy)';
+        else if (legacy.isCoinbaseWallet) name = 'Coinbase Wallet (legacy)';
+        list.push({
+          info: { name, rdns: 'legacy.window.ethereum', icon: null, uuid: 'legacy-ethereum' },
+          provider: legacy,
+        });
+      }
+      const PRIO = this._PROVIDER_PRIORITY;
+      list.sort((a, b) => {
+        const pa = PRIO[a.info?.rdns] ?? 50;
+        const pb = PRIO[b.info?.rdns] ?? 50;
+        if (pa !== pb) return pa - pb;
+        return (a.info?.name || '').localeCompare(b.info?.name || '');
+      });
+      return list;
+    },
+
+    /**
+     * Resolve which provider to use for connect.
+     * Lookup order:
+     *   1. Explicit `rdns` arg (when user picked from picker UI)
+     *   2. Last-used RDNS from localStorage
+     *   3. Top of priority list (MetaMask preferred)
+     */
+    eip1193(rdns) {
+      const list = this.listProviders();
+      if (!list.length) return null;
+      if (rdns) {
+        const m = list.find(p => p.info?.rdns === rdns);
+        if (m) return m.provider;
+      }
+      try {
+        const saved = localStorage.getItem('arc.wallet.rdns');
+        if (saved) {
+          const m = list.find(p => p.info?.rdns === saved);
+          if (m) return m.provider;
+        }
+      } catch {}
+      return list[0].provider;
+    },
+
+    /** Returns a friendly description of why no wallet was detected. */
+    _noWalletReason() {
+      // Common diagnoses to help the user fix it themselves
+      const ua = (navigator.userAgent || '').toLowerCase();
+      if (/firefox/.test(ua)) {
+        return 'No wallet extension detected. Install MetaMask for Firefox or Rabby, then reload this page.';
+      }
+      // Detect private/incognito (best-effort: extensions are usually disabled there)
+      const isInPrivate = !window.indexedDB || (() => {
+        try { localStorage.setItem('__t__', '1'); localStorage.removeItem('__t__'); return false; } catch { return true; }
+      })();
+      if (isInPrivate) {
+        return 'No wallet detected. Browser extensions are usually disabled in Incognito/Private mode. Open this site in a normal window.';
+      }
+      return 'No wallet extension detected. Install MetaMask (metamask.io), Rabby, or OKX Wallet, then reload this page.';
+    },
+
+    // Legacy EIP-6963 connect - used when a specific RDNS is requested or AppKit is not yet ready.
+    async _connectLegacy(rdns) {
+      const eth = this.eip1193(rdns);
+      if (!eth) throw new Error(this._noWalletReason());
+      try {
+        const info = this.listProviders().find(p => p.provider === eth)?.info;
+        if (info?.rdns) localStorage.setItem('arc.wallet.rdns', info.rdns);
+      } catch {}
+      this._eth = eth;
+      this._appkitManaging = false;
+      const accounts = await eth.request({ method: 'eth_requestAccounts' });
+      if (!accounts || !accounts.length) throw new Error('Wallet returned no accounts');
+      this.provider = new BrowserProvider(eth, 'any');
+      this.signer = await this.provider.getSigner();
+      this.address = getAddress(accounts[0]);
+      const net = await this.provider.getNetwork();
+      this.chainKey = chainKeyById(net.chainId);
+      if (!eth._arcBound) {
+        eth._arcBound = true;
+        eth.on?.('accountsChanged', async (accs) => {
+          if (this._intentionalDisconnect) return;
+          if (!accs || !accs.length) { this.disconnect(); return; }
+          this.address = getAddress(accs[0]);
+          if (this.provider) this.signer = await this.provider.getSigner();
+          this._emit();
+        });
+        eth.on?.('chainChanged', async (cid) => {
+          this.chainKey = chainKeyById(parseInt(cid, 16));
+          if (this._eth) this.provider = new BrowserProvider(this._eth, 'any');
+          if (this.provider && this.address) this.signer = await this.provider.getSigner();
+          this._emit();
+        });
+      }
+      try { localStorage.setItem('arc.wallet.autoconnect', '1'); } catch {}
+      this._emit();
+      return this.snapshot();
+    },
+
+    async connect(rdns) {
+      // Named RDNS → EIP-6963 picker path (legacy wallets / desktop extensions)
+      if (rdns) return this._connectLegacy(rdns);
+
+      if (!this._appkitReady) {
+        // Local bundle failed to init - fall back to EIP-6963 (desktop) or hard error (mobile)
+        if (/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent || '')) {
+          throw new Error('Wallet modal failed to load. Try refreshing the page.');
+        }
+        return this._connectLegacy();
+      }
+
+      if (this.address) return this.snapshot();
+
+      // Open AppKit modal; resolve/reject when the modal closes
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        let modalWasOpen = false;
+        const settle = (fn) => { if (settled) return; settled = true; fn(); };
+        const cleanup = () => { try { u1(); } catch {} try { u2(); } catch {} };
+
+        const u1 = this._appkit.subscribeAccount(({ address, isConnected }) => {
+          if (isConnected && address) {
+            // Defer one tick so the global subscribeAccount fires first and sets wallet state
+            setTimeout(() => settle(() => { cleanup(); resolve(this.snapshot()); }), 0);
+          }
+        });
+        const u2 = this._appkit.subscribeState(({ open }) => {
+          if (open) { modalWasOpen = true; return; }
+          if (!modalWasOpen) return; // ignore initial closed state before modal opened
+          setTimeout(() => settle(() => {
+            cleanup();
+            if (this.address) resolve(this.snapshot());
+            else reject(new Error('Connection cancelled'));
+          }), 150);
+        });
+        this._appkit.open();
+      });
+    },
+
+    _clearWCStorage() {
+      try {
+        const toRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith('wc@2:') || k.startsWith('wagmi.') ||
+                    k.startsWith('appkit.') || k.startsWith('@walletconnect') ||
+                    k.includes('WALLETCONNECT'))) {
+            toRemove.push(k);
+          }
+        }
+        toRemove.forEach(k => { try { localStorage.removeItem(k); } catch {} });
+      } catch {}
+    },
+
+    disconnect() {
+      this._intentionalDisconnect = true;
+      setTimeout(() => { this._intentionalDisconnect = false; }, 1000);
+      // Tell AppKit to send WC session_delete to the relay / wallet app
+      if (this._appkitReady) {
+        try { this._appkit.disconnect().catch(() => {}); } catch {}
+      }
+      this._clearWCStorage();
+      this._appkitManaging = false;
+      this.provider = null; this.signer = null; this.address = null; this.chainKey = null; this._eth = null;
+      try { localStorage.removeItem('arc.wallet.autoconnect'); } catch {}
+      this._emit();
+    },
+
+    async autoConnect() {
+      try {
+        if (localStorage.getItem('arc.wallet.autoconnect') !== '1') return null;
+      } catch {}
+      // When AppKit is ready, enableReconnect:true restores the session silently via
+      // subscribeAccount. Calling connect() here would open the modal before AppKit
+      // has a chance to restore state, causing the modal to auto-pop on every load.
+      if (this._appkitReady) return null;
+      // Legacy path: direct injected wallet without AppKit
+      const eth = this.eip1193(); if (!eth) return null;
+      try {
+        const accs = await eth.request({ method: 'eth_accounts' });
+        if (accs && accs.length) return await this.connect();
+      } catch {}
+      return null;
+    },
+
+    async ensureChain(chainKey) {
+      const eth = this._eth || this.eip1193(); if (!eth) throw new Error('No wallet');
+      const c = CHAINS[chainKey]; if (!c) throw new Error('Unknown chain ' + chainKey);
+      const current = await eth.request({ method: 'eth_chainId' });
+      if (parseInt(current, 16) === c.id) {
+        // Already on correct chain. Signer still valid — just ensure localStorage
+        // has the address so ARC.track() fallback works even after brief disconnects.
+        try { if (this.signer && !localStorage.getItem('arc.wallet.lastAddr')) { const a = await this.signer.getAddress(); if (a) localStorage.setItem('arc.wallet.lastAddr', a.toLowerCase()); } } catch {}
+        return;
+      }
+      try {
+        await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: c.hex }] });
+      } catch (err) {
+        if (err.code === 4902 || /Unrecognized chain/i.test(err.message || '')) {
+          await eth.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: c.hex,
+              chainName: c.name,
+              rpcUrls: [c.rpc],
+              nativeCurrency: { name: c.native.name, symbol: c.native.symbol, decimals: c.native.decimals },
+              blockExplorerUrls: [c.explorer],
+            }],
+          });
+        } else { throw err; }
+      }
+      this.provider = new BrowserProvider(eth, 'any');
+      this.signer = await this.provider.getSigner();
+      // Capture address from new signer → sets wallet.address and localStorage so
+      // ARC.track() always has address even if AppKit subscribeAccount failed earlier.
+      try { const sa = await this.signer.getAddress(); if (sa) { if (!this.address) this.address = sa; localStorage.setItem('arc.wallet.lastAddr', sa.toLowerCase()); } } catch {}
+      this.chainKey = chainKey;
+      this._emit();
+    },
+  };
+
+  // ───────── TOKEN HELPERS ─────────
+  async function tokenBalance(chainKey, token, addr) {
+    const prov = rpcProvider(chainKey);
+    // Pure native gas (Sepolia ETH): use eth_getBalance.
+    if (token.isGas) return await prov.getBalance(addr);
+    // Arc's USDC = native gas but also exposed as ERC-20 at 0x3600…. In practice
+    // balances live in the native ledger - eth_getBalance is canonical and always
+    // matches what MetaMask shows. We query BOTH in parallel and return whichever
+    // is non-zero (native takes priority on tie). This makes the UI robust no
+    // matter whether a given wallet stores value natively or via the wrapper.
+    if (token.isGasToken) {
+      try {
+        const [nat, erc] = await Promise.all([
+          prov.getBalance(addr).catch(() => 0n),
+          new Contract(token.address, ABIS.erc20, prov).balanceOf(addr).catch(() => 0n),
+        ]);
+        return nat > 0n ? nat : erc;
+      } catch { return 0n; }
+    }
+    const c = new Contract(token.address, ABIS.erc20, prov);
+    return await c.balanceOf(addr);
+  }
+
+  async function allowance(chainKey, token, owner, spender) {
+    if (token.isGas) return (1n << 255n); // pure native, no allowance needed
+    const c = new Contract(token.address, ABIS.erc20, rpcProvider(chainKey));
+    return await c.allowance(owner, spender);
+  }
+
+  async function ensureAllowance(chainKey, token, spender, amount, onStep) {
+    if (token.isGas) return null;
+    const have = await allowance(chainKey, token, wallet.address, spender);
+    if (have >= amount) return null;
+    onStep?.('Requesting approval…');
+    const c = new Contract(token.address, ABIS.erc20, wallet.signer);
+    // Security: approve only what's needed for this deposit + 50% buffer
+    // (lets minor retries / slippage adjustments succeed without re-approval).
+    //
+    // PREVIOUSLY: approved (2^256 - 1) - "infinite approval" pattern. Risk:
+    // if the spender contract is ever compromised, attacker drains user's
+    // entire token balance. Industry has moved away from this pattern post
+    // multiple high-profile DeFi exploits (e.g. Multichain 2023).
+    //
+    // Trade-off: user pays gas for an extra approve on most deposits, but
+    // the residual approval at any time is capped at 1.5× their last deposit.
+    const approvalAmount = (amount * 15n) / 10n;
+    const tx = await c.approve(spender, approvalAmount);
+    onStep?.('Approving… ' + tx.hash.slice(0, 10));
+    await tx.wait();
+    return tx.hash;
+  }
+
+  function formatAmt(v, decimals, maxFrac = 6) {
+    try {
+      const s = formatUnits(v, decimals);
+      const [int, frac = ''] = s.split('.');
+      if (!frac) return int;
+      const f = frac.slice(0, maxFrac).replace(/0+$/, '');
+      return f ? `${int}.${f}` : int;
+    } catch { return '0'; }
+  }
+
+  function parseAmt(s, decimals) {
+    if (!s) return 0n;
+    const clean = String(s).replace(/,/g, '').trim();
+    if (!/^\d*\.?\d*$/.test(clean) || clean === '' || clean === '.') return 0n;
+    try { return parseUnits(clean, decimals); } catch { return 0n; }
+  }
+
+  function shortAddr(a) { return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : ''; }
+
+  function addrToBytes32(a) {
+    if (!isAddress(a)) throw new Error('Bad address');
+    return zeroPadValue(getAddress(a), 32);
+  }
+
+  // Convert a token amount (raw bigint at token.decimals) to the CCTP canonical
+  // 6-decimal scale used by TokenMessenger.depositForBurn. For standard USDC
+  // (6 decimals) this is a no-op; for Arc USDC (18 decimals native) we /10^12.
+  function toCctpAmount(amount, token) {
+    const d = token.cctpDecimals ?? 6;
+    if (token.decimals === d) return amount;
+    if (token.decimals > d) return amount / (10n ** BigInt(token.decimals - d));
+    return amount * (10n ** BigInt(d - token.decimals));
+  }
+  function fromCctpAmount(amount, token) {
+    const d = token.cctpDecimals ?? 6;
+    if (token.decimals === d) return amount;
+    if (token.decimals > d) return amount * (10n ** BigInt(token.decimals - d));
+    return amount / (10n ** BigInt(d - token.decimals));
+  }
+
+  // ───────── MULTICALL ─────────
+  async function multicall(chainKey, calls /* [{target, data, allowFailure?}] */) {
+    const c = CHAINS[chainKey];
+    const mc = new Contract(c.contracts.multicall3, ABIS.multicall3, rpcProvider(chainKey));
+    const input = calls.map(x => ({ target: x.target, allowFailure: x.allowFailure !== false, callData: x.data }));
+    const res = await mc.aggregate3.staticCall(input);
+    return res.map((r, i) => ({ success: r.success, data: r.returnData, decode: (types) => {
+      const iface = global.ethers.AbiCoder.defaultAbiCoder();
+      try { return iface.decode(types, r.returnData); } catch { return null; }
+    }}));
+  }
+
+  // ───────── TX LIFECYCLE ─────────
+  async function sendAndWait(signer, populated, { onSent, onMined, onError, timeoutMs = 180000 } = {}) {
+    try {
+      const tx = await signer.sendTransaction(populated);
+      onSent?.(tx);
+      const deadline = Date.now() + timeoutMs;
+      while (Date.now() < deadline) {
+        const r = await signer.provider.getTransactionReceipt(tx.hash).catch(() => null);
+        if (r) { onMined?.(r); return { tx, receipt: r }; }
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      onMined?.(null);
+      return { tx, receipt: null };
+    } catch (e) {
+      onError?.(e);
+      throw e;
+    }
+  }
+
+  function explainError(e) {
+    if (!e) return 'Unknown error';
+    const msg = (e.info?.error?.message || e.shortMessage || e.message || '').toString();
+    if (e.code === 'ACTION_REJECTED' || /user rejected|user denied/i.test(msg)) return 'Rejected in wallet';
+    if (/insufficient funds/i.test(msg)) return 'Insufficient funds for gas';
+    if (/INSUFFICIENT_OUTPUT_AMOUNT/i.test(msg)) return 'Slippage too tight: price moved';
+    if (/INSUFFICIENT_LIQUIDITY/i.test(msg)) return 'Not enough pool liquidity';
+    if (/nonce/i.test(msg)) return 'Nonce error: reset wallet activity';
+    if (/replacement fee too low/i.test(msg)) return 'Replacement fee too low';
+    return msg.slice(0, 160);
+  }
+
+  // ───────── IRIS / CCTP v2 ─────────
+  const IRIS_BASE = 'https://iris-api-sandbox.circle.com/v2';
+
+  async function irisMessages(sourceDomain, txHash) {
+    const url = `${IRIS_BASE}/messages/${sourceDomain}?transactionHash=${txHash}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`IRIS ${r.status}`);
+    return await r.json();
+  }
+
+  async function irisFastAllowance() {
+    try {
+      const r = await fetch(`${IRIS_BASE}/fastBurnAllowance`);
+      if (!r.ok) return null;
+      return await r.json();
+    } catch { return null; }
+  }
+
+  // ───────── METRICS TELEMETRY ─────────
+  // Fire-and-forget reporter - runs after a successful user action so the
+  // status page (status.oneliq.xyz) can show real numbers, not seeded mocks.
+  //
+  //   event   : 'trade' | 'deposit' | 'spend' | 'bridge' | 'agent-create'
+  //             | 'agent-exec' | 'failure' | 'gm-checkin'   (validated server-side too)
+  //   chain   : one of CHAINS keys (arc, sepolia, baseSepolia, ...)
+  //   amount  : number (USDC units, decimal - e.g. 12.5) or null
+  //   txHash  : 0x-prefixed hash or null (for non-onchain events)
+  //   surface : 'trade' | 'balance' | 'agent' (origin page) or null
+  //
+  // Never throws, never blocks. `keepalive: true` lets the request finish
+  // even if the user navigates away immediately after.
+  async function track(event, chain, amount = null, txHash = null, surface = null, extra = null) {
+    try {
+      // Try every possible source for wallet address, in order of reliability.
+      // wallet.signer is set by ensureChain during each tx and survives brief
+      // AppKit disconnect events that can null out wallet.address mid-flight.
+      const walletAddr = await (async () => {
+        if (wallet?.address) return wallet.address.toLowerCase();
+        try { const a = wallet?._appkit?.getAccount?.()?.address; if (a) return a.toLowerCase(); } catch {}
+        try { const a = await wallet?.signer?.getAddress?.(); if (a) return a.toLowerCase(); } catch {}
+        try { const a = localStorage.getItem('arc.wallet.lastAddr'); if (a && /^0x[0-9a-f]{40}$/i.test(a)) return a.toLowerCase(); } catch {}
+        return null;
+      })();
+      const payload = { event, chain, amount, txHash, surface, _cv: '9.9.2', ...(walletAddr ? { address: walletAddr } : {}) };
+      if (extra && typeof extra === 'object') Object.assign(payload, extra);
+      if (typeof console !== 'undefined') console.log('[arc-core v9.9.2] track', event, 'addr:', walletAddr ? walletAddr.slice(0, 8) : 'MISSING - CHECK CONSOLE');
+      const res = await fetch('/api/metrics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify(payload),
+      });
+      if (typeof console !== 'undefined' && !res.ok) console.debug('[metrics] track HTTP', res.status);
+    } catch (e) {
+      // Best-effort only - never surface to the user.
+      if (typeof console !== 'undefined') console.debug('[metrics] track failed:', e?.message);
+    }
+  }
+
+  // ───────── EXPORTS ─────────
+  global.ARC = {
+    CHAINS, TOKENS, ABIS,
+    rpcProvider, chainKeyById,
+    wallet,
+    tokenBalance, allowance, ensureAllowance,
+    formatAmt, parseAmt, shortAddr, addrToBytes32,
+    toCctpAmount, fromCctpAmount,
+    multicall, sendAndWait, explainError,
+    irisMessages, irisFastAllowance, IRIS_BASE,
+    // List of chain keys that have a GatewayWallet deployed (used by arc-gateway.js)
+    gatewayChains: () => Object.entries(CHAINS)
+      .filter(([, c]) => c.contracts?.gatewayWallet)
+      .map(([k]) => k),
+    chainIcon,
+    track,
+    version: '9.9.2',
+  };
+
+  // ───────── CHAIN ICONS ─────────
+  // Brand-matched PNG logos hosted locally (see /assets/logos/).
+  // All 8 chains have user-supplied artwork - kept on disk so we don't
+  // pay a CDN round-trip and don't widen img-src in our CSP.
+  const CHAIN_ICONS = {
+    arc: "/assets/logos/arc.png",
+    avalancheFuji: "/assets/logos/chains/avalanche.svg",
+    arbitrumSepolia: "/assets/logos/chains/arbitrum.png",
+    sepolia: "/assets/logos/chains/ethereum.png",
+    baseSepolia: "/assets/logos/chains/base.svg",
+    optimismSepolia: "/assets/logos/chains/optimism.png",
+    polygonAmoy: "/assets/logos/chains/polygon.svg",
+    unichainSepolia: "/assets/logos/chains/unichain.svg",
+  };
+  function chainIcon(chainKey) {
+    return CHAIN_ICONS[chainKey] || CHAIN_ICONS.arc;
+  }
+
+  // ── REOWN APPKIT INIT ────────────────────────────────────────────────────
+  // appkit.bundle.js is loaded via <script> before arc-core.js, so
+  // window.ReownAppKit is synchronously available when this code runs.
+  try {
+    const { createAppKit, defineChain, EthersAdapter } = global.ReownAppKit || {};
+    if (!createAppKit) throw new Error('appkit.bundle.js not loaded');
+
+    const { BrowserProvider: BP, getAddress: GA } = global.ethers;
+
+    const mkNet = (k) => {
+      const c = CHAINS[k];
+      return defineChain({
+        id: c.id,
+        caipNetworkId: `eip155:${c.id}`,
+        chainNamespace: 'eip155',
+        name: c.name,
+        nativeCurrency: { name: c.native.name, symbol: c.native.symbol, decimals: c.native.decimals },
+        rpcUrls: { default: { http: [c.rpc] } },
+        blockExplorers: { default: { name: c.name, url: c.explorer } },
+      });
+    };
+    const networks = Object.keys(CHAINS).map(mkNet);
+
+    const appkit = createAppKit({
+      adapters: [new EthersAdapter()],
+      networks,
+      projectId: '28193c7e36d0ebbd3cdf183a53d17697',
+      metadata: {
+        name: 'Oneliq',
+        description: 'USDC routing on Arc Testnet',
+        url: 'https://oneliq.xyz',
+        icons: ['https://oneliq.xyz/assets/logos/arclogo.png'],
+      },
+      defaultNetwork: networks[0],
+      features: {
+        analytics: false,
+        swaps: false,
+        onramp: false,
+        email: false,
+        emailShowWallets: false,
+        socials: false,
+      },
+      featuredWalletIds: [
+        'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
+        '971e689d0a5be527bac79629b4ee9b925e82208e5168b733496a09c0faed0709', // OKX Wallet
+        '38f5d18bd8522c244bdd70cb4a68e0e718865155811c043f052fb9f1c51de662', // Bitget Wallet
+        'fd20dc426fb37566d803205b19bbc1d4096b248ac04548e3cfb6b3a38bd033aa', // Coinbase Wallet
+      ],
+      enableReconnect: true,
+    });
+
+    wallet._appkit = appkit;
+    wallet._appkitReady = true;
+    wallet._appkitNetworks = networks;
+
+    appkit.subscribeAccount(async ({ address, isConnected }) => {
+      if (isConnected && address) {
+        if (wallet._intentionalDisconnect) return;
+        // Set address immediately from the callback arg BEFORE any provider check.
+        // getProvider('eip155') can return null on the first subscription event
+        // (provider not yet ready for the session). Previously this caused the
+        // entire try block to throw, skipping wallet.address assignment. The result
+        // was wallet.address=null even though the user was visibly connected, which
+        // broke ARC.track() and any address-dependent logic that runs after a tx.
+        try { wallet.address = GA(address); } catch {}
+        try { if (wallet.address) localStorage.setItem('arc.wallet.lastAddr', wallet.address); } catch {}
+        try {
+          const rawProvider = appkit.getProvider('eip155');
+          const chainId = appkit.getChainId();
+          if (!rawProvider) {
+            wallet._emit(); // address is set — UI updates; signer arrives on next event
+            return;
+          }
+          wallet._eth = rawProvider;
+          wallet._appkitManaging = true;
+          wallet.chainKey = chainKeyById(chainId) || wallet.chainKey;
+          wallet.provider = new BP(rawProvider, 'any');
+          wallet.signer = await wallet.provider.getSigner();
+          try { localStorage.setItem('arc.wallet.autoconnect', '1'); } catch {}
+          wallet._emit();
+        } catch (e) {
+          console.warn('[arc-core] AppKit account sync failed:', e?.message);
+        }
+      } else if (!isConnected && wallet._appkitManaging) {
+        wallet._appkitManaging = false;
+        wallet.provider = null; wallet.signer = null;
+        wallet.address = null; wallet.chainKey = null; wallet._eth = null;
+        try { localStorage.removeItem('arc.wallet.autoconnect'); } catch {}
+        wallet._emit();
+      }
+    });
+
+  } catch (e) {
+    console.error('[arc-core] AppKit init failed:', e);
+    wallet._appkitError = e?.message || String(e);
+  }
+})(window);

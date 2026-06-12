@@ -566,6 +566,7 @@ export async function onRequest(context) {
       recentSample = (Array.isArray(ring) ? ring.slice(0, 5) : []).map(e => ({
         event: e.event, chain: e.chain, hasAddress: !!e.address,
         addrPrefix: e.address ? e.address.slice(0, 8) : null,
+        client_version: e._cv || 'pre-9.9.2',
         ts: e.ts,
       }));
     } catch {}
