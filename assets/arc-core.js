@@ -606,7 +606,12 @@
       const eth = this._eth || this.eip1193(); if (!eth) throw new Error('No wallet');
       const c = CHAINS[chainKey]; if (!c) throw new Error('Unknown chain ' + chainKey);
       const current = await eth.request({ method: 'eth_chainId' });
-      if (parseInt(current, 16) === c.id) return;
+      if (parseInt(current, 16) === c.id) {
+        // Already on correct chain. Signer still valid — just ensure localStorage
+        // has the address so ARC.track() fallback works even after brief disconnects.
+        try { if (this.signer && !localStorage.getItem('arc.wallet.lastAddr')) { const a = await this.signer.getAddress(); if (a) localStorage.setItem('arc.wallet.lastAddr', a.toLowerCase()); } } catch {}
+        return;
+      }
       try {
         await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: c.hex }] });
       } catch (err) {
@@ -625,6 +630,9 @@
       }
       this.provider = new BrowserProvider(eth, 'any');
       this.signer = await this.provider.getSigner();
+      // Capture address from new signer → sets wallet.address and localStorage so
+      // ARC.track() always has address even if AppKit subscribeAccount failed earlier.
+      try { const sa = await this.signer.getAddress(); if (sa) { if (!this.address) this.address = sa; localStorage.setItem('arc.wallet.lastAddr', sa.toLowerCase()); } } catch {}
       this.chainKey = chainKey;
       this._emit();
     },
@@ -840,7 +848,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.9.0',
+    version: '9.9.2',
   };
 
   // ───────── CHAIN ICONS ─────────

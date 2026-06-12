@@ -500,9 +500,9 @@ export async function onRequest(context) {
       headers: {
         'Content-Type': 'application/json',
         ...cors(origin),
-        // 60s edge cache — kv.list is cheap but not free; 1-min staleness
-        // is fine for a status dashboard. NOTE: must come after cors() spread.
-        'Cache-Control': 'public, max-age=60, s-maxage=60',
+        // no-store: kv.list runs every request so active users count is always fresh.
+        // cors() already sets no-store as default; this line keeps the intent explicit.
+        'Cache-Control': 'no-store',
       },
     });
   }
