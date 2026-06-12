@@ -12,7 +12,7 @@
 <title>GM | Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.6"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.7"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0A1628;--bg2:#0F1E36;--surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);--text:#F5F7FB;--muted:#A4B8D0;--muted-soft:#7E92AE;--arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;--display:'Space Grotesk','Inter',system-ui,sans-serif;--font:'DM Sans','Inter',system-ui,sans-serif;--mono:'Space Mono','DM Mono',ui-monospace,monospace}
@@ -75,12 +75,12 @@
 .gm-badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 @media(max-width:768px){.gm-badge-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:420px){.gm-badge-grid{grid-template-columns:1fr}}
-.gm-badge{padding:20px 14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--surface);display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s}
+.gm-badge{padding:14px 10px 12px;border:1px solid rgba(255,255,255,.06);border-radius:16px;background:rgba(255,255,255,.018);display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s}
 .gm-badge.locked{opacity:.5;filter:grayscale(1)}
 .gm-badge.pending{filter:grayscale(.5)}
 .gm-badge.unlocked{border-color:rgba(77,214,219,.3);animation:gm-badge-glow 3s ease-in-out infinite}
 @keyframes gm-badge-glow{0%,100%{box-shadow:0 0 12px rgba(77,214,219,.12)}50%{box-shadow:0 0 24px rgba(77,214,219,.3)}}
-.gm-badge-img{width:96px;height:96px;pointer-events:none}
+.gm-badge-img{width:96px;height:96px;pointer-events:none;object-fit:contain}
 .gm-badge-name{font-size:13px;font-weight:700;color:var(--text);font-family:var(--font)}
 .gm-badge-tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0F1E36;border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:11px;color:var(--muted);white-space:normal;text-align:center;width:160px;pointer-events:none;z-index:10}
 .gm-badge:hover .gm-badge-tip,.gm-badge.tip-open .gm-badge-tip{display:block}
@@ -163,7 +163,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.8.4"></script>
-<script src="/assets/arc-ui.js?v=9.10.6"></script>
+<script src="/assets/arc-ui.js?v=9.10.7"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -188,10 +188,10 @@
 
   // -- Badge definitions --
   const BADGE_META = {
-    welcome: { img: '/assets/badges/welcome.svg', name: 'Welcome to Oneliq', tip: 'Earned on your very first GM check-in' },
-    streak7: { img: '/assets/badges/streak7.svg', name: '7-Day Streak',      tip: 'Check in 7 days in a row' },
-    tx100:   { img: '/assets/badges/tx100.svg',   name: '100 Transactions',  tip: '100 on-chain transactions on Arc Testnet' },
-    og:      { img: '/assets/badges/og.svg',      name: 'OG',                tip: 'Verified OG role in Oneliq Discord' },
+    welcome: { img: '/assets/badges/welcome.png', name: 'Welcome to Oneliq', tip: 'Earned on your very first GM check-in' },
+    streak7: { img: '/assets/badges/streak7.png', name: '7-Day Streak',      tip: 'Check in 7 days in a row' },
+    tx100:   { img: '/assets/badges/tx100.png',   name: '100 Transactions',  tip: '100 on-chain transactions on Arc Testnet' },
+    og:      { img: '/assets/badges/og.png',      name: 'OG',                tip: 'Verified OG role in Oneliq Discord' },
   };
 
   // -- Streak display --
