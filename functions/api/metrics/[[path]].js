@@ -117,6 +117,49 @@ async function incr(kv, key) {
   await kv.put(key, String(cur + 1));
 }
 
+// Query Arc Testnet explorer (Blockscout v2) for distinct wallet addresses with
+// any on-chain activity today. This is the ground-truth active-user count —
+// independent of whether client-side ARC.track() fired or included an address.
+// Result is cached in KV for 5 minutes to avoid hammering the explorer.
+async function fetchOnChainActiveUsers(kv) {
+  const today = utcDate();
+  const cacheKey = `metric:onchain:${today}`;
+  try { const c = await kv.get(cacheKey); if (c !== null) return parseInt(c, 10) || 0; } catch {}
+
+  try {
+    const todayStart = new Date(today + 'T00:00:00Z').getTime();
+    const addrs = new Set();
+    let params = new URLSearchParams({ filter: 'validated', limit: '50', sort: 'desc' });
+
+    // Paginate up to 5 pages (250 txs) — enough for typical daily activity.
+    for (let page = 0; page < 5; page++) {
+      const res = await fetch(`https://testnet.arcscan.app/api/v2/transactions?${params}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) break;
+      const data = await res.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      let doneForDay = false;
+      for (const tx of items) {
+        const ts = tx.timestamp ? new Date(tx.timestamp).getTime() : 0;
+        if (ts < todayStart) { doneForDay = true; break; }
+        const addr = tx.from?.hash || tx.from;
+        if (typeof addr === 'string' && addr.startsWith('0x')) addrs.add(addr.toLowerCase());
+      }
+      if (doneForDay || !data.next_page_params || Object.keys(data.next_page_params || {}).length === 0) break;
+      params = new URLSearchParams(data.next_page_params);
+    }
+
+    const count = addrs.size;
+    // Only cache non-zero results so a failed/empty first call doesn't freeze the count.
+    if (count > 0) await kv.put(cacheKey, String(count), { expirationTtl: 300 });
+    return count;
+  } catch (e) {
+    console.warn('[metrics] fetchOnChainActiveUsers failed:', e?.message);
+    return 0;
+  }
+}
+
 // Hash IP+UA+address → 12 hex chars; daily uniqueness marker without storing PII.
 // Including wallet address means two different wallets behind the same NAT/IP
 // are counted as distinct active users.
@@ -488,11 +531,13 @@ export async function onRequest(context) {
     // and post-fix events (both present, wallet count is subset of user count or equal).
     try {
       const today = utcDate();
-      const [wl, ul] = await Promise.all([
+      const [wl, ul, onChain] = await Promise.all([
         kv.list({ prefix: `metric:wallet:${today}:`, limit: 10000 }),
         kv.list({ prefix: `metric:user:${today}:`,   limit: 10000 }),
+        fetchOnChainActiveUsers(kv),
       ]);
-      const count = Math.max(wl.keys.length, ul.keys.length);
+      // on-chain count is ground truth; KV counts are fallback when explorer is unreachable.
+      const count = Math.max(wl.keys.length, ul.keys.length, onChain);
       if (count > 0) summary.activeUsers = count;
     } catch {}
 
@@ -553,11 +598,12 @@ export async function onRequest(context) {
   // ─── GET /debug ──────────────────────────────────────────────────────────
   if (route === 'debug' && request.method === 'GET') {
     const today = utcDate();
-    const [wl, ul, summaryRaw, recentRaw] = await Promise.all([
+    const [wl, ul, summaryRaw, recentRaw, onChain] = await Promise.all([
       kv.list({ prefix: `metric:wallet:${today}:`, limit: 100 }),
       kv.list({ prefix: `metric:user:${today}:`,   limit: 100 }),
       kv.get(SUMMARY_KEY),
       kv.get(RECENT_KEY),
+      fetchOnChainActiveUsers(kv),
     ]);
     let summary = null;
     try { summary = JSON.parse(summaryRaw); } catch {}
@@ -573,9 +619,10 @@ export async function onRequest(context) {
     } catch {}
     return new Response(JSON.stringify({
       today,
+      onchain_active_users: onChain,
       wallet_keys: wl.keys.length,
       user_fp_keys: ul.keys.length,
-      active_users_computed: Math.max(wl.keys.length, ul.keys.length),
+      active_users_computed: Math.max(wl.keys.length, ul.keys.length, onChain),
       active_users_blob: Object.keys(summary?.fpToday || {}).length,
       wallet_sample: wl.keys.slice(0, 10).map(k => k.name.replace(`metric:wallet:${today}:`, '')),
       user_fp_sample: ul.keys.slice(0, 10).map(k => k.name.slice(-8)),
