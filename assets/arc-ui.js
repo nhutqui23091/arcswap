@@ -61,7 +61,9 @@
       const btn = document.getElementById(id); if (!btn) return;
       if (s.connected) {
         btn.classList.remove('disconnected');
-        btn.innerHTML = '<span class="dot"></span>Profile';
+        btn.innerHTML = id === 'arc-wallet-btn-mob'
+          ? '<span class="dot"></span>' + ARC.shortAddr(s.address)
+          : '<span class="dot"></span>Profile';
         btn.title = s.address;
       } else {
         btn.classList.add('disconnected');
