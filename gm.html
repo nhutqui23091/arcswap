@@ -12,7 +12,7 @@
 <title>GM | Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.13"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.14"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0A1628;--bg2:#0F1E36;--surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.065);--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);--text:#F5F7FB;--muted:#A4B8D0;--muted-soft:#7E92AE;--arc1:#4DD6DB;--arc2:#4A7BEC;--arc3:#F4C89A;--arc4:#7BE495;--display:'Space Grotesk','Inter',system-ui,sans-serif;--font:'DM Sans','Inter',system-ui,sans-serif;--mono:'Space Mono','DM Mono',ui-monospace,monospace}
@@ -153,6 +153,17 @@
         </div>
       </div>
 
+      <div class="gm-task" id="tg">
+        <div class="t-ico" id="tg-ico">#</div>
+        <div class="t-body">
+          <div class="t-name">Say GM on Discord</div>
+          <div class="t-sub" id="tg-sub">Post any message in #gm-gn channel</div>
+        </div>
+        <div class="t-acts" id="tg-acts">
+          <a href="https://discord.com/invite/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Open</a>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -169,7 +180,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.8.4"></script>
-<script src="/assets/arc-ui.js?v=9.10.13"></script>
+<script src="/assets/arc-ui.js?v=9.10.14"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -365,6 +376,30 @@
         txActs.innerHTML  = '<a href="https://x.com/intent/user?screen_name=oneliq_" target="_blank" rel="noopener noreferrer">Open X</a>';
       }
     }
+
+    // GM Discord message task
+    const tgCard = document.getElementById('tg');
+    const tgIco  = document.getElementById('tg-ico');
+    const tgSub  = document.getElementById('tg-sub');
+    const tgActs = document.getElementById('tg-acts');
+    if (tgCard) {
+      if (gmState?.said_gm) {
+        tgCard.classList.add('done'); tgIco.classList.add('done');
+        tgIco.textContent = '✓';
+        tgSub.textContent = 'GM posted in #gm-gn';
+        tgSub.classList.add('ok');
+        tgActs.innerHTML  = '';
+      } else {
+        tgCard.classList.remove('done'); tgIco.classList.remove('done');
+        tgIco.textContent = '#';
+        tgSub.classList.remove('ok');
+        tgSub.textContent = dcDone ? 'Post a GM in #gm-gn then verify' : 'Join Discord first';
+        tgActs.innerHTML  = dcDone
+          ? '<a href="https://discord.com/invite/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Open</a><button id="gmvbtn">Verify</button>'
+          : '<a href="https://discord.com/invite/7XUPdWWrGk" target="_blank" rel="noopener noreferrer">Join</a>';
+        if (dcDone) document.getElementById('gmvbtn').onclick = verifyGmMsg;
+      }
+    }
   }
 
   async function markXDone() {
@@ -373,6 +408,37 @@
       const r = await fetch('/auth/gm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'x_follow', address: a }) });
       if (r.ok) { gmState = await r.json(); renderTasks(); ArcUI.toast('success', 'Done!', 'X follow marked.'); }
     } catch(e) { console.error(e); }
+  }
+
+  async function verifyGmMsg() {
+    const a = addr(); if (!a) return;
+    const vbtn = document.getElementById('gmvbtn');
+    if (vbtn) { vbtn.disabled = true; vbtn.textContent = 'Checking...'; }
+    try {
+      const r = await fetch('/auth/gm-message-verify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: a }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        ArcUI.toast('error', 'Verify failed', data.error || 'Error');
+        if (vbtn) { vbtn.disabled = false; vbtn.textContent = 'Verify'; }
+        return;
+      }
+      if (data.verified) {
+        gmState = { ...gmState, said_gm: true, badges: data.badges || gmState?.badges };
+        renderTasks();
+        renderBadges(data.badges || gmState?.badges);
+        if (data.welcome_awarded) ArcUI.toast('success', 'Welcome Badge!', 'You earned the Welcome badge.');
+        else ArcUI.toast('success', 'Verified!', 'GM message confirmed in #gm-gn.');
+      } else {
+        ArcUI.toast('', 'Not found', data.message || 'No GM found in #gm-gn.');
+        if (vbtn) { vbtn.disabled = false; vbtn.textContent = 'Verify'; }
+      }
+    } catch(e) {
+      ArcUI.toast('error', 'Error', e.message || 'Verification failed');
+      if (vbtn) { vbtn.disabled = false; vbtn.textContent = 'Verify'; }
+    }
   }
 
   // -- Energy bar --

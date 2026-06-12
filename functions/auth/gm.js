@@ -33,10 +33,17 @@ async function handleGet(request, env) {
   const today      = utcToday();
   const dailyCount = parseInt(await kv.get('gm:daily:' + today) || '0', 10);
 
+  let saidGm = false;
+  try {
+    const profileRaw = await kv.get('profile:' + addr);
+    if (profileRaw) saidGm = JSON.parse(profileRaw).said_gm || false;
+  } catch {}
+
   return jsonRes({
     ...state,
     already_checked_in: state.last_checkin === today,
     daily_count: dailyCount,
+    said_gm: saidGm,
   });
 }
 
@@ -115,7 +122,14 @@ async function handlePost(request, env) {
 
   // -- Badge logic --
   const badges = [...(state.badges || [])];
-  if (isFirstCheckin && !badges.includes('welcome')) {
+
+  // Welcome: requires at least 1 check-in + Discord linked + said GM in #gm-gn
+  let discordLinked = false; let saidGm = false;
+  try {
+    const profileRaw = await kv.get('profile:' + addr);
+    if (profileRaw) { const p = JSON.parse(profileRaw); discordLinked = !!p.discord_id; saidGm = p.said_gm || false; }
+  } catch {}
+  if (totalCheckins >= 1 && discordLinked && saidGm && !badges.includes('welcome')) {
     badges.push('welcome');
   }
   if (streak >= 7 && !badges.includes('streak7')) {
