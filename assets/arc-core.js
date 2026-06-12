@@ -801,12 +801,14 @@
       const walletAddr = wallet?.address?.toLowerCase?.() || null;
       const payload = { event, chain, amount, txHash, surface, ...(walletAddr ? { address: walletAddr } : {}) };
       if (extra && typeof extra === 'object') Object.assign(payload, extra);
-      await fetch('/api/metrics/track', {
+      if (typeof console !== 'undefined') console.debug('[metrics] track', event, 'addr:', walletAddr ? walletAddr.slice(0, 8) : 'MISSING');
+      const res = await fetch('/api/metrics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         keepalive: true,
         body: JSON.stringify(payload),
       });
+      if (typeof console !== 'undefined' && !res.ok) console.debug('[metrics] track HTTP', res.status);
     } catch (e) {
       // Best-effort only - never surface to the user.
       if (typeof console !== 'undefined') console.debug('[metrics] track failed:', e?.message);

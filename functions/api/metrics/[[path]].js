@@ -448,6 +448,15 @@ export async function onRequest(context) {
       pushRecentRing(kv, eventData),
     ]);
 
+    console.log('[metrics/track]', JSON.stringify({
+      event, chain,
+      hasAddress: !!walletAddr,
+      addrPrefix: walletAddr ? walletAddr.slice(0, 8) : null,
+      fpPrefix: fp.slice(0, 8),
+      walletKeyWritten: !!walletAddr,
+      day,
+    }));
+
     return new Response(null, { status: 204, headers: cors(origin) });
   }
 
@@ -537,6 +546,43 @@ export async function onRequest(context) {
         // NOTE: must come AFTER cors() spread (no-store default).
         'Cache-Control': 'public, max-age=60, s-maxage=60',
       },
+    });
+  }
+
+  // ─── GET /debug ──────────────────────────────────────────────────────────
+  if (route === 'debug' && request.method === 'GET') {
+    const today = utcDate();
+    const [wl, ul, summaryRaw, recentRaw] = await Promise.all([
+      kv.list({ prefix: `metric:wallet:${today}:`, limit: 100 }),
+      kv.list({ prefix: `metric:user:${today}:`,   limit: 100 }),
+      kv.get(SUMMARY_KEY),
+      kv.get(RECENT_KEY),
+    ]);
+    let summary = null;
+    try { summary = JSON.parse(summaryRaw); } catch {}
+    let recentSample = [];
+    try {
+      const ring = JSON.parse(recentRaw);
+      recentSample = (Array.isArray(ring) ? ring.slice(0, 5) : []).map(e => ({
+        event: e.event, chain: e.chain, hasAddress: !!e.address,
+        addrPrefix: e.address ? e.address.slice(0, 8) : null,
+        ts: e.ts,
+      }));
+    } catch {}
+    return new Response(JSON.stringify({
+      today,
+      wallet_keys: wl.keys.length,
+      user_fp_keys: ul.keys.length,
+      active_users_computed: Math.max(wl.keys.length, ul.keys.length),
+      active_users_blob: Object.keys(summary?.fpToday || {}).length,
+      wallet_sample: wl.keys.slice(0, 10).map(k => k.name.replace(`metric:wallet:${today}:`, '')),
+      user_fp_sample: ul.keys.slice(0, 10).map(k => k.name.slice(-8)),
+      rollup_todayKey: summary?.todayKey,
+      rollup_computedAt: summary?.computedAt,
+      recent_events_sample: recentSample,
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...cors(origin), 'Cache-Control': 'no-store' },
     });
   }
 
