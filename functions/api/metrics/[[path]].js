@@ -467,15 +467,23 @@ export async function onRequest(context) {
 
     const summary = shapeSummary(r);
 
-    // Override activeUsers with a race-free count from dedicated per-wallet KV keys.
-    // Each /track call with a known wallet address writes metric:wallet:${day}:${addr}.
-    // kv.list on this prefix gives the exact distinct-wallet count for today with no
-    // race condition — unlike the fpToday JSON blob which concurrent writes can corrupt.
-    // Falls back to fpToday fingerprint count when no wallet-keyed data exists yet.
+    // Count active users from atomic individual KV keys instead of the fpToday
+    // JSON blob (which suffers concurrent-write corruption when many swaps race).
+    //
+    // Two sources, both use separate-key puts (no read-modify-write, no race):
+    //   metric:wallet:{day}:{addr}  — written when address is known (post-fix events)
+    //   metric:user:{day}:{fp}      — written for every /track regardless of address
+    //
+    // Taking max() handles both pre-fix events (wallet keys missing, user keys present)
+    // and post-fix events (both present, wallet count is subset of user count or equal).
     try {
       const today = utcDate();
-      const wl = await kv.list({ prefix: `metric:wallet:${today}:`, limit: 10000 });
-      if (wl.keys.length > 0) summary.activeUsers = wl.keys.length;
+      const [wl, ul] = await Promise.all([
+        kv.list({ prefix: `metric:wallet:${today}:`, limit: 10000 }),
+        kv.list({ prefix: `metric:user:${today}:`,   limit: 10000 }),
+      ]);
+      const count = Math.max(wl.keys.length, ul.keys.length);
+      if (count > 0) summary.activeUsers = count;
     } catch {}
 
     return new Response(JSON.stringify(summary), {
@@ -483,7 +491,9 @@ export async function onRequest(context) {
       headers: {
         'Content-Type': 'application/json',
         ...cors(origin),
-        'Cache-Control': 'public, max-age=120, s-maxage=120',
+        // 60s edge cache — kv.list is cheap but not free; 1-min staleness
+        // is fine for a status dashboard. NOTE: must come after cors() spread.
+        'Cache-Control': 'public, max-age=60, s-maxage=60',
       },
     });
   }
