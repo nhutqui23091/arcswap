@@ -11,7 +11,7 @@
 <title>Trade · Swap & Bridge | Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.22"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.23"/>
 <style>
 main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:44px 28px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
 @media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding:40px 20px 80px}}
@@ -503,8 +503,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
-<script src="/assets/arc-core.js?v=9.9.0"></script>
-<script src="/assets/arc-ui.js?v=9.10.22"></script>
+<script src="/assets/arc-core.js?v=9.9.1"></script>
+<script src="/assets/arc-ui.js?v=9.10.23"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
 
 <!-- Circle App Kit config (kit key injected at build time by Cloudflare Pages,
@@ -1814,7 +1814,8 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     // the status page can deep-link to the chain's native explorer.
     try {
       const amtUsdc = parseFloat(state.amountIn) || 0;
-      ARC.track('trade', lastTxChain || state.dst.chainKey, amtUsdc, lastTxHash, 'trade');
+      const _tAddr = wallet.address || await wallet.signer?.getAddress?.().catch(() => null);
+      ARC.track('trade', lastTxChain || state.dst.chainKey, amtUsdc, lastTxHash, 'trade', _tAddr ? { address: _tAddr } : null);
     } catch {}
     // Refresh sources and current-balance widgets
     loadAllSources().catch(() => null);

@@ -798,11 +798,14 @@
   // even if the user navigates away immediately after.
   async function track(event, chain, amount = null, txHash = null, surface = null, extra = null) {
     try {
-      const walletAddr = (() => {
+      // Try every possible source for wallet address, in order of reliability.
+      // wallet.signer is set by ensureChain during each tx and survives brief
+      // AppKit disconnect events that can null out wallet.address mid-flight.
+      const walletAddr = await (async () => {
         if (wallet?.address) return wallet.address.toLowerCase();
-        // Fallback: read directly from AppKit in case subscribeAccount hasn't
-        // propagated yet or was reset by a brief disconnect during a tx.
         try { const a = wallet?._appkit?.getAccount?.()?.address; if (a) return a.toLowerCase(); } catch {}
+        try { const a = await wallet?.signer?.getAddress?.(); if (a) return a.toLowerCase(); } catch {}
+        try { const a = localStorage.getItem('arc.wallet.lastAddr'); if (a && /^0x[0-9a-f]{40}$/i.test(a)) return a.toLowerCase(); } catch {}
         return null;
       })();
       const payload = { event, chain, amount, txHash, surface, ...(walletAddr ? { address: walletAddr } : {}) };
@@ -923,6 +926,7 @@
         // was wallet.address=null even though the user was visibly connected, which
         // broke ARC.track() and any address-dependent logic that runs after a tx.
         try { wallet.address = GA(address); } catch {}
+        try { if (wallet.address) localStorage.setItem('arc.wallet.lastAddr', wallet.address); } catch {}
         try {
           const rawProvider = appkit.getProvider('eip155');
           const chainId = appkit.getChainId();

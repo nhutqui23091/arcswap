@@ -12,7 +12,7 @@
 <title>Unified Balance | Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.22"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.23"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -353,9 +353,9 @@ html{scroll-behavior:smooth}
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
-<script src="/assets/arc-core.js?v=9.9.0"></script>
+<script src="/assets/arc-core.js?v=9.9.1"></script>
 <script src="/assets/arc-gateway.js?v=9.6.2"></script>
-<script src="/assets/arc-ui.js?v=9.10.22"></script>
+<script src="/assets/arc-ui.js?v=9.10.23"></script>
 <script>
 (async () => {
   const ARC = window.ARC;
@@ -836,7 +836,7 @@ html{scroll-behavior:smooth}
       pushToHistory('bridge', k, result?.tx?.hash || null, `Deposit ${amtStr} USDC on ${chainName(k)}`);
       // Real-metrics telemetry - pass tx hash so the status page can deep-link
       // to the source chain's explorer ("view ↗" in Latest Activity).
-      try { ARC.track('deposit', k, Number(amtStr), result?.tx?.hash || null, 'balance'); } catch {}
+      try { ARC.track('deposit', k, Number(amtStr), result?.tx?.hash || null, 'balance', state.addr ? { address: state.addr } : null); } catch {}
       setTimeout(() => closeModal('modal-deposit'), 1200);
       refreshAll();
     } catch (e) {
@@ -1212,7 +1212,7 @@ html{scroll-behavior:smooth}
         const sourcesPayload = spentSources && spentSources.length > 1
           ? { sources: spentSources.map(s => ({ chainKey: s.chainKey, amount: fmtBig(s.valueCanonical) })) }
           : null;
-        ARC.track('spend', dst, Number(amtStr), mintHash, 'balance', sourcesPayload);
+        ARC.track('spend', dst, Number(amtStr), mintHash, 'balance', { ...(sourcesPayload || {}), ...(state.addr ? { address: state.addr } : {}) });
       } catch {}
       setTimeout(() => closeModal('modal-spend'), 2500);
       refreshAll();
