@@ -170,7 +170,7 @@ async function handlePost(request, env) {
         'CF-Connecting-IP': request.headers.get('CF-Connecting-IP') || '',
         'User-Agent': request.headers.get('User-Agent') || '',
       },
-      body: JSON.stringify({ event: 'gm-checkin', chain: 'arc' }),
+      body: JSON.stringify({ event: 'gm-checkin', chain: 'arc', address: addr }),
     }).catch(() => {});
   } catch {}
 

@@ -117,11 +117,14 @@ async function incr(kv, key) {
   await kv.put(key, String(cur + 1));
 }
 
-// Hash IP+UA → 12 hex chars; used as a daily uniqueness marker without storing PII.
-async function fingerprint(request) {
+// Hash IP+UA+address → 12 hex chars; daily uniqueness marker without storing PII.
+// Including wallet address means two different wallets behind the same NAT/IP
+// are counted as distinct active users.
+async function fingerprint(request, addr) {
   const ip = request.headers.get('CF-Connecting-IP') || '';
   const ua = request.headers.get('User-Agent') || '';
-  const buf = new TextEncoder().encode(ip + '|' + ua);
+  const a  = typeof addr === 'string' && /^0x[0-9a-f]{40}$/i.test(addr) ? addr.toLowerCase() : '';
+  const buf = new TextEncoder().encode(ip + '|' + ua + '|' + a);
   const h = await crypto.subtle.digest('SHA-256', buf);
   const hex = Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
   return hex.slice(0, 12);
@@ -419,7 +422,7 @@ export async function onRequest(context) {
     const rand = Math.random().toString(36).slice(2, 10);
     const eventKey = `metric:event:${ts}:${rand}`;
     const eventData = { event, chain, amount, txHash, surface, ts, ...(sources ? { sources } : {}) };
-    const fp = await fingerprint(request);
+    const fp = await fingerprint(request, body.address);
 
     // Raw audit-trail writes — kept for reconciliation. Best-effort, parallel.
     // Counters use incr() (read-modify-write); event keys use simple put.

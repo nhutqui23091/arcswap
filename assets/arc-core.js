@@ -788,7 +788,7 @@
   // status page (status.oneliq.xyz) can show real numbers, not seeded mocks.
   //
   //   event   : 'trade' | 'deposit' | 'spend' | 'bridge' | 'agent-create'
-  //             | 'agent-exec' | 'failure'   (validated server-side too)
+  //             | 'agent-exec' | 'failure' | 'gm-checkin'   (validated server-side too)
   //   chain   : one of CHAINS keys (arc, sepolia, baseSepolia, ...)
   //   amount  : number (USDC units, decimal - e.g. 12.5) or null
   //   txHash  : 0x-prefixed hash or null (for non-onchain events)
@@ -798,7 +798,8 @@
   // even if the user navigates away immediately after.
   async function track(event, chain, amount = null, txHash = null, surface = null, extra = null) {
     try {
-      const payload = { event, chain, amount, txHash, surface };
+      const walletAddr = wallet?.address?.toLowerCase?.() || null;
+      const payload = { event, chain, amount, txHash, surface, ...(walletAddr ? { address: walletAddr } : {}) };
       if (extra && typeof extra === 'object') Object.assign(payload, extra);
       await fetch('/api/metrics/track', {
         method: 'POST',

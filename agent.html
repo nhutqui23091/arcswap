@@ -11,7 +11,7 @@
 <title>Oneliq | Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.16"/>
+<link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.17"/>
 <style>
 :root{
   /* /agent used to ship a violet primary that clashed with the rest of the
@@ -742,7 +742,7 @@ select option:checked{background:#1a2c4a;color:#fff}
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.0"></script>
 <script src="/assets/arc-core.js?v=9.8.4"></script>
-<script src="/assets/arc-ui.js?v=9.10.16"></script>
+<script src="/assets/arc-ui.js?v=9.10.17"></script>
 <script>
 (async () => {
   await ArcUI.bootApp('agent');
@@ -1823,10 +1823,12 @@ select option:checked{background:#1a2c4a;color:#fff}
         saveLocalExecs();
         localStorage.setItem('arcswap_total_sent', String(totalSent));
         ArcUI.toast('success', 'Triggered (local)', `+$${total.toFixed(2)}`);
+        try { ARC.track('agent-exec', 'arc', total, null, 'agent'); } catch {}
       } else {
         // Backend ran - refresh agent + executions from API
         await refreshAgentsFromBackend();
         ArcUI.toast('success', 'Triggered', `+$${(res.amount || 0).toFixed(2)} (simulated)`);
+        try { ARC.track('agent-exec', 'arc', res.amount || null, null, 'agent'); } catch {}
       }
     } catch (e) {
       ArcUI.toast('error', 'Trigger failed', e.message);
