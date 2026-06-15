@@ -1488,10 +1488,87 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     return s.toFixed(2);
   }
 
+  // ── DIRECT ARC POOL (Curve) ──────────────────────────
+  // Circle's kit.swap routes USDC/EURC on Arc through THIS Curve StableSwap pool
+  // (LiFiDiamond → DexAggregator → Curve). On Arc Testnet, Circle's quote service
+  // returns an inflated estimate, so kit.swap bakes a minimum-output the pool can't
+  // meet → InsufficientAmountOut (0xe52970aa). We call the same pool directly with
+  // a minOut derived from the pool's own get_dy, so the floor is always meetable.
+  // Verified on-chain: pool healthy (4M USDC / 255k EURC), get_dy ~0.9557, the
+  // exchange() entrypoint is permissionless (only needs an ERC-20 approve).
+  const ARC_CURVE_POOL = '0x2d84d79c852f6842abe0304b70bbaa1506add457';
+  const ARC_CURVE_IDX = { USDC: 0, EURC: 1 };       // pool coin indices
+  const ARC_CURVE_DEC = 6;                          // pool/ERC-20 work in 6 decimals
+  const CURVE_ABI = [
+    'function get_dy(int128 i, int128 j, uint256 dx) view returns (uint256)',
+    'function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) returns (uint256)',
+  ];
+  const arcCurvePair = (a, b) => ARC_CURVE_IDX[a] !== undefined && ARC_CURVE_IDX[b] !== undefined;
+  // App models Arc USDC at 18 decimals (native gas token); the 0x3600 ERC-20 and the
+  // pool use 6. Scale between the app amount and pool units.
+  const toPool6   = (amtApp, tok) => amtApp / (10n ** BigInt(tok.decimals - ARC_CURVE_DEC));
+  const fromPool6 = (amt6,  tok) => amt6  * (10n ** BigInt(tok.decimals - ARC_CURVE_DEC));
+
+  async function quoteArcCurve(tIn, tOut, amtIn) {
+    const i = ARC_CURVE_IDX[tIn.symbol], j = ARC_CURVE_IDX[tOut.symbol];
+    const dx = toPool6(amtIn, tIn);
+    if (dx <= 0n) throw new Error('Amount too small for pool');
+    const pool = new Contract(ARC_CURVE_POOL, CURVE_ABI, rpcProvider('arc'));
+    const dyPool = await pool.get_dy(i, j, dx);
+    if (dyPool <= 0n) throw new Error('No Arc pool liquidity');
+    const out = fromPool6(dyPool, tOut);
+    const minOut = out - (out * BigInt(state.slippageBps)) / 10000n;
+    const inFloat = parseFloat(formatAmt(amtIn, tIn.decimals));
+    const outFloat = parseFloat(formatAmt(out, tOut.decimals));
+    const rateNum = inFloat > 0 ? outFloat / inFloat : 0;
+    return {
+      amountOut: out, minOut,
+      path: [tIn.address, tOut.address],
+      provider: 'curve',
+      rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
+      impact: null, impactWarn: false, impactBad: false,
+      feeLabel: 'Arc pool · direct (Curve)',
+      time: '~3 s',
+    };
+  }
+
+  // Execute the swap straight against the Curve pool: approve input (6-dec ERC-20)
+  // then exchange() with min_dy = get_dy × (1 − slippage). Returns the tx hash.
+  async function execArcCurveSwap(tInSym, tOutSym, amtIn, modal, stepId) {
+    const tInTok = TOKENS.arc[tInSym], tOutTok = TOKENS.arc[tOutSym];
+    const i = ARC_CURVE_IDX[tInSym], j = ARC_CURVE_IDX[tOutSym];
+    const dx = toPool6(amtIn, tInTok);
+    if (dx <= 0n) throw new Error('Amount too small for pool');
+    const poolRead = new Contract(ARC_CURVE_POOL, CURVE_ABI, rpcProvider('arc'));
+    const dy = await poolRead.get_dy(i, j, dx);
+    const minDy = dy - (dy * BigInt(state.slippageBps)) / 10000n;
+    // Approve the pool to pull the input token (6-dec units) if needed.
+    const erc20 = new Contract(tInTok.address, ABIS.erc20, wallet.signer);
+    const cur = await erc20.allowance(wallet.address, ARC_CURVE_POOL).catch(() => 0n);
+    if (cur < dx) {
+      modal.set(stepId, 'active', `Approving ${tInSym}…`);
+      const atx = await erc20.approve(ARC_CURVE_POOL, dx);
+      await atx.wait();
+    }
+    modal.set(stepId, 'active', `Swapping ${tInSym} → ${tOutSym} via Arc pool…`);
+    const pool = new Contract(ARC_CURVE_POOL, CURVE_ABI, wallet.signer);
+    const tx = await pool.exchange(i, j, dx, minDy);
+    modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} - waiting…`);
+    await tx.wait();
+    return tx.hash;
+  }
+
   // ── QUOTE HELPERS ────────────────────────────────────
   // Used by quote() pipeline for the swap step. Returns { amountOut, minOut,
   // rate, feeLabel, time, impact, impactWarn, impactBad, provider, path }.
   async function quoteSwap(chainKey, tIn, tOut, amtIn) {
+    // ── Direct Arc pool (Curve) for USDC/EURC ─────────────────────────────
+    // Preferred over Circle kit.swap on Arc Testnet: Circle's quote service is
+    // returning inflated estimates that make kit.swap revert (InsufficientAmountOut).
+    // This calls the exact same pool Circle routes to, with a meetable min-out.
+    if (chainKey === 'arc' && arcCurvePair(tIn.symbol, tOut.symbol)) {
+      return await quoteArcCurve(tIn, tOut, amtIn);
+    }
     // ── App Kit Swap path (Circle's official liquidity on Arc Testnet) ─────
     // Use App Kit for USDC/EURC pairs on Arc - Uniswap V2 pools on Arc Testnet
     // are empty/stub, App Kit routes through Circle's third-party providers.
@@ -1778,7 +1855,17 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           const balBefore = await tokenBalance('arc', tOutTok, wallet.address).catch(() => 0n);
           const inputStr = formatAmt(runAmt, tInTok.decimals);
           modal.set(stepId, 'active', `Swap ${step.tIn} → ${step.tOut}…`);
-          if (APPKIT && appKitSupports('arc', tInTok, tOutTok)) {
+          if (arcCurvePair(step.tIn, step.tOut)) {
+            // Direct Arc pool (Curve) - bypasses Circle kit.swap, which reverts on
+            // testnet with InsufficientAmountOut (see quoteArcCurve). Same pool Circle
+            // routes to, but with a min-out we control so it always clears.
+            const txHash = await execArcCurveSwap(step.tIn, step.tOut, runAmt, modal, stepId);
+            if (txHash) { lastTxHash = txHash; lastTxChain = 'arc'; }
+            modal.set(stepId, 'done', txHash
+              ? `<a href="${CHAINS.arc.explorerTx(txHash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(txHash)} ↗</a>`
+              : 'Done');
+            pushActivity({ kind: 'swap', chain: 'arc', hash: txHash, status: 'done', text: `${inputStr} ${step.tIn} → ${step.tOut} (Arc pool)` });
+          } else if (APPKIT && appKitSupports('arc', tInTok, tOutTok)) {
             // Circle SDK wraps the result and doesn't expose txHash at top level.
             // Intercept window.ethereum.request so we capture the hash the moment
             // the wallet submits eth_sendTransaction (return value IS the hash).
