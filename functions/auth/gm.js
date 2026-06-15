@@ -167,7 +167,7 @@ async function handlePost(request, env, context) {
       fetch(base + '/api/metrics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: 'gm-checkin', chain: 'arc', address: addr }),
+        body: JSON.stringify({ event: 'gm-checkin', chain: 'arc', address: addr, txHash }),
       }).catch(() => {})
     );
   } catch {}
