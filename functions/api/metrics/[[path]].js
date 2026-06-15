@@ -86,10 +86,11 @@ const CHAIN_KEYS = [
 const CHAIN_ALLOWLIST = new Set(CHAIN_KEYS);
 
 // Rollup config
-const SUMMARY_KEY = 'metric:summary:v2'; // bumped to force rebuild with volumeLifetime + totalUsers
-const RECENT_KEY  = 'metric:recent:v1';
-const RECENT_MAX  = 50;          // ring buffer size
-const SERIES_DAYS = 30;          // 30-day rolling window
+const SUMMARY_KEY    = 'metric:summary:v1'; // KV key (never changes)
+const ROLLUP_VERSION = 2;                   // internal version — bump to trigger one-time rebuild
+const RECENT_KEY     = 'metric:recent:v1';
+const RECENT_MAX     = 50;          // ring buffer size
+const SERIES_DAYS    = 30;          // 30-day rolling window
 
 function isAllowed(origin) {
   return !origin
@@ -153,7 +154,7 @@ function bad(msg, origin, status = 400) {
    ──────────────────────────────────────────────────────────────────────── */
 
 function emptyRollup(today) {
-  const r = { version: 1, computedAt: new Date().toISOString(), todayKey: today, lifetime: {}, byDay: {}, byChainToday: {}, fpToday: {}, volumeLifetime: {}, totalUsers: 0 };
+  const r = { version: ROLLUP_VERSION, computedAt: new Date().toISOString(), todayKey: today, lifetime: {}, byDay: {}, byChainToday: {}, fpToday: {}, volumeLifetime: {}, totalUsers: 0 };
   for (const e of EVENT_TYPES) { r.lifetime[e] = 0; r.volumeLifetime[e] = 0; }
   return r;
 }
@@ -205,7 +206,12 @@ async function updateRollupCache(kv, day, event, chain, fp, amount, isNewUser) {
   try {
     let r;
     try { r = JSON.parse((await kv.get(SUMMARY_KEY)) || 'null'); } catch { r = null; }
-    if (!r || r.version !== 1) r = emptyRollup(day);
+    if (!r || r.version !== ROLLUP_VERSION) {
+      // Version mismatch — skip rather than clobber with emptyRollup.
+      // The next /summary call will do a proper rebuild from raw counters.
+      // Raw counter keys capture this event in the meantime.
+      return;
+    }
     applyIncrement(r, day, event, chain, fp, amount, isNewUser);
     await kv.put(SUMMARY_KEY, JSON.stringify(r));
   } catch (e) {
@@ -511,13 +517,15 @@ export async function onRequest(context) {
     let r;
     try { r = JSON.parse((await kv.get(SUMMARY_KEY)) || 'null'); } catch { r = null; }
 
-    if (!r || r.version !== 1) {
-      // Cold start (key missing or version mismatch) → rebuild ONCE.
+    if (!r || r.version !== ROLLUP_VERSION) {
+      // Cold start or version mismatch → rebuild ONCE from raw counters.
       // This is the only path that does fan-out reads. Subsequent calls
       // are 1 read each until the key is evicted (KV has no TTL eviction;
-      // only manual delete or version bump triggers a rebuild).
+      // only manual delete or ROLLUP_VERSION bump triggers a rebuild).
       r = await rebuildRollupFromCounters(kv);
       await kv.put(SUMMARY_KEY, JSON.stringify(r));
+      // Clean up the stale v2 key that was created by the erroneous key-rename approach.
+      try { await kv.delete('metric:summary:v2'); } catch {}
     }
 
     const summary = shapeSummary(r);
