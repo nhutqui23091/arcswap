@@ -1502,16 +1502,27 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           tokenInAddress: tIn.address,
           tokenOutAddress: tOut.address,
         });
-        // Circle's quote is the single source of truth: the real swap routes through
-        // App Kit (LiFi -> Curve), so the displayed rate must equal what executes.
-        // estimateAppKitSwap() already auto-scales the response, so trust it directly
-        // - no theoretical-peg fallback, no reading the (empty) Uniswap V2 pool.
+        // The real swap routes through Circle App Kit (LiFi -> Curve), so we trust
+        // Circle's auto-scaled quote as the rate. BUT the Arc Testnet /quote pool is
+        // thin and sometimes returns an out-of-band number (est.lowConfidence): in
+        // that case show the theoretical stablecoin peg for DISPLAY only, so the user
+        // sees a sane preview. We never block the swap - execution uses Circle's own
+        // routing regardless of this preview. (We never read the empty Uniswap V2 pool.)
         const outStr = APPKIT.extractEstimatedOutput(est);
-        const outFloat = parseFloat(outStr || '0');
+        let outFloat = parseFloat(outStr || '0');
+        if (est.lowConfidence) {
+          const PEG = { 'USDC/EURC': 1/1.08, 'EURC/USDC': 1.08 };
+          const r = PEG[`${tIn.symbol}/${tOut.symbol}`];
+          const inF = parseFloat(amountInStr);
+          if (r && inF > 0) outFloat = inF * r;
+          console.warn('[trade] Circle quote low-confidence; showing peg estimate', { rate: r, outFloat });
+        }
         if (outFloat <= 0) throw new Error('App Kit returned zero output');
         const out = parseAmt(outFloat.toFixed(tOut.decimals), tOut.decimals);
         // Use App Kit's stopLimit if provided (Circle-side slippage); else apply our slippage
-        const stopStr = APPKIT.extractStopLimit(est);
+        // Ignore Circle's stopLimit when the quote was low-confidence (its scale is
+        // unreliable too) - derive min-received from our peg-based `out` instead.
+        const stopStr = est.lowConfidence ? null : APPKIT.extractStopLimit(est);
         let minOut;
         if (stopStr) {
           const stopFloat = parseFloat(stopStr);

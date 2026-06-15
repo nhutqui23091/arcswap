@@ -147,21 +147,24 @@ export async function prefetchSdk() {
 // Pick the scale divisor for Circle's quote `estimatedAmount` so the resulting
 // rate (out/in) lands inside the plausible stablecoin-FX band. Handles raw
 // (human), 6-decimal and 18-decimal responses without hard-coding which one
-// Circle returns. Returns the divisor, or null if no scale gives a sane rate.
+// Circle returns. Returns { scale, inBand }: `scale` is always the closest-to-peg
+// divisor; `inBand` says whether any scale produced a sane rate. Null only when
+// the input is unusable. On Arc Testnet the /quote pool is thin and can return
+// out-of-band garbage even for a correct request - the caller treats !inBand as
+// low-confidence and shows a peg estimate instead of failing the whole quote.
 function _pickQuoteScale(rawAmount, inFloat) {
   const v = parseFloat(rawAmount);
   if (!isFinite(v) || v <= 0 || !isFinite(inFloat) || inFloat <= 0) return null;
   const SCALES = [1, 1e6, 1e18];
   const LO = 0.5, HI = 2.0; // USDC<->EURC sits at ~0.92 / ~1.08
-  let best = null;
+  let inBand = null, closest = null;
   for (const s of SCALES) {
     const rate = (v / s) / inFloat;
-    if (rate >= LO && rate <= HI) {
-      const dist = Math.abs(Math.log(rate)); // closest to peg 1.0 wins ties
-      if (!best || dist < best.dist) best = { scale: s, dist };
-    }
+    const dist = Math.abs(Math.log(rate)); // closest to peg 1.0 wins
+    if (!closest || dist < closest.dist) closest = { scale: s, dist };
+    if (rate >= LO && rate <= HI && (!inBand || dist < inBand.dist)) inBand = { scale: s, dist };
   }
-  return best ? best.scale : null;
+  return { scale: (inBand || closest).scale, inBand: !!inBand };
 }
 
 export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn, opts = {}) {
@@ -200,15 +203,18 @@ export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn, opts = {})
     // and common base-unit scales, then keep whichever yields a rate inside the
     // plausible stablecoin-FX band. We always return Circle's REAL number - just
     // correctly scaled - never a faked peg.
-    const _scale = _pickQuoteScale(q.estimatedAmount, parseFloat(amountIn));
-    if (!_scale) throw new Error(`Circle quote out of range (raw=${q.estimatedAmount}, in=${amountIn})`);
-    const humanOut = (parseFloat(q.estimatedAmount) / _scale).toFixed(6);
-    const humanMin = q.minAmount ? (parseFloat(q.minAmount) / _scale).toFixed(6) : undefined;
-    console.log('[arc-appkit] quote result:', { estimatedAmount: q.estimatedAmount, scale: _scale, humanOut, humanMin });
+    const _pick = _pickQuoteScale(q.estimatedAmount, parseFloat(amountIn));
+    if (!_pick) throw new Error(`Circle quote invalid (raw=${q.estimatedAmount}, in=${amountIn})`);
+    const humanOut = (parseFloat(q.estimatedAmount) / _pick.scale).toFixed(6);
+    const humanMin = q.minAmount ? (parseFloat(q.minAmount) / _pick.scale).toFixed(6) : undefined;
+    console.log('[arc-appkit] quote result:', { estimatedAmount: q.estimatedAmount, scale: _pick.scale, inBand: _pick.inBand, humanOut, humanMin });
     return {
       estimatedOutput: { amount: humanOut, token: tokenOut },
       stopLimit: humanMin ? { amount: humanMin, token: tokenOut } : undefined,
       fees: q.fees || [],
+      // Testnet /quote returned an out-of-band rate - caller should show a peg
+      // estimate for display; the real swap still routes through Circle.
+      lowConfidence: !_pick.inBand,
     };
   }
 
