@@ -1532,6 +1532,21 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     };
   }
 
+  // Fast confirmation: ethers' default tx.wait() polls every ~4s (and is slower
+  // through a wallet provider), so on Arc's sub-second blocks it adds ~30s of dead
+  // time. Poll the read RPC directly every 400ms instead.
+  const MAX_UINT256 = (1n << 256n) - 1n;
+  async function waitArcReceipt(hash, timeoutMs = 30000) {
+    const prov = rpcProvider('arc');
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const rc = await prov.getTransactionReceipt(hash).catch(() => null);
+      if (rc) return rc;
+      await new Promise(r => setTimeout(r, 400));
+    }
+    throw new Error('Timed out waiting for confirmation');
+  }
+
   // Execute the swap straight against the Curve pool: approve input (6-dec ERC-20)
   // then exchange() with min_dy = get_dy × (1 − slippage). Returns the tx hash.
   async function execArcCurveSwap(tInSym, tOutSym, amtIn, modal, stepId) {
@@ -1542,19 +1557,19 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     const poolRead = new Contract(ARC_CURVE_POOL, CURVE_ABI, rpcProvider('arc'));
     const dy = await poolRead.get_dy(i, j, dx);
     const minDy = dy - (dy * BigInt(state.slippageBps)) / 10000n;
-    // Approve the pool to pull the input token (6-dec units) if needed.
+    // Approve once with max allowance so later swaps skip approval entirely (single tx).
     const erc20 = new Contract(tInTok.address, ABIS.erc20, wallet.signer);
     const cur = await erc20.allowance(wallet.address, ARC_CURVE_POOL).catch(() => 0n);
     if (cur < dx) {
-      modal.set(stepId, 'active', `Approving ${tInSym}…`);
-      const atx = await erc20.approve(ARC_CURVE_POOL, dx);
-      await atx.wait();
+      modal.set(stepId, 'active', `Approving ${tInSym} (one-time)…`);
+      const atx = await erc20.approve(ARC_CURVE_POOL, MAX_UINT256);
+      await waitArcReceipt(atx.hash);
     }
     modal.set(stepId, 'active', `Swapping ${tInSym} → ${tOutSym} via Arc pool…`);
     const pool = new Contract(ARC_CURVE_POOL, CURVE_ABI, wallet.signer);
     const tx = await pool.exchange(i, j, dx, minDy);
     modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} - waiting…`);
-    await tx.wait();
+    await waitArcReceipt(tx.hash);
     return tx.hash;
   }
 
