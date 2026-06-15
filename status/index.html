@@ -355,12 +355,41 @@ function chainExplorerTx(key, hash) {
 }
 
 async function renderFeed() {
-  const real = await A.fetchRecent(14);
+  const real = await A.fetchRecent(50);
 
   // API reachable (any state) → render real data or empty state. No seeded fakes.
   if (real) {
     if (real.events && real.events.length > 0) {
-      const items = real.events.map(e => {
+      // Group consecutive agent-exec events into a single summary row so they
+      // don't crowd out GM check-ins, trades, and other activity.
+      const grouped = [];
+      let agentBatch = null;
+      for (const e of real.events) {
+        if (e.event === 'agent-exec') {
+          if (agentBatch && Date.now() - e.ts < 10 * 60 * 1000) {
+            agentBatch.count++;
+            agentBatch.totalAmount += e.amount != null ? Number(e.amount) : 0;
+          } else {
+            if (agentBatch) grouped.push(agentBatch);
+            agentBatch = { _batch: true, count: 1, ago: Date.now() - e.ts, totalAmount: e.amount != null ? Number(e.amount) : 0 };
+          }
+        } else {
+          if (agentBatch) { grouped.push(agentBatch); agentBatch = null; }
+          grouped.push(e);
+        }
+      }
+      if (agentBatch) grouped.push(agentBatch);
+
+      const items = grouped.slice(0, 20).map(e => {
+        if (e._batch) {
+          return {
+            type: 'agent', icon: '◆',
+            label: e.count > 1 ? `${e.count} Agent executions` : 'Agent execution',
+            amount: e.totalAmount > 0 ? e.totalAmount.toFixed(2) : null,
+            chainKey: 'arc', chainLabel: 'Arc Testnet',
+            hash: null, ago: e.ago, sources: null, _batch: true,
+          };
+        }
         const meta = EV_MAP[e.event] || { type: 'route', icon: '•', label: e.event };
         const chainLabel = (A.CHAINS.find(c => c.key === e.chain)?.label) || e.chain;
         return {
