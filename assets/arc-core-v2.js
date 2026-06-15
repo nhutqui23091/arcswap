@@ -767,6 +767,9 @@
     if (e.code === 'ACTION_REJECTED' || /user rejected|user denied/i.test(msg)) return 'Rejected in wallet';
     if (/insufficient funds/i.test(msg)) return 'Insufficient funds for gas';
     if (/INSUFFICIENT_OUTPUT_AMOUNT/i.test(msg)) return 'Slippage too tight: price moved';
+    // 0xe52970aa = InsufficientAmountOut(): Circle's testnet quote sits above what
+    // the pool delivers, so the baked-in minimum output is unmet. Actionable hint.
+    if (/0xe52970aa/i.test(msg) || /InsufficientAmountOut/i.test(msg)) return 'Swap output below minimum — Circle testnet quote is above the pool rate. Try a higher Max Slippage, or a larger amount.';
     if (/INSUFFICIENT_LIQUIDITY/i.test(msg)) return 'Not enough pool liquidity';
     if (/nonce/i.test(msg)) return 'Nonce error: reset wallet activity';
     if (/replacement fee too low/i.test(msg)) return 'Replacement fee too low';

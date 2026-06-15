@@ -1794,8 +1794,21 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
                 return r;
               };
             }
+            // Wire the user's Max Slippage into kit.swap. The SDK otherwise uses a
+            // tight fixed tolerance, which reverts (InsufficientAmountOut / 0xe52970aa)
+            // when Circle's testnet quote sits above what the pool delivers. Pass
+            // several aliases since the exact key isn't documented; unknown keys are
+            // ignored harmlessly.
+            const _slipPct = state.slippageBps / 100;       // bps -> percent (0.5)
+            const _slipDec = state.slippageBps / 10000;     // bps -> decimal (0.005)
             let result;
-            try { result = await APPKIT.appKitSwap(step.tIn, step.tOut, inputStr); }
+            try {
+              result = await APPKIT.appKitSwap(step.tIn, step.tOut, inputStr, {
+                slippage: _slipPct, slippageTolerance: _slipPct,
+                slippageBps: state.slippageBps, slippagePercent: _slipPct,
+                maxSlippage: _slipDec,
+              });
+            }
             finally { if (origReq) window.ethereum.request = origReq; }
             const txHash = capturedHash
               || result?.txHash || result?.transactionHash || result?.hash
