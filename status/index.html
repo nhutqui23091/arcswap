@@ -204,6 +204,7 @@ async function renderHeroAndStats() {
       { lbl: 'Agent Executions',     ic: '◆', val: A.fmtNum(totals['agent-exec'] || 0) },
       { lbl: 'Bridge Txns',          ic: '⇌', val: A.fmtNum(totals.bridge || 0) },
       { lbl: 'Agents Created',       ic: '⊞', val: A.fmtNum(totals['agent-create'] || 0) },
+      { lbl: 'GM Check-ins',         ic: '☀', val: A.fmtNum(totals['gm-checkin'] || 0) },
       { lbl: 'Total Users',          ic: '◉', val: A.fmtNum(real.totalUsers || 0) },
     ];
     document.getElementById('key-stats').innerHTML = stats.map(s => `
@@ -339,6 +340,7 @@ const EV_MAP = {
   bridge:         { type: 'cctp',    icon: '⇌', label: 'CCTP V2 mint' },
   'agent-create': { type: 'agent',   icon: '⊞', label: 'Agent created' },
   'agent-exec':   { type: 'agent',   icon: '◆', label: 'Agent execution' },
+  'gm-checkin':   { type: 'gm',      icon: '☀', label: 'Daily GM check-in' },
   failure:        { type: 'fail',    icon: '✕', label: 'Failed transaction' },
 };
 

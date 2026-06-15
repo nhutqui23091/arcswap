@@ -118,6 +118,11 @@ async function incr(kv, key) {
   await kv.put(key, String(cur + 1));
 }
 
+async function incrFloat(kv, key, delta) {
+  const cur = parseFloat((await kv.get(key)) || '0');
+  await kv.put(key, String(cur + delta));
+}
+
 
 // Hash IP+UA+address → 12 hex chars; daily uniqueness marker without storing PII.
 // Including wallet address means two different wallets behind the same NAT/IP
@@ -296,20 +301,13 @@ async function rebuildRollupFromCounters(kv) {
     console.warn('[metrics] rebuild fp list failed:', e?.message);
   }
 
-  // volumeLifetime — scan raw event keys (7-day TTL window) to sum USDC amounts.
-  // Runs once on cold-start rebuild; applyIncrement keeps it current after that.
+  // volumeLifetime — read persistent volume counters (no TTL, written per /track).
+  // These accumulate from deploy onwards; pre-deploy history is not recoverable.
   try {
-    const evList = await kv.list({ prefix: 'metric:event:', limit: 2000 });
-    const evData = await Promise.all(evList.keys.map(async k => {
-      try { return JSON.parse((await kv.get(k.name)) || 'null'); } catch { return null; }
+    await Promise.all(EVENT_TYPES.map(async e => {
+      const v = parseFloat((await kv.get(`metric:volume:${e}`)) || '0');
+      if (v > 0) r.volumeLifetime[e] = v;
     }));
-    for (const ev of evData) {
-      if (!ev || !ev.event) continue;
-      const amt = ev.amount != null && Number.isFinite(+ev.amount) ? +ev.amount : 0;
-      if (amt > 0) {
-        r.volumeLifetime[ev.event] = (r.volumeLifetime[ev.event] || 0) + amt;
-      }
-    }
   } catch (e) {
     console.warn('[metrics] rebuild volume scan failed:', e?.message);
   }
@@ -491,6 +489,8 @@ export async function onRequest(context) {
       kv.put(`metric:user:${day}:${fp}`, '1', { expirationTtl: 35 * 24 * 60 * 60 }),
       ...(walletAddr ? [kv.put(`metric:wallet:${day}:${walletAddr}`, '1', { expirationTtl: 35 * 24 * 60 * 60 })] : []),
       ...(isNewUser ? [kv.put(`metric:wallet:seen:${walletAddr}`, '1')] : []),
+      // Persistent volume counter — no TTL so rebuild can always read lifetime totals.
+      ...(amount != null && amount > 0 ? [incrFloat(kv, `metric:volume:${event}`, amount)] : []),
     ]);
 
     // Hot-path pre-aggregates — what /summary and /recent actually read.
