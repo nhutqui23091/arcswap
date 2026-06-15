@@ -1440,7 +1440,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       const outFloat = parseFloat(formatAmt(runAmt, state.toToken.decimals));
       const rateNum = inFloat > 0 ? outFloat / inFloat : 0;
 
-      state.quote = { steps, amountOut: runAmt, minOut, fees, totalSec };
+      state.quote = { steps, amountOut: runAmt, minOut, fees, totalSec, poolBroken: !!lastSwap?.poolBroken };
       document.getElementById('amount-out').value = formatAmt(runAmt, state.toToken.decimals);
       document.getElementById('to-usd').textContent = '≈ $' + estimateUSD(runAmt, state.toToken);
       document.getElementById('from-usd').textContent = '≈ $' + estimateUSD(amt, state.fromToken);
@@ -1512,8 +1512,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
         const _quotedRate = _inFloat0 > 0 ? outFloat / _inFloat0 : 0;
         const _PAIRRATES = { 'USDC/EURC': 1/1.08, 'EURC/USDC': 1.08 };
         const _thRate = _PAIRRATES[`${tIn.symbol}/${tOut.symbol}`];
+        // Pool misconfigured on Arc Testnet: a quoted rate >10x off the stablecoin
+        // peg means the real on-chain swap will revert with InsufficientAmountOut()
+        // (0xe52970aa). Substitute the theoretical peg for DISPLAY only, and flag the
+        // quote so refreshExec() can block execution instead of letting it revert.
+        let poolBroken = false;
         if (_thRate && _quotedRate > 0 && (_quotedRate / _thRate > 10 || _thRate / _quotedRate > 10)) {
           outFloat = _inFloat0 * _thRate;
+          poolBroken = true;
         }
         const out = parseAmt(outFloat.toFixed(tOut.decimals), tOut.decimals);
         // Use App Kit's stopLimit if provided (Circle-side slippage); else apply our slippage
@@ -1541,6 +1547,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           provider: 'appkit',
           rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
           impact: '0.00', impactWarn: false, impactBad: false,
+          poolBroken,
           feeLabel,
           time: '~5 s',
         };
@@ -1612,6 +1619,10 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     if (state.recipient && !isAddress(state.recipient)) { btn.disabled = true; btn.textContent = 'Invalid recipient'; return; }
     if (!state.amountIn || parseAmt(state.amountIn, state.fromToken.decimals) === 0n) { btn.disabled = true; btn.textContent = 'Enter amount'; return; }
     if (!state.quote || !state.quote.steps) { btn.disabled = true; btn.textContent = 'No route'; return; }
+    // Arc Testnet Circle pool is misconfigured (quote >10x off peg) - the real swap
+    // would revert with InsufficientAmountOut(). Block here instead of letting the
+    // user sign a doomed transaction.
+    if (state.quote.poolBroken) { btn.disabled = true; btn.textContent = 'Pool has no liquidity (testnet)'; return; }
 
     // Wallet must be on the chain of the FIRST step (gateway-spend / cctp-bridge / swap)
     // - pipeline auto-switches between subsequent steps.
