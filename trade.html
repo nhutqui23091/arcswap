@@ -1761,8 +1761,27 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           const inputStr = formatAmt(runAmt, tInTok.decimals);
           modal.set(stepId, 'active', `Swap ${step.tIn} → ${step.tOut}…`);
           if (APPKIT && appKitSupports('arc', tInTok, tOutTok)) {
-            const result = await APPKIT.appKitSwap(step.tIn, step.tOut, inputStr);
-            const txHash = result?.txHash || result?.transactionHash || result?.hash || '';
+            // Circle SDK wraps the result and doesn't expose txHash at top level.
+            // Intercept window.ethereum.request so we capture the hash the moment
+            // the wallet submits eth_sendTransaction (return value IS the hash).
+            let capturedHash = null;
+            const origReq = window.ethereum?.request?.bind(window.ethereum);
+            if (origReq) {
+              window.ethereum.request = async function(args) {
+                const r = await origReq(args);
+                if ((args.method === 'eth_sendTransaction' || args.method === 'eth_sendRawTransaction')
+                    && typeof r === 'string' && r.startsWith('0x')) {
+                  capturedHash = r;
+                }
+                return r;
+              };
+            }
+            let result;
+            try { result = await APPKIT.appKitSwap(step.tIn, step.tOut, inputStr); }
+            finally { if (origReq) window.ethereum.request = origReq; }
+            const txHash = capturedHash
+              || result?.txHash || result?.transactionHash || result?.hash
+              || result?.data?.hash || result?.receipt?.transactionHash || '';
             if (txHash) { lastTxHash = txHash; lastTxChain = 'arc'; }
             modal.set(stepId, 'done', txHash
               ? `<a href="${CHAINS.arc.explorerTx(txHash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(txHash)} ↗</a>`
