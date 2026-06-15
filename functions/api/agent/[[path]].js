@@ -103,24 +103,24 @@ async function putJSON(kv, key, val) {
  * pattern is duplicated here because Pages Functions don't share modules
  * across routes easily. If you change the rollup shape, update both.
  */
-const _METRICS_EVENT_TYPES = ['trade','deposit','spend','bridge','agent-create','agent-exec','failure'];
-const _METRICS_SERIES_DAYS = 30;
-const _METRICS_RECENT_MAX  = 50;
-const _METRICS_SUMMARY_KEY = 'metric:summary:v1';
-const _METRICS_RECENT_KEY  = 'metric:recent:v1';
+const _METRICS_EVENT_TYPES  = ['trade','deposit','spend','bridge','agent-create','agent-exec','failure','gm-checkin'];
+const _METRICS_SERIES_DAYS  = 30;
+const _METRICS_RECENT_MAX   = 50;
+const _METRICS_SUMMARY_KEY  = 'metric:summary:v1';
+const _METRICS_RECENT_KEY   = 'metric:recent:v1';
+const _METRICS_ROLLUP_VER   = 2; // must match ROLLUP_VERSION in functions/api/metrics/[[path]].js
 
 function _metricsUtcDate(ts) {
   const d = new Date(ts || Date.now());
   return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth()+1)).slice(-2) + '-' + ('0' + d.getUTCDate()).slice(-2);
 }
 
-function _metricsEmptyRollup(today) {
-  const r = { version: 1, computedAt: new Date().toISOString(), todayKey: today, lifetime: {}, byDay: {}, byChainToday: {}, fpToday: {} };
-  for (const e of _METRICS_EVENT_TYPES) r.lifetime[e] = 0;
-  return r;
+async function _metricsIncrFloat(kv, key, delta) {
+  const cur = parseFloat((await kv.get(key)) || '0');
+  await kv.put(key, String(cur + delta));
 }
 
-function _metricsApplyIncrement(r, day, event, chain, fp) {
+function _metricsApplyIncrement(r, day, event, chain, fp, amount) {
   if (r.todayKey !== day) {
     r.todayKey = day;
     r.byChainToday = {};
@@ -140,15 +140,23 @@ function _metricsApplyIncrement(r, day, event, chain, fp) {
     r.byChainToday[chain][event] = (r.byChainToday[chain][event] || 0) + 1;
   }
   if (fp) r.fpToday[fp] = 1;
+  if (amount != null && Number.isFinite(amount) && amount > 0) {
+    r.volumeLifetime = r.volumeLifetime || {};
+    r.volumeLifetime[event] = (r.volumeLifetime[event] || 0) + amount;
+  }
   r.computedAt = new Date().toISOString();
 }
 
-async function _metricsUpdateRollup(kv, day, event, chain) {
+async function _metricsUpdateRollup(kv, day, event, chain, amount) {
   try {
     let r;
     try { r = JSON.parse((await kv.get(_METRICS_SUMMARY_KEY)) || 'null'); } catch { r = null; }
-    if (!r || r.version !== 1) r = _metricsEmptyRollup(day);
-    _metricsApplyIncrement(r, day, event, chain, null);
+    if (!r || r.version !== _METRICS_ROLLUP_VER) {
+      // Version mismatch — skip to avoid clobbering rebuilt rollup.
+      // /api/metrics/summary will rebuild on next request.
+      return;
+    }
+    _metricsApplyIncrement(r, day, event, chain, null, amount);
     await kv.put(_METRICS_SUMMARY_KEY, JSON.stringify(r));
   } catch (e) {
     console.warn('[metrics] rollup update failed (server-side):', e?.message);
@@ -173,7 +181,8 @@ async function incrMetric(kv, event, chain, amount, txHash = null) {
     const ts = Date.now();
     const day = _metricsUtcDate(ts);
     const rand = Math.random().toString(36).slice(2, 10);
-    const eventData = { event, chain, amount: amount ?? null, txHash: txHash || null, surface: 'cron', ts };
+    const amt = amount != null && Number.isFinite(+amount) ? +amount : null;
+    const eventData = { event, chain, amount: amt, txHash: txHash || null, surface: 'cron', ts };
     const incr = async (key) => {
       const cur = parseInt((await kv.get(key)) || '0', 10);
       await kv.put(key, String(cur + 1));
@@ -184,10 +193,11 @@ async function incrMetric(kv, event, chain, amount, txHash = null) {
       incr(`metric:count:${day}:${event}`),
       incr(`metric:count:${day}:${event}:${chain}`),
       incr(`metric:total:${event}`),
+      ...(amt != null && amt > 0 ? [_metricsIncrFloat(kv, `metric:volume:${event}`, amt)] : []),
     ]);
     // Hot-path pre-aggregates (parallel) — these are what /summary and /recent read
     await Promise.all([
-      _metricsUpdateRollup(kv, day, event, chain),
+      _metricsUpdateRollup(kv, day, event, chain, amt),
       _metricsPushRecent(kv, eventData),
     ]);
   } catch (e) {
