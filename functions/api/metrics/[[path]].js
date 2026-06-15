@@ -86,7 +86,7 @@ const CHAIN_KEYS = [
 const CHAIN_ALLOWLIST = new Set(CHAIN_KEYS);
 
 // Rollup config
-const SUMMARY_KEY = 'metric:summary:v1';
+const SUMMARY_KEY = 'metric:summary:v2'; // bumped to force rebuild with volumeLifetime + totalUsers
 const RECENT_KEY  = 'metric:recent:v1';
 const RECENT_MAX  = 50;          // ring buffer size
 const SERIES_DAYS = 30;          // 30-day rolling window
@@ -288,6 +288,33 @@ async function rebuildRollupFromCounters(kv) {
     }
   } catch (e) {
     console.warn('[metrics] rebuild fp list failed:', e?.message);
+  }
+
+  // volumeLifetime — scan raw event keys (7-day TTL window) to sum USDC amounts.
+  // Runs once on cold-start rebuild; applyIncrement keeps it current after that.
+  try {
+    const evList = await kv.list({ prefix: 'metric:event:', limit: 2000 });
+    const evData = await Promise.all(evList.keys.map(async k => {
+      try { return JSON.parse((await kv.get(k.name)) || 'null'); } catch { return null; }
+    }));
+    for (const ev of evData) {
+      if (!ev || !ev.event) continue;
+      const amt = ev.amount != null && Number.isFinite(+ev.amount) ? +ev.amount : 0;
+      if (amt > 0) {
+        r.volumeLifetime[ev.event] = (r.volumeLifetime[ev.event] || 0) + amt;
+      }
+    }
+  } catch (e) {
+    console.warn('[metrics] rebuild volume scan failed:', e?.message);
+  }
+
+  // totalUsers — seed from seen-wallet keys (written going forward from deploy).
+  // Wallets that haven't traded since deploy will be counted on their next event.
+  try {
+    const seenList = await kv.list({ prefix: 'metric:wallet:seen:', limit: 10000 });
+    r.totalUsers = seenList.keys.length;
+  } catch (e) {
+    console.warn('[metrics] rebuild totalUsers scan failed:', e?.message);
   }
 
   r.computedAt = new Date().toISOString();
