@@ -16,7 +16,7 @@ export async function onRequest(context) {
   const { request, env } = context;
   if (request.method === 'OPTIONS') return corsOk();
   if (request.method === 'GET')     return handleGet(request, env);
-  if (request.method === 'POST')    return handlePost(request, env);
+  if (request.method === 'POST')    return handlePost(request, env, context);
   return jsonRes({ error: 'Method not allowed' }, 405);
 }
 
@@ -48,7 +48,7 @@ async function handleGet(request, env) {
 }
 
 // -- POST --
-async function handlePost(request, env) {
+async function handlePost(request, env, context) {
   const kv = env.PROFILE_KV;
   if (!kv) return jsonRes({ error: 'KV not configured' }, 503);
 
@@ -159,19 +159,17 @@ async function handlePost(request, env) {
   const cnt    = parseInt(await kv.get(dayKey) || '0', 10);
   await kv.put(dayKey, String(cnt + 1), { expirationTtl: 86400 * 3 });
 
-  // Fire-and-forget: register this check-in in the metrics active-users fingerprint map
-  // so GM-only wallets are counted in the status page Active Users · today metric.
+  // Track GM check-in in metrics. Uses context.waitUntil() so CF doesn't
+  // kill the fetch after the response is returned.
   try {
     const base = new URL(request.url).origin;
-    fetch(base + '/api/metrics/track', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'CF-Connecting-IP': request.headers.get('CF-Connecting-IP') || '',
-        'User-Agent': request.headers.get('User-Agent') || '',
-      },
-      body: JSON.stringify({ event: 'gm-checkin', chain: 'arc', address: addr }),
-    }).catch(() => {});
+    context.waitUntil(
+      fetch(base + '/api/metrics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'gm-checkin', chain: 'arc', address: addr }),
+      }).catch(() => {})
+    );
   } catch {}
 
   return jsonRes({
