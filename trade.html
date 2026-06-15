@@ -1440,14 +1440,14 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       const outFloat = parseFloat(formatAmt(runAmt, state.toToken.decimals));
       const rateNum = inFloat > 0 ? outFloat / inFloat : 0;
 
-      state.quote = { steps, amountOut: runAmt, minOut, fees, totalSec, poolBroken: !!lastSwap?.poolBroken };
+      state.quote = { steps, amountOut: runAmt, minOut, fees, totalSec };
       document.getElementById('amount-out').value = formatAmt(runAmt, state.toToken.decimals);
       document.getElementById('to-usd').textContent = '≈ $' + estimateUSD(runAmt, state.toToken);
       document.getElementById('from-usd').textContent = '≈ $' + estimateUSD(amt, state.fromToken);
       const timeLbl = totalSec < 60 ? `~${totalSec}s` : `~${Math.round(totalSec / 60)} min`;
       setMetrics({
         rate: `1 ${state.fromToken.symbol} ≈ ${rateNum.toFixed(6)} ${state.toToken.symbol}`,
-        impact: lastSwap ? (lastSwap.impact + ' %') : '0.00 %',
+        impact: lastSwap ? (lastSwap.impact != null ? lastSwap.impact + ' %' : '–') : '0.00 %',
         fee: fees.join(' + '),
         min: formatAmt(minOut, state.toToken.decimals) + ' ' + state.toToken.symbol,
         time: timeLbl,
@@ -1502,25 +1502,13 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           tokenInAddress: tIn.address,
           tokenOutAddress: tOut.address,
         });
+        // Circle's quote is the single source of truth: the real swap routes through
+        // App Kit (LiFi -> Curve), so the displayed rate must equal what executes.
+        // estimateAppKitSwap() already auto-scales the response, so trust it directly
+        // - no theoretical-peg fallback, no reading the (empty) Uniswap V2 pool.
         const outStr = APPKIT.extractEstimatedOutput(est);
-        let outFloat = parseFloat(outStr || '0');
+        const outFloat = parseFloat(outStr || '0');
         if (outFloat <= 0) throw new Error('App Kit returned zero output');
-        // Arc testnet Circle pool has wrong USDC/EURC liquidity ratio (~1849 EURC/USDC
-        // instead of ~0.926). If the quoted rate is >10x off from the known stablecoin
-        // peg, fall back to the theoretical peg rate so the UI shows a sensible number.
-        const _inFloat0 = parseFloat(amountInStr);
-        const _quotedRate = _inFloat0 > 0 ? outFloat / _inFloat0 : 0;
-        const _PAIRRATES = { 'USDC/EURC': 1/1.08, 'EURC/USDC': 1.08 };
-        const _thRate = _PAIRRATES[`${tIn.symbol}/${tOut.symbol}`];
-        // Pool misconfigured on Arc Testnet: a quoted rate >10x off the stablecoin
-        // peg means the real on-chain swap will revert with InsufficientAmountOut()
-        // (0xe52970aa). Substitute the theoretical peg for DISPLAY only, and flag the
-        // quote so refreshExec() can block execution instead of letting it revert.
-        let poolBroken = false;
-        if (_thRate && _quotedRate > 0 && (_quotedRate / _thRate > 10 || _thRate / _quotedRate > 10)) {
-          outFloat = _inFloat0 * _thRate;
-          poolBroken = true;
-        }
         const out = parseAmt(outFloat.toFixed(tOut.decimals), tOut.decimals);
         // Use App Kit's stopLimit if provided (Circle-side slippage); else apply our slippage
         const stopStr = APPKIT.extractStopLimit(est);
@@ -1546,14 +1534,16 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           path: [tIn.address, tOut.address],
           provider: 'appkit',
           rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
-          impact: '0.00', impactWarn: false, impactBad: false,
-          poolBroken,
+          // App Kit routes through Circle (LiFi -> Curve) and does not expose price
+          // impact; show '-' rather than a fake 0.00% (which read the empty V2 pool).
+          impact: null, impactWarn: false, impactBad: false,
           feeLabel,
           time: '~5 s',
         };
       } catch (e) {
-        // Do not fall back to Uniswap for App Kit pairs: pool has wrong reserves
-        // that produce ~9x incorrect rate.
+        // Do not fall back to Uniswap V2 for App Kit pairs. Circle executes USDC/EURC
+        // via LiFi -> Curve; the on-chain V2 pool is empty on Arc Testnet and would
+        // give a meaningless rate. Surface the real error instead.
         throw e;
       }
     }
@@ -1619,10 +1609,6 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     if (state.recipient && !isAddress(state.recipient)) { btn.disabled = true; btn.textContent = 'Invalid recipient'; return; }
     if (!state.amountIn || parseAmt(state.amountIn, state.fromToken.decimals) === 0n) { btn.disabled = true; btn.textContent = 'Enter amount'; return; }
     if (!state.quote || !state.quote.steps) { btn.disabled = true; btn.textContent = 'No route'; return; }
-    // Arc Testnet Circle pool is misconfigured (quote >10x off peg) - the real swap
-    // would revert with InsufficientAmountOut(). Block here instead of letting the
-    // user sign a doomed transaction.
-    if (state.quote.poolBroken) { btn.disabled = true; btn.textContent = 'Pool has no liquidity (testnet)'; return; }
 
     // Wallet must be on the chain of the FIRST step (gateway-spend / cctp-bridge / swap)
     // - pipeline auto-switches between subsequent steps.

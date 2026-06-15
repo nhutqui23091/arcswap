@@ -144,6 +144,26 @@ export async function prefetchSdk() {
  * @param {{ tokenInAddress?: string, tokenOutAddress?: string, chain?: string }} [opts]
  * @returns {Promise<object>}
  */
+// Pick the scale divisor for Circle's quote `estimatedAmount` so the resulting
+// rate (out/in) lands inside the plausible stablecoin-FX band. Handles raw
+// (human), 6-decimal and 18-decimal responses without hard-coding which one
+// Circle returns. Returns the divisor, or null if no scale gives a sane rate.
+function _pickQuoteScale(rawAmount, inFloat) {
+  const v = parseFloat(rawAmount);
+  if (!isFinite(v) || v <= 0 || !isFinite(inFloat) || inFloat <= 0) return null;
+  const SCALES = [1, 1e6, 1e18];
+  const LO = 0.5, HI = 2.0; // USDC<->EURC sits at ~0.92 / ~1.08
+  let best = null;
+  for (const s of SCALES) {
+    const rate = (v / s) / inFloat;
+    if (rate >= LO && rate <= HI) {
+      const dist = Math.abs(Math.log(rate)); // closest to peg 1.0 wins ties
+      if (!best || dist < best.dist) best = { scale: s, dist };
+    }
+  }
+  return best ? best.scale : null;
+}
+
 export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn, opts = {}) {
   // Circle SDK v1.4.1 token registry lacks EURC on Arc_Testnet, so
   // kit.estimateSwap() builds a malformed body and Circle returns 331001.
@@ -154,8 +174,10 @@ export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn, opts = {})
     // Do NOT call window.ethereum.request() here: that can hang if the wallet
     // extension is initializing, freezing the entire quote pipeline.
     const addr = '0x0000000000000000000000000000000000000001';
-    // Circle API amounts are in 6-decimal CCTP base units (1 USDC = "1000000").
-    const amountBaseUnits = Math.round(parseFloat(amountIn) * 1e6).toString();
+    // REQUEST scale: human-readable decimal (same convention as kit.swap()).
+    // Confirmed empirically - sending base units ("1000000") made Circle quote for
+    // 1,000,000 USDC, exhausting the testnet pool and returning ~79 EURC.
+    const amountHuman = parseFloat(amountIn).toString();
     const qs = new URLSearchParams({
       tokenInAddress: opts.tokenInAddress,
       tokenInChain: chainName,
@@ -163,9 +185,9 @@ export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn, opts = {})
       tokenOutChain: chainName,
       fromAddress: addr,
       toAddress: addr,
-      amount: amountBaseUnits,
+      amount: amountHuman,
     });
-    console.log('[arc-appkit] estimateSwap via GET /quote:', { tokenIn, tokenOut, amountBaseUnits, chainName });
+    console.log('[arc-appkit] estimateSwap via GET /quote:', { tokenIn, tokenOut, amountHuman, chainName });
     const resp = await fetch(`${PROXY_PREFIX}/v1/stablecoinKits/quote?${qs}`, {
       signal: AbortSignal.timeout(5000),
     });
@@ -173,10 +195,16 @@ export async function estimateAppKitSwap(tokenIn, tokenOut, amountIn, opts = {})
     if (!resp.ok) throw new Error(`Circle quote ${resp.status}: ${json.message || JSON.stringify(json)}`);
     const q = json?.quote;
     if (!q || !q.estimatedAmount) throw new Error(`No route: ${JSON.stringify(json)}`);
-    // Convert base units (6 decimals) to human-readable for extractEstimatedOutput
-    const humanOut = (parseInt(q.estimatedAmount, 10) / 1e6).toFixed(6);
-    const humanMin = q.minAmount ? (parseInt(q.minAmount, 10) / 1e6).toFixed(6) : undefined;
-    console.log('[arc-appkit] quote result:', { estimatedAmount: q.estimatedAmount, humanOut, humanMin });
+    // RESPONSE scale: NOT documented for Arc Testnet and has flip-flopped between
+    // releases. Instead of hard-coding a divisor, auto-detect it: try the raw value
+    // and common base-unit scales, then keep whichever yields a rate inside the
+    // plausible stablecoin-FX band. We always return Circle's REAL number - just
+    // correctly scaled - never a faked peg.
+    const _scale = _pickQuoteScale(q.estimatedAmount, parseFloat(amountIn));
+    if (!_scale) throw new Error(`Circle quote out of range (raw=${q.estimatedAmount}, in=${amountIn})`);
+    const humanOut = (parseFloat(q.estimatedAmount) / _scale).toFixed(6);
+    const humanMin = q.minAmount ? (parseFloat(q.minAmount) / _scale).toFixed(6) : undefined;
+    console.log('[arc-appkit] quote result:', { estimatedAmount: q.estimatedAmount, scale: _scale, humanOut, humanMin });
     return {
       estimatedOutput: { amount: humanOut, token: tokenOut },
       stopLimit: humanMin ? { amount: humanMin, token: tokenOut } : undefined,
