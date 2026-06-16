@@ -447,8 +447,8 @@
   // Trust-based X engagement tasks (like / retweet). X exposes no API to
   // verify these, so completion is stored per-wallet in localStorage.
   const SOCIAL_TASKS = [
-    { prefix: 'tlk', key: 'like',    icon: '♥', label: 'Like',    sub: 'Like the GM launch tweet on X',    url: 'https://x.com/intent/like?tweet_id=2066850786232123432' },
-    { prefix: 'trt', key: 'retweet', icon: '🔁', label: 'Retweet', sub: 'Retweet the GM launch tweet on X', url: 'https://x.com/intent/retweet?tweet_id=2066850786232123432' },
+    { prefix: 'tlk', key: 'like',    flag: 'like_done',    icon: '♥', label: 'Like',    sub: 'Like the GM launch tweet on X',    url: 'https://x.com/intent/like?tweet_id=2066850786232123432' },
+    { prefix: 'trt', key: 'retweet', flag: 'retweet_done', icon: '🔁', label: 'Retweet', sub: 'Retweet the GM launch tweet on X', url: 'https://x.com/intent/retweet?tweet_id=2066850786232123432' },
   ];
 
   function renderSocialTasks() {
@@ -460,7 +460,7 @@
       const sub  = document.getElementById(t.prefix + '-sub');
       const acts = document.getElementById(t.prefix + '-acts');
       if (!card) continue;
-      const done = localStorage.getItem('oneliq_gm_' + t.key + '_' + a) === '1';
+      const done = !!(gmState && gmState[t.flag]);
       if (done) {
         card.classList.add('done'); ico.classList.add('done');
         ico.textContent = '✓';
@@ -480,10 +480,29 @@
           setTimeout(renderSocialTasks, 0);
         };
         const mk = acts.querySelector('.smark');
-        if (mk) mk.onclick = () => {
-          localStorage.setItem('oneliq_gm_' + t.key + '_' + a, '1');
-          renderSocialTasks();
-          ArcUI.toast('success', 'Done!', t.label + ' marked.');
+        if (mk) mk.onclick = async () => {
+          mk.disabled = true; mk.textContent = 'Saving…';
+          try {
+            const r = await fetch('/auth/gm', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: t.key, address: a }),
+            });
+            if (r.ok) {
+              gmState = await r.json();
+              renderTasks();
+              renderBadges(gmState.badges);
+              if (gmState.welcome_awarded) {
+                ArcUI.toast('success', 'Welcome to Oneliq!', gmState.role_assigned ? 'Badge earned + Early Oneliq role granted in Discord.' : 'Welcome badge earned.');
+              } else {
+                ArcUI.toast('success', 'Done!', t.label + ' marked.');
+              }
+            } else {
+              mk.disabled = false; mk.textContent = 'Mark done';
+            }
+          } catch (e) {
+            mk.disabled = false; mk.textContent = 'Mark done';
+          }
         };
       }
     }
@@ -493,7 +512,16 @@
     const a = addr(); if (!a) return;
     try {
       const r = await fetch('/auth/gm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'x_follow', address: a }) });
-      if (r.ok) { gmState = await r.json(); renderTasks(); ArcUI.toast('success', 'Done!', 'X follow marked.'); }
+      if (r.ok) {
+        gmState = await r.json();
+        renderTasks();
+        renderBadges(gmState.badges);
+        if (gmState.welcome_awarded) {
+          ArcUI.toast('success', 'Welcome to Oneliq!', gmState.role_assigned ? 'Badge earned + Early Oneliq role granted in Discord.' : 'Welcome badge earned.');
+        } else {
+          ArcUI.toast('success', 'Done!', 'X follow marked.');
+        }
+      }
     } catch(e) { console.error(e); }
   }
 
@@ -516,7 +544,7 @@
         gmState = { ...gmState, said_gm: true, badges: data.badges || gmState?.badges };
         renderTasks();
         renderBadges(data.badges || gmState?.badges);
-        if (data.welcome_awarded) ArcUI.toast('success', 'Welcome Badge!', 'You earned the Welcome badge.');
+        if (data.welcome_awarded) ArcUI.toast('success', 'Welcome to Oneliq!', data.role_assigned ? 'Badge earned + Early Oneliq role granted in Discord.' : 'Welcome badge earned.');
         else ArcUI.toast('success', 'Verified!', 'GM message confirmed in #gm-gn.');
       } else {
         ArcUI.toast('', 'Not found', data.message || 'No GM found in #gm-gn.');

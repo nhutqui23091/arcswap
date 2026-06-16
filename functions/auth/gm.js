@@ -10,6 +10,8 @@
  * Arc Testnet RPC: https://rpc.testnet.arc.network (chainId 5042002)
  */
 
+import { maybeAwardWelcome } from './_welcome.js';
+
 const ARC_RPC = 'https://rpc.testnet.arc.network';
 
 export async function onRequest(context) {
@@ -66,11 +68,21 @@ async function handlePost(request, env, context) {
   const today = utcToday();
   const state = await getState(kv, addr);
 
-  // Trust-based action: mark X follow as done (no tx required)
-  if (body.action === 'x_follow') {
-    const updated = { ...state, x_follow_done: true };
+  // Trust-based onboarding actions (no tx required): X follow, like, retweet.
+  // X exposes no API to verify these, so completion is recorded on trust.
+  const TRUST_FLAGS = { x_follow: 'x_follow_done', like: 'like_done', retweet: 'retweet_done' };
+  if (TRUST_FLAGS[body.action]) {
+    const updated = { ...state, [TRUST_FLAGS[body.action]]: true };
     await kv.put('gm:' + addr, JSON.stringify(updated));
-    return jsonRes({ ...updated, already_checked_in: state.last_checkin === today });
+    // Completing this task may have been the 5th — try to award Welcome + role.
+    const w = await maybeAwardWelcome(env, kv, addr);
+    return jsonRes({
+      ...updated,
+      badges: w.badges,
+      already_checked_in: state.last_checkin === today,
+      welcome_awarded: w.awarded,
+      role_assigned: w.roleAssigned,
+    });
   }
 
   // Daily check-in: verify real Arc Testnet transaction
@@ -125,17 +137,10 @@ async function handlePost(request, env, context) {
   const totalCheckins  = (state.total_checkins || 0) + 1;
 
   // -- Badge logic --
+  // Welcome is awarded by the onboarding-task flow (see _welcome.js), not by
+  // checking in. Check-ins only drive the streak and on-chain milestones.
   const badges = [...(state.badges || [])];
 
-  // Welcome: requires at least 1 check-in + Discord linked + said GM in #gm-gn
-  let discordLinked = false; let saidGm = false;
-  try {
-    const profileRaw = await kv.get('profile:' + addr);
-    if (profileRaw) { const p = JSON.parse(profileRaw); discordLinked = !!p.discord_id; saidGm = p.said_gm || false; }
-  } catch {}
-  if (totalCheckins >= 1 && discordLinked && saidGm && !badges.includes('welcome')) {
-    badges.push('welcome');
-  }
   if (streak >= 7 && !badges.includes('streak7')) {
     badges.push('streak7');
   }

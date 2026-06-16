@@ -9,9 +9,12 @@
  * Required KV binding: PROFILE_KV
  * User must have Discord linked (profile:${address} must contain discord_id).
  *
- * On success: updates profile:${address} with said_gm:true
- *             awards welcome badge if check-in + discord + said_gm all met
+ * On success: updates profile:${address} with said_gm:true, then tries to
+ *             award the Welcome badge + Early Oneliq role if all five
+ *             onboarding tasks are now complete (see _welcome.js).
  */
+
+import { maybeAwardWelcome } from './_welcome.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -87,20 +90,17 @@ export async function onRequest(context) {
   const updatedProfile = { ...profile, said_gm: true };
   await kv.put('profile:' + addr, JSON.stringify(updatedProfile));
 
-  // Check if welcome badge should be awarded now
-  const gmRaw = await kv.get('gm:' + addr);
-  let gmState = {};
-  try { if (gmRaw) gmState = JSON.parse(gmRaw); } catch {}
+  // Saying GM may have been the final onboarding task — try to award the
+  // Welcome badge and Early Oneliq role now that said_gm is set.
+  const w = await maybeAwardWelcome(env, kv, addr);
 
-  const badges = [...(gmState.badges || [])];
-  const welcomeAwarded = (gmState.total_checkins || 0) >= 1 && !badges.includes('welcome');
-  if (welcomeAwarded) badges.push('welcome');
-
-  if (welcomeAwarded) {
-    await kv.put('gm:' + addr, JSON.stringify({ ...gmState, badges }));
-  }
-
-  return jsonRes({ verified: true, said_gm: true, welcome_awarded: welcomeAwarded, badges });
+  return jsonRes({
+    verified: true,
+    said_gm: true,
+    welcome_awarded: w.awarded,
+    role_assigned: w.roleAssigned,
+    badges: w.badges,
+  });
 }
 
 function jsonRes(data, status = 200) {
