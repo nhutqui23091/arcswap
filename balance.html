@@ -311,6 +311,15 @@ html{scroll-behavior:smooth}
     <div class="gw-label">Recipient</div>
     <input id="spend-recipient" class="gw-input" type="text" placeholder="0x… (defaults to your wallet)"/>
 
+    <!-- Gasless mint via Circle's Forwarding Service (?enableForwarder=true).
+         When on, Circle submits gatewayMint on the destination for the user, so
+         no destination gas is needed (esp. Arc, where gas IS USDC). Off ⇒ legacy
+         self-mint path (unchanged). -->
+    <label id="spend-forwarder-row" style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:12px;color:var(--muted);cursor:pointer;line-height:1.5">
+      <input id="spend-forwarder" type="checkbox" checked style="width:15px;height:15px;margin-top:1px;accent-color:var(--arc1);cursor:pointer;flex-shrink:0"/>
+      <span><strong style="color:var(--text)">Gasless mint</strong> — Circle's Forwarder mints on the destination for you, so you don't need gas there. A small forwarding fee applies.</span>
+    </label>
+
     <!-- Source breakdown (Unified mode) - shows which chains will be drawn from -->
     <div id="spend-breakdown" style="display:none;margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(244,200,154,.06);border:1px solid rgba(244,200,154,.22);font-size:12.5px;color:var(--muted);line-height:1.6">
       <div style="font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#FFB454;margin-bottom:6px">⚡ Unified spend plan</div>
@@ -354,7 +363,7 @@ html{scroll-behavior:smooth}
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.1"></script>
 <script src="/assets/arc-core-v2.js?v=2"></script>
-<script src="/assets/arc-gateway.js?v=9.6.2"></script>
+<script src="/assets/arc-gateway.js?v=9.6.3"></script>
 <script src="/assets/arc-ui.js?v=9.10.25"></script>
 <script>
 (async () => {
@@ -1149,6 +1158,7 @@ html{scroll-behavior:smooth}
     if (!ethers.isAddress(recipient)) { setStatus('spend-status', 'err', 'Invalid recipient'); return; }
     const valueCanonical = ARC.parseAmt(amtStr, 6);
     if (valueCanonical <= 0n) { setStatus('spend-status', 'err', 'Invalid amount'); return; }
+    const useForwarder = document.getElementById('spend-forwarder')?.checked ?? true;
     const btn = document.getElementById('spend-go');
     btn.disabled = true; btn.textContent = 'Working…';
     let spendResult = null;
@@ -1163,7 +1173,7 @@ html{scroll-behavior:smooth}
           throw new Error(`Insufficient spendable balance: need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle's per-intent fee headroom`);
         }
         spendResult = await ARC.gateway.multiSpend({
-          sources: plan, dstChainKey: dst, recipient,
+          sources: plan, dstChainKey: dst, recipient, useForwarder,
           onStep: (m) => setStatus('spend-status', '', m),
         });
         spentSources = plan;
@@ -1179,7 +1189,7 @@ html{scroll-behavior:smooth}
         });
         if (!sources.length) throw new Error('No sources selected');
         spendResult = await ARC.gateway.multiSpend({
-          sources, dstChainKey: dst, recipient,
+          sources, dstChainKey: dst, recipient, useForwarder,
           onStep: (m) => setStatus('spend-status', '', m),
         });
         spentSources = sources;
@@ -1188,14 +1198,14 @@ html{scroll-behavior:smooth}
         const src = document.getElementById('spend-src').value;
         if (src === dst) { throw new Error('Source and destination must differ'); }
         spendResult = await ARC.gateway.spend({
-          srcChainKey: src, dstChainKey: dst, recipient, valueCanonical,
+          srcChainKey: src, dstChainKey: dst, recipient, valueCanonical, useForwarder,
           onStep: (m) => setStatus('spend-status', '', m),
         });
         spentSources = [{ chainKey: src, valueCanonical }];
       }
       setStatus('spend-status', 'ok', '✅ Cross-chain spend complete');
       document.getElementById('spend-trade-cta').style.display = 'block';
-      const mintHash = spendResult?.mint?.tx?.hash || null;
+      const mintHash = spendResult?.mint?.tx?.hash || spendResult?.forwarded?.transactionHash || null;
       // Record tx-pending per source chain - Gateway REST lags on-chain by minutes
       if (spentSources) {
         spentSources.forEach(s => {

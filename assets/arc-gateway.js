@@ -315,7 +315,7 @@
       opts.onStep?.(label);
       const signature = await ARC.wallet.signer.signTypedData(EIP712_DOMAIN, EIP712_TYPES, intent);
       opts.onStep?.('Submitting to Gateway API…');
-      const res = await fetch(`${GW_BASE}/v1/transfer`, {
+      const res = await fetch(`${GW_BASE}/v1/transfer${opts.useForwarder ? '?enableForwarder=true' : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([{ burnIntent: burnIntentToJson(intent), signature }]),
@@ -365,12 +365,92 @@
     return { tx, receipt: await tx.wait() };
   }
 
+  // ───────── FORWARDER (gasless destination mint) ─────────
+  /**
+   * Poll a forwarded transfer until Circle's Forwarding Service has submitted
+   * the destination mint. Used only when /v1/transfer was called with
+   * `?enableForwarder=true` (which returns a `transferId`).
+   *
+   * Status lifecycle (GET /v1/transfer/{id}.status):
+   *   pending → confirmed → finalized   (mint landed on destination)
+   *   failed | expired                  (terminal failure)
+   * Returns the transfer-details object (incl. `transactionHash` of the mint)
+   * on confirmed/finalized; throws on failed/expired; throws a tagged
+   * `stillPending` error on timeout (mint may yet land - do NOT auto-retry mint).
+   */
+  async function pollTransfer(transferId, opts = {}) {
+    const intervalMs = opts.intervalMs || 3000;
+    const timeoutMs = opts.timeoutMs || 180000;
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      let details = null;
+      const res = await fetch(`${GW_BASE}/v1/transfer/${transferId}`, {
+        headers: { 'Accept': 'application/json' },
+      }).catch(() => null);
+      if (res && res.ok) {
+        details = await res.json().catch(() => null);
+        const status = String(details?.status || '').toLowerCase();
+        if (status === 'confirmed' || status === 'finalized') return details;
+        if (status === 'failed' || status === 'expired') {
+          throw new Error(`Forwarded transfer ${status}${details?.transactionHash ? ` (tx ${details.transactionHash})` : ''}`);
+        }
+        opts.onStep?.(`Forwarder minting… (${status || 'pending'})`);
+      }
+      await new Promise(r => setTimeout(r, intervalMs));
+    }
+    const e = new Error(`Forwarder still processing after ${Math.round(timeoutMs / 1000)}s — transferId ${transferId}`);
+    e.transferId = transferId;
+    e.stillPending = true;
+    throw e;
+  }
+
+  // Surface the forwarder fee (if any) then wait for the gasless mint to land.
+  // `attResp` is the /v1/transfer response (carries transferId + fees, and still
+  // attestation+signature should a caller want to self-mint as a fallback).
+  async function awaitForwarded(attResp, dstChainKey, opts = {}) {
+    const ff = attResp?.fees?.forwardingFee;
+    const dstName = ARC.CHAINS[dstChainKey]?.short || dstChainKey;
+    if (ff) {
+      opts.onStep?.(`Forwarder minting on ${dstName} (fee ${ARC.formatAmt(balToCanonical(ff), CANONICAL_DECIMALS, 4)} USDC)…`);
+    } else {
+      opts.onStep?.(`Forwarder minting on ${dstName}…`);
+    }
+    return await pollTransfer(attResp.transferId, { onStep: opts.onStep });
+  }
+
+  /**
+   * Wait for the forwarder to land the mint, with a self-mint safety net.
+   * If forwarding fails/times out we still hold attestation+signature, so we
+   * self-mint (needs destination gas). gatewayMint reverts on an already-used
+   * attestation, so if that revert happens it usually means the forwarder DID
+   * land the mint and our poll just missed it - we re-check status before
+   * surfacing an error. Returns a shape compatible with the self-mint path
+   * (`mint.tx.hash`) so callers/UI don't branch.
+   */
+  async function settleForwarded(attResp, dstChainKey, opts = {}) {
+    try {
+      const forwarded = await awaitForwarded(attResp, dstChainKey, opts);
+      return { forwarded, mint: { tx: { hash: forwarded.transactionHash } } };
+    } catch (fwdErr) {
+      if (!attResp.attestation || !attResp.signature) throw fwdErr;
+      opts.onStep?.('Forwarder did not complete — minting yourself (needs destination gas)…');
+      try {
+        const mint = await gatewayMint(dstChainKey, attResp.attestation, attResp.signature, { onStep: opts.onStep });
+        return { mint, forwardFallback: true };
+      } catch (mintErr) {
+        const ok = await pollTransfer(attResp.transferId, { onStep: opts.onStep, timeoutMs: 8000, intervalMs: 2000 }).catch(() => null);
+        if (ok) return { forwarded: ok, mint: { tx: { hash: ok.transactionHash } } };
+        throw mintErr;
+      }
+    }
+  }
+
   /**
    * One-shot end-to-end spend:
    *   build burn intent → sign → submit → mint on destination.
    * `valueCanonical` in 6-decimal BigInt.
    */
-  async function spend({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee, onStep }) {
+  async function spend({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee, onStep, useForwarder }) {
     if (!ARC.wallet.signer) throw new Error('Connect wallet');
     // SECURITY: defense-in-depth chain verification. Callers in trade.html
     // already call ensureChain before us, but if a future caller forgets,
@@ -383,7 +463,11 @@
     // Pick a safe default scaled to amount when caller didn't set one.
     const fee = (maxFee == null || maxFee === 0n) ? defaultMaxFee(valueCanonical) : maxFee;
     const intent = buildBurnIntent({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee: fee });
-    const attResp = await signAndSubmitBurnIntent(intent, { onStep });
+    const attResp = await signAndSubmitBurnIntent(intent, { onStep, useForwarder });
+    if (useForwarder && attResp.transferId) {
+      const settled = await settleForwarded(attResp, dstChainKey, { onStep });
+      return { intent, attResp, ...settled };
+    }
     const mint = await gatewayMint(dstChainKey, attResp.attestation, attResp.signature, { onStep });
     return { intent, attResp, mint };
   }
@@ -454,7 +538,7 @@
    * `sources`: [{chainKey, valueCanonical}] - produced by pickSources() or hand-picked
    * Returns { intents, attResp, mint }.
    */
-  async function multiSpend({ sources, dstChainKey, recipient, maxFee, onStep }) {
+  async function multiSpend({ sources, dstChainKey, recipient, maxFee, onStep, useForwarder }) {
     if (!ARC.wallet.signer) throw new Error('Connect wallet');
     if (!sources || !sources.length) throw new Error('No sources to spend from');
 
@@ -484,7 +568,7 @@
     };
     const submit = async (signed) => {
       onStep?.('Submitting to Gateway API…');
-      const res = await fetch(`${GW_BASE}/v1/transfer`, {
+      const res = await fetch(`${GW_BASE}/v1/transfer${useForwarder ? '?enableForwarder=true' : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(signed),
@@ -512,6 +596,10 @@
     if (!res.ok) throw new Error(`Gateway /v1/transfer ${res.status}: ${(txt || '').slice(0, 300)}`);
     const attResp = await res.json();
 
+    if (useForwarder && attResp.transferId) {
+      const settled = await settleForwarded(attResp, dstChainKey, { onStep });
+      return { intents, attResp, ...settled, sources };
+    }
     onStep?.(`Mint on ${ARC.CHAINS[dstChainKey].short}…`);
     const mint = await gatewayMint(dstChainKey, attResp.attestation, attResp.signature, { onStep });
     return { intents, attResp, mint, sources };
@@ -527,6 +615,6 @@
     deposit, initiateWithdrawal, finalizeWithdrawal,
     getWithdrawalInfo, withdrawalDelay,
     buildBurnIntent, signAndSubmitBurnIntent, gatewayMint, spend,
-    pickSources, multiSpend,
+    pickSources, multiSpend, pollTransfer,
   };
 })(window);
