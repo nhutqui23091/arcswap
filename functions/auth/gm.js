@@ -50,6 +50,9 @@ async function handleGet(request, env) {
   // the new X tasks and grant the Early Oneliq role once.
   state = await reconcileLegacyWelcome(env, kv, addr, state, discordId);
 
+  // Ensure this wallet has a short referral code (for /portal?ref=<code>).
+  state = await ensureRefCode(kv, addr, state);
+
   // Live on-chain tx count drives the "100 Transactions" badge progress bar.
   const txCount = await getArcTxCount(addr);
 
@@ -261,6 +264,31 @@ async function getArcTxCount(address) {
   return 0;
 }
 
+// Assign a short, URL-friendly referral code once and store a reverse lookup
+// (refcode:${code} -> address) so /portal?ref=<code> can resolve the referrer.
+async function ensureRefCode(kv, addr, state) {
+  if (state.ref_code) return state;
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code = genRefCode();
+    const taken = await kv.get('refcode:' + code);
+    if (!taken || taken === addr) break;
+  }
+  const next = { ...state, ref_code: code };
+  await kv.put('gm:' + addr, JSON.stringify(next));
+  await kv.put('refcode:' + code, addr);
+  return next;
+}
+
+function genRefCode() {
+  const cs = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const buf = new Uint8Array(9);
+  crypto.getRandomValues(buf);
+  let s = '';
+  for (const b of buf) s += cs[b % cs.length];
+  return s;
+}
+
 async function getState(kv, addr) {
   try {
     const raw = await kv.get('gm:' + addr);
@@ -283,6 +311,7 @@ function defaultState() {
     referred_by:    null,
     referrals:      [],
     referral_count: 0,
+    ref_code:       null,
   };
 }
 

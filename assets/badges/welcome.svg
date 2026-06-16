@@ -1,0 +1,22 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Welcome to Oneliq badge">
+  <defs>
+    <linearGradient id="wm" x1="0.12" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#2BD6E6"/>
+      <stop offset="0.5" stop-color="#2E84F0"/>
+      <stop offset="1" stop-color="#6A45F0"/>
+    </linearGradient>
+    <radialGradient id="wbg" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#101D33"/>
+      <stop offset="1" stop-color="#070C18"/>
+    </radialGradient>
+    <radialGradient id="wglow" cx="0.5" cy="0.48" r="0.5">
+      <stop offset="0" stop-color="#2E84F0" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#2E84F0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="4" y="4" width="192" height="192" rx="36" fill="url(#wbg)"/>
+  <rect x="4.75" y="4.75" width="190.5" height="190.5" rx="35.25" fill="none" stroke="#3A7BF0" stroke-opacity="0.22" stroke-width="1.5"/>
+  <circle cx="100" cy="100" r="72" fill="url(#wglow)"/>
+  <path d="M127,56.8 A54,54 0 1 0 124.6,146.8" fill="none" stroke="url(#wm)" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="148" cy="67" r="12.5" fill="url(#wm)"/>
+</svg>

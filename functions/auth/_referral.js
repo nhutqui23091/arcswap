@@ -14,11 +14,18 @@
 
 export const REFERRAL_GOAL = 3;
 
-export async function recordReferral(kv, refereeAddr, referrerAddr) {
-  const referee  = (refereeAddr  || '').toLowerCase();
-  const referrer = (referrerAddr || '').toLowerCase();
+export async function recordReferral(kv, refereeAddr, refRaw) {
+  const referee = (refereeAddr || '').toLowerCase();
+  let referrer  = (refRaw || '').toLowerCase();
 
-  // Reject self-referrals and malformed referrer addresses.
+  // The ref param is normally a short code; resolve it to an address. A raw
+  // 0x address (legacy links) is accepted as-is.
+  if (referrer && !/^0x[0-9a-f]{40}$/.test(referrer)) {
+    const resolved = await kv.get('refcode:' + referrer);
+    referrer = (resolved || '').toLowerCase();
+  }
+
+  // Reject self-referrals and unresolved/malformed referrers.
   if (!/^0x[0-9a-f]{40}$/.test(referrer) || referee === referrer) {
     return { recorded: false, reason: 'invalid' };
   }
