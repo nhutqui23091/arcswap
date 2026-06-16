@@ -82,6 +82,12 @@ code{font-family:var(--mono);font-size:14px;background:rgba(77,214,219,0.08);bor
 .callout.warn .callout-title{color:#FFB454}
 .callout-body{font-size:15px;color:#C8D1E0;line-height:1.65}
 
+.badge-list{list-style:none;display:flex;flex-direction:column;gap:12px;margin:26px 0 22px;padding:0}
+.badge-list li{padding:15px 18px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.badge-list .bn{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.badge-list .bd{font-size:14.5px;color:#C8D1E0;line-height:1.6;margin-top:3px}
+.badge-list .bp{display:inline-block;margin-top:9px;font-family:var(--mono);font-size:11.5px;color:var(--arc1);background:rgba(77,214,219,0.08);border:1px solid rgba(77,214,219,0.20);padding:2px 9px;border-radius:6px;letter-spacing:.02em}
+
 .steps{list-style:none;counter-reset:step;margin:28px 0 32px;padding:0}
 .steps li{position:relative;counter-increment:step;padding:0 0 18px 52px;margin:0}
 .steps li::before{content:counter(step);position:absolute;left:0;top:-2px;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:15px;color:var(--arc1);background:rgba(77,214,219,0.08);border:1px solid rgba(77,214,219,0.22)}
@@ -176,11 +182,30 @@ code{font-family:var(--mono);font-size:14px;background:rgba(77,214,219,0.08);bor
 
     <h2>Badges and progress</h2>
 
-    <p>Showing up unlocks a small set of badges, and the two milestone badges now show a live progress bar so you always know how close you are:</p>
+    <p>Showing up earns badges. Two of them are milestones with a live progress bar, so you always know exactly how close you are:</p>
 
-    <p><strong>Welcome to Oneliq</strong> lands on your first GM once you have linked Discord and posted in <code>#gm-gn</code>. <strong>7-Day Streak</strong> fills as you check in day over day — the bar moves with every GM until it hits seven. <strong>100 Transactions</strong> tracks your real transaction count on Arc Testnet, so every swap, bridge, and GM pushes it forward toward the hundred mark. <strong>OG</strong> is reserved for verified OG members of the Oneliq Discord.</p>
+    <ul class="badge-list">
+      <li>
+        <div class="bn">Welcome to Oneliq</div>
+        <div class="bd">Your first badge — earned on your first GM, once you've linked Discord and said GM in <code>#gm-gn</code>.</div>
+      </li>
+      <li>
+        <div class="bn">7-Day Streak</div>
+        <div class="bd">Check in seven days in a row. The bar fills with every GM until it reaches seven.</div>
+        <span class="bp">4 / 7 days</span>
+      </li>
+      <li>
+        <div class="bn">100 Transactions</div>
+        <div class="bd">Reach 100 real transactions on Arc Testnet. Every swap, bridge, and GM pushes it forward toward the hundred mark.</div>
+        <span class="bp">63 / 100 txs</span>
+      </li>
+      <li>
+        <div class="bn">OG</div>
+        <div class="bd">Reserved for verified OG members of the Oneliq Discord.</div>
+      </li>
+    </ul>
 
-    <p>The progress bars exist because "locked" is not very motivating on its own. Seeing <code>4 / 7 days</code> or <code>63 / 100 txs</code> turns a far-off badge into a finish line you can see — and a reason to do one more thing on Arc today.</p>
+    <p>The progress bars exist because "locked" is not very motivating on its own — seeing <code>4 / 7 days</code> turns a far-off badge into a finish line you can see. And this is only the opening line-up: <strong>more badges are on the way</strong>, so it pays to keep the streak alive.</p>
 
     <h2>Getting started</h2>
 
