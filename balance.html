@@ -1220,15 +1220,13 @@ html{scroll-behavior:smooth}
       const mintHash = spendResult?.mint?.tx?.hash || spendResult?.forwarded?.transactionHash || null;
       if (mintHash) {
         const exp = ARC.CHAINS[dst]?.explorer;
-        const short = `${mintHash.slice(0, 10)}…${mintHash.slice(-8)}`;
-        // Append the mint-tx line INSIDE the green status box (setStatus above
-        // set textContent, so the box is clean and this becomes its 2nd line).
-        const line = document.createElement('div');
-        line.style.cssText = 'margin-top:7px;text-align:center';
-        line.innerHTML = exp
-          ? `<a href="${exp}/tx/${mintHash}" target="_blank" rel="noopener" style="color:var(--arc1);text-decoration:none">↗ Mint tx ${short}</a>`
-          : `↗ Mint tx ${short}`;
-        document.getElementById('spend-status').appendChild(line);
+        // Right-aligned "↗ Mint tx" link on the same line as the success message
+        // (float:right, no hash text). Wiped when setStatus resets the box next run.
+        const link = document.createElement('a');
+        if (exp) { link.href = `${exp}/tx/${mintHash}`; link.target = '_blank'; link.rel = 'noopener'; }
+        link.textContent = '↗ Mint tx';
+        link.style.cssText = 'float:right;color:var(--arc1);text-decoration:none;white-space:nowrap';
+        document.getElementById('spend-status').appendChild(link);
       }
       // Record tx-pending per source chain - Gateway REST lags on-chain by minutes
       if (spentSources) {
