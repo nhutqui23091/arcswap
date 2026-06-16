@@ -3,6 +3,9 @@
 # for surfaces we dropped (Vault / Pool / Points / USYC blog / DEX deploy)
 # now redirect cleanly instead of 404-ing.
 
+# GM campaign renamed to Portal — keep old links (tweets, blog) working.
+/gm      /portal  301
+
 /swap    /trade   301
 /bridge  /trade   301
 /farm    /token   302

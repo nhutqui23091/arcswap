@@ -11,6 +11,7 @@
  */
 
 import { maybeAwardWelcome, reconcileLegacyWelcome } from './_welcome.js';
+import { recordReferral } from './_referral.js';
 
 const ARC_RPC = 'https://rpc.testnet.arc.network';
 
@@ -75,6 +76,13 @@ async function handlePost(request, env, context) {
 
   const today = utcToday();
   const state = await getState(kv, addr);
+
+  // Portal referral: bind referrer once, bump their count, maybe award badge.
+  if (body.action === 'referral') {
+    await recordReferral(kv, addr, body.ref || '');
+    const updated = await getState(kv, addr);
+    return jsonRes({ ...updated, already_checked_in: state.last_checkin === today });
+  }
 
   // Trust-based onboarding actions (no tx required): X follow, like, retweet.
   // X exposes no API to verify these, so completion is recorded on trust.
@@ -272,6 +280,9 @@ function defaultState() {
     total_checkins: 0,
     x_follow_done:  false,
     badges:         [],
+    referred_by:    null,
+    referrals:      [],
+    referral_count: 0,
   };
 }
 

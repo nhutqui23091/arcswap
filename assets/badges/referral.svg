@@ -1,0 +1,28 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Connector badge">
+  <defs>
+    <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4DD6DB"/>
+      <stop offset="1" stop-color="#4A7BEC"/>
+    </linearGradient>
+    <radialGradient id="cbg" cx="0.5" cy="0.38" r="0.85">
+      <stop offset="0" stop-color="#173655"/>
+      <stop offset="1" stop-color="#0B1B31"/>
+    </radialGradient>
+  </defs>
+  <rect x="6" y="6" width="188" height="188" rx="38" fill="url(#cbg)" stroke="url(#cg)" stroke-width="3"/>
+  <g stroke="url(#cg)" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.9">
+    <line x1="100" y1="74" x2="62" y2="132"/>
+    <line x1="100" y1="74" x2="138" y2="132"/>
+    <line x1="62" y1="132" x2="138" y2="132"/>
+  </g>
+  <g fill="url(#cg)">
+    <circle cx="100" cy="70" r="21"/>
+    <circle cx="60" cy="134" r="18"/>
+    <circle cx="140" cy="134" r="18"/>
+  </g>
+  <g fill="#0B1B31" opacity="0.85">
+    <circle cx="100" cy="70" r="7"/>
+    <circle cx="60" cy="134" r="6"/>
+    <circle cx="140" cy="134" r="6"/>
+  </g>
+</svg>

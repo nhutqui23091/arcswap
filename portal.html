@@ -8,8 +8,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/mark-oneliq.png"/>
 <link rel="apple-touch-icon" href="/assets/logos/mark-oneliq.png"/>
-<meta name="description" content="GM. Daily check-in and streak tracker on Oneliq Arc Testnet."/>
-<title>GM | Oneliq</title>
+<meta name="description" content="Oneliq Portal — daily check-in, streaks, badges, and referrals on Arc Testnet."/>
+<title>Portal | Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.24"/>
@@ -93,6 +93,26 @@
 .gm-badge-vbtn{padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
 .gm-badge-vbtn:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
 
+/* REFERRAL */
+.gm-referral-section{width:100%}
+.gm-ref-card{width:100%;padding:20px 20px 18px;border-radius:18px;background:linear-gradient(135deg,rgba(77,214,219,.05),rgba(74,123,236,.05)) padding-box,linear-gradient(135deg,rgba(77,214,219,.18),rgba(74,123,236,.18)) border-box;border:1px solid transparent;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.05);display:flex;flex-direction:column;gap:15px}
+.gm-ref-top{display:flex;align-items:center;gap:18px}
+@media(max-width:540px){.gm-ref-top{flex-direction:column;align-items:flex-start;gap:8px}}
+.gm-ref-count{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:84px}
+.gm-ref-count span:first-child{font-family:var(--display);font-size:42px;font-weight:800;line-height:1;letter-spacing:-.03em;background:linear-gradient(90deg,var(--arc1),var(--arc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gm-ref-count-lbl{font-size:10.5px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.gm-ref-blurb{font-size:13px;color:var(--muted);line-height:1.55}
+.gm-ref-blurb strong{color:var(--text);font-weight:600}
+.gm-ref-linkrow{display:flex;gap:8px}
+.gm-ref-input{flex:1;min-width:0;height:42px;padding:0 13px;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,.18);color:var(--text);font-family:var(--mono);font-size:12.5px;outline:none}
+.gm-ref-input:focus{border-color:rgba(77,214,219,.4)}
+.gm-ref-copy{flex-shrink:0;height:42px;padding:0 18px;border-radius:10px;border:1px solid rgba(77,214,219,.3);background:rgba(77,214,219,.1);color:var(--arc1);font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .15s}
+.gm-ref-copy:hover{background:rgba(77,214,219,.18);border-color:rgba(77,214,219,.5)}
+.gm-ref-prog{display:flex;flex-direction:column;gap:6px}
+.gm-ref-prog-track{width:100%;height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.gm-ref-prog-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--arc1),var(--arc2));transition:width .6s ease;min-width:0}
+.gm-ref-prog-label{font-size:10.5px;font-family:var(--mono);color:var(--muted);letter-spacing:.03em}
+
 .gm-foot{font-size:12px;font-family:var(--mono);color:var(--muted-soft);text-align:center}
 </style>
 </head>
@@ -104,7 +124,7 @@
     <div class="gm-checkin-col">
 
       <div class="gm-hero-card">
-        <div class="gm-hero-eyebrow">DAILY GM</div>
+        <div class="gm-hero-eyebrow">DAILY PORTAL</div>
 
         <div class="gm-hero-logo-wrap">
           <img src="/assets/logos/mark-oneliq.png" class="gm-logo" alt="Oneliq"/>
@@ -125,7 +145,7 @@
 
         <div class="gm-btn-outer">
           <div class="gm-energy-fill" id="ef"></div>
-          <button class="gm-btn" id="gmbtn" type="button" disabled>Hold to GM</button>
+          <button class="gm-btn" id="gmbtn" type="button" disabled>Hold to Enter</button>
         </div>
         <div id="ep" style="display:none">0%</div>
       </div>
@@ -149,8 +169,8 @@
       <div class="gm-task" id="tlk">
         <div class="t-ico" id="tlk-ico">♥</div>
         <div class="t-body">
-          <div class="t-name">Like our GM launch tweet</div>
-          <div class="t-sub" id="tlk-sub">Like the GM launch tweet on X</div>
+          <div class="t-name">Like our launch tweet</div>
+          <div class="t-sub" id="tlk-sub">Like the Portal launch tweet on X</div>
         </div>
         <div class="t-acts" id="tlk-acts">
           <a href="https://x.com/intent/like?tweet_id=2066850786232123432" target="_blank" rel="noopener noreferrer">Like</a>
@@ -160,8 +180,8 @@
       <div class="gm-task" id="trt">
         <div class="t-ico" id="trt-ico">🔁</div>
         <div class="t-body">
-          <div class="t-name">Retweet our GM launch tweet</div>
-          <div class="t-sub" id="trt-sub">Retweet the GM launch tweet on X</div>
+          <div class="t-name">Retweet our launch tweet</div>
+          <div class="t-sub" id="trt-sub">Retweet the Portal launch tweet on X</div>
         </div>
         <div class="t-acts" id="trt-acts">
           <a href="https://x.com/intent/retweet?tweet_id=2066850786232123432" target="_blank" rel="noopener noreferrer">Retweet</a>
@@ -193,6 +213,24 @@
     </div>
   </div>
 
+  <div class="gm-referral-section">
+    <div class="gm-sec-label">Referral</div>
+    <div class="gm-ref-card">
+      <div class="gm-ref-top">
+        <div class="gm-ref-count"><span id="refnum">0</span><span class="gm-ref-count-lbl">invited</span></div>
+        <div class="gm-ref-blurb">Share your Portal link. Invite <strong>3</strong> friends to earn the <strong>Connector</strong> badge. Testnet only — no rewards, just bragging rights.</div>
+      </div>
+      <div class="gm-ref-linkrow">
+        <input id="reflink" class="gm-ref-input" readonly value="Connect wallet to get your link"/>
+        <button id="refcopy" class="gm-ref-copy" type="button">Copy</button>
+      </div>
+      <div class="gm-ref-prog">
+        <div class="gm-ref-prog-track"><div class="gm-ref-prog-fill" id="reffill" style="width:0%"></div></div>
+        <div class="gm-ref-prog-label" id="reflbl">0 / 3 invited</div>
+      </div>
+    </div>
+  </div>
+
   <div class="gm-badges-section">
     <div class="gm-sec-label">Badges</div>
     <div class="gm-badge-grid" id="gbadges"></div>
@@ -210,7 +248,21 @@
 <script>
 (async () => {
   const ARC = window.ARC;
-  await ArcUI.bootApp('gm');
+  await ArcUI.bootApp('portal');
+
+  const REFERRAL_GOAL = 3;
+
+  // Capture an incoming referral (?ref=0x...) before the wallet connects, then
+  // strip it from the URL so it doesn't linger or get re-shared.
+  try {
+    const rp = new URLSearchParams(location.search).get('ref');
+    if (rp && /^0x[0-9a-fA-F]{40}$/.test(rp)) {
+      localStorage.setItem('oneliq_portal_pending_ref', rp.toLowerCase());
+      const u = new URL(location.href);
+      u.searchParams.delete('ref');
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    }
+  } catch {}
 
   const ef   = document.getElementById('ef');
   const ep   = document.getElementById('ep');
@@ -231,7 +283,9 @@
 
   // -- Badge definitions --
   const BADGE_META = {
-    welcome: { img: '/assets/badges/welcome.png?v=2', name: 'Welcome to Oneliq', tip: 'Earned on your very first GM check-in' },
+    welcome:  { img: '/assets/badges/welcome.png?v=2',  name: 'Welcome to Oneliq', tip: 'Complete all five onboarding tasks' },
+    referral: { img: '/assets/badges/referral.svg',     name: 'Connector',         tip: 'Invite 3 friends through your Portal link',
+                goal: 3,   unit: 'invites', stat: s => s?.referral_count || 0 },
     streak7: { img: '/assets/badges/streak7.png?v=2', name: '7-Day Streak',      tip: 'Check in 7 days in a row',
                goal: 7,   unit: 'days', stat: s => s?.streak   || 0 },
     tx100:   { img: '/assets/badges/tx100.png?v=2',   name: '100 Transactions',  tip: '100 on-chain transactions on Arc Testnet',
@@ -447,8 +501,8 @@
   // Trust-based X engagement tasks (like / retweet). X exposes no API to
   // verify these, so completion is stored per-wallet in localStorage.
   const SOCIAL_TASKS = [
-    { prefix: 'tlk', key: 'like',    flag: 'like_done',    icon: '♥', label: 'Like',    sub: 'Like the GM launch tweet on X',    url: 'https://x.com/intent/like?tweet_id=2066850786232123432' },
-    { prefix: 'trt', key: 'retweet', flag: 'retweet_done', icon: '🔁', label: 'Retweet', sub: 'Retweet the GM launch tweet on X', url: 'https://x.com/intent/retweet?tweet_id=2066850786232123432' },
+    { prefix: 'tlk', key: 'like',    flag: 'like_done',    icon: '♥', label: 'Like',    sub: 'Like the Portal launch tweet on X',    url: 'https://x.com/intent/like?tweet_id=2066850786232123432' },
+    { prefix: 'trt', key: 'retweet', flag: 'retweet_done', icon: '🔁', label: 'Retweet', sub: 'Retweet the Portal launch tweet on X', url: 'https://x.com/intent/retweet?tweet_id=2066850786232123432' },
   ];
 
   function renderSocialTasks() {
@@ -506,6 +560,74 @@
         };
       }
     }
+  }
+
+  // -- Referral --
+  function refLink(a) { return location.origin + '/portal?ref=' + a; }
+
+  function renderReferral() {
+    const a      = addr();
+    const linkEl = document.getElementById('reflink');
+    const numEl  = document.getElementById('refnum');
+    const fillEl = document.getElementById('reffill');
+    const lblEl  = document.getElementById('reflbl');
+    if (!linkEl) return;
+    if (!a) {
+      linkEl.value = 'Connect wallet to get your link';
+      if (numEl)  numEl.textContent = '0';
+      if (fillEl) fillEl.style.width = '0%';
+      if (lblEl)  lblEl.textContent = '0 / ' + REFERRAL_GOAL + ' invited';
+      return;
+    }
+    linkEl.value = refLink(a);
+    const cnt = gmState?.referral_count || 0;
+    const pct = Math.min(100, (cnt / REFERRAL_GOAL) * 100);
+    if (numEl)  numEl.textContent = cnt;
+    if (fillEl) fillEl.style.width = pct.toFixed(0) + '%';
+    if (lblEl)  lblEl.textContent = Math.min(cnt, REFERRAL_GOAL) + ' / ' + REFERRAL_GOAL + ' invited';
+  }
+
+  const refCopyBtn = document.getElementById('refcopy');
+  if (refCopyBtn) refCopyBtn.onclick = async () => {
+    const a = addr();
+    if (!a) { ArcUI.toast('', 'Connect wallet', 'Connect to get your referral link.'); return; }
+    const link = refLink(a);
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      const el = document.getElementById('reflink');
+      el.select(); try { document.execCommand('copy'); } catch {}
+    }
+    refCopyBtn.textContent = 'Copied';
+    setTimeout(() => { refCopyBtn.textContent = 'Copy'; }, 1500);
+  };
+
+  // Submit a pending referral once, after the wallet is connected. The backend
+  // is idempotent (referred_by is bound once), so a repeat call is harmless.
+  async function maybeSubmitReferral() {
+    const a = addr();
+    if (!a) return;
+    let ref = localStorage.getItem('oneliq_portal_pending_ref');
+    if (!ref) return;
+    ref = ref.toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(ref) || ref === a || gmState?.referred_by) {
+      localStorage.removeItem('oneliq_portal_pending_ref');
+      return;
+    }
+    try {
+      const r = await fetch('/auth/gm', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'referral', address: a, ref }),
+      });
+      if (r.ok) {
+        // Merge (not replace): the referral response omits GET-only fields like
+        // said_gm and tx_count, which we want to keep from the initial load.
+        gmState = { ...gmState, ...(await r.json()) };
+        localStorage.removeItem('oneliq_portal_pending_ref');
+        renderReferral();
+      }
+    } catch {}
   }
 
   async function markXDone() {
@@ -630,8 +752,8 @@
         }
       }
 
-      // Encode "GM YYYY-MM-DD" as calldata so it is visible on-chain
-      const gmStr   = 'GM ' + today;
+      // Encode "Portal YYYY-MM-DD" as calldata so it is visible on-chain
+      const gmStr   = 'Portal ' + today;
       const hexData = '0x' + Array.from(gmStr).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
 
       btn.textContent = 'Confirm in wallet';
@@ -662,7 +784,7 @@
       gmState = data;
       setEnergy(1);
       btn.classList.add('success');
-      btn.textContent = '✓ GM! Day ' + data.streak;
+      btn.textContent = '✓ Day ' + data.streak + ' · checked in';
       hint.textContent = data.streak + ' day streak' + (data.freeze_used ? ' · freeze used' : '');
       renderStreak(data);
       renderBadges(data.badges);
@@ -674,7 +796,7 @@
         btn.textContent = '✓ Checked in today. Come back tomorrow.';
         btn.disabled = true;
         hint.textContent = '';
-        ArcUI.toast('success', 'GM! Day ' + data.streak, data.freeze_used ? 'Freeze used.' : 'Keep it up.');
+        ArcUI.toast('success', 'Checked in · Day ' + data.streak, data.freeze_used ? 'Freeze used.' : 'Keep it up.');
       }, 2400);
 
     } catch(e) {
@@ -682,7 +804,7 @@
       btn.disabled = false;
       const msg = e?.message || String(e);
       if (/reject|denied|ACTION_REJECTED|user rejected/i.test(msg)) {
-        btn.textContent = 'Hold to GM'; hint.textContent = 'Press and hold to check in';
+        btn.textContent = 'Hold to Enter'; hint.textContent = 'Press and hold to check in';
         ArcUI.toast('', 'Cancelled', 'Transaction cancelled.');
       } else {
         btn.textContent = 'Try again'; hint.textContent = msg.slice(0, 80);
@@ -696,9 +818,9 @@
     const a = addr();
     if (!a) {
       gmState = discState = null;
-      renderStreak(null); renderTasks(); renderBadges([]);
+      renderStreak(null); renderTasks(); renderBadges([]); renderReferral();
       btn.disabled = true; btn.className = 'gm-btn';
-      btn.textContent = 'Hold to GM'; hint.textContent = 'Connect wallet to check in';
+      btn.textContent = 'Hold to Enter'; hint.textContent = 'Connect wallet to check in';
       return;
     }
     try {
@@ -713,6 +835,8 @@
     renderStreak(gmState);
     renderTasks();
     renderBadges(gmState?.badges);
+    await maybeSubmitReferral();
+    renderReferral();
 
     if (gmState?.already_checked_in) {
       btn.disabled = true; btn.className = 'gm-btn checked';
@@ -720,7 +844,7 @@
       hint.textContent = '';
     } else {
       btn.disabled = false; btn.className = 'gm-btn';
-      btn.textContent = 'Hold to GM'; hint.textContent = 'Press and hold to check in';
+      btn.textContent = 'Hold to Enter'; hint.textContent = 'Press and hold to check in';
     }
   }
 
