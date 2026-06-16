@@ -356,7 +356,6 @@ html{scroll-behavior:smooth}
 
     <button id="spend-go" class="gw-action" type="button">Sign intent + mint</button>
     <div id="spend-status" class="gw-status"></div>
-    <div id="spend-tx-link" style="display:none;margin-top:8px;text-align:center;font-size:12px;font-family:var(--mono)"></div>
     <div id="spend-trade-cta" style="display:none;margin-top:8px;text-align:center">
       <a href="/trade" style="display:inline-block;padding:8px 20px;border-radius:10px;background:rgba(77,214,219,.1);border:1px solid rgba(77,214,219,.3);color:var(--arc1);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s">→ Trade on Arc</a>
     </div>
@@ -1173,7 +1172,6 @@ html{scroll-behavior:smooth}
     const useForwarder = document.getElementById('spend-forwarder')?.checked ?? true;
     const btn = document.getElementById('spend-go');
     btn.disabled = true; btn.textContent = 'Working…';
-    document.getElementById('spend-tx-link').style.display = 'none';
     document.getElementById('spend-trade-cta').style.display = 'none';
     let spendResult = null;
     let spentSources = null;
@@ -1222,12 +1220,15 @@ html{scroll-behavior:smooth}
       const mintHash = spendResult?.mint?.tx?.hash || spendResult?.forwarded?.transactionHash || null;
       if (mintHash) {
         const exp = ARC.CHAINS[dst]?.explorer;
-        const linkEl = document.getElementById('spend-tx-link');
         const short = `${mintHash.slice(0, 10)}…${mintHash.slice(-8)}`;
-        linkEl.innerHTML = exp
+        // Append the mint-tx line INSIDE the green status box (setStatus above
+        // set textContent, so the box is clean and this becomes its 2nd line).
+        const line = document.createElement('div');
+        line.style.cssText = 'margin-top:7px;text-align:center';
+        line.innerHTML = exp
           ? `<a href="${exp}/tx/${mintHash}" target="_blank" rel="noopener" style="color:var(--arc1);text-decoration:none">↗ Mint tx ${short}</a>`
-          : `Mint tx ${short}`;
-        linkEl.style.display = 'block';
+          : `↗ Mint tx ${short}`;
+        document.getElementById('spend-status').appendChild(line);
       }
       // Record tx-pending per source chain - Gateway REST lags on-chain by minutes
       if (spentSources) {
