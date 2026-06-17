@@ -15,6 +15,9 @@ import { recordReferral } from './_referral.js';
 import { computeStars } from './_stars.js';
 
 const ARC_RPC = 'https://rpc.testnet.arc.network';
+// OneliqCheckIn contract — a valid check-in is a successful call to it
+// (contracts/OneliqCheckIn.sol). Lowercased for case-insensitive compares.
+const ONELIQ_CHECKIN = '0x368a0e854ec69ec10b50d20fcafc1baf8b7eff10';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -263,6 +266,26 @@ async function verifyArcTx(txHash, expectedFrom) {
 
       if (tx.from?.toLowerCase() !== expectedFrom) {
         return { ok: false, error: 'Transaction sender does not match wallet address.' };
+      }
+      if (tx.to?.toLowerCase() !== ONELIQ_CHECKIN) {
+        return { ok: false, error: 'Check-in must call the OneliqCheckIn contract.' };
+      }
+
+      // Confirm the call actually succeeded (didn't revert, e.g. already
+      // checked in). The receipt can lag the tx by a block, so retry on miss.
+      const rcRes = await fetch(ARC_RPC, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          jsonrpc: '2.0', id: 1,
+          method:  'eth_getTransactionReceipt',
+          params:  [txHash],
+        }),
+      });
+      const receipt = (await rcRes.json()).result;
+      if (!receipt) continue; // not mined yet, retry
+      if (receipt.status !== '0x1') {
+        return { ok: false, error: 'Check-in transaction failed on-chain.' };
       }
       return { ok: true };
 

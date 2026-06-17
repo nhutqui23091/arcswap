@@ -1093,6 +1093,10 @@
   // -- Check-in flow (real Arc Testnet tx) --
   const ARC_CHAIN_HEX = '0x4cef52'; // chainId 5042002
   const ARC_EXPLORER  = 'https://testnet.arcscan.app';
+  // OneliqCheckIn: each daily check-in is a real call to this contract
+  // (contracts/OneliqCheckIn.sol) instead of a 0-value self-transfer.
+  const ONELIQ_CHECKIN = '0x368a0E854ec69EC10b50D20fCaFC1bAF8b7eff10';
+  const CHECKIN_ABI = ['function checkInWithGM(string message) returns (uint32)'];
 
   async function triggerCheckin() {
     btn.disabled = true; btn.textContent = 'Preparing...';
@@ -1125,16 +1129,16 @@
         }
       }
 
-      // Encode "Portal YYYY-MM-DD" as calldata so it is visible on-chain
-      const gmStr   = 'Portal ' + today;
-      const hexData = '0x' + Array.from(gmStr).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-
       btn.textContent = 'Confirm in wallet';
       hint.textContent = 'Approve the Arc Testnet transaction';
 
+      // Record the check-in on-chain as a real call to OneliqCheckIn. The day
+      // string ("Portal YYYY-MM-DD") rides along as a GM event so it stays
+      // visible on-chain; the contract also enforces one check-in per UTC day.
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
-      const tx       = await signer.sendTransaction({ to: a, value: 0n, data: hexData });
+      const checkin  = new ethers.Contract(ONELIQ_CHECKIN, CHECKIN_ABI, signer);
+      const tx       = await checkin.checkInWithGM('Portal ' + today);
       const txHash   = tx.hash;
 
       // Show confirming state with explorer link while backend verifies
@@ -1180,6 +1184,10 @@
       if (/reject|denied|ACTION_REJECTED|user rejected/i.test(msg)) {
         btn.textContent = 'Hold to Enter'; hint.textContent = 'Press and hold to check in';
         ArcUI.toast('', 'Cancelled', 'Transaction cancelled.');
+      } else if (/AlreadyCheckedInToday|already checked/i.test(msg)) {
+        btn.textContent = '✓ Checked in today'; btn.disabled = true;
+        hint.textContent = 'You already checked in on-chain today.';
+        ArcUI.toast('', 'Already checked in', 'An on-chain check-in for today already exists.');
       } else {
         btn.textContent = 'Try again'; hint.textContent = msg.slice(0, 80);
         ArcUI.toast('error', 'Check-in failed', msg.slice(0, 60));
