@@ -1503,6 +1503,16 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     'function get_dy(int128 i, int128 j, uint256 dx) view returns (uint256)',
     'function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) returns (uint256)',
   ];
+  // Oneliq fee-router sitting in front of the Curve pool. Every Arc USDC/EURC
+  // swap is forwarded through here so the protocol fee is taken on-chain and the
+  // trade is recorded as a call to OneliqRouter. quote() returns the output
+  // already net of the live fee (set on-chain via setFee), so the front-end never
+  // hardcodes the fee. See contracts/OneliqRouter.sol.
+  const ARC_ROUTER = '0xb508F475230E4Ab876258B7DCaFbc182d806e1F7';
+  const ROUTER_ABI = [
+    'function quote(address tokenIn, address tokenOut, uint256 amountIn) view returns (uint256 amountOut, uint256 fee)',
+    'function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) returns (uint256)',
+  ];
   const arcCurvePair = (a, b) => ARC_CURVE_IDX[a] !== undefined && ARC_CURVE_IDX[b] !== undefined;
   // App models Arc USDC at 18 decimals (native gas token); the 0x3600 ERC-20 and the
   // pool use 6. Scale between the app amount and pool units.
@@ -1510,11 +1520,12 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   const fromPool6 = (amt6,  tok) => amt6  * (10n ** BigInt(tok.decimals - ARC_CURVE_DEC));
 
   async function quoteArcCurve(tIn, tOut, amtIn) {
-    const i = ARC_CURVE_IDX[tIn.symbol], j = ARC_CURVE_IDX[tOut.symbol];
     const dx = toPool6(amtIn, tIn);
     if (dx <= 0n) throw new Error('Amount too small for pool');
-    const pool = new Contract(ARC_CURVE_POOL, CURVE_ABI, rpcProvider('arc'));
-    const dyPool = await pool.get_dy(i, j, dx);
+    // Ask the router: its quote() takes the protocol fee, then reads the pool's
+    // get_dy on the remainder, so `dyPool` is what the user actually receives.
+    const router = new Contract(ARC_ROUTER, ROUTER_ABI, rpcProvider('arc'));
+    const [dyPool] = await router.quote(tIn.address, tOut.address, dx);
     if (dyPool <= 0n) throw new Error('No Arc pool liquidity');
     const out = fromPool6(dyPool, tOut);
     const minOut = out - (out * BigInt(state.slippageBps)) / 10000n;
@@ -1527,7 +1538,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
       provider: 'curve',
       rate: `1 ${tIn.symbol} ≈ ${rateNum.toFixed(6)} ${tOut.symbol}`,
       impact: null, impactWarn: false, impactBad: false,
-      feeLabel: 'Arc pool · direct (Curve)',
+      feeLabel: 'Oneliq router · Arc pool',
       time: '~3 s',
     };
   }
@@ -1551,23 +1562,24 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   // then exchange() with min_dy = get_dy × (1 − slippage). Returns the tx hash.
   async function execArcCurveSwap(tInSym, tOutSym, amtIn, modal, stepId) {
     const tInTok = TOKENS.arc[tInSym], tOutTok = TOKENS.arc[tOutSym];
-    const i = ARC_CURVE_IDX[tInSym], j = ARC_CURVE_IDX[tOutSym];
     const dx = toPool6(amtIn, tInTok);
     if (dx <= 0n) throw new Error('Amount too small for pool');
-    const poolRead = new Contract(ARC_CURVE_POOL, CURVE_ABI, rpcProvider('arc'));
-    const dy = await poolRead.get_dy(i, j, dx);
+    // Min-out from the router quote (output is already net of the protocol fee).
+    const routerRead = new Contract(ARC_ROUTER, ROUTER_ABI, rpcProvider('arc'));
+    const [dy] = await routerRead.quote(tInTok.address, tOutTok.address, dx);
     const minDy = dy - (dy * BigInt(state.slippageBps)) / 10000n;
-    // Approve once with max allowance so later swaps skip approval entirely (single tx).
+    // Approve the Oneliq router (not the pool) once with max allowance so later
+    // swaps skip approval entirely (single tx).
     const erc20 = new Contract(tInTok.address, ABIS.erc20, wallet.signer);
-    const cur = await erc20.allowance(wallet.address, ARC_CURVE_POOL).catch(() => 0n);
+    const cur = await erc20.allowance(wallet.address, ARC_ROUTER).catch(() => 0n);
     if (cur < dx) {
       modal.set(stepId, 'active', `Approving ${tInSym} (one-time)…`);
-      const atx = await erc20.approve(ARC_CURVE_POOL, MAX_UINT256);
+      const atx = await erc20.approve(ARC_ROUTER, MAX_UINT256);
       await waitArcReceipt(atx.hash);
     }
-    modal.set(stepId, 'active', `Swapping ${tInSym} → ${tOutSym} via Arc pool…`);
-    const pool = new Contract(ARC_CURVE_POOL, CURVE_ABI, wallet.signer);
-    const tx = await pool.exchange(i, j, dx, minDy);
+    modal.set(stepId, 'active', `Swapping ${tInSym} → ${tOutSym} via Oneliq router…`);
+    const router = new Contract(ARC_ROUTER, ROUTER_ABI, wallet.signer);
+    const tx = await router.swap(tInTok.address, tOutTok.address, dx, minDy);
     modal.set(stepId, 'active', `Tx ${shortAddr(tx.hash)} - waiting…`);
     await waitArcReceipt(tx.hash);
     return tx.hash;
@@ -1871,47 +1883,11 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
           const inputStr = formatAmt(runAmt, tInTok.decimals);
           modal.set(stepId, 'active', `Swap ${step.tIn} → ${step.tOut}…`);
           if (arcCurvePair(step.tIn, step.tOut)) {
-            // HYBRID route. Prefer Circle kit.swap (the standard path - its aggregator
-            // finds the best route, e.g. via Wrapped USDC, for a better rate). Circle
-            // SIMULATES server-side before asking for a signature, so if it fails
-            // (testnet quote inflated -> InsufficientAmountOut) it costs no signature
-            // and we fall back to the direct Curve pool with a min-out we control.
-            let txHash = null, route = null;
-            if (APPKIT && appKitSupports('arc', tInTok, tOutTok)) {
-              try {
-                modal.set(stepId, 'active', `Swap ${step.tIn} → ${step.tOut} via Circle…`);
-                // SDK doesn't expose txHash; capture it from the wallet submit.
-                let capturedHash = null;
-                const origReq = window.ethereum?.request?.bind(window.ethereum);
-                if (origReq) {
-                  window.ethereum.request = async function(args) {
-                    const r = await origReq(args);
-                    if ((args.method === 'eth_sendTransaction' || args.method === 'eth_sendRawTransaction')
-                        && typeof r === 'string' && r.startsWith('0x')) capturedHash = r;
-                    return r;
-                  };
-                }
-                const _slipPct = state.slippageBps / 100, _slipDec = state.slippageBps / 10000;
-                let result;
-                try {
-                  result = await APPKIT.appKitSwap(step.tIn, step.tOut, inputStr, {
-                    slippage: _slipPct, slippageTolerance: _slipPct,
-                    slippageBps: state.slippageBps, slippagePercent: _slipPct, maxSlippage: _slipDec,
-                  });
-                } finally { if (origReq) window.ethereum.request = origReq; }
-                txHash = capturedHash || result?.txHash || result?.transactionHash || result?.hash
-                  || result?.data?.hash || result?.receipt?.transactionHash || '';
-                route = 'Circle';
-              } catch (e) {
-                console.warn('[trade] Circle swap failed -> Arc pool fallback:', explainError(e));
-                modal.set(stepId, 'active', 'Circle route unavailable - using Arc pool…');
-              }
-            }
-            // Fallback (or no App Kit): swap straight through the Curve pool.
-            if (route === null) {
-              txHash = await execArcCurveSwap(step.tIn, step.tOut, runAmt, modal, stepId);
-              route = 'Arc pool';
-            }
+            // Route every Arc USDC/EURC swap through the Oneliq router so the
+            // protocol fee is taken on-chain and the trade is recorded as a call
+            // to OneliqRouter (which forwards to the same Circle/Curve pool).
+            const txHash = await execArcCurveSwap(step.tIn, step.tOut, runAmt, modal, stepId);
+            const route = 'Oneliq router';
             if (txHash) { lastTxHash = txHash; lastTxChain = 'arc'; }
             modal.set(stepId, 'done', txHash
               ? `<a href="${CHAINS.arc.explorerTx(txHash)}" target="_blank" rel="noopener" style="color:var(--arc2)">${shortAddr(txHash)} ↗</a>`
