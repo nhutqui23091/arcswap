@@ -12,7 +12,7 @@
 <link rel="canonical" href="https://oneliq.xyz/blog/gasless-mint"/>
 <meta property="og:title" content="Gasless Mint: Receive USDC Without Holding Gas First"/>
 <meta property="og:description" content="Circle's Forwarding Service submits the destination mint on your behalf, so a Gateway spend lands on any chain — including Arc, where gas is USDC — without you pre-funding gas. Live in Oneliq Balance."/>
-<meta property="og:image" content="https://oneliq.xyz/assets/social/blog-balance-banner.svg"/>
+<meta property="og:image" content="https://oneliq.xyz/assets/social/blog-gasless-banner.svg"/>
 <meta property="og:url" content="https://oneliq.xyz/blog/gasless-mint"/>
 <meta property="og:type" content="article"/>
 <title>Gasless Mint: Receive USDC Without Holding Gas First | Oneliq Blog</title>
@@ -163,7 +163,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
     <span>5 min read</span>
   </div>
 
-  <img class="banner" src="/assets/social/blog-balance-banner.svg" alt="Gasless Mint: Receive USDC Without Holding Gas First"/>
+  <img class="banner" src="/assets/social/blog-gasless-banner.svg" alt="Gasless Mint: Receive USDC Without Holding Gas First"/>
 
   <article>
 
@@ -183,6 +183,13 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
     <p>For a first-time recipient this is a chicken-and-egg problem. You are moving USDC to a chain precisely because you do not have funds there yet, but the classic flow asks you to already hold that chain's native token to claim the mint. On most testnets that means hunting down a faucet before you can touch your own balance.</p>
 
     <p>On <strong>Arc</strong> the wrinkle is sharper: Arc uses USDC as its native gas token. So the asset you are trying to receive is the same asset you need to pay for the mint — but you cannot pay with it until it has arrived. Gasless mint cuts that knot.</p>
+
+    <div class="callout">
+      <div class="callout-title">The problem it solves</div>
+      <div class="callout-body">
+        <strong>Empty-wallet deadlock.</strong> To claim a cross-chain USDC transfer you needed gas on the destination — but you were moving funds there <em>because</em> the wallet was empty. Gasless mint breaks the loop: Circle pays the destination gas, so your first incoming USDC no longer depends on already having a balance. It removes the faucet detour, the "get gas first" step in onboarding flows, and the special case on Arc where gas and the asset are the same token.
+      </div>
+    </div>
 
     <h2>What gasless mint does</h2>
 
@@ -239,6 +246,20 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
       </div>
     </div>
 
+    <h2>A concrete example</h2>
+
+    <p>Mai has <strong>50 USDC</strong> in her Unified Balance, deposited earlier from Base Sepolia. She just spun up a brand-new wallet on <strong>Arc Testnet</strong> to try a dApp there, and wants to move <strong>20 USDC</strong> into it. The catch: that Arc wallet is empty — <strong>0 gas</strong> — and on Arc gas <em>is</em> USDC, the very thing she's trying to receive.</p>
+
+    <table class="t">
+      <tr><th></th><th>Without gasless mint</th><th>With gasless mint (default)</th></tr>
+      <tr><td><strong>Step she does</strong></td><td>Find an Arc faucet, claim gas, <em>then</em> mint</td><td>Sign the burn once. Done.</td></tr>
+      <tr><td><strong>Arc wallet needs gas?</strong></td><td>Yes — blocked until she gets some</td><td>No — Circle's forwarder pays it</td></tr>
+      <tr><td><strong>Who sends the mint tx</strong></td><td>Mai (from the empty Arc wallet)</td><td>Circle Forwarding Service</td></tr>
+      <tr><td><strong>Result</strong></td><td>Stuck if no faucet is available</td><td>20 USDC lands, minus a small fee</td></tr>
+    </table>
+
+    <p>With gasless mint on, Mai signs a single burn intent on Base Sepolia. Circle's forwarder mints the USDC onto Arc for her and covers the Arc gas itself. Her Arc wallet goes from <strong>0 → ~20 USDC</strong>, and because that USDC doubles as gas on Arc, she can immediately make her first transaction — no faucet, no detour, no second token. Her remaining Unified Balance is <strong>~30 USDC</strong>.</p>
+
     <h2>The forwarding fee and spendable balance</h2>
 
     <p>The forwarder is not free — it pays destination gas on your behalf and charges a small fee, deducted from the transfer rather than billed separately. Oneliq surfaces it inline while the mint is in flight, so the cost is visible before the USDC lands.</p>
@@ -257,6 +278,24 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
     <p>Relayers can be slow, and testnets are noisy. If the forwarder hasn't landed the mint within Oneliq's polling window, the spend is <strong>not</strong> lost: the attestation is still valid. Oneliq detects the stall and offers a self-mint fallback — you send the <code>gatewayMint</code> yourself with the attestation already in hand (this is the one case where you'd need a little destination gas). In practice the most common "failure" is the forwarder having already minted, in which case the fallback simply confirms the transfer completed.</p>
 
     <p>This mirrors the fallback thinking Circle describes for the Unified Balance Kit: a route can be the default, but the application should always own a graceful path when the preferred route can't complete. Gasless mint is the preferred route; self-mint is the always-available floor underneath it.</p>
+
+    <h2>Which networks get gas help</h2>
+
+    <p>Gasless mint applies to spends that <strong>land on any of the eight testnets Balance supports as a destination</strong>. Wherever the USDC is headed, Circle's Forwarding Service covers that chain's native gas for the mint, so the recipient never has to pre-fund it. Arc is the headline case because its native gas token <em>is</em> USDC, but the same gasless landing works on every chain below.</p>
+
+    <table class="t">
+      <tr><th>Destination network</th><th>Native gas token</th><th>Forwarder covers it</th></tr>
+      <tr><td><strong>Arc Testnet</strong></td><td>USDC</td><td>Yes — biggest win (gas = the asset)</td></tr>
+      <tr><td>Avalanche Fuji</td><td>AVAX</td><td>Yes</td></tr>
+      <tr><td>Base Sepolia</td><td>ETH</td><td>Yes</td></tr>
+      <tr><td>Ethereum Sepolia</td><td>ETH</td><td>Yes</td></tr>
+      <tr><td>Optimism Sepolia</td><td>ETH</td><td>Yes</td></tr>
+      <tr><td>Arbitrum Sepolia</td><td>ETH</td><td>Yes</td></tr>
+      <tr><td>Polygon Amoy</td><td>POL</td><td>Yes</td></tr>
+      <tr><td>Unichain Sepolia</td><td>ETH</td><td>Yes</td></tr>
+    </table>
+
+    <p>The benefit is the same everywhere — you receive USDC without first acquiring that chain's gas token — but it's most striking on Arc, where without gasless mint you'd need USDC to receive USDC.</p>
 
     <h2>Why this matters on Arc</h2>
 
