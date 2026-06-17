@@ -1338,6 +1338,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
 
   async function quote() {
     const seq = ++quoteSeq;
+    state.holdOnly = false;
     let steps;
     try {
       steps = planRoute();
@@ -1455,7 +1456,13 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     } catch (e) {
       if (seq !== quoteSeq) return;
       console.warn('[trade] quote failed:', e?.message);
-      setMetrics({ rate: 'No route', impact: '-', fee: '-', min: '-', time: '-' }, 'danger');
+      if (e?.holdOnly) {
+        // cirBTC: not an error — there's just no swap venue. Show the reason plainly.
+        state.holdOnly = true;
+        setMetrics({ rate: e.message, impact: '–', fee: '–', min: '–', time: '–' }, 'warn');
+      } else {
+        setMetrics({ rate: 'No route', impact: '-', fee: '-', min: '-', time: '-' }, 'danger');
+      }
       state.quote = null;
       document.getElementById('amount-out').value = '';
     }
@@ -1589,6 +1596,16 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   // Used by quote() pipeline for the swap step. Returns { amountOut, minOut,
   // rate, feeLabel, time, impact, impactWarn, impactBad, provider, path }.
   async function quoteSwap(chainKey, tIn, tOut, amtIn) {
+    // ── cirBTC is hold-only on Arc Testnet ────────────────────────────────
+    // Circle has not opened any cirBTC liquidity (no Curve pool, not in App Kit,
+    // the V2 factory has no cirBTC pair, mint is institutional via Circle Mint).
+    // So there is nothing to route to — surface a clear hold-only notice instead
+    // of a generic "No route".
+    if (chainKey === 'arc' && (tIn.symbol === 'cirBTC' || tOut.symbol === 'cirBTC')) {
+      const err = new Error('cirBTC is hold-only on Arc Testnet — no swap pool yet');
+      err.holdOnly = true;
+      throw err;
+    }
     // ── Direct Arc pool (Curve) for USDC/EURC ─────────────────────────────
     // Preferred over Circle kit.swap on Arc Testnet: Circle's quote service is
     // returning inflated estimates that make kit.swap revert (InsufficientAmountOut).
@@ -1723,7 +1740,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     if (!addr) { btn.disabled = false; btn.textContent = 'Connect wallet'; btn.onclick = () => wallet.connect().catch(e => ArcUI.toast('error','Connect failed',explainError(e))); return; }
     if (state.recipient && !isAddress(state.recipient)) { btn.disabled = true; btn.textContent = 'Invalid recipient'; return; }
     if (!state.amountIn || parseAmt(state.amountIn, state.fromToken.decimals) === 0n) { btn.disabled = true; btn.textContent = 'Enter amount'; return; }
-    if (!state.quote || !state.quote.steps) { btn.disabled = true; btn.textContent = 'No route'; return; }
+    if (!state.quote || !state.quote.steps) { btn.disabled = true; btn.textContent = state.holdOnly ? 'cirBTC — hold only' : 'No route'; return; }
 
     // Wallet must be on the chain of the FIRST step (gateway-spend / cctp-bridge / swap)
     // - pipeline auto-switches between subsequent steps.
