@@ -597,12 +597,15 @@ export async function onRequest(context) {
     } catch {}
 
     // Total Users (lifetime): live DISTINCT union of both registries
-    // (metric:wallet:seen: + gm:). DEFERRED until /debug ground-truth is
-    // verified — uncomment to flip the displayed number to the union:
-    // try {
-    //   const distinct = await collectDistinctUsers(env);
-    //   if (distinct.size > 0) summary.totalUsers = distinct.size;
-    // } catch {}
+    // (metric:wallet:seen: + gm:) rather than the rollup's cached counter,
+    // which undercounts — it only ticks when a tracked event carries an
+    // address and skips increments on rollup version-mismatch. Race-free and
+    // self-healing, same rationale as the activeUsers block above. The on-chain
+    // swapper backfill (/reconcile-users) seeds seen: so this reflects reality.
+    try {
+      const distinct = await collectDistinctUsers(env);
+      if (distinct.size > 0) summary.totalUsers = distinct.size;
+    } catch {}
 
     return new Response(JSON.stringify(summary), {
       status: 200,
@@ -705,6 +708,74 @@ export async function onRequest(context) {
       rollup_computedAt: summary?.computedAt,
       total_events_today: (() => { try { const b = summary?.byDay?.[today]; return b ? Object.values(b).reduce((a,v)=>a+v,0) : 0; } catch { return 0; } })(),
       recent_events_sample: recentSample,
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...cors(origin), 'Cache-Control': 'no-store' },
+    });
+  }
+
+  // ─── reconcile-users ─────────────────────────────────────────────────────
+  // One-time (idempotent) backfill: most historical swaps were tracked WITHOUT
+  // a wallet address (pre-9.9.2 client), so metric:wallet:seen: massively
+  // undercounts the real swappers. The authoritative list lives on-chain: every
+  // Oneliq swap is a swap() call to OneliqRouter. We page the Arc explorer for
+  // distinct successful-swap callers and seed metric:wallet:seen:<addr> for each.
+  //   GET  = dry-run (counts only)         POST = apply (writes seen keys)
+  // Auth: X-Debug-Key header must equal env.DEBUG_KEY (same gate as admin tools).
+  if (route === 'reconcile-users') {
+    if (!env.DEBUG_KEY) return bad('disabled: set DEBUG_KEY env var to enable', origin, 503);
+    if ((request.headers.get('X-Debug-Key') || '') !== env.DEBUG_KEY) return bad('unauthorized', origin, 401);
+
+    const ROUTER = '0xb508F475230E4Ab876258B7DCaFbc182d806e1F7';
+    const SWAP_SELECTOR = '0xfe029156'; // swap(address,address,uint256,uint256)
+    const ARCSCAN = 'https://testnet.arcscan.app/api';
+    const apply = request.method === 'POST';
+
+    // 1. Page the router's tx list; collect distinct `from` of successful swap()s.
+    const swappers = new Set();
+    let scanned = 0;
+    try {
+      for (let page = 1; page <= 30; page++) {
+        const u = `${ARCSCAN}?module=account&action=txlist&address=${ROUTER}&page=${page}&offset=1000&sort=asc`;
+        const res = await fetch(u, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) break;
+        const data = await res.json();
+        if (!Array.isArray(data.result) || data.result.length === 0) break;
+        for (const tx of data.result) {
+          scanned++;
+          if (typeof tx.input === 'string' && tx.input.toLowerCase().startsWith(SWAP_SELECTOR)
+              && String(tx.isError) === '0' && /^0x[0-9a-fA-F]{40}$/.test(tx.from || '')) {
+            swappers.add(tx.from.toLowerCase());
+          }
+        }
+        if (data.result.length < 1000) break;
+      }
+    } catch (e) {
+      return bad('explorer_scan_failed: ' + (e?.message || 'unknown'), origin, 502);
+    }
+
+    // 2. Find which swappers aren't already in seen, optionally write them.
+    const existing = new Set(await listAllKeyNames(kv, 'metric:wallet:seen:'));
+    const toAdd = [...swappers].filter(a => !existing.has(`metric:wallet:seen:${a}`));
+    let added = 0;
+    if (apply) {
+      for (let i = 0; i < toAdd.length; i += 25) {
+        await Promise.all(toAdd.slice(i, i + 25).map(a => kv.put(`metric:wallet:seen:${a}`, '1')));
+      }
+      added = toAdd.length;
+    }
+    const union = await collectDistinctUsers(env); // reflects writes when apply=true
+
+    return new Response(JSON.stringify({
+      mode: apply ? 'apply' : 'dry-run',
+      router: ROUTER,
+      txs_scanned: scanned,
+      distinct_swappers_onchain: swappers.size,
+      seen_keys_before: existing.size,
+      missing_from_seen: toAdd.length,
+      seed_written: added,
+      union_users_total: union.size,
+      hint: apply ? 'Done. Total Users now reflects the union.' : 'POST with the same X-Debug-Key header to write the seen keys.',
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...cors(origin), 'Cache-Control': 'no-store' },
