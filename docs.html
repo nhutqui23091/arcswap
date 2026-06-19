@@ -364,13 +364,14 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <!-- ─── INTRODUCTION ─── -->
     <h2 class="docs-h2" id="introduction">Introduction</h2>
     <p class="docs-p">
-      <strong>Oneliq</strong> is a non-custodial frontend that brings Circle's stablecoin stack together
-      under a single UX on the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc Layer&nbsp;1</a>.
+      <strong>Oneliq</strong> is a unified stablecoin platform that simplifies how people use USDC across chains.
+      Built on Circle's infrastructure and designed for the <a href="https://arc.network" target="_blank" rel="noopener noreferrer">Arc Layer&nbsp;1</a>,
+      Oneliq brings trading, cross-chain balance management, automation, and onboarding into one seamless experience.
       Six surfaces, one balance, zero custody:
     </p>
     <table class="docs-table">
       <tr><th style="width:24%">Surface</th><th>What it does</th><th style="width:22%">Built on</th></tr>
-      <tr><td><strong>Trade</strong></td><td>Spend USDC anywhere - swap inside Arc (USDC ⇄ EURC) or bridge cross-chain. One panel, one source picker (wallet + Gateway pre-deposits), one destination.</td><td>Circle App Kit Swap + CCTP V2 (Uniswap V2 fallback)</td></tr>
+      <tr><td><strong>Trade</strong></td><td>Spend USDC anywhere - swap inside Arc (USDC ⇄ EURC) or bridge cross-chain. One panel, one source picker (wallet + Gateway pre-deposits), one destination.</td><td>OneliqRouter → Circle Curve pool + CCTP V2</td></tr>
       <tr><td><strong>Unified Balance</strong></td><td>One USDC balance across every supported chain. Deposit from any chain, spend instantly on Arc - no bridge clicks, no wrapped tokens.</td><td>Circle Gateway V1</td></tr>
       <tr><td><strong>Auto-Replenish Agent</strong> <em style="color:var(--peach);font-size:12px">preview</em></td><td>Sign once. Your agent keeps any wallet topped up automatically - or runs scheduled USDC transfers across chains. Daily safety cap, revocable anytime.</td><td>Circle Programmable Wallets + Paymaster</td></tr>
       <tr><td><strong>History</strong></td><td>A receipt-style feed of every Trade, Balance, and Agent moment on your USDC activity. Filter by surface, jump to the chain explorer in one click.</td><td>Local activity log + agent API</td></tr>
@@ -508,16 +509,17 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <h2 class="docs-h2" id="trade">Trade</h2>
     <p class="docs-p">
       The <a href="/trade"><code>/trade</code></a> page is the spend surface. It unifies same-chain
-      swap (USDC ⇄ EURC on Arc via Circle App Kit Swap) and cross-chain bridging (USDC anywhere via
+      swap (USDC ⇄ EURC on Arc via OneliqRouter into Circle's Curve pool) and cross-chain bridging (USDC anywhere via
       CCTP V2) into a single panel. Source picker shows your wallet balances plus your Circle Gateway
       pre-deposits, ranked so the path with the lowest friction floats to the top.
     </p>
 
     <h3 class="docs-h3">Same-chain swap (Arc internal)</h3>
     <p class="docs-p">
-      Routes through <strong>Circle App Kit Swap</strong> for USDC ⇄ EURC pairs on Arc. If the App Kit
-      SDK is unreachable the page degrades gracefully to a Uniswap V2 fallback (deployed by the Arc
-      Foundation). Quote latency is debounced at 150 ms with an SDK prefetch on the source-amount input.
+      USDC ⇄ EURC swaps on Arc route through our own <strong>OneliqRouter</strong> contract, which
+      forwards the trade into Circle's Curve StableSwap pool and takes a transparent 0.30% on-chain
+      protocol fee (hard-capped at 1%). Circle App Kit Swap remains integrated for quoting/routing.
+      Quote latency is debounced at 150 ms on the source-amount input.
     </p>
 
     <h3 class="docs-h3">Cross-chain spend (CCTP V2)</h3>
@@ -866,12 +868,12 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <tr><td>MessageTransmitterV2</td><td><code>0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275</code></td></tr>
     </table>
 
-    <h3 class="docs-h3">Uniswap V2 (Arc Foundation deploy - App Kit fallback)</h3>
-    <p class="docs-p" style="font-size:13px;color:var(--muted);margin-top:-4px">Used by Trade as the same-chain swap fallback if Circle App Kit's SDK is unreachable.</p>
+    <h3 class="docs-h3">OneliqRouter (Oneliq swap router → Circle Curve pool)</h3>
+    <p class="docs-p" style="font-size:13px;color:var(--muted);margin-top:-4px">Used by Trade for same-chain USDC ⇄ EURC swaps. Forwards into Circle's Curve StableSwap pool and takes a 0.30% on-chain protocol fee (capped at 1%). Sourcify-verified.</p>
     <table class="docs-table">
       <tr><th>Contract</th><th>Address</th></tr>
-      <tr><td>Router</td><td><code>0x48a9bd1644ac67fbef4183261c466bea3eb333fc</code></td></tr>
-      <tr><td>Factory</td><td><code>0x45dd35611179ae6663ae47791175d7d598ced086</code></td></tr>
+      <tr><td>OneliqRouter</td><td><code>0xb508F475230E4Ab876258B7DCaFbc182d806e1F7</code></td></tr>
+      <tr><td>Curve StableSwap pool</td><td><code>0x2d84d79c852f6842abe0304b70bbaa1506add457</code></td></tr>
     </table>
 
     <h3 class="docs-h3">Arc-native</h3>
