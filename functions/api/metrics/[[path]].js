@@ -123,6 +123,48 @@ async function incrFloat(kv, key, delta) {
   await kv.put(key, String(cur + delta));
 }
 
+// Cloudflare KV list() caps at 1000 keys per call — paginate via cursor so
+// counts stay correct past 1000 keys. Returns all key names under `prefix`.
+// `cap` bounds the work (and KV read units) for pathological growth.
+async function listAllKeyNames(kv, prefix, cap = 50000) {
+  const names = [];
+  let cursor;
+  do {
+    const page = await kv.list({ prefix, limit: 1000, ...(cursor ? { cursor } : {}) });
+    for (const k of page.keys) names.push(k.name);
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor && names.length < cap);
+  return names;
+}
+
+// Distinct lifetime wallets across BOTH registries:
+//   AGENT_KV   metric:wallet:seen:<addr>  — wallets that fired a tracked on-chain action
+//   PROFILE_KV gm:<addr>                  — wallets that engaged via the Portal (check-in/auth)
+// Union (lowercased, deduped). PROFILE_KV may be undefined if not bound — then
+// we fall back to seen-only. `gm:daily:<date>` counters are filtered out.
+async function collectDistinctUsers(env) {
+  const set = new Set();
+  try {
+    const seen = await listAllKeyNames(env.AGENT_KV, 'metric:wallet:seen:');
+    for (const name of seen) {
+      const a = name.slice('metric:wallet:seen:'.length).toLowerCase();
+      if (/^0x[0-9a-f]{40}$/.test(a)) set.add(a);
+    }
+  } catch (e) { console.warn('[metrics] seen scan failed:', e?.message); }
+  if (env.PROFILE_KV) {
+    try {
+      const gm = await listAllKeyNames(env.PROFILE_KV, 'gm:');
+      for (const name of gm) {
+        const rest = name.slice('gm:'.length);
+        if (rest.startsWith('daily:')) continue;          // gm:daily:<date> is a counter, not a wallet
+        const a = rest.toLowerCase();
+        if (/^0x[0-9a-f]{40}$/.test(a)) set.add(a);
+      }
+    } catch (e) { console.warn('[metrics] gm scan failed:', e?.message); }
+  }
+  return set;
+}
+
 
 // Hash IP+UA+address → 12 hex chars; daily uniqueness marker without storing PII.
 // Including wallet address means two different wallets behind the same NAT/IP
@@ -554,6 +596,14 @@ export async function onRequest(context) {
       if (count > 0) summary.activeUsers = count;
     } catch {}
 
+    // Total Users (lifetime): live DISTINCT union of both registries
+    // (metric:wallet:seen: + gm:). DEFERRED until /debug ground-truth is
+    // verified — uncomment to flip the displayed number to the union:
+    // try {
+    //   const distinct = await collectDistinctUsers(env);
+    //   if (distinct.size > 0) summary.totalUsers = distinct.size;
+    // } catch {}
+
     return new Response(JSON.stringify(summary), {
       status: 200,
       headers: {
@@ -611,12 +661,20 @@ export async function onRequest(context) {
   // ─── GET /debug ──────────────────────────────────────────────────────────
   if (route === 'debug' && request.method === 'GET') {
     const today = utcDate();
-    const [wl, ul, summaryRaw, recentRaw] = await Promise.all([
+    const [wl, ul, summaryRaw, recentRaw, seenNames] = await Promise.all([
       kv.list({ prefix: `metric:wallet:${today}:`, limit: 100 }),
       kv.list({ prefix: `metric:user:${today}:`,   limit: 100 }),
       kv.get(SUMMARY_KEY),
       kv.get(RECENT_KEY),
+      listAllKeyNames(kv, 'metric:wallet:seen:'),
     ]);
+    // Ground-truth lifetime user counts per registry + the union we now display.
+    let gmNames = [];
+    if (env.PROFILE_KV) {
+      try { gmNames = (await listAllKeyNames(env.PROFILE_KV, 'gm:')).filter(n => !n.startsWith('gm:daily:')); }
+      catch (e) { console.warn('[metrics] debug gm scan failed:', e?.message); }
+    }
+    const unionUsers = await collectDistinctUsers(env);
     let summary = null;
     try { summary = JSON.parse(summaryRaw); } catch {}
     let recentSample = [];
@@ -635,6 +693,12 @@ export async function onRequest(context) {
       user_fp_keys: ul.keys.length,
       active_users_computed: Math.max(wl.keys.length, ul.keys.length),
       active_users_blob: Object.keys(summary?.fpToday || {}).length,
+      // ── lifetime Total Users ground truth ──
+      seen_keys_total: seenNames.length,            // metric:wallet:seen:<addr> (tracked on-chain actors)
+      gm_keys_total: gmNames.length,                // gm:<addr> in PROFILE_KV (Portal accounts)
+      profile_kv_bound: !!env.PROFILE_KV,
+      union_users_total: unionUsers.size,           // distinct union — what "Total Users" now shows
+      rollup_totalUsers_cached: summary?.totalUsers ?? null, // old stale value (~33)
       wallet_sample: wl.keys.slice(0, 10).map(k => k.name.replace(`metric:wallet:${today}:`, '')),
       user_fp_sample: ul.keys.slice(0, 10).map(k => k.name.slice(-8)),
       rollup_todayKey: summary?.todayKey,
