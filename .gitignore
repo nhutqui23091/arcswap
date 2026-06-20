@@ -72,6 +72,7 @@ scratch/
 assets/social/*.png
 !assets/social/blog-rebrand-banner.png
 assets/social/*.jpg
+!assets/social/gasless-mint-banner.jpg
 
 # ─── Investor / business-sensitive content ───────────────────────────────────
 # Pitch deck content (markdown source, generated .pptx, and the build script
