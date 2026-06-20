@@ -812,16 +812,30 @@
       // Try every possible source for wallet address, in order of reliability.
       // wallet.signer is set by ensureChain during each tx and survives brief
       // AppKit disconnect events that can null out wallet.address mid-flight.
-      const walletAddr = await (async () => {
+      let walletAddr = await (async () => {
         if (wallet?.address) return wallet.address.toLowerCase();
         try { const a = wallet?._appkit?.getAccount?.()?.address; if (a) return a.toLowerCase(); } catch {}
         try { const a = await wallet?.signer?.getAddress?.(); if (a) return a.toLowerCase(); } catch {}
         try { const a = localStorage.getItem('arc.wallet.lastAddr'); if (a && /^0x[0-9a-f]{40}$/i.test(a)) return a.toLowerCase(); } catch {}
         return null;
       })();
-      const payload = { event, chain, amount, txHash, surface, _cv: '9.9.2', ...(walletAddr ? { address: walletAddr } : {}) };
+      // Guaranteed fallback for on-chain events: if the wallet object raced to
+      // null but we have a confirmed txHash, ask the chain who sent it. Every
+      // swap/deposit/spend/bridge carries a txHash, so this makes user
+      // attribution reliable even when AppKit's account state is momentarily
+      // unavailable — the root cause of historical address-less events.
+      if (!walletAddr && txHash && /^0x[0-9a-fA-F]{64}$/.test(txHash) && CHAINS[chain]) {
+        try {
+          const tx = await rpcProvider(chain).getTransaction(txHash);
+          if (tx && tx.from && /^0x[0-9a-fA-F]{40}$/.test(tx.from)) {
+            walletAddr = tx.from.toLowerCase();
+            try { localStorage.setItem('arc.wallet.lastAddr', walletAddr); } catch {} // cache so later events never miss
+          }
+        } catch {}
+      }
+      const payload = { event, chain, amount, txHash, surface, _cv: '9.9.3', ...(walletAddr ? { address: walletAddr } : {}) };
       if (extra && typeof extra === 'object') Object.assign(payload, extra);
-      if (typeof console !== 'undefined') console.log('[arc-core v9.9.2] track', event, 'addr:', walletAddr ? walletAddr.slice(0, 8) : 'MISSING - CHECK CONSOLE');
+      if (typeof console !== 'undefined') console.log('[arc-core v9.9.3] track', event, 'addr:', walletAddr ? walletAddr.slice(0, 8) : 'MISSING - CHECK CONSOLE');
       const res = await fetch('/api/metrics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -851,7 +865,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.9.2',
+    version: '9.9.3',
   };
 
   // ───────── CHAIN ICONS ─────────
