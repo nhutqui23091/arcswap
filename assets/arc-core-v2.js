@@ -718,7 +718,11 @@
     const prov = rpcProvider(chainKey);
     try {
       const ro = new Contract(address, abi, prov);
-      const est = await ro[method].estimateGas(...args, { from: wallet.address });
+      // Pass a gas CEILING in the estimate call. Some OP-Stack testnet nodes
+      // reject an uncapped eth_estimateGas with "intrinsic gas too high" (they
+      // default the ceiling to the block limit and choke on it); supplying any
+      // sane `gas` makes the estimate succeed and return the real cost.
+      const est = await ro[method].estimateGas(...args, { from: wallet.address, gasLimit: 3_000_000n });
       ov.gasLimit = est + (est * 30n) / 100n;
     } catch {
       if (fallbackGas) ov.gasLimit = fallbackGas;
@@ -912,7 +916,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.9.5',
+    version: '9.9.6',
   };
 
   // ───────── CHAIN ICONS ─────────
