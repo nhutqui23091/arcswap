@@ -123,7 +123,12 @@ async function handlePost(request, env, context) {
 
   // Trust-based onboarding actions (no tx required): X follow, like, retweet.
   // X exposes no API to verify these, so completion is recorded on trust.
-  const TRUST_FLAGS = { x_follow: 'x_follow_done', like: 'like_done', retweet: 'retweet_done', like2: 'like2_done', retweet2: 'retweet2_done' };
+  const TRUST_FLAGS = {
+    x_follow: 'x_follow_done',
+    like: 'like_done', retweet: 'retweet_done', reply: 'reply_done',                 // launch tweet
+    like2: 'like2_done', retweet2: 'retweet2_done', reply2: 'reply2_done',            // latest tweet
+    like3: 'like3_done', retweet3: 'retweet3_done', reply3: 'reply3_done',            // new tweet
+  };
   if (TRUST_FLAGS[body.action]) {
     const updated = { ...state, [TRUST_FLAGS[body.action]]: true };
     await kv.put('gm:' + addr, JSON.stringify(updated));

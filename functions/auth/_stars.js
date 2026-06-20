@@ -21,11 +21,16 @@ export const STAR_VALUES = {
   discord:  20, // Join Oneliq Discord
   like:      5, // Like the launch tweet
   retweet:   5, // Retweet the launch tweet
+  reply:     5, // Reply to the launch tweet
   gm:        5, // Say GM in #gm-gn
 
   // Bonus tasks (one-time; do NOT count toward the Welcome badge)
   like2:     5, // Like the latest tweet
   retweet2:  5, // Retweet the latest tweet
+  reply2:    5, // Reply to the latest tweet
+  like3:     5, // Like the new tweet
+  retweet3:  5, // Retweet the new tweet
+  reply3:    5, // Reply to the new tweet
 
   // Badges (one-time bonus on top of the tasks that unlock them)
   badge: {
@@ -54,11 +59,16 @@ export function computeStars(gm = {}, profile = {}) {
   if (profile?.discord_id) stars += STAR_VALUES.discord;
   if (gm.like_done)        stars += STAR_VALUES.like;
   if (gm.retweet_done)     stars += STAR_VALUES.retweet;
+  if (gm.reply_done)       stars += STAR_VALUES.reply;
   if (profile?.said_gm)    stars += STAR_VALUES.gm;
 
   // -- Bonus tasks --
   if (gm.like2_done)       stars += STAR_VALUES.like2;
   if (gm.retweet2_done)    stars += STAR_VALUES.retweet2;
+  if (gm.reply2_done)      stars += STAR_VALUES.reply2;
+  if (gm.like3_done)       stars += STAR_VALUES.like3;
+  if (gm.retweet3_done)    stars += STAR_VALUES.retweet3;
+  if (gm.reply3_done)      stars += STAR_VALUES.reply3;
 
   // -- Badges --
   const badges = Array.isArray(gm.badges) ? gm.badges : [];

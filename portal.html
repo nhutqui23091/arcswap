@@ -282,6 +282,18 @@
         </div>
       </div>
 
+      <div class="gm-task" id="trp">
+        <div class="t-ico" id="trp-ico">💬</div>
+        <div class="t-body">
+          <div class="t-name">Reply to our launch tweet</div>
+          <div class="t-sub" id="trp-sub">Reply to the Portal launch tweet on X</div>
+        </div>
+        <span class="t-star">★ 5</span>
+        <div class="t-acts" id="trp-acts">
+          <a href="https://x.com/intent/tweet?in_reply_to=2066850786232123432" target="_blank" rel="noopener noreferrer">Reply</a>
+        </div>
+      </div>
+
       <div class="gm-task" id="td">
         <div class="t-ico" id="td-ico">💬</div>
         <div class="t-body">
@@ -332,6 +344,54 @@
       <span class="t-star">★ 5</span>
       <div class="t-acts" id="trt2-acts">
         <a href="https://x.com/intent/retweet?tweet_id=2067150066692006239" target="_blank" rel="noopener noreferrer">Retweet</a>
+      </div>
+    </div>
+
+    <div class="gm-task" id="trp2">
+      <div class="t-ico" id="trp2-ico">💬</div>
+      <div class="t-body">
+        <div class="t-name">Reply to our latest tweet</div>
+        <div class="t-sub" id="trp2-sub">Reply to the latest Oneliq tweet on X</div>
+      </div>
+      <span class="t-star">★ 5</span>
+      <div class="t-acts" id="trp2-acts">
+        <a href="https://x.com/intent/tweet?in_reply_to=2067150066692006239" target="_blank" rel="noopener noreferrer">Reply</a>
+      </div>
+    </div>
+
+    <div class="gm-task" id="tlk3">
+      <div class="t-ico" id="tlk3-ico">♥</div>
+      <div class="t-body">
+        <div class="t-name">Like our new tweet</div>
+        <div class="t-sub" id="tlk3-sub">Like the new Oneliq tweet on X</div>
+      </div>
+      <span class="t-star">★ 5</span>
+      <div class="t-acts" id="tlk3-acts">
+        <a href="https://x.com/intent/like?tweet_id=2068294372530196545" target="_blank" rel="noopener noreferrer">Like</a>
+      </div>
+    </div>
+
+    <div class="gm-task" id="trt3">
+      <div class="t-ico" id="trt3-ico">🔁</div>
+      <div class="t-body">
+        <div class="t-name">Retweet our new tweet</div>
+        <div class="t-sub" id="trt3-sub">Retweet the new Oneliq tweet on X</div>
+      </div>
+      <span class="t-star">★ 5</span>
+      <div class="t-acts" id="trt3-acts">
+        <a href="https://x.com/intent/retweet?tweet_id=2068294372530196545" target="_blank" rel="noopener noreferrer">Retweet</a>
+      </div>
+    </div>
+
+    <div class="gm-task" id="trp3">
+      <div class="t-ico" id="trp3-ico">💬</div>
+      <div class="t-body">
+        <div class="t-name">Reply to our new tweet</div>
+        <div class="t-sub" id="trp3-sub">Reply to the new Oneliq tweet on X</div>
+      </div>
+      <span class="t-star">★ 5</span>
+      <div class="t-acts" id="trp3-acts">
+        <a href="https://x.com/intent/tweet?in_reply_to=2068294372530196545" target="_blank" rel="noopener noreferrer">Reply</a>
       </div>
     </div>
   </div>
@@ -856,8 +916,13 @@
   const SOCIAL_TASKS = [
     { prefix: 'tlk', key: 'like',    flag: 'like_done',    icon: '♥', label: 'Like',    sub: 'Like the Portal launch tweet on X',    url: 'https://x.com/intent/like?tweet_id=2066850786232123432' },
     { prefix: 'trt', key: 'retweet', flag: 'retweet_done', icon: '🔁', label: 'Retweet', sub: 'Retweet the Portal launch tweet on X', url: 'https://x.com/intent/retweet?tweet_id=2066850786232123432' },
+    { prefix: 'trp', key: 'reply',   flag: 'reply_done',   icon: '💬', label: 'Reply',   sub: 'Reply to the Portal launch tweet on X', url: 'https://x.com/intent/tweet?in_reply_to=2066850786232123432' },
     { prefix: 'tlk2', key: 'like2',    flag: 'like2_done',    icon: '♥', label: 'Like',    sub: 'Like the latest Oneliq tweet on X',    url: 'https://x.com/intent/like?tweet_id=2067150066692006239' },
     { prefix: 'trt2', key: 'retweet2', flag: 'retweet2_done', icon: '🔁', label: 'Retweet', sub: 'Retweet the latest Oneliq tweet on X', url: 'https://x.com/intent/retweet?tweet_id=2067150066692006239' },
+    { prefix: 'trp2', key: 'reply2',   flag: 'reply2_done',   icon: '💬', label: 'Reply',   sub: 'Reply to the latest Oneliq tweet on X', url: 'https://x.com/intent/tweet?in_reply_to=2067150066692006239' },
+    { prefix: 'tlk3', key: 'like3',    flag: 'like3_done',    icon: '♥', label: 'Like',    sub: 'Like the new Oneliq tweet on X',    url: 'https://x.com/intent/like?tweet_id=2068294372530196545' },
+    { prefix: 'trt3', key: 'retweet3', flag: 'retweet3_done', icon: '🔁', label: 'Retweet', sub: 'Retweet the new Oneliq tweet on X', url: 'https://x.com/intent/retweet?tweet_id=2068294372530196545' },
+    { prefix: 'trp3', key: 'reply3',   flag: 'reply3_done',   icon: '💬', label: 'Reply',   sub: 'Reply to the new Oneliq tweet on X', url: 'https://x.com/intent/tweet?in_reply_to=2068294372530196545' },
   ];
 
   function renderSocialTasks() {
