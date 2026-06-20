@@ -13,8 +13,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/arc-ui.css?v=9.10.25"/>
 <style>
-main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:44px 28px 80px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px}
-@media(max-width:960px){main.trade-wrap{grid-template-columns:1fr;padding:40px 20px 80px}}
+main.trade-wrap{position:relative;z-index:2;max-width:560px;margin:0 auto;padding:44px 20px 80px;display:grid;grid-template-columns:1fr;gap:18px}
+@media(max-width:960px){main.trade-wrap{padding:40px 16px 80px}}
 @media(max-width:900px){main.trade-wrap{padding-top:72px}}
 
 .hero-strip{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:4px}
@@ -481,21 +481,6 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
     </div>
   </div>
 
-  <!-- RIGHT: rail -->
-  <aside class="rail">
-    <div class="rail-card">
-      <div class="rail-title">Network</div>
-      <div class="rail-row"><span class="l">RPC</span><a class="v" href="https://rpc.testnet.arc.network" target="_blank" rel="noopener" style="color:var(--arc2)">rpc.testnet.arc.network</a></div>
-      <div class="rail-row"><span class="l">Chain ID</span><span class="v">5042002</span></div>
-      <div class="rail-row"><span class="l">Gas Token</span><span class="v">USDC (native)</span></div>
-      <div class="rail-row"><span class="l">Explorer</span><a class="v" href="https://testnet.arcscan.app" target="_blank" rel="noopener" style="color:var(--arc2)">testnet.arcscan.app</a></div>
-    </div>
-
-    <div class="rail-card">
-      <div class="rail-title">Activity</div>
-      <div id="tx-list"><div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">No trades yet</div></div>
-    </div>
-  </aside>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"
@@ -2073,6 +2058,7 @@ main.trade-wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto;paddi
   }
   function renderActivity() {
     const list = document.getElementById('tx-list');
+    if (!list) return; // Activity panel removed from Trade — history lives on its own page; pushActivity still records to localStorage.
     const addr = wallet.address;
     const xs = readAct().filter(x => !addr || true);
     if (!xs.length) { list.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">No trades yet</div>`; return; }
