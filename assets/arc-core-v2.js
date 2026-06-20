@@ -126,14 +126,6 @@
       // sepolia.optimism.io throttles aggressively → "could not coalesce error".
       // publicnode is more reliable for browser use.
       rpc: 'https://optimism-sepolia.publicnode.com',
-      // walletRpc = the RPC we advertise to the wallet (addEthereumChain / AppKit).
-      // OP Sepolia's common public nodes run op-reth v2.2.0, which 500s an UNCAPPED
-      // eth_estimateGas with "intrinsic gas too high" — so the wallet can't compute
-      // the fee and disables Confirm. Tenderly's gateway is a fixed node that
-      // estimates fine. We keep `rpc` (publicnode) for our own balance polling
-      // (Tenderly's free gateway rate-limits) and only point the WALLET at Tenderly.
-      // See memory: project_opstack_deposit_gas.
-      walletRpc: 'https://optimism-sepolia.gateway.tenderly.co',
       explorer: 'https://sepolia-optimism.etherscan.io',
       explorerTx: h => `https://sepolia-optimism.etherscan.io/tx/${h}`,
       explorerAddr: a => `https://sepolia-optimism.etherscan.io/address/${a}`,
@@ -629,7 +621,7 @@
             params: [{
               chainId: c.hex,
               chainName: c.name,
-              rpcUrls: [c.walletRpc || c.rpc],
+              rpcUrls: [c.rpc],
               nativeCurrency: { name: c.native.name, symbol: c.native.symbol, decimals: c.native.decimals },
               blockExplorerUrls: [c.explorer],
             }],
@@ -924,7 +916,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.9.7',
+    version: '9.9.8',
   };
 
   // ───────── CHAIN ICONS ─────────
@@ -962,7 +954,7 @@
         chainNamespace: 'eip155',
         name: c.name,
         nativeCurrency: { name: c.native.name, symbol: c.native.symbol, decimals: c.native.decimals },
-        rpcUrls: { default: { http: [c.walletRpc || c.rpc] } },
+        rpcUrls: { default: { http: [c.rpc] } },
         blockExplorers: { default: { name: c.name, url: c.explorer } },
       });
     };
