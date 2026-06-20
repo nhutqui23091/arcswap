@@ -226,8 +226,11 @@
     await ARC.ensureAllowance(chainKey, tok, c.contracts.gatewayWallet, value, onStep);
     onStep('Submitting deposit…');
     const wallet = new Contract(c.contracts.gatewayWallet, ARC.ABIS.gatewayWallet, ARC.wallet.signer);
-    const tx = await wallet.deposit(tok.address, value);
-    onStep(`Mined ${tx.hash.slice(0, 10)}…`);
+    // Explicit gasLimit so OP-Stack testnets (OP Sepolia, Unichain Sepolia) don't
+    // reject the wallet's auto-estimate with "intrinsic gas too high".
+    const ov = await ARC.gasOverrides(chainKey, c.contracts.gatewayWallet, ARC.ABIS.gatewayWallet, 'deposit', [tok.address, value], 300_000n);
+    const tx = await wallet.deposit(tok.address, value, ov);
+    onStep(`Submitted ${tx.hash.slice(0, 10)}…`);
     const receipt = await tx.wait();
     return { tx, receipt };
   }

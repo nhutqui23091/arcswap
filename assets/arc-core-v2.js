@@ -684,10 +684,35 @@
     // Trade-off: user pays gas for an extra approve on most deposits, but
     // the residual approval at any time is capped at 1.5× their last deposit.
     const approvalAmount = (amount * 15n) / 10n;
-    const tx = await c.approve(spender, approvalAmount);
+    const ov = await gasOverrides(chainKey, token.address, ABIS.erc20, 'approve', [spender, approvalAmount], 120_000n);
+    const tx = await c.approve(spender, approvalAmount, ov);
     onStep?.('Approving… ' + tx.hash.slice(0, 10));
     await tx.wait();
     return tx.hash;
+  }
+
+  /**
+   * Compute an explicit { gasLimit } override for a write call.
+   *
+   * WHY: some OP-Stack testnets (OP Sepolia, Unichain Sepolia) reject txs sent
+   * with the injected wallet's auto-estimated gas — surfaced to the user as
+   * "intrinsic gas too high". Their block limits are huge (40M–1.2B), so the
+   * rejection is an estimation-pathway quirk, not a real limit. We sidestep the
+   * wallet/node estimateGas by estimating against our own reliable read-only RPC
+   * and passing an explicit gasLimit (+30% headroom). Once gasLimit is set,
+   * ethers/the wallet skip their own estimation and just use our value.
+   *
+   * Best-effort: if the local estimate fails (e.g. an allowance not yet mined),
+   * fall back to a generous fixed limit so the call still goes through.
+   */
+  async function gasOverrides(chainKey, address, abi, method, args, fallbackGas) {
+    try {
+      const ro = new Contract(address, abi, rpcProvider(chainKey));
+      const est = await ro[method].estimateGas(...args, { from: wallet.address });
+      return { gasLimit: est + (est * 30n) / 100n };
+    } catch {
+      return fallbackGas ? { gasLimit: fallbackGas } : {};
+    }
   }
 
   function formatAmt(v, decimals, maxFrac = 6) {
@@ -854,7 +879,7 @@
     CHAINS, TOKENS, ABIS,
     rpcProvider, chainKeyById,
     wallet,
-    tokenBalance, allowance, ensureAllowance,
+    tokenBalance, allowance, ensureAllowance, gasOverrides,
     formatAmt, parseAmt, shortAddr, addrToBytes32,
     toCctpAmount, fromCctpAmount,
     multicall, sendAndWait, explainError,
@@ -865,7 +890,7 @@
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.9.3',
+    version: '9.9.4',
   };
 
   // ───────── CHAIN ICONS ─────────
