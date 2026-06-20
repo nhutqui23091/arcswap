@@ -54,16 +54,24 @@
   const ZERO_BYTES32 = '0x' + '00'.repeat(32);
 
   // Circle Gateway enforces a per-intent minimum `maxFee` on /v1/transfer.
-  // Testnet quotes have been observed at ~0.024 and ~1.00015 USDC; we pick a
-  // floor a touch above the higher quote and a 1% proportional component
-  // (matching Circle's own example fee policy in the SDK docs).
+  // VERIFIED 2026-06-20 by signing probe burn intents against the testnet API
+  // (maxFee=0 → "expected at least X"): the real minimum is a small, flat,
+  // value-independent amount that varies by SOURCE chain — observed OP/Polygon
+  // 0.0015, Arbitrum/Base 0.01, Avalanche 0.02 USDC (same for value 1/5/100, so
+  // NOT proportional). An earlier note here claimed ~1.0 USDC; that was wrong
+  // and needlessly stranded ~1.5 USDC of spendable balance per source. We set
+  // the floor to 0.05 USDC — 2.5x the highest observed (0.02) for headroom
+  // against gas-driven fluctuation — plus a tiny 0.1% proportional hedge for
+  // large transfers. NOTE: this is the BURN fee only; gasless (forwarder) adds
+  // a SEPARATE ~0.0035 USDC forwardingFee for the destination mint gas.
   //
-  // IMPORTANT: GatewayWallet pre-checks `availableBalance ≥ burn + maxFee`
-  // per intent. So a too-aggressive maxFee can starve sources whose balance
-  // is exactly the allocation. Keep the floor as low as Circle will accept.
+  // IMPORTANT: GatewayWallet pre-checks `availableBalance ≥ burn + maxFee` per
+  // intent, so an over-large maxFee directly starves spendable balance. If
+  // Circle ever quotes higher at submit time, signAndSubmitBurnIntent /
+  // multiSpend auto-bump +25% and re-sign once — so a lean floor is safe.
   // All values are in canonical 6-decimal USDC units.
-  const MAX_FEE_FLOOR = 1_500_000n;       // 1.5 USDC - clears observed ~1.0 testnet quote
-  const MAX_FEE_BPS_DIVISOR = 100n;       // 1% = value / 100
+  const MAX_FEE_FLOOR = 50_000n;          // 0.05 USDC - clears max observed (0.02) with 2.5x margin
+  const MAX_FEE_BPS_DIVISOR = 1_000n;     // 0.1% = value / 1000 (hedge for large transfers)
   function defaultMaxFee(valueCanonical) {
     const proportional = valueCanonical / MAX_FEE_BPS_DIVISOR;
     return proportional > MAX_FEE_FLOOR ? proportional : MAX_FEE_FLOOR;

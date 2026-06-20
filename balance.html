@@ -372,7 +372,7 @@ html{scroll-behavior:smooth}
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.1"></script>
 <script src="/assets/arc-core-v2.js?v=2"></script>
-<script src="/assets/arc-gateway.js?v=9.6.5"></script>
+<script src="/assets/arc-gateway.js?v=9.6.6"></script>
 <script src="/assets/arc-ui.js?v=9.10.25"></script>
 <script>
 (async () => {
@@ -1058,7 +1058,7 @@ html{scroll-behavior:smooth}
     if (!plan) {
       const spendable = ARC.gateway.totalSpendable(eligible);
       breakdown.style.display = 'block';
-      rows.innerHTML = `<div style="color:var(--danger)">Insufficient spendable balance - need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle Gateway per-intent fee headroom (~1.5 USDC reserved on each source).</div>`;
+      rows.innerHTML = `<div style="color:var(--danger)">Insufficient spendable balance - need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle Gateway per-intent fee headroom (~0.05 USDC reserved on each source).</div>`;
       return;
     }
     breakdown.style.display = 'block';
