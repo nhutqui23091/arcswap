@@ -190,7 +190,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
 
     <table class="t">
       <tr><th>Network</th><th>Chain ID</th></tr>
-      <tr><td><strong>Arc Testnet</strong></td><td>9000</td></tr>
+      <tr><td><strong>Arc Testnet</strong></td><td>5042002</td></tr>
       <tr><td>Avalanche Fuji</td><td>43113</td></tr>
       <tr><td>Base Sepolia</td><td>84532</td></tr>
       <tr><td>Ethereum Sepolia</td><td>11155111</td></tr>
@@ -249,7 +249,7 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
       </div>
       <div class="wt-step">
         <div class="wt-num">5</div>
-        <div class="wt-body">Confirm in your wallet. Gateway initiates the USDC burn on each source chain.</div>
+        <div class="wt-body">Confirm in your wallet with a <strong>single signature</strong>. Even when the spend draws from multiple chains, the burn intents are packed into one <code>BurnIntentSet</code> and signed once &mdash; no popup-per-chain.</div>
       </div>
       <div class="wt-step">
         <div class="wt-num">6</div>
@@ -280,6 +280,11 @@ table.t{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px;borde
     <h2>Why this matters on Arc</h2>
 
     <p>Arc Testnet uses USDC as its native gas token. Every transaction on the network settles fees in USDC. This means your Unified Balance is directly connected to the gas economics of Arc. USDC in Gateway escrow on Arc can cover transaction costs, and USDC arriving from other chains via a Gateway spend lands on Arc ready to pay gas immediately.</p>
+
+    <div class="callout">
+      <div class="callout-title">Gasless mint, on by default</div>
+      <div class="callout-body">Because Arc charges gas in USDC, a brand-new wallet would normally need gas before it could claim an incoming transfer. Oneliq routes the destination mint through <strong>Circle's Forwarding Service</strong>, so Circle submits and pays for the mint &mdash; the recipient receives USDC <strong>without holding any gas first</strong>. It's enabled by default on every cross-chain spend. <a href="/blog/gasless-mint">Read how Gasless Mint works &rarr;</a></div>
+    </div>
 
     <p>For protocols building on Arc, Unified Balance provides a programmable way to fund wallets across all eight supported chains from a single USDC position. The Circle App Kit exposes deposit, spend, and balance query as SDK calls. Oneliq's <a href="/balance">Balance page</a> is built on top of that same kit.</p>
 

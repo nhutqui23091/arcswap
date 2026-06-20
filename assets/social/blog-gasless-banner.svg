@@ -14,76 +14,75 @@
       <stop offset="0" stop-color="#38BDF8" stop-opacity=".18"/>
       <stop offset="1" stop-color="#38BDF8" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="orb2" cx=".85" cy=".15" r=".5">
-      <stop offset="0" stop-color="#4DD6DB" stop-opacity=".12"/>
-      <stop offset="1" stop-color="#4DD6DB" stop-opacity="0"/>
+    <radialGradient id="orb3" cx=".82" cy=".9" r=".7">
+      <stop offset="0" stop-color="#7B5CF0" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#7B5CF0" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="orb3" cx=".8" cy="1" r=".65">
-      <stop offset="0" stop-color="#7BE495" stop-opacity=".12"/>
-      <stop offset="1" stop-color="#7BE495" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="hub" cx=".5" cy=".5" r=".5">
-      <stop offset="0" stop-color="#38BDF8" stop-opacity=".30"/>
+    <radialGradient id="coinGlow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#38BDF8" stop-opacity=".40"/>
       <stop offset="1" stop-color="#38BDF8" stop-opacity="0"/>
     </radialGradient>
+    <radialGradient id="coin" cx=".38" cy=".32" r=".75">
+      <stop offset="0" stop-color="#5AB8F7"/>
+      <stop offset=".55" stop-color="#2E84E0"/>
+      <stop offset="1" stop-color="#1C5FC0"/>
+    </radialGradient>
+    <linearGradient id="ringStroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38BDF8" stop-opacity=".75"/>
+      <stop offset=".5" stop-color="#4DD6DB" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#7B5CF0" stop-opacity=".55"/>
+    </linearGradient>
     <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
       <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
     </pattern>
     <filter id="glow">
-      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feGaussianBlur stdDeviation="5" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4DD6DB"/>
-    </marker>
   </defs>
 
   <rect width="1200" height="600" fill="url(#bg)"/>
   <rect width="1200" height="600" fill="url(#grid)"/>
   <rect width="1200" height="600" fill="url(#orb1)"/>
-  <rect width="1200" height="600" fill="url(#orb2)"/>
   <rect width="1200" height="600" fill="url(#orb3)"/>
 
-  <!-- ============ RIGHT: gasless relay diagram (centered x=945) ============ -->
+  <!-- ============ RIGHT: USDC on an orbit, no gas needed ============ -->
+  <g transform="translate(915 300)">
+    <circle r="200" fill="url(#coinGlow)"/>
 
-  <!-- 1) YOU / wallet : one signature -->
-  <g transform="translate(845 92)">
-    <rect width="200" height="74" rx="14" fill="rgba(10,22,40,0.92)" stroke="rgba(56,189,248,.55)" stroke-width="1.5"/>
-    <text x="22" y="32" font-family="DM Mono, monospace" font-size="13" fill="#38BDF8" font-weight="700" letter-spacing="1">YOU</text>
-    <text x="22" y="55" font-family="Inter, sans-serif" font-size="14" fill="#C8D1E0">sign burn &#215;1</text>
-    <!-- pen tick -->
-    <path d="M150 30 l10 10 l18 -22" fill="none" stroke="#7BE495" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-
-  <!-- connector 1 -->
-  <line x1="945" y1="170" x2="945" y2="222" stroke="#4DD6DB" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arrow)"/>
-
-  <!-- 2) Circle Forwarder hub : pays destination gas -->
-  <circle cx="945" cy="300" r="92" fill="url(#hub)"/>
-  <circle cx="945" cy="300" r="62" fill="rgba(10,22,40,0.94)" stroke="#38BDF8" stroke-width="2" filter="url(#glow)"/>
-  <circle cx="945" cy="300" r="47" fill="none" stroke="rgba(56,189,248,.25)" stroke-width="1"/>
-  <!-- crossed-out gas pump (no gas needed) -->
-  <g transform="translate(923 278)" stroke="#4DD6DB" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="0" y="2" width="22" height="30" rx="3"/>
-    <line x1="4" y1="11" x2="18" y2="11"/>
-    <path d="M22 12 l8 5 v9 a4 4 0 0 0 8 0 v-13 l-7 -7"/>
-  </g>
-  <line x1="916" y1="332" x2="978" y2="270" stroke="#FF7A7A" stroke-width="3" stroke-linecap="round"/>
-  <text x="945" y="356" font-family="DM Mono, monospace" font-size="11" fill="#38BDF8" text-anchor="middle" font-weight="700" letter-spacing="1">FORWARDER</text>
-
-  <!-- connector 2 -->
-  <line x1="945" y1="392" x2="945" y2="430" stroke="#4DD6DB" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arrow)"/>
-
-  <!-- 3) destination chain : USDC arrives, 0 gas -->
-  <g transform="translate(845 438)">
-    <rect width="200" height="78" rx="14" fill="rgba(10,22,40,0.92)" stroke="#7BE495" stroke-width="1.5"/>
-    <circle cx="34" cy="39" r="20" fill="#0E1F39" stroke="#38BDF8" stroke-width="1.5"/>
-    <text x="34" y="44" font-family="DM Mono, monospace" font-size="10" fill="#38BDF8" text-anchor="middle" font-weight="700">ARC</text>
-    <text x="68" y="34" font-family="Inter, sans-serif" font-size="16" fill="#F5F7FB" font-weight="700">+ USDC arrives</text>
-    <g transform="translate(68 46)">
-      <rect width="70" height="22" rx="11" fill="rgba(123,228,149,0.14)" stroke="rgba(123,228,149,0.5)"/>
-      <text x="35" y="16" font-family="DM Mono, monospace" font-size="11" fill="#7BE495" text-anchor="middle" font-weight="700">0 GAS</text>
+    <!-- orbital rings (tilted ellipses) -->
+    <g fill="none" stroke="url(#ringStroke)">
+      <ellipse rx="252" ry="120" stroke-width="1.6"/>
+      <ellipse rx="182" ry="88"  stroke-width="1.6"/>
+      <ellipse rx="116" ry="58"  stroke-width="1.6"/>
     </g>
+
+    <!-- orbit nodes -->
+    <circle cx="252"  cy="0"   r="6" fill="#38BDF8"/>
+    <circle cx="-165" cy="84"  r="5" fill="#7B5CF0"/>
+    <circle cx="150"  cy="-58" r="5" fill="#4DD6DB"/>
+    <circle cx="-90"  cy="-44" r="4" fill="#7BE495"/>
+    <circle cx="40"   cy="86"  r="5" fill="#4DD6DB"/>
+
+    <!-- confirmation check above the coin -->
+    <line x1="0" y1="-150" x2="0" y2="-92" stroke="#4DD6DB" stroke-width="1.5" stroke-dasharray="4 5"/>
+    <g transform="translate(0 -168)">
+      <circle r="22" fill="rgba(10,22,40,0.92)" stroke="#38BDF8" stroke-width="2"/>
+      <path d="M-9 1 l6 7 l13 -15" fill="none" stroke="#7BE495" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- motion streaks -->
+    <g stroke="#4DD6DB" stroke-width="4" stroke-linecap="round" opacity=".8">
+      <line x1="-150" y1="-18" x2="-96" y2="-18"/>
+      <line x1="-168" y1="2"   x2="-96" y2="2"/>
+      <line x1="-150" y1="22"  x2="-96" y2="22"/>
+    </g>
+
+    <!-- USDC coin -->
+    <circle r="72" fill="url(#coin)" stroke="#7FCBFA" stroke-width="2" filter="url(#glow)"/>
+    <circle r="56" fill="none" stroke="#FFFFFF" stroke-width="3.4" opacity=".95"/>
+    <!-- $ glyph -->
+    <text x="0" y="20" font-family="Inter, Arial, sans-serif" font-size="62" font-weight="800" fill="#FFFFFF" text-anchor="middle">$</text>
   </g>
 
   <!-- ============ LEFT: headline ============ -->
@@ -102,12 +101,13 @@
     <text x="0" y="0" font-family="DM Mono, monospace" font-size="14" font-weight="600" fill="#38BDF8" letter-spacing="3">// CIRCLE FORWARDING SERVICE</text>
     <text x="0" y="84" font-family="Inter, sans-serif" font-size="80" font-weight="900" fill="#F5F7FB" letter-spacing="-3">Gasless</text>
     <text x="0" y="168" font-family="Inter, sans-serif" font-size="80" font-weight="900" fill="url(#brand)" letter-spacing="-3">Mint.</text>
-    <text x="0" y="226" font-family="Inter, sans-serif" font-size="21" font-weight="400" fill="#8CA0BD">Receive USDC on any chain. Bring no gas.</text>
+    <text x="0" y="222" font-family="Inter, sans-serif" font-size="21" font-weight="400" fill="#8CA0BD">Receive USDC on any chain.</text>
+    <text x="0" y="252" font-family="Inter, sans-serif" font-size="21" font-weight="400" fill="#8CA0BD">No gas required.</text>
   </g>
 
   <!-- Brand bottom -->
   <g transform="translate(80 540)">
     <text x="0" y="0" font-family="Inter, sans-serif" font-size="20" font-weight="900" fill="#F5F7FB" letter-spacing="-.5">Oneliq</text>
-    <text x="100" y="0" font-family="DM Mono, monospace" font-size="13" fill="#8CA0BD" letter-spacing="2">// oneliq.xyz/balance  ·  Jun 18, 2026</text>
+    <text x="100" y="0" font-family="DM Mono, monospace" font-size="13" fill="#8CA0BD" letter-spacing="2">// oneliq.xyz/balance</text>
   </g>
 </svg>

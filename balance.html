@@ -98,6 +98,7 @@ html{scroll-behavior:smooth}
 .gw-modal-bg.show{display:flex}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 .gw-modal{width:100%;max-width:460px;max-height:90vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#101F36 0%,#0B1729 100%);border:1px solid var(--border2);border-radius:18px;padding:24px;animation:slide .25s ease-out}
+#modal-spend .gw-modal{max-width:560px;padding:28px}
 @keyframes slide{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .gw-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .gw-modal-title{font-size:18px;font-weight:800;letter-spacing:-.02em}
@@ -175,7 +176,6 @@ html{scroll-behavior:smooth}
   <div class="hero-strip">
     <div class="eyebrow">Unified Balance · Powered by Circle Gateway</div>
     <h1>Balance</h1>
-    <p>One USDC balance, spendable on any supported chain. Deposit from Sepolia, Base, Arbitrum, Optimism, Polygon - settle on Arc in seconds. No bridge clicks, no chain switching, no wrapped tokens.</p>
   </div>
 
   <!-- TOTAL CARD -->
@@ -209,17 +209,20 @@ html{scroll-behavior:smooth}
     <div id="pending-list"></div>
   </div>
 
-  <div class="info-strip" style="margin-top:32px">
-    <strong>Unified Balance is NOT a single shared pool.</strong> Each supported chain has its own
-    <code>GatewayWallet</code> contract (same address <code>0x0077…19b9</code>, deployed independently).
-    Depositing on Sepolia stores your USDC in Sepolia's contract; depositing on Fuji stores it in Fuji's. Circle's
-    REST API then <strong>sums all of them</strong> into one number = "Unified Balance".
-    <br><br>
-    <strong>To spend cross-chain</strong>: pick a source chain (USDC will be burned from its GatewayWallet) and a
-    destination chain (USDC minted there). Whole flow takes ~30s with a single EIP-712 signature - no bridge tx, no
-    wrapped tokens. <strong>Tip</strong>: deposit on <strong>Avalanche Fuji</strong> - credits in ~30s vs ~12-15min for
-    Sepolia / L2 chains (block-finality bottleneck).
-  </div>
+  <details class="info-strip" style="margin-top:32px">
+    <summary style="cursor:pointer;font-weight:700;color:var(--text);outline:none;user-select:none">ⓘ How does Unified Balance actually work?</summary>
+    <div style="margin-top:12px">
+      <strong>Unified Balance is NOT a single shared pool.</strong> Each supported chain has its own
+      <code>GatewayWallet</code> contract (same address <code>0x0077…19b9</code>, deployed independently).
+      Depositing on Sepolia stores your USDC in Sepolia's contract; depositing on Fuji stores it in Fuji's. Circle's
+      REST API then <strong>sums all of them</strong> into one number = "Unified Balance".
+      <br><br>
+      <strong>To spend cross-chain</strong>: pick a source chain (USDC will be burned from its GatewayWallet) and a
+      destination chain (USDC minted there). Whole flow takes ~30s with a single EIP-712 signature - no bridge tx, no
+      wrapped tokens. <strong>Tip</strong>: deposit on <strong>Avalanche Fuji</strong> - credits in ~30s vs ~12-15min for
+      Sepolia / L2 chains (block-finality bottleneck).
+    </div>
+  </details>
 
   <!-- HOW IT WORKS -->
   <div class="how-section">
@@ -600,12 +603,9 @@ html{scroll-behavior:smooth}
           const stale = depP.some(p => nowMs - p.startedAt > STALE_MS);
           pendingLines.push(`<div style="font-size:11px;color:${stale ? 'var(--muted)' : '#FFB454'};font-weight:500;margin-top:2px"${stale ? ' title="Taking longer than expected. Check transaction on explorer."' : ''}>+ ${fmtBig(tot)} USDC deposit pending${stale ? ' ⚠' : ''}</div>`);
         }
-        const spP = state.txPending.filter(p => p.chainKey === k && p.type === 'spend');
-        if (spP.length) {
-          const tot = spP.reduce((a, p) => a + p.amountCanonical, 0n);
-          const stale = spP.some(p => nowMs - p.startedAt > STALE_MS);
-          pendingLines.push(`<div style="font-size:11px;color:${stale ? 'var(--muted)' : '#FF9999'};font-weight:500;margin-top:2px"${stale ? ' title="Taking longer than expected. Check transaction on explorer."' : ''}>- ${fmtBig(tot)} USDC spend pending${stale ? ' ⚠' : ''}</div>`);
-        }
+        // Spend-pending markers are intentionally not shown: the destination
+        // mint confirms in seconds and the source available balance reconciles
+        // unreliably, so the marker lingered after funds had already arrived.
       }
       const d = state.chainDeltas?.[k];
       const deltaBadge = (d && d !== 0n)
@@ -1267,15 +1267,12 @@ html{scroll-behavior:smooth}
         link.style.cssText = 'float:right;color:var(--arc1);text-decoration:none;white-space:nowrap';
         document.getElementById('spend-status').appendChild(link);
       }
-      // Record tx-pending per source chain - Gateway REST lags on-chain by minutes
-      if (spentSources) {
-        spentSources.forEach(s => {
-          const snap = state.balances.find(b => b.chainKey === s.chainKey)?.canonical || 0n;
-          state.txPending.push({ chainKey: s.chainKey, amountCanonical: s.valueCanonical, type: 'spend', startedAt: Date.now(), txHash: mintHash, balanceAtPending: snap });
-        });
-        saveTxPending();
-        renderTable();
-      }
+      // NOTE: we intentionally do NOT add a per-source "spend pending" marker.
+      // The destination mint (above) is the source of truth and confirms in
+      // seconds; the source-side optimistic marker only tracked the Gateway
+      // available balance dropping, which lags and reconciles unreliably —
+      // leaving confusing "- X USDC spend pending" lines after funds already
+      // arrived. refreshAll() below repolls real balances instead.
       pushToHistory('bridge', dst, mintHash, `Cross-chain spend ${amtStr} USDC → ${chainName(dst)}`);
       // Real-metrics telemetry - mint tx hash on destination chain so the
       // status page can deep-link to dst chain's explorer.
