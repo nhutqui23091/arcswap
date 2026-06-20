@@ -372,7 +372,7 @@ html{scroll-behavior:smooth}
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.1"></script>
 <script src="/assets/arc-core-v2.js?v=2"></script>
-<script src="/assets/arc-gateway.js?v=9.6.3"></script>
+<script src="/assets/arc-gateway.js?v=9.6.4"></script>
 <script src="/assets/arc-ui.js?v=9.10.25"></script>
 <script>
 (async () => {
@@ -455,6 +455,33 @@ html{scroll-behavior:smooth}
     } catch {}
   }
 
+  // Recover any forwarded cross-chain spend that was still mid-flight when the
+  // page last closed (persisted by arc-gateway). resumePending() re-checks
+  // Gateway status and self-mints if needed; we then log it to history and
+  // refresh balances so the user sees the funds landed. Runs at most once per
+  // connect (guarded) to avoid duplicate self-mint attempts.
+  let resumeRan = false;
+  async function resumeInFlight() {
+    if (resumeRan || !ARC.gateway.resumePending) return;
+    let pend = [];
+    try { pend = ARC.gateway.listPending?.() || []; } catch {}
+    if (!pend.length) return;
+    resumeRan = true;
+    try {
+      await ARC.gateway.resumePending({
+        onResolved: (r) => {
+          if (r.status === 'failed' || r.status === 'expired') {
+            pushToHistory('bridge', r.dstChainKey, null, `Cross-chain spend ${r.status} → ${chainName(r.dstChainKey)}`);
+            return;
+          }
+          const amt = (r.amount != null) ? `${ARC.formatAmt(BigInt(r.amount), 6, 4)} USDC ` : '';
+          pushToHistory('bridge', r.dstChainKey, r.txHash, `Resumed cross-chain mint ${amt}→ ${chainName(r.dstChainKey)}`);
+        },
+      });
+    } catch {}
+    refreshAll();
+  }
+
   const chainKeys = ARC.gateway.gatewayChains();
 
   // ───── Wallet ─────
@@ -468,6 +495,7 @@ html{scroll-behavior:smooth}
       loadTxPending();
       loadBalanceCache();
       refreshAll();
+      resumeInFlight();
     } else {
       state.addr = null;
       state.balances = [];
@@ -1265,6 +1293,7 @@ html{scroll-behavior:smooth}
     loadTxPending();
     loadBalanceCache();
     refreshAll();
+    resumeInFlight();
     startPolling();
   }
   // Start polling and sync counter when the user connects later

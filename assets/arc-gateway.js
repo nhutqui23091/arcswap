@@ -392,7 +392,9 @@
         const status = String(details?.status || '').toLowerCase();
         if (status === 'confirmed' || status === 'finalized') return details;
         if (status === 'failed' || status === 'expired') {
-          throw new Error(`Forwarded transfer ${status}${details?.transactionHash ? ` (tx ${details.transactionHash})` : ''}`);
+          const te = new Error(`Forwarded transfer ${status}${details?.transactionHash ? ` (tx ${details.transactionHash})` : ''}`);
+          te.terminal = true; // distinguishes "dead" from "still pending" for resume logic
+          throw te;
         }
         opts.onStep?.(`Forwarder minting… (${status || 'pending'})`);
       }
@@ -418,6 +420,34 @@
     return await pollTransfer(attResp.transferId, { onStep: opts.onStep });
   }
 
+  // ───────── RESUMABLE PENDING TRANSFERS (survive page reload) ─────────
+  // Circle's forwarder usually lands the destination mint server-side even if
+  // the user closes the tab. But our in-RAM attestation+signature safety-net
+  // (used to self-mint if the forwarder stalls) is lost on reload. So we mirror
+  // each in-flight forwarded transfer to localStorage; on next load
+  // resumePending() can re-check status and, if still unminted, self-mint.
+  const PENDING_KEY = 'arc.gw.pending.v1';
+  function loadPending() {
+    try { const r = localStorage.getItem(PENDING_KEY); return r ? JSON.parse(r) : []; }
+    catch { return []; }
+  }
+  function savePending(list) {
+    try {
+      if (!list || !list.length) localStorage.removeItem(PENDING_KEY);
+      else localStorage.setItem(PENDING_KEY, JSON.stringify(list.slice(-10))); // cap to last 10
+    } catch {}
+  }
+  function rememberPending(rec) {
+    if (!rec || !rec.transferId) return;
+    const list = loadPending().filter(p => p.transferId !== rec.transferId);
+    list.push(rec);
+    savePending(list);
+  }
+  function forgetPending(transferId) {
+    if (!transferId) return;
+    savePending(loadPending().filter(p => p.transferId !== transferId));
+  }
+
   /**
    * Wait for the forwarder to land the mint, with a self-mint safety net.
    * If forwarding fails/times out we still hold attestation+signature, so we
@@ -426,23 +456,100 @@
    * land the mint and our poll just missed it - we re-check status before
    * surfacing an error. Returns a shape compatible with the self-mint path
    * (`mint.tx.hash`) so callers/UI don't branch.
+   *
+   * Persistence: we mirror the in-flight transfer to localStorage on entry and
+   * clear it on success or terminal failure (failed/expired). A non-terminal
+   * throw (forwarder still pending, or self-mint failed for lack of gas) leaves
+   * the record in place so resumePending() can recover it after a reload.
+   * `opts.recipient` / `opts.valueCanonical` are stored only for nicer UI on resume.
    */
   async function settleForwarded(attResp, dstChainKey, opts = {}) {
+    const rec = attResp.transferId ? {
+      transferId: attResp.transferId,
+      attestation: attResp.attestation || null,
+      signature:   attResp.signature || null,
+      dstChainKey,
+      address:   (ARC.wallet.address || '').toLowerCase() || null,
+      recipient: opts.recipient || null,
+      amount:    (opts.valueCanonical != null) ? opts.valueCanonical.toString() : null,
+      createdAt: Date.now(),
+    } : null;
+    if (rec) rememberPending(rec);
+    const done = (val) => { if (rec) forgetPending(rec.transferId); return val; };
     try {
       const forwarded = await awaitForwarded(attResp, dstChainKey, opts);
-      return { forwarded, mint: { tx: { hash: forwarded.transactionHash } } };
+      return done({ forwarded, mint: { tx: { hash: forwarded.transactionHash } } });
     } catch (fwdErr) {
-      if (!attResp.attestation || !attResp.signature) throw fwdErr;
+      if (fwdErr.terminal) { if (rec) forgetPending(rec.transferId); throw fwdErr; }
+      if (!attResp.attestation || !attResp.signature) throw fwdErr; // keep record → resume later
       opts.onStep?.('Forwarder did not complete — minting yourself (needs destination gas)…');
       try {
         const mint = await gatewayMint(dstChainKey, attResp.attestation, attResp.signature, { onStep: opts.onStep });
-        return { mint, forwardFallback: true };
+        return done({ mint, forwardFallback: true });
       } catch (mintErr) {
         const ok = await pollTransfer(attResp.transferId, { onStep: opts.onStep, timeoutMs: 8000, intervalMs: 2000 }).catch(() => null);
-        if (ok) return { forwarded: ok, mint: { tx: { hash: ok.transactionHash } } };
-        throw mintErr;
+        if (ok) return done({ forwarded: ok, mint: { tx: { hash: ok.transactionHash } } });
+        throw mintErr; // keep record so the user can resume self-mint after topping up gas
       }
     }
+  }
+
+  /**
+   * Recover forwarded transfers persisted from a previous page session.
+   * For each stored record: re-check Gateway status first (the forwarder may
+   * have landed the mint while the user was away → just clear it); otherwise,
+   * if we still hold attestation+signature, run settleForwarded to finish it
+   * (forwarder-await → self-mint fallback). Terminal/finished records are
+   * dropped; genuinely-stuck ones (e.g. user still has no destination gas) are
+   * left in place to retry next load. Only the connected wallet's own records
+   * are resumed. Returns an array of {transferId, status, txHash?}.
+   *
+   * `opts.onResolved(rec)` fires per record that completes (status
+   * confirmed|finalized|resumed) or terminates (failed|expired) — handy for UI
+   * to refresh balances / append history.
+   */
+  async function resumePending(opts = {}) {
+    const addr = (ARC.wallet.address || '').toLowerCase();
+    const list = loadPending();
+    if (!list.length) return [];
+    const results = [];
+    for (const rec of list) {
+      if (addr && rec.address && rec.address !== addr) continue; // not this wallet's transfer
+      let details = null;
+      try {
+        const res = await fetch(`${GW_BASE}/v1/transfer/${rec.transferId}`, { headers: { Accept: 'application/json' } });
+        if (res && res.ok) details = await res.json().catch(() => null);
+      } catch {}
+      const status = String(details?.status || '').toLowerCase();
+      if (status === 'confirmed' || status === 'finalized') {
+        forgetPending(rec.transferId);
+        const out = { transferId: rec.transferId, status, txHash: details?.transactionHash || null, dstChainKey: rec.dstChainKey, amount: rec.amount, recipient: rec.recipient };
+        results.push(out); opts.onResolved?.(out);
+        continue;
+      }
+      if (status === 'failed' || status === 'expired') {
+        forgetPending(rec.transferId);
+        const out = { transferId: rec.transferId, status, dstChainKey: rec.dstChainKey };
+        results.push(out); opts.onResolved?.(out);
+        continue;
+      }
+      // Still pending/unknown — resume only if we kept attestation+signature.
+      if (rec.attestation && rec.signature) {
+        try {
+          const settled = await settleForwarded(
+            { transferId: rec.transferId, attestation: rec.attestation, signature: rec.signature },
+            rec.dstChainKey,
+            { onStep: opts.onStep, recipient: rec.recipient, valueCanonical: rec.amount != null ? BigInt(rec.amount) : undefined }
+          );
+          const txHash = settled?.mint?.tx?.hash || settled?.forwarded?.transactionHash || null;
+          const out = { transferId: rec.transferId, status: 'resumed', txHash, dstChainKey: rec.dstChainKey, amount: rec.amount, recipient: rec.recipient };
+          results.push(out); opts.onResolved?.(out);
+        } catch (e) {
+          results.push({ transferId: rec.transferId, status: 'pending', error: (ARC.explainError ? ARC.explainError(e) : String(e)) });
+        }
+      }
+    }
+    return results;
   }
 
   /**
@@ -465,7 +572,7 @@
     const intent = buildBurnIntent({ srcChainKey, dstChainKey, recipient, valueCanonical, maxFee: fee });
     const attResp = await signAndSubmitBurnIntent(intent, { onStep, useForwarder });
     if (useForwarder && attResp.transferId) {
-      const settled = await settleForwarded(attResp, dstChainKey, { onStep });
+      const settled = await settleForwarded(attResp, dstChainKey, { onStep, recipient: recipient || ARC.wallet.address, valueCanonical });
       return { intent, attResp, ...settled };
     }
     const mint = await gatewayMint(dstChainKey, attResp.attestation, attResp.signature, { onStep });
@@ -597,7 +704,8 @@
     const attResp = await res.json();
 
     if (useForwarder && attResp.transferId) {
-      const settled = await settleForwarded(attResp, dstChainKey, { onStep });
+      const totalValue = sources.reduce((acc, s) => acc + s.valueCanonical, 0n);
+      const settled = await settleForwarded(attResp, dstChainKey, { onStep, recipient: recipient || ARC.wallet.address, valueCanonical: totalValue });
       return { intents, attResp, ...settled, sources };
     }
     onStep?.(`Mint on ${ARC.CHAINS[dstChainKey].short}…`);
@@ -616,5 +724,6 @@
     getWithdrawalInfo, withdrawalDelay,
     buildBurnIntent, signAndSubmitBurnIntent, gatewayMint, spend,
     pickSources, multiSpend, pollTransfer,
+    resumePending, listPending: loadPending,
   };
 })(window);
