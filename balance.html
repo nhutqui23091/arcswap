@@ -375,7 +375,7 @@ html{scroll-behavior:smooth}
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.1"></script>
 <script src="/assets/arc-core-v2.js?v=8"></script>
-<script src="/assets/arc-gateway.js?v=9.6.8"></script>
+<script src="/assets/arc-gateway.js?v=9.7.0"></script>
 <script src="/assets/arc-ui.js?v=9.10.25"></script>
 <script>
 (async () => {
@@ -1039,36 +1039,54 @@ html{scroll-behavior:smooth}
     const valueCanonical = ARC.parseAmt(amtStr, 6);
     if (valueCanonical <= 0n) { breakdown.style.display = 'none'; return; }
     const dst = document.getElementById('spend-dst').value;
-    // Exclude destination chain from sources (no point burning then minting on same chain)
+    const useForwarder = document.getElementById('spend-forwarder')?.checked ?? true;
+    // Exclude destination chain from sources (no point burning then minting on same chain).
     const eligible = state.balances.filter(b => b.chainKey !== dst);
-    const plan = ARC.gateway.pickSources(valueCanonical, eligible);
-    if (!plan) {
-      const spendable = ARC.gateway.totalSpendable(eligible);
-      breakdown.style.display = 'block';
-      rows.innerHTML = `<div style="color:var(--danger)">Insufficient spendable balance - need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle Gateway per-intent fee headroom (~0.05 USDC reserved on each source).</div>`;
+    // estimateSpend = pre-sign route + fee + forwarding estimate, plus a discrete
+    // partial-liquidity state (see arc-gateway.js). The user sees the full cost
+    // and route here BEFORE the wallet popup.
+    const est = ARC.gateway.estimateSpend({ targetCanonical: valueCanonical, dstChainKey: dst, available: eligible, useForwarder });
+    breakdown.style.display = 'block';
+
+    // Three discrete partial-liquidity states instead of one generic error.
+    if (!est.ok) {
+      const tone = est.state === 'insufficient_balance' ? 'var(--danger)' : '#FFB454';
+      const label = est.state === 'insufficient_balance' ? 'Insufficient balance'
+                  : est.state === 'no_route' ? 'No available route' : 'Unavailable';
+      rows.innerHTML = `<div style="color:${tone}"><strong>${label}.</strong> ${est.reason}</div>`;
       return;
     }
-    breakdown.style.display = 'block';
-    // Sum the per-intent maxFees so the user sees the worst-case relayer fee
-    // they're authorising. Each intent must clear Circle's per-intent minimum
-    // independently - fees do NOT pool across sources.
-    const totalFee = plan.reduce((acc, p) => acc + ARC.gateway.defaultMaxFee(p.valueCanonical), 0n);
-    rows.innerHTML = plan.map(p => `
+
+    // 'fallback_required' = a route exists but only by aggregating ≥2 sources
+    // (partial-liquidity fallback, not a clean single-chain spend).
+    const fallbackNote = est.state === 'fallback_required'
+      ? `<div style="font-size:11px;color:#FFB454;margin-bottom:5px">⚡ Partial-liquidity route: no single chain covers this, so your balance is aggregated from ${est.sourceCount} sources in one signature.</div>`
+      : '';
+    rows.innerHTML = fallbackNote + est.sources.map(p => `
       <div style="display:flex;justify-content:space-between;padding:3px 0">
         <span>Burn from <strong style="color:var(--text)">${ARC.CHAINS[p.chainKey].name}</strong></span>
         <strong style="color:var(--text);font-family:var(--mono)">${ARC.formatAmt(p.valueCanonical,6,4)} USDC</strong>
       </div>`).join('') +
       `<div style="display:flex;justify-content:space-between;padding:6px 0 0;border-top:1px solid rgba(255,180,84,.2);margin-top:4px">
         <span style="color:var(--text)">→ Mint on <strong>${ARC.CHAINS[dst].name}</strong></span>
-        <strong style="color:#FFB454;font-family:var(--mono)">${ARC.formatAmt(valueCanonical,6,4)} USDC</strong>
+        <strong style="color:#FFB454;font-family:var(--mono)">${ARC.formatAmt(est.netReceived,6,4)} USDC</strong>
       </div>
       <details style="margin-top:6px">
         <summary style="cursor:pointer;font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px"><span class="spend-more-caret" style="display:inline-block;transition:transform .15s;font-size:9px">▶</span>Fee &amp; steps</summary>
         <div style="display:flex;justify-content:space-between;padding:5px 0 0;font-size:11.5px;color:var(--muted)">
           <span>Max relayer fee (Circle Gateway)</span>
-          <span style="font-family:var(--mono)">≤ ${ARC.formatAmt(totalFee,6,4)} USDC</span>
+          <span style="font-family:var(--mono)">≤ ${ARC.formatAmt(est.burnFee,6,4)} USDC</span>
+        </div>` +
+        (useForwarder ? `
+        <div style="display:flex;justify-content:space-between;padding:3px 0 0;font-size:11.5px;color:var(--muted)">
+          <span>Gasless forwarder fee (est.)</span>
+          <span style="font-family:var(--mono)">≈ ${ARC.formatAmt(est.forwardingFee,6,4)} USDC</span>
+        </div>` : '') + `
+        <div style="display:flex;justify-content:space-between;padding:3px 0 0;font-size:11.5px;color:var(--text)">
+          <span>Total est. fee</span>
+          <span style="font-family:var(--mono)">≈ ${ARC.formatAmt(est.totalFee,6,4)} USDC</span>
         </div>
-        <div style="margin-top:4px;font-size:11px;color:var(--muted)">1 signature${plan.length>1?` (covers all ${plan.length} sources)`:''} → 1 attestation → 1 mint tx</div>
+        <div style="margin-top:4px;font-size:11px;color:var(--muted)">1 signature${est.sourceCount>1?` (covers all ${est.sourceCount} sources)`:''} → 1 attestation → 1 mint tx</div>
       </details>`;
   }
 
@@ -1186,6 +1204,10 @@ html{scroll-behavior:smooth}
     if (spendMode === 'manual') { renderManualRows(); } else { refreshSpendBreakdown(); }
   });
   document.getElementById('spend-src').onchange = syncSpendInfo;
+  // Gasless toggle now changes the estimated fee total, so re-run the estimate.
+  document.getElementById('spend-forwarder')?.addEventListener('change', () => {
+    if (spendMode === 'unified') refreshSpendBreakdown();
+  });
 
   document.getElementById('spend-go').onclick = async () => {
     const dst = document.getElementById('spend-dst').value;
@@ -1203,13 +1225,13 @@ html{scroll-behavior:smooth}
     let spentSources = null;
     try {
       if (spendMode === 'unified') {
-        // Auto-pick sources from all chains except destination
+        // Auto-pick sources from all chains except destination. estimateSpend
+        // classifies any shortfall into a discrete state so the error tells the
+        // user WHICH problem it is (not enough money vs. money stranded off-route).
         const eligible = state.balances.filter(b => b.chainKey !== dst);
-        const plan = ARC.gateway.pickSources(valueCanonical, eligible);
-        if (!plan) {
-          const spendable = ARC.gateway.totalSpendable(eligible);
-          throw new Error(`Insufficient spendable balance: need ${ARC.formatAmt(valueCanonical,6,4)} USDC, can spend ${ARC.formatAmt(spendable,6,4)} USDC after Circle's per-intent fee headroom`);
-        }
+        const est = ARC.gateway.estimateSpend({ targetCanonical: valueCanonical, dstChainKey: dst, available: eligible, useForwarder });
+        if (!est.ok) throw new Error(est.reason);
+        const plan = est.sources;
         spendResult = await ARC.gateway.multiSpend({
           sources: plan, dstChainKey: dst, recipient, useForwarder,
           onStep: (m) => setStatus('spend-status', '', m),

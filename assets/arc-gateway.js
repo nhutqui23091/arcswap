@@ -87,6 +87,13 @@
   // All values are in canonical 6-decimal USDC units.
   const MAX_FEE_FLOOR = 50_000n;          // 0.05 USDC - clears max observed (0.02) with 2.5x margin
   const MAX_FEE_BPS_DIVISOR = 1_000n;     // 0.1% = value / 1000 (hedge for large transfers)
+  // Approximate forwarder (gasless) fee for the SINGLE destination mint, charged
+  // SEPARATELY from the per-intent burn fee when useForwarder is on (see the
+  // MAX_FEE note: observed ~0.0035 USDC). The EXACT figure is returned by
+  // /v1/transfer and surfaced during settleForwarded — this constant only powers
+  // the pre-sign UI estimate (estimateSpend) so the user sees the gasless cost
+  // before signing rather than after.
+  const FORWARDER_FEE_EST = 3_500n;       // 0.0035 USDC canonical (estimate)
   function defaultMaxFee(valueCanonical) {
     const proportional = valueCanonical / MAX_FEE_BPS_DIVISOR;
     return proportional > MAX_FEE_FLOOR ? proportional : MAX_FEE_FLOOR;
@@ -654,6 +661,81 @@
   }
 
   /**
+   * Pre-sign spend estimate — the Arc Unified-Balance `estimateSpend` pattern.
+   * Given a target amount, destination, and available balances, returns the
+   * planned route + fees + recipient-side outcome + forwarding impact BEFORE the
+   * user signs (so the wallet popup is never the first time they see the cost,
+   * and the reactive per-intent fee re-sign in multiSpend stays a rare safety net
+   * rather than the normal path).
+   *
+   * It also classifies partial liquidity into the three DISCRETE states Arc's
+   * "Partial Liquidity, Routing & Fallback" guidance says to surface instead of
+   * one generic error:
+   *   · 'ok'                   — clean single-source route (the preferred path)
+   *   · 'fallback_required'    — a route exists but must aggregate ≥2 sources
+   *                              (partial-liquidity fallback, not the single
+   *                              preferred route)
+   *   · 'no_route'             — enough raw balance exists but none is routable
+   *                              (stranded on chains with no GatewayWallet, eaten
+   *                              by per-intent fee headroom, or the destination
+   *                              has no GatewayMinter to mint into)
+   *   · 'insufficient_balance' — total raw balance is below the target
+   *
+   * @param {bigint} targetCanonical  amount to mint on destination (6-dec canonical)
+   * @param {string} dstChainKey      destination chain
+   * @param {Array<{chainKey,canonical:bigint}>} available  source balances
+   *        (caller should already exclude the destination chain)
+   * @param {Array<{chainKey,valueCanonical:bigint}>} [sources]  estimate a
+   *        hand-picked allocation instead of auto-picking
+   * @param {boolean} [useForwarder]  include the gasless forwarder fee estimate
+   * @returns {{ ok, state, reason, sources, sourceCount, burnFee, forwardingFee,
+   *             totalFee, netReceived, target, rawTotal, spendable, useForwarder }}
+   */
+  function estimateSpend({ targetCanonical, dstChainKey, available = [], sources = null, useForwarder = false }) {
+    const target = BigInt(targetCanonical || 0n);
+    const rawTotal = (available || []).reduce((acc, s) => acc + BigInt(s.canonical || 0n), 0n);
+    const spendable = totalSpendable(available || []);
+    const dstShort = ARC.CHAINS[dstChainKey]?.short || dstChainKey;
+    const base = {
+      ok: false, target, rawTotal, spendable, sources: [], sourceCount: 0,
+      burnFee: 0n, forwardingFee: 0n, totalFee: 0n, netReceived: 0n, useForwarder: !!useForwarder,
+    };
+
+    if (target <= 0n) return { ...base, state: 'insufficient_balance', reason: 'Enter an amount.' };
+
+    // Destination must be able to mint at all — otherwise there is no route no
+    // matter how much spendable balance the user holds.
+    if (!ARC.CHAINS[dstChainKey]?.contracts?.gatewayMinter) {
+      return { ...base, state: 'no_route', reason: `No Gateway minter on ${dstShort} — nothing can be minted there.` };
+    }
+
+    const plan = sources || pickSources(target, available || []);
+    if (!plan || !plan.length) {
+      if (rawTotal < target) {
+        return { ...base, state: 'insufficient_balance',
+          reason: `Need ${ARC.formatAmt(target, CANONICAL_DECIMALS, 4)} USDC — total balance is ${ARC.formatAmt(rawTotal, CANONICAL_DECIMALS, 4)} USDC.` };
+      }
+      return { ...base, state: 'no_route',
+        reason: `You hold ${ARC.formatAmt(rawTotal, CANONICAL_DECIMALS, 4)} USDC but only ${ARC.formatAmt(spendable, CANONICAL_DECIMALS, 4)} is routable to ${dstShort} (the rest sits on non-spendable chains or is reserved for Circle's per-intent fee).` };
+    }
+
+    const burnFee = plan.reduce((acc, p) => acc + defaultMaxFee(p.valueCanonical), 0n);
+    const forwardingFee = useForwarder ? FORWARDER_FEE_EST : 0n;
+    const state = plan.length >= 2 ? 'fallback_required' : 'ok';
+    return {
+      ok: true, state,
+      reason: state === 'fallback_required'
+        ? `No single chain covers this — aggregating ${plan.length} sources (partial-liquidity route).`
+        : 'Direct single-source route.',
+      target, rawTotal, spendable,
+      sources: plan, sourceCount: plan.length,
+      burnFee, forwardingFee, totalFee: burnFee + forwardingFee,
+      netReceived: target,  // recipient receives the full burn value; fees come from balance on top
+      useForwarder: !!useForwarder,
+    };
+  }
+
+  /**
    * Multi-source unified spend: burn from N source chains in one transfer
    * to mint a single combined amount on destination.
    *
@@ -751,7 +833,8 @@
   // ───────── EXPORTS ─────────
   ARC.gateway = {
     GW_BASE, EIP712_DOMAIN, EIP712_TYPES, CANONICAL_DECIMALS,
-    MAX_FEE_FLOOR, defaultMaxFee, maxBurnableFromBalance, totalSpendable,
+    MAX_FEE_FLOOR, FORWARDER_FEE_EST, defaultMaxFee, maxBurnableFromBalance, totalSpendable,
+    estimateSpend,
     gatewayChains, chainByDomain, usdcOnChain,
     canonicalToTokenRaw,
     readBalances, readBalanceOnChain,
