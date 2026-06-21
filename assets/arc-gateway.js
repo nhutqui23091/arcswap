@@ -753,7 +753,7 @@
    * `sources`: [{chainKey, valueCanonical}] - produced by pickSources() or hand-picked
    * Returns { intents, attResp, mint }.
    */
-  async function multiSpend({ sources, dstChainKey, recipient, maxFee, onStep, useForwarder }) {
+  async function multiSpend({ sources, dstChainKey, recipient, maxFee, onStep, useForwarder, beforeResign }) {
     if (!ARC.wallet.signer) throw new Error('Connect wallet');
     if (!sources || !sources.length) throw new Error('No sources to spend from');
 
@@ -812,6 +812,13 @@
         });
         if (bumpedAny) {
           onStep?.(`Fee bumped to ${ARC.formatAmt(bumped, CANONICAL_DECIMALS, 4)} USDC per intent. Please re-sign.`);
+          // The re-sign happens AFTER the awaited submit() above, so Chrome's
+          // transient activation from the first click is gone — wallets like OKX
+          // won't auto-surface the second popup, they just badge it. If the caller
+          // supplies beforeResign, let it gate the re-sign behind a FRESH user
+          // gesture (a button click) so signTypedData fires within a live
+          // activation window and the popup actually opens. No hook → old behavior.
+          if (beforeResign) await beforeResign(bumped);
           signed = await signBundle('Re-sign');
           ({ res, txt } = await submit(signed));
         }

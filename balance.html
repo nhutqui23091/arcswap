@@ -411,7 +411,7 @@ html{scroll-behavior:smooth}
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.1"></script>
 <script src="/assets/arc-core-v2.js?v=8"></script>
-<script src="/assets/arc-gateway.js?v=9.7.0"></script>
+<script src="/assets/arc-gateway.js?v=9.7.1"></script>
 <script src="/assets/arc-ui.js?v=9.10.25"></script>
 <script>
 (async () => {
@@ -951,7 +951,7 @@ html{scroll-behavior:smooth}
   };
   document.getElementById('consol-dst').addEventListener('change', renderConsolPreview);
 
-  document.getElementById('consol-go').onclick = async () => {
+  async function runConsolidate() {
     const dst = document.getElementById('consol-dst').value;
     const useForwarder = true; // gasless mint is always on (no toggle)
     const sources = buildConsolSources(dst);
@@ -959,9 +959,19 @@ html{scroll-behavior:smooth}
     const total = sources.reduce((a, s) => a + s.valueCanonical, 0n);
     const btn = document.getElementById('consol-go');
     btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Working…';
+    // When Circle quotes a higher per-intent fee, multiSpend must re-sign. That
+    // second signTypedData fires after an awaited fetch, so the wallet won't
+    // auto-surface it (OKX just badges the extension). Gate it behind a fresh
+    // click on this same button so the popup opens in-app, no digging in OKX.
+    const beforeResign = (bumped) => new Promise((resolve) => {
+      setStatus('consol-status', '', `Circle requires a higher fee (~${ARC.formatAmt(bumped, 6, 4)} USDC/chain). Click to re-sign.`);
+      btn.disabled = false;
+      btn.textContent = '⚠ Approve higher fee';
+      btn.onclick = () => { btn.onclick = runConsolidate; btn.disabled = true; btn.textContent = 'Working…'; resolve(); };
+    });
     try {
       const res = await ARC.gateway.multiSpend({
-        sources, dstChainKey: dst, recipient: state.addr, useForwarder,
+        sources, dstChainKey: dst, recipient: state.addr, useForwarder, beforeResign,
         onStep: (m) => setStatus('consol-status', '', m),
       });
       const dstShort = ARC.CHAINS[dst].short || ARC.CHAINS[dst].name;
@@ -973,9 +983,10 @@ html{scroll-behavior:smooth}
     } catch (e) {
       setStatus('consol-status', 'err', ARC.explainError ? ARC.explainError(e) : String(e?.message || e));
     } finally {
-      btn.disabled = false; btn.textContent = orig;
+      btn.onclick = runConsolidate; btn.disabled = false; btn.textContent = orig;
     }
-  };
+  }
+  document.getElementById('consol-go').onclick = runConsolidate;
 
   // ───── Deposit modal ─────
   // Default chain: if user clicked from a per-chain row use that. Otherwise
