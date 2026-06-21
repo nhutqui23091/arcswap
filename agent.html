@@ -51,13 +51,12 @@
 
 /* MODE TABS */
 .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;padding:6px;margin-bottom:22px}
-.mode-tab{padding:14px 16px;border-radius:10px;background:none;border:1px solid transparent;cursor:pointer;font-family:var(--font);text-align:left;transition:all .15s;color:var(--muted)}
+.mode-tab{padding:16px 14px;border-radius:10px;background:none;border:1px solid transparent;cursor:pointer;font-family:var(--font);text-align:center;transition:all .15s;color:var(--muted)}
 .mode-tab:hover{background:rgba(255,255,255,.03)}
 .mode-tab.active{background:rgba(77,214,219,.10);border-color:rgba(77,214,219,.3);color:var(--text)}
-.mode-tab-h{font-size:14px;font-weight:700;letter-spacing:-.005em;margin-bottom:3px;display:flex;align-items:center;gap:7px}
-.mode-tab-d{font-size:11.5px;color:var(--muted);line-height:1.45}
+.mode-tab-h{font-size:16.5px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;justify-content:center;gap:9px}
 .mode-tab.active .mode-tab-h{color:var(--text)}
-.mode-tab-ico{font-size:13px;line-height:1}
+.mode-tab-ico{font-size:15px;line-height:1;display:inline-flex}
 
 /* STEPS */
 .step{margin-bottom:18px}
@@ -173,6 +172,13 @@ select option:checked{background:#1a2c4a;color:#fff}
 /* SUMMARY */
 .summary{margin-top:18px;padding:14px 16px;background:rgba(77,214,219,.06);border:1px solid rgba(77,214,219,.18);border-radius:12px}
 .summary-h{font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);margin-bottom:8px}
+/* Collapsible summary - click the header to open/close the "what the agent
+   will do" rows. Starts collapsed to keep the form compact. */
+.summary-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;cursor:pointer;padding:0;font-family:var(--font);text-align:left;gap:10px}
+.summary-toggle .summary-h{margin-bottom:0}
+.summary-caret{font-size:9px;color:var(--violet);transition:transform .15s;flex-shrink:0}
+.summary-toggle[aria-expanded="true"] .summary-caret{transform:rotate(90deg)}
+#summary-rows{margin-top:10px}
 .summary-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;gap:12px;line-height:1.4}
 .summary-row .k{color:var(--muted);flex-shrink:0;font-weight:500}
 .summary-row .v{font-family:var(--mono);font-weight:700;text-align:right;color:var(--text);min-width:0;word-break:break-word;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1}
@@ -339,7 +345,6 @@ select option:checked{background:#1a2c4a;color:#fff}
     <div>
       <div class="arc-label" style="margin-bottom:10px">Agent</div>
       <h1 class="page-title">Move USDC<br/>automatically.</h1>
-      <p class="page-sub">Keep wallets topped up when they run low, or schedule recurring USDC transfers - across multiple chains, to multiple wallets, with a single signature. Powered by Circle Programmable Wallets and Gateway.</p>
     </div>
   </div>
 
@@ -379,14 +384,24 @@ select option:checked{background:#1a2c4a;color:#fff}
       </div>
 
       <!-- MODE TABS -->
+      <div class="lbl-field-label" style="margin-bottom:8px">
+        <span style="display:flex;align-items:center">
+          What should the agent do?
+          <span class="help-host">
+            <button class="help-btn" type="button" data-help="mode" aria-label="More about the two modes">?</button>
+            <div class="help-pop" id="help-mode">
+              <strong>Auto Top-Up</strong> - refill a wallet automatically whenever its balance drops below a threshold you set.
+              <br><br><strong>Scheduled Send</strong> - send USDC on a fixed schedule: once, daily, weekly, or monthly.
+            </div>
+          </span>
+        </span>
+      </div>
       <div class="mode-tabs">
         <button class="mode-tab active" data-mode="topup" onclick="setMode('topup')">
-          <div class="mode-tab-h"><span class="mode-tab-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>Auto Top-Up</div>
-          <div class="mode-tab-d">Refill a wallet when it drops below a balance threshold</div>
+          <div class="mode-tab-h"><span class="mode-tab-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>Auto Top-Up</div>
         </button>
         <button class="mode-tab" data-mode="schedule" onclick="setMode('schedule')">
-          <div class="mode-tab-h"><span class="mode-tab-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg></span>Scheduled Send</div>
-          <div class="mode-tab-d">Send USDC on a fixed schedule - once, daily, weekly, monthly</div>
+          <div class="mode-tab-h"><span class="mode-tab-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg></span>Scheduled Send</div>
         </button>
       </div>
 
@@ -625,10 +640,13 @@ select option:checked{background:#1a2c4a;color:#fff}
         </div>
       </div>
 
-      <!-- SUMMARY -->
+      <!-- SUMMARY (collapsible) -->
       <div class="summary">
-        <div class="summary-h">// What the agent will do</div>
-        <div id="summary-rows"></div>
+        <button class="summary-toggle" type="button" id="summary-toggle" aria-expanded="false" onclick="toggleSummary()">
+          <span class="summary-h">// What the agent will do</span>
+          <span class="summary-caret">▶</span>
+        </button>
+        <div id="summary-rows" style="display:none"></div>
       </div>
 
       <button class="deploy-btn" id="deploy-btn" onclick="deployAgent()">
@@ -1234,6 +1252,17 @@ select option:checked{background:#1a2c4a;color:#fff}
     updateSummary();
   }
   window.setMode = setMode;
+
+  // Collapsible "What the agent will do" summary - starts collapsed to keep
+  // the form compact; the rows stay populated by updateSummary() either way.
+  function toggleSummary() {
+    const btn = document.getElementById('summary-toggle');
+    const rows = document.getElementById('summary-rows');
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+    rows.style.display = open ? 'none' : 'block';
+  }
+  window.toggleSummary = toggleSummary;
 
   function toggleChain(c) {
     if (state.sources.has(c)) {
