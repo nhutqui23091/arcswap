@@ -1161,7 +1161,10 @@
   // OneliqCheckIn: each daily check-in is a real call to this contract
   // (contracts/OneliqCheckIn.sol) instead of a 0-value self-transfer.
   const ONELIQ_CHECKIN = '0x368a0E854ec69EC10b50D20fCaFC1bAF8b7eff10';
-  const CHECKIN_ABI = ['function checkInWithGM(string message) returns (uint32)'];
+  const CHECKIN_ABI = [
+    'function checkInWithGM(string message) returns (uint32)',
+    'function canCheckIn(address user) view returns (bool)',
+  ];
 
   async function triggerCheckin() {
     btn.disabled = true; btn.textContent = 'Preparing...';
@@ -1203,22 +1206,41 @@
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
       const checkin  = new ethers.Contract(ONELIQ_CHECKIN, CHECKIN_ABI, signer);
-      const tx       = await checkin.checkInWithGM('Portal ' + today);
-      const txHash   = tx.hash;
+      // Pre-flight: a wallet that already checked in on-chain today can't call
+      // checkInWithGM again — the contract reverts AlreadyCheckedInToday() and
+      // the wallet surfaces a scary "execution reverted" estimateGas error. This
+      // happens when the off-chain record fell behind on-chain (an admin
+      // streak-restore, or an earlier write that didn't persist). In that case
+      // skip the doomed tx and reconcile the off-chain streak from on-chain truth.
+      const canCheck = await checkin.canCheckIn(a).catch(() => true);
+      let res;
+      if (canCheck === false) {
+        btn.textContent  = 'Syncing your check-in...';
+        hint.textContent = 'You already checked in on-chain today — syncing.';
+        setEnergy(0.85);
+        res = await fetch('/auth/gm', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ address: a, date: today, reconcile: true }),
+        });
+      } else {
+        const tx       = await checkin.checkInWithGM('Portal ' + today);
+        const txHash   = tx.hash;
 
-      // Show confirming state with explorer link while backend verifies
-      btn.textContent = 'Confirming on Arc...';
-      hint.innerHTML  = 'TX: <a href="' + ARC_EXPLORER + '/tx/' + txHash
-        + '" target="_blank" rel="noopener" style="color:var(--arc1);text-decoration:none">'
-        + txHash.slice(0, 16) + '...</a>';
-      setEnergy(0.85);
+        // Show confirming state with explorer link while backend verifies
+        btn.textContent = 'Confirming on Arc...';
+        hint.innerHTML  = 'TX: <a href="' + ARC_EXPLORER + '/tx/' + txHash
+          + '" target="_blank" rel="noopener" style="color:var(--arc1);text-decoration:none">'
+          + txHash.slice(0, 16) + '...</a>';
+        setEnergy(0.85);
 
-      // Backend verifies tx via Arc RPC (retries up to ~10s)
-      const res = await fetch('/auth/gm', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ address: a, txHash, date: today }),
-      });
+        // Backend verifies tx via Arc RPC (retries up to ~10s)
+        res = await fetch('/auth/gm', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ address: a, txHash, date: today }),
+        });
+      }
 
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Server error');

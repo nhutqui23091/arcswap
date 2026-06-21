@@ -143,6 +143,29 @@ async function handlePost(request, env, context) {
     });
   }
 
+  // Reconcile a missed credit. The OneliqCheckIn contract allows ONE check-in
+  // per UTC day and reverts AlreadyCheckedInToday() on a second same-day call.
+  // If a wallet already checked in on-chain today but the off-chain record fell
+  // behind — the original /auth/gm write failed, or an admin streak-restore
+  // rewrote last_checkin — the user is stuck: they can't send a new on-chain tx
+  // (it reverts) and never gets credited. Here we credit today straight from
+  // on-chain truth (canCheckIn == false ⇔ already checked in today), no new tx.
+  if (body.action === 'reconcile_checkin' || body.reconcile === true) {
+    if (body.date && body.date !== today) {
+      return jsonRes({ error: 'Date mismatch. Use today UTC date (' + today + ').' }, 400);
+    }
+    if (state.last_checkin === today) {
+      return jsonRes({ ...state, already_checked_in: true, message: 'Already checked in today.' });
+    }
+    const can = await arcCanCheckIn(addr);
+    if (can !== false) {
+      // true = not checked in on-chain (nothing to reconcile); null = RPC unknown.
+      // Either way, don't credit without on-chain proof — fall back to a real tx.
+      return jsonRes({ error: 'No on-chain check-in found for today.' }, 409);
+    }
+    return applyCheckin(kv, env, context, request, addr, state, today, state.last_tx_hash || null);
+  }
+
   // Daily check-in: verify real Arc Testnet transaction
   const { txHash, date } = body;
 
@@ -164,6 +187,13 @@ async function handlePost(request, env, context) {
     return jsonRes({ error: verify.error }, 400);
   }
 
+  return applyCheckin(kv, env, context, request, addr, state, today, txHash);
+}
+
+// Credit one check-in for `today` and persist. Shared by the normal (tx-verified)
+// path and the on-chain reconcile path, so the streak/badge/daily-count/metrics
+// logic stays identical. `txHash` may be null when reconciling from on-chain state.
+async function applyCheckin(kv, env, context, request, addr, state, today, txHash) {
   // -- Streak logic (freeze-budget, recomputed from full history) --
   // `history` is the source of truth; computeStreak() replays it
   // deterministically (freeze-budget rule) so a single bad write can never
@@ -199,7 +229,7 @@ async function handlePost(request, env, context) {
   const newState = {
     ...state,
     last_checkin:   today,
-    last_tx_hash:   txHash,
+    last_tx_hash:   txHash || state.last_tx_hash || null,
     streak,
     freezes_left:   freezes,
     longest_streak: Math.max(state.longest_streak || 0, longest),
@@ -224,7 +254,7 @@ async function handlePost(request, env, context) {
       fetch(base + '/api/metrics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: 'gm-checkin', chain: 'arc', address: addr, txHash }),
+        body: JSON.stringify({ event: 'gm-checkin', chain: 'arc', address: addr, txHash: txHash || '' }),
       }).catch(() => {})
     );
   } catch {}
@@ -289,6 +319,31 @@ async function verifyArcTx(txHash, expectedFrom) {
     ok: false,
     error: 'Transaction not found on Arc Testnet after retries. Ensure you are on Arc Testnet (chainId 5042002) and try again.',
   };
+}
+
+// On-chain truth for "did this wallet already check in today?".
+// Calls OneliqCheckIn.canCheckIn(address) (selector 0xfb896848): returns true
+// when the wallet may still check in today, false when it already did. Returns
+// null on RPC error / malformed result so callers never credit on a guess.
+async function arcCanCheckIn(addr) {
+  try {
+    const data = '0xfb896848' + addr.replace(/^0x/, '').toLowerCase().padStart(64, '0');
+    const res = await fetch(ARC_RPC, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        jsonrpc: '2.0', id: 1, method: 'eth_call',
+        params:  [{ to: ONELIQ_CHECKIN, data }, 'latest'],
+      }),
+    });
+    const json = await res.json();
+    if (!/^0x[0-9a-f]{64}$/i.test(json.result || '')) return null;
+    const v = BigInt(json.result);
+    return v === 1n ? true : v === 0n ? false : null;
+  } catch (e) {
+    console.warn('[gm] arcCanCheckIn:', e?.message);
+    return null;
+  }
 }
 
 // -- helpers --
