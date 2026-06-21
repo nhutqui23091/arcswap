@@ -19,7 +19,7 @@
       { id: 'balance',   label: 'Balance',      href: '/balance' },
       { id: 'agent',     label: 'Agent',        href: '/agent'   },
       { id: 'history',   label: 'History',      href: '/history' },
-      { id: 'token',     label: 'Create Token', href: '/token'   },
+      { id: 'docs',      label: 'Docs',         href: '/docs'    },
     ];
   }
 
@@ -387,7 +387,7 @@
     {
       title: 'Tools',
       items: [
-        { id: 'token',  label: 'Create Token', icon: '⊕', href: '/token'  },
+        { id: 'docs',   label: 'Docs',         icon: '📄', href: '/docs'   },
         { id: 'faucet', label: 'Faucet',       icon: '💧', href: 'https://faucet.circle.com', external: true },
         { id: 'blog',   label: 'Blog',         icon: '✎', href: '/blog'   },
       ],

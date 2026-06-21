@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="/assets/logos/mark-oneliq.png"/>
 <link rel="apple-touch-icon" href="/assets/logos/mark-oneliq.png"/>
-<meta name="description" content="Oneliq Documentation - the engineering reference for the unified stablecoin terminal on Arc. Covers Trade, Unified Balance (Circle Gateway), the Auto-Replenish Agent, History, Create Token, Dashboard, plus the full contract / API surface."/>
+<meta name="description" content="Oneliq Documentation - the engineering reference for the unified stablecoin terminal on Arc. Covers Trade, Unified Balance (Circle Gateway), the Auto-Replenish Agent, History, Dashboard, plus the full contract / API surface."/>
 <title>Documentation - Oneliq</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
@@ -269,7 +269,6 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
     <a class="nav-link" href="/trade">Trade</a>
     <a class="nav-link" href="/balance">Balance</a>
     <a class="nav-link" href="/agent">Agent</a>
-    <a class="nav-link" href="/token">Create Token</a>
     <a class="nav-link" href="/blog">Blog</a>
     <a class="nav-link active" href="/docs">Docs</a>
   </div>
@@ -297,7 +296,6 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <a class="side-link" href="#balance">Unified Balance</a>
       <a class="side-link" href="#agent">Auto-Replenish Agent</a>
       <a class="side-link" href="#history">History</a>
-      <a class="side-link" href="#token">Create Token</a>
       <a class="side-link" href="#dashboard">Dashboard</a>
     </div>
     <div class="side-section">
@@ -375,7 +373,6 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       <tr><td><strong>Unified Balance</strong></td><td>One USDC balance across every supported chain. Deposit from any chain, spend instantly on Arc - no bridge clicks, no wrapped tokens.</td><td>Circle Gateway V1</td></tr>
       <tr><td><strong>Auto-Replenish Agent</strong> <em style="color:var(--peach);font-size:12px">preview</em></td><td>Sign once. Your agent keeps any wallet topped up automatically - or runs scheduled USDC transfers across chains. Daily safety cap, revocable anytime.</td><td>Circle Programmable Wallets + Paymaster</td></tr>
       <tr><td><strong>History</strong></td><td>A receipt-style feed of every Trade, Balance, and Agent moment on your USDC activity. Filter by surface, jump to the chain explorer in one click.</td><td>Local activity log + agent API</td></tr>
-      <tr><td><strong>Create Token</strong></td><td>Deploy a custom ERC-20 to Arc in under a minute. Name, symbol, supply, decimals, mintable / burnable / pausable / capped toggles.</td><td>Arc Testnet ERC-20</td></tr>
       <tr><td><strong>Dashboard</strong> <em style="color:var(--muted);font-size:12px">soon</em></td><td>Operator control center. Live portfolio across chains, agent fleet view, settlement volume, quick-actions tile grid.</td><td>Read-only aggregator</td></tr>
     </table>
 
@@ -670,26 +667,6 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       owner (server-side auth).
     </p>
 
-    <!-- ─── TOKEN ─── -->
-    <h2 class="docs-h2" id="token">Create Token</h2>
-    <p class="docs-p">
-      The <a href="/token"><code>/token</code></a> page deploys a custom ERC-20 to Arc Testnet in under
-      a minute. No coding, no Hardhat, no Foundry - pick your params in a form, sign one tx, get back
-      a contract address linkable to <a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer">testnet.arcscan.app</a>.
-    </p>
-
-    <h3 class="docs-h3">What you can configure</h3>
-    <ul class="docs-ul">
-      <li><strong>Basics</strong> - name, symbol (A-Z, 2-8 chars), one-line description.</li>
-      <li><strong>Economics</strong> - total supply (1K to 10B), decimals (18 default, or 6/8/0).</li>
-      <li><strong>Features</strong> - Mintable, Burnable, Pausable, Capped - combine any subset.</li>
-      <li><strong>Advanced</strong> - initial recipient address (defaults to your connected wallet).</li>
-    </ul>
-
-    <p class="docs-p">
-      Gas is paid in USDC (Arc's native gas token). A typical deploy costs a few cents in USDC.
-    </p>
-
     <!-- ─── DASHBOARD ─── -->
     <h2 class="docs-h2" id="dashboard">Dashboard <em style="font-size:14px;color:var(--muted)">soon</em></h2>
     <p class="docs-p">
@@ -698,12 +675,11 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
       activity. Five metric cards (Portfolio Value, Unified Balance, Active Chains, Active Agents,
       24h Settlement Volume) with sparklines, plus modules for portfolio analytics, recent
       settlements, agent fleet, and a quick-actions tile grid (Swap / Deposit / Spend / New Agent /
-      Create Token / Faucet).
+      Faucet).
     </p>
     <p class="docs-p">
       It's a pure aggregator - no Gateway writes happen on this page. Every action button deep-links
-      to <a href="/balance">Balance</a>, <a href="/trade">Trade</a>, <a href="/agent">Agent</a>, or
-      <a href="/token">Create Token</a>.
+      to <a href="/balance">Balance</a>, <a href="/trade">Trade</a>, or <a href="/agent">Agent</a>.
     </p>
 
     <!-- ─── ARC NETWORK ─── -->
@@ -1113,7 +1089,6 @@ POST <span class="code-key">/api/agent/</span><span class="code-str">{id}</span>
     <a class="toc-link" href="#balance">Unified Balance</a>
     <a class="toc-link" href="#agent">Agent</a>
     <a class="toc-link" href="#history">History</a>
-    <a class="toc-link" href="#token">Create Token</a>
     <a class="toc-link" href="#dashboard">Dashboard</a>
     <a class="toc-link" href="#arc-network">Arc L1</a>
     <a class="toc-link" href="#circle-gateway">Gateway</a>
