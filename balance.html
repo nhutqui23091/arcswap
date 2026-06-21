@@ -983,8 +983,14 @@ html{scroll-behavior:smooth}
         onStep: (m) => setStatus('consol-status', '', m),
       });
       const dstShort = ARC.CHAINS[dst].short || ARC.CHAINS[dst].name;
-      setStatus('consol-status', 'ok', '✅ Consolidated to ' + dstShort);
       const mintHash = res?.mint?.tx?.hash || res?.forwarded?.transactionHash || null;
+      // Show the mint tx inline with a one-click explorer link (setStatus is
+      // textContent-only, so write the link straight onto the status element).
+      const txUrl = (mintHash && ARC.CHAINS[dst].explorerTx) ? ARC.CHAINS[dst].explorerTx(mintHash) : null;
+      const statusEl = document.getElementById('consol-status');
+      statusEl.className = 'gw-status show ok';
+      statusEl.innerHTML = '✅ Consolidated to ' + dstShort +
+        (txUrl ? ` · <a href="${txUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--arc1);text-decoration:underline">View tx ↗</a>` : '');
       try { ARC.history?.push({ kind: 'balance', chain: dst, hash: mintHash, status: 'done', text: `Consolidated ${ARC.formatAmt(total,6,2)} USDC → ${dstShort}` }); } catch {}
       await refreshAll();
       renderConsolPreview();
