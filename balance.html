@@ -325,13 +325,13 @@ html{scroll-behavior:smooth}
          When on, Circle submits gatewayMint on the destination for the user, so
          no destination gas is needed (esp. Arc, where gas IS USDC). Off ⇒ legacy
          self-mint path (unchanged). -->
-    <label id="spend-forwarder-row" style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;color:var(--muted);cursor:pointer;line-height:1.5">
-      <input id="spend-forwarder" type="checkbox" checked style="width:15px;height:15px;accent-color:var(--arc1);cursor:pointer;flex-shrink:0"/>
-      <span style="color:var(--text);font-weight:600">Gasless mint</span>
-      <span class="gw-tip" onclick="event.preventDefault();event.stopPropagation()" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border);font-size:10px;font-weight:700;color:var(--muted);cursor:help;flex-shrink:0">?
-        <span class="gw-tip-box">Circle's Forwarder mints on the destination for you, so you don't need gas there. A small forwarding fee applies.</span>
-      </span>
-    </label>
+    <!-- Gasless mint is ALWAYS on now (no toggle): Circle's Forwarder mints on
+         the destination so the user never needs gas there. Self-mint stays as an
+         automatic fallback in arc-gateway.js if the forwarder ever stalls. -->
+    <div style="display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5">
+      <span style="color:var(--arc1);font-weight:700;flex-shrink:0">⚡ Gasless mint</span>
+      <span>— Circle's Forwarder covers destination gas (small fee included in the estimate).</span>
+    </div>
 
     <!-- Source breakdown (Unified mode) - shows which chains will be drawn from -->
     <div id="spend-breakdown" style="display:none;margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(244,200,154,.06);border:1px solid rgba(244,200,154,.22);font-size:12.5px;color:var(--muted);line-height:1.6">
@@ -382,13 +382,11 @@ html{scroll-behavior:smooth}
     <div class="gw-label">Destination chain</div>
     <select id="consol-dst" class="gw-select"></select>
 
-    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;color:var(--muted);cursor:pointer;line-height:1.5">
-      <input id="consol-forwarder" type="checkbox" checked style="width:15px;height:15px;accent-color:var(--arc1);cursor:pointer;flex-shrink:0"/>
-      <span style="color:var(--text);font-weight:600">Gasless mint</span>
-      <span class="gw-tip" onclick="event.preventDefault();event.stopPropagation()" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border);font-size:10px;font-weight:700;color:var(--muted);cursor:help;flex-shrink:0">?
-        <span class="gw-tip-box">Circle's Forwarder mints on the destination for you, so you don't need gas there. A small forwarding fee applies.</span>
-      </span>
-    </label>
+    <!-- Gasless mint is ALWAYS on (no toggle) — see the Spend modal note. -->
+    <div style="display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5">
+      <span style="color:var(--arc1);font-weight:700;flex-shrink:0">⚡ Gasless mint</span>
+      <span>— Circle's Forwarder covers destination gas (small fee included in the estimate).</span>
+    </div>
 
     <div id="consol-breakdown" style="display:none;margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(244,200,154,.06);border:1px solid rgba(244,200,154,.22);font-size:12.5px;color:var(--muted);line-height:1.6">
       <div style="font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#FFB454;margin-bottom:6px">⤵ Consolidation plan</div>
@@ -891,7 +889,7 @@ html{scroll-behavior:smooth}
 
   function renderConsolPreview() {
     const dst = document.getElementById('consol-dst').value;
-    const useForwarder = document.getElementById('consol-forwarder')?.checked ?? true;
+    const useForwarder = true; // gasless mint is always on (no toggle)
     const sources = buildConsolSources(dst);
     const wrap = document.getElementById('consol-breakdown');
     const rows = document.getElementById('consol-breakdown-rows');
@@ -948,11 +946,10 @@ html{scroll-behavior:smooth}
     openConsolModal();
   };
   document.getElementById('consol-dst').addEventListener('change', renderConsolPreview);
-  document.getElementById('consol-forwarder')?.addEventListener('change', renderConsolPreview);
 
   document.getElementById('consol-go').onclick = async () => {
     const dst = document.getElementById('consol-dst').value;
-    const useForwarder = document.getElementById('consol-forwarder')?.checked ?? true;
+    const useForwarder = true; // gasless mint is always on (no toggle)
     const sources = buildConsolSources(dst);
     if (!sources.length) { setStatus('consol-status', 'err', 'Nothing to consolidate'); return; }
     const total = sources.reduce((a, s) => a + s.valueCanonical, 0n);
@@ -1175,7 +1172,7 @@ html{scroll-behavior:smooth}
     const valueCanonical = ARC.parseAmt(amtStr, 6);
     if (valueCanonical <= 0n) { breakdown.style.display = 'none'; return; }
     const dst = document.getElementById('spend-dst').value;
-    const useForwarder = document.getElementById('spend-forwarder')?.checked ?? true;
+    const useForwarder = true; // gasless mint is always on (no toggle)
     // Exclude destination chain from sources (no point burning then minting on same chain).
     const eligible = state.balances.filter(b => b.chainKey !== dst);
     // estimateSpend = pre-sign route + fee + forwarding estimate, plus a discrete
@@ -1340,10 +1337,6 @@ html{scroll-behavior:smooth}
     if (spendMode === 'manual') { renderManualRows(); } else { refreshSpendBreakdown(); }
   });
   document.getElementById('spend-src').onchange = syncSpendInfo;
-  // Gasless toggle now changes the estimated fee total, so re-run the estimate.
-  document.getElementById('spend-forwarder')?.addEventListener('change', () => {
-    if (spendMode === 'unified') refreshSpendBreakdown();
-  });
 
   document.getElementById('spend-go').onclick = async () => {
     const dst = document.getElementById('spend-dst').value;
@@ -1353,7 +1346,7 @@ html{scroll-behavior:smooth}
     if (!ethers.isAddress(recipient)) { setStatus('spend-status', 'err', 'Invalid recipient'); return; }
     const valueCanonical = ARC.parseAmt(amtStr, 6);
     if (valueCanonical <= 0n) { setStatus('spend-status', 'err', 'Invalid amount'); return; }
-    const useForwarder = document.getElementById('spend-forwarder')?.checked ?? true;
+    const useForwarder = true; // gasless mint is always on (no toggle)
     const btn = document.getElementById('spend-go');
     btn.disabled = true; btn.textContent = 'Working…';
     document.getElementById('spend-trade-cta').style.display = 'none';
