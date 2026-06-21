@@ -663,8 +663,9 @@ pre code{background:none;border:none;padding:0;color:#C8D1E0;font-size:13px}
 
     <h3 class="docs-h3">Data sources</h3>
     <p class="docs-p">
-      Trade and Balance events come from your browser's local activity log (<code>arc.trade.activity.v1</code>),
-      so they're fully local-first - no server round-trip, no privacy leak. Agent events come from the
+      Trade and Balance events are recorded local-first in your browser's activity log
+      (<code>arc.trade.activity.v1</code>) and also mirrored to <code>/api/history/*</code>, keyed by your
+      wallet address, so the feed follows your wallet across browsers and devices. Agent events come from the
       backend <code>/api/agent/*</code> endpoints which only return rows where you're the rule
       owner (server-side auth).
     </p>

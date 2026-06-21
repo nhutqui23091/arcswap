@@ -827,6 +827,36 @@
     return msg.slice(0, 160);
   }
 
+  // ───────── HISTORY SYNC (server-side, keyed by wallet address) ─────────
+  // Trade/Balance receipts also live in each browser's localStorage
+  // (`arc.trade.activity.v1`), but that's per-browser. These mirror each receipt
+  // to KV by address (POST /api/history/push) and read it back (GET /list) so the
+  // History page syncs across browsers/devices. Best-effort: any failure is
+  // swallowed — the local copy remains the offline source of truth.
+  const HISTORY_API = '/api/history';
+  async function pushHistory(row) {
+    try {
+      const address = wallet.address;
+      if (!address || !row) return;
+      await fetch(`${HISTORY_API}/push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, ...row }),
+        keepalive: true, // let it finish even if the page is navigating away
+      });
+    } catch { /* offline / blocked — local copy still recorded */ }
+  }
+  async function listHistory(address) {
+    try {
+      const a = address || wallet.address;
+      if (!a) return [];
+      const r = await fetch(`${HISTORY_API}/list?address=${a}`);
+      if (!r.ok) return [];
+      const b = await r.json().catch(() => null);
+      return Array.isArray(b?.rows) ? b.rows : [];
+    } catch { return []; }
+  }
+
   // ───────── IRIS / CCTP v2 ─────────
   const IRIS_BASE = 'https://iris-api-sandbox.circle.com/v2';
 
@@ -910,13 +940,14 @@
     toCctpAmount, fromCctpAmount,
     multicall, sendAndWait, explainError,
     irisMessages, irisFastAllowance, IRIS_BASE,
+    history: { push: pushHistory, list: listHistory },
     // List of chain keys that have a GatewayWallet deployed (used by arc-gateway.js)
     gatewayChains: () => Object.entries(CHAINS)
       .filter(([, c]) => c.contracts?.gatewayWallet)
       .map(([k]) => k),
     chainIcon,
     track,
-    version: '9.9.8',
+    version: '9.10.0',
   };
 
   // ───────── CHAIN ICONS ─────────

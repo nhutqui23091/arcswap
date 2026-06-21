@@ -144,7 +144,7 @@
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.1"></script>
-<script src="/assets/arc-core-v2.js?v=7"></script>
+<script src="/assets/arc-core-v2.js?v=8"></script>
 <script src="/assets/arc-gateway.js?v=9.6.8"></script>
 <script src="/assets/arc-ui.js?v=9.10.25"></script>
 <script>
@@ -156,11 +156,15 @@
      else. Each row is a single receipt: who, what, where, when.
      Click a row → open its on-chain explorer record.
 
-     Data merges two sources (the only two Oneliq itself owns):
-       1. localStorage 'arc.trade.activity.v1' - trade.html writes
-          swap/bridge/transfer rows here. 'bridge' rows are Balance
-          (Unified Balance settlements); other kinds are Trade.
-       2. /api/agent/list?owner + /api/agent/:id/executions - the
+     Data merges three sources:
+       1. localStorage 'arc.trade.activity.v1' - trade.html / balance.html
+          write swap/bridge/transfer/deposit rows here. 'bridge' rows are
+          Balance (Unified Balance settlements); other kinds are Trade.
+       2. /api/history/list?address - the SAME receipts mirrored to KV by
+          wallet address, so the feed follows the wallet across browsers /
+          devices (localStorage is per-browser). Same row shape as (1), so
+          ids match and the two dedupe cleanly.
+       3. /api/agent/list?owner + /api/agent/:id/executions - the
           server-side agent log. Local fallback (arcswap_execs)
           mirrors the same shape when the backend is unconfigured.
   ============================================================ */
@@ -296,6 +300,14 @@
     try { return JSON.parse(localStorage.getItem('arc.trade.activity.v1') || '[]').map(mapTradeRow); }
     catch { return []; }
   }
+  // Server-synced receipts (KV by wallet) — same row shape as the local log, so
+  // mapTradeRow yields identical ids and loadAll's seen-set dedupes server vs
+  // local automatically. Lets History follow the wallet across browsers/devices.
+  async function loadServerHistory() {
+    if (!state.addr || !window.ARC?.history) return [];
+    try { return (await ARC.history.list(state.addr)).map(mapTradeRow); }
+    catch { return []; }
+  }
   async function loadAgentActivity() {
     if (!state.addr) return [];
     const list = await api(`/list?owner=${state.addr}`);
@@ -320,9 +332,17 @@
   async function loadAll() {
     if (!state.addr) { state.txs = []; render(); return; }
     showSkeleton();
-    const [trade, agent] = await Promise.all([Promise.resolve(loadTradeActivity()), loadAgentActivity()]);
+    const [trade, server, agent] = await Promise.all([
+      Promise.resolve(loadTradeActivity()),
+      loadServerHistory(),
+      loadAgentActivity(),
+    ]);
+    // Stash the non-local feeds so the 8s local poll can re-merge them without
+    // refetching the server / agent backends every tick.
+    state.serverTxs = server;
+    state.agentTxs = agent;
     const seen = new Set(), merged = [];
-    for (const r of [...trade, ...agent]) { if (seen.has(r.id)) continue; seen.add(r.id); merged.push(r); }
+    for (const r of [...trade, ...server, ...agent]) { if (seen.has(r.id)) continue; seen.add(r.id); merged.push(r); }
     merged.sort((a, b) => (b.ts || 0) - (a.ts || 0));
     state.txs = merged;
     render();
@@ -466,7 +486,7 @@
   setInterval(() => {
     if (!state.addr) return;
     const fresh = loadTradeActivity();
-    const others = state.txs.filter(t => t.tab === 'agent');
+    const others = [...(state.serverTxs || []), ...(state.agentTxs || [])];
     const seen = new Set(), merged = [];
     for (const r of [...fresh, ...others]) { if (seen.has(r.id)) continue; seen.add(r.id); merged.push(r); }
     merged.sort((a, b) => (b.ts || 0) - (a.ts || 0));

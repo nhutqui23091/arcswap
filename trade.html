@@ -478,7 +478,7 @@ main.trade-wrap{position:relative;z-index:2;min-height:100vh;display:flex;flex-d
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.1"></script>
-<script src="/assets/arc-core-v2.js?v=7"></script>
+<script src="/assets/arc-core-v2.js?v=8"></script>
 <script src="/assets/arc-ui.js?v=9.10.25"></script>
 <script src="/assets/arc-gateway.js?v=9.6.8"></script>
 
@@ -2040,11 +2040,15 @@ main.trade-wrap{position:relative;z-index:2;min-height:100vh;display:flex;flex-d
   function readAct() { try { return JSON.parse(localStorage.getItem(ACT_KEY) || '[]'); } catch { return []; } }
   function writeAct(xs) { try { localStorage.setItem(ACT_KEY, JSON.stringify(xs.slice(0, 30))); } catch {} }
   function pushActivity(item) {
-    const xs = readAct(); xs.unshift({ ...item, at: Date.now() }); writeAct(xs); renderActivity();
+    const row = { ...item, at: Date.now() };
+    const xs = readAct(); xs.unshift(row); writeAct(xs); renderActivity();
+    try { ARC.history?.push(row); } catch {}
   }
   function updateActivity(hash, status) {
     const xs = readAct(); const i = xs.findIndex(x => x.hash === hash);
     if (i >= 0) { xs[i].status = status; writeAct(xs); renderActivity(); }
+    // Mirror the status change to the server row (merged by hash → no duplicate).
+    try { if (hash) ARC.history?.push({ hash, status }); } catch {}
   }
   function renderActivity() {
     const list = document.getElementById('tx-list');

@@ -374,7 +374,7 @@ html{scroll-behavior:smooth}
         crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
 <script src="/assets/appkit.bundle.js?v=1.0.1"></script>
-<script src="/assets/arc-core-v2.js?v=7"></script>
+<script src="/assets/arc-core-v2.js?v=8"></script>
 <script src="/assets/arc-gateway.js?v=9.6.8"></script>
 <script src="/assets/arc-ui.js?v=9.10.25"></script>
 <script>
@@ -462,11 +462,15 @@ html{scroll-behavior:smooth}
     if (changed) saveTxPending();
   }
   function pushToHistory(kind, chainKey, hash, text) {
+    const row = { kind, chain: chainKey, hash: hash || '', status: 'done', text, at: Date.now() };
     try {
       const xs = JSON.parse(localStorage.getItem('arc.trade.activity.v1') || '[]');
-      xs.unshift({ kind, chain: chainKey, hash: hash || '', status: 'done', text, at: Date.now() });
+      xs.unshift(row);
       localStorage.setItem('arc.trade.activity.v1', JSON.stringify(xs.slice(0, 30)));
     } catch {}
+    // Mirror to server (KV by wallet) so History syncs across browsers. Same `row`
+    // object (incl. `at`) → server and local map to the same id and dedupe cleanly.
+    try { ARC.history?.push(row); } catch {}
   }
 
   // Recover any forwarded cross-chain spend that was still mid-flight when the
