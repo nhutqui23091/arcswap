@@ -86,6 +86,15 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   animation:aurora-shift 24s ease-in-out infinite alternate;
 }
 @keyframes aurora-shift{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+/* Rippling waves along the horizon — layered SVG bands drifting at different
+   speeds. svg is 200vw wide; translateX(-50%) = exactly one tile → seamless loop. */
+.waves{position:absolute;left:0;right:0;bottom:0;height:42%;overflow:hidden;pointer-events:none;z-index:0}
+.waves svg{position:absolute;bottom:0;left:0;width:200vw;height:100%;display:block}
+.wave{transform-origin:center;animation:wave-drift linear infinite;will-change:transform}
+.w1{fill:rgba(77,214,219,0.055);animation-duration:19s}
+.w2{fill:rgba(74,123,236,0.05);animation-duration:27s;animation-direction:reverse}
+.w3{fill:rgba(244,200,154,0.06);animation-duration:34s}
+@keyframes wave-drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .orb{position:absolute;border-radius:50%;filter:blur(150px);opacity:.06;animation:orb-drift 40s ease-in-out infinite alternate;mix-blend-mode:screen}
 .orb1{width:720px;height:500px;background:var(--arc1);top:-240px;left:-200px;animation-duration:40s}
 .orb2{width:620px;height:520px;background:var(--arc2);top:-160px;right:-220px;animation-duration:46s;animation-delay:-10s}
@@ -393,7 +402,7 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
 .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
 .reveal.visible{opacity:1;transform:translateY(0)}
 @media(prefers-reduced-motion:reduce){
-  .aurora-bg::after,.hero-title span.grad,.cta-title span.grad,.grad-blue,.grad-green,.grad-pink,.orb{animation:none!important}
+  .aurora-bg::after,.hero-title span.grad,.cta-title span.grad,.grad-blue,.grad-green,.grad-pink,.orb,.wave{animation:none!important}
   .hero-title .line-inner{animation:none!important;transform:none!important}
 }
 
@@ -424,6 +433,14 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
   <div class="orb orb2"></div>
   <div class="orb orb3"></div>
   <div class="orb orb4"></div>
+  <!-- Rippling wave layers along the horizon (vanilla SVG, drift at different speeds) -->
+  <div class="waves" aria-hidden="true">
+    <svg viewBox="0 0 2880 320" preserveAspectRatio="none">
+      <path class="wave w3" d="M0 280 q90 -22 180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 V320 H0 Z"/>
+      <path class="wave w2" d="M0 250 q90 -34 180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 V320 H0 Z"/>
+      <path class="wave w1" d="M0 215 q90 -48 180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 t180 0 V320 H0 Z"/>
+    </svg>
+  </div>
 </div>
 
 <!-- NAVBAR -->
