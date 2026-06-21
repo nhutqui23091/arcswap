@@ -153,7 +153,7 @@ nav.scrolled{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bo
   color:var(--text);
   animation:fade-up .8s .1s ease both;
 }
-.hero-title span.grad{
+.hero-title span.grad,.cta-title span.grad{
   background:linear-gradient(90deg,var(--arc1) 0%,var(--arc2) 30%,var(--peach) 55%,var(--arc2) 78%,var(--arc1) 100%);
   background-size:200% auto;
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
@@ -169,6 +169,10 @@ nav.scrolled{background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);border-bo
   max-width:540px;line-height:1.7;margin-bottom:40px;
   animation:fade-up .8s .2s ease both;
 }
+.hero-viz{width:100%;max-width:520px;margin:4px auto 36px;animation:fade-up .8s .25s ease both}
+.hero-viz svg{width:100%;height:auto;display:block;overflow:visible}
+.hv-coin-label{font-family:var(--font);font-weight:700;fill:#fff}
+.hv-cap{font-family:var(--mono);font-weight:400;fill:var(--muted);letter-spacing:.04em}
 .hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:fade-up .8s .3s ease both}
 .btn-launch{
   padding:14px 32px;border-radius:14px;font-size:16px;font-weight:600;
@@ -386,7 +390,8 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
 .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
 .reveal.visible{opacity:1;transform:translateY(0)}
 @media(prefers-reduced-motion:reduce){
-  .aurora-bg::after,.hero-title span.grad,.grad-blue,.grad-green,.grad-pink,.orb{animation:none!important}
+  .aurora-bg::after,.hero-title span.grad,.cta-title span.grad,.grad-blue,.grad-green,.grad-pink,.orb{animation:none!important}
+  .hero-viz [data-flow]{display:none}
 }
 
 /* ===== RESPONSIVE ===== */
@@ -400,6 +405,7 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
 }
 @media(max-width:768px){
   .nav-links{display:none}
+  .hero-viz{display:none}
   .steps-grid{grid-template-columns:1fr}
   .mini-metrics{grid-template-columns:1fr}
   .mini-card{padding:28px}
@@ -450,6 +456,51 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
     <span class="grad">Everywhere.</span>
   </h1>
   <p class="hero-sub">Oneliq is a unified stablecoin platform that simplifies how you use USDC across chains - see every chain as one balance, then swap, bridge, and auto-replenish, all on Arc with Circle's native stablecoin stack. Auto-Replenish Agent now in preview.</p>
+  <!-- HERO VIZ: many chains converge into one USDC balance -->
+  <div class="hero-viz" aria-hidden="true">
+    <svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <linearGradient id="hvUsdc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2775CA"/><stop offset="1" stop-color="#5BA4F5"/></linearGradient>
+        <linearGradient id="hvEth" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#627EEA"/><stop offset="1" stop-color="#A4B3F5"/></linearGradient>
+        <linearGradient id="hvBase" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2A6CF6"/><stop offset="1" stop-color="#5B8DF5"/></linearGradient>
+        <linearGradient id="hvArb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2D374B"/><stop offset="1" stop-color="#28A0F0"/></linearGradient>
+        <linearGradient id="hvOp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3B5C"/><stop offset="1" stop-color="#FF8A9A"/></linearGradient>
+        <linearGradient id="hvArc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6C3FFF"/><stop offset="1" stop-color="#00CFFF"/></linearGradient>
+      </defs>
+      <!-- connectors -->
+      <g fill="none" stroke="#4DD6DB" stroke-width="1.5" stroke-opacity="0.18">
+        <path id="hvp0" d="M102,26 Q270,63 410,100"/>
+        <path id="hvp1" d="M102,63 Q270,82 410,100"/>
+        <path id="hvp2" d="M102,100 Q270,100 410,100"/>
+        <path id="hvp3" d="M102,137 Q270,118 410,100"/>
+        <path id="hvp4" d="M102,174 Q270,137 410,100"/>
+      </g>
+      <!-- flowing dots -->
+      <g>
+        <circle r="3.5" fill="#4DD6DB" data-flow="1"><animateMotion dur="2.4s" repeatCount="indefinite" begin="0s"><mpath xlink:href="#hvp0"/></animateMotion></circle>
+        <circle r="3.5" fill="#7BE495" data-flow="1"><animateMotion dur="2.4s" repeatCount="indefinite" begin="0.48s"><mpath xlink:href="#hvp1"/></animateMotion></circle>
+        <circle r="3.5" fill="#4DD6DB" data-flow="1"><animateMotion dur="2.4s" repeatCount="indefinite" begin="0.96s"><mpath xlink:href="#hvp2"/></animateMotion></circle>
+        <circle r="3.5" fill="#4A7BEC" data-flow="1"><animateMotion dur="2.4s" repeatCount="indefinite" begin="1.44s"><mpath xlink:href="#hvp3"/></animateMotion></circle>
+        <circle r="3.5" fill="#F4C89A" data-flow="1"><animateMotion dur="2.4s" repeatCount="indefinite" begin="1.92s"><mpath xlink:href="#hvp4"/></animateMotion></circle>
+      </g>
+      <!-- source chain coins -->
+      <g>
+        <circle cx="86" cy="26" r="16" fill="url(#hvEth)"/><text class="hv-coin-label" x="86" y="26" font-size="10" text-anchor="middle" dominant-baseline="central">ETH</text>
+        <circle cx="86" cy="63" r="16" fill="url(#hvBase)"/><text class="hv-coin-label" x="86" y="63" font-size="9.5" text-anchor="middle" dominant-baseline="central">BASE</text>
+        <circle cx="86" cy="100" r="16" fill="url(#hvArb)"/><text class="hv-coin-label" x="86" y="100" font-size="10" text-anchor="middle" dominant-baseline="central">ARB</text>
+        <circle cx="86" cy="137" r="16" fill="url(#hvOp)"/><text class="hv-coin-label" x="86" y="137" font-size="11" text-anchor="middle" dominant-baseline="central">OP</text>
+        <circle cx="86" cy="174" r="16" fill="url(#hvArc)"/><text class="hv-coin-label" x="86" y="174" font-size="10" text-anchor="middle" dominant-baseline="central">ARC</text>
+      </g>
+      <!-- pulse ring + central USDC coin -->
+      <circle cx="450" cy="100" r="40" fill="none" stroke="#4DD6DB" stroke-width="1.5" data-flow="1">
+        <animate attributeName="r" values="40;55" dur="2.6s" repeatCount="indefinite"/>
+        <animate attributeName="stroke-opacity" values="0.5;0" dur="2.6s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="450" cy="100" r="40" fill="url(#hvUsdc)"/>
+      <text class="hv-coin-label" x="450" y="100" font-size="15" text-anchor="middle" dominant-baseline="central">USDC</text>
+      <text class="hv-cap" x="450" y="168" font-size="11" text-anchor="middle">One Balance</text>
+    </svg>
+  </div>
   <div class="hero-ctas">
     <a class="btn-launch" href="/trade" style="text-decoration:none">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
@@ -459,7 +510,7 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
   </div>
   <div class="hero-stats">
     <div class="stat-item">
-      <div class="stat-num">8</div>
+      <div class="stat-num" data-count="8">8</div>
       <div class="stat-label">Chains Unified</div>
     </div>
     <div class="stat-item">
@@ -643,16 +694,16 @@ footer{position:relative;z-index:1;padding:80px 0 40px;border-top:1px solid var(
 <section class="numbers-section reveal">
   <div class="section-inner">
     <div class="big-metric">
-      <div class="big-num">$2.4B</div>
+      <div class="big-num" data-count="2.4" data-prefix="$" data-suffix="B">$2.4B</div>
       <div class="big-label">Simulated volume on Arc Testnet</div>
     </div>
     <div class="mini-metrics glass">
       <div class="mini-card">
-        <div class="mini-num">18M</div>
+        <div class="mini-num" data-count="18" data-suffix="M">18M</div>
         <div class="mini-label">Testnet transactions processed</div>
       </div>
       <div class="mini-card" style="border-left:1px solid var(--border)">
-        <div class="mini-num">99.97%</div>
+        <div class="mini-num" data-count="99.97" data-suffix="%">99.97%</div>
         <div class="mini-label">Network uptime since launch</div>
       </div>
     </div>
@@ -864,6 +915,29 @@ window.addEventListener('scroll',()=>{
 // REVEAL
 const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.1});
 document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// COUNT-UP (numbers animate from 0 when scrolled into view)
+(()=>{
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function runCount(el){
+    const raw=el.getAttribute('data-count');
+    const target=parseFloat(raw); if(isNaN(target))return;
+    const dec=(raw.split('.')[1]||'').length;
+    const pre=el.getAttribute('data-prefix')||'', suf=el.getAttribute('data-suffix')||'';
+    const dur=1400, t0=performance.now();
+    function frame(now){
+      const p=Math.min((now-t0)/dur,1);
+      const e=1-Math.pow(1-p,3); // easeOutCubic
+      el.textContent=pre+(target*e).toFixed(dec)+suf;
+      if(p<1)requestAnimationFrame(frame); else el.textContent=pre+target.toFixed(dec)+suf;
+    }
+    requestAnimationFrame(frame);
+  }
+  const cObs=new IntersectionObserver(ents=>ents.forEach(en=>{
+    if(en.isIntersecting){cObs.unobserve(en.target); if(!reduce) runCount(en.target);}
+  }),{threshold:.4});
+  document.querySelectorAll('[data-count]').forEach(el=>cObs.observe(el));
+})();
 
 // SWAP LOGIC
 const tokens={
