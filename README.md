@@ -25,14 +25,14 @@ Oneliq is a **non-custodial stablecoin terminal** built on the [Arc Layer 1](htt
 
 ### Coming soon
 
-| Surface | When | Notes |
-|---|---|---|
-| **Arc Mainnet cutover** | On Arc Mainnet launch (Circle targets Summer 2026) | Unified Balance, Trade, Agent and Portal migrate to production in lock-step. |
-| **Circle Wallets onboarding** | After mainnet | Embedded sign-in via Circle Programmable Wallets for non-crypto users, plus mobile onboarding. |
-| **StableFX** | 2026+ | RFQ-driven USDC ⇄ EURC settlement on Arc `FxEscrow`. |
-| **Nanopayments + Agent SDK** | 2027+ | Streaming USDC primitives and Agent SDK general availability. |
+| When | What |
+|---|---|
+| **2026 Q4** | **Agent General Availability** - Auto-Replenish Agent goes GA, with mobile-friendly signing and execution notifications. |
+| **2027 Q1** | **Multi-Asset Automation** - EURC support, cross-stable automation rules, and the first public Operations Dashboard. |
+| **2027 Q2** | **Treasury Operations** - treasury workflows, payroll templates, portfolio analytics, reporting, and CSV export. |
+| **2027 Q3** | **Production & Ecosystem** - independent security audit + bug bounty, deeper developer integrations, and early enterprise pilots. |
 
-> All surfaces are built on **Arc Testnet** first. Production cutover follows **Arc Mainnet** (targeted Summer 2026 per Circle's Arc whitepaper).
+> See the full roadmap below.
 
 You always retain custody. Oneliq never holds funds, and the agent backend executes only within EIP-712-signed bounds you can revoke at any time.
 
@@ -191,17 +191,13 @@ Contact: `security@oneliq.xyz` (PGP key in `SECURITY.md`).
 
 ## Roadmap
 
-Oneliq runs on **Arc Testnet** today. The phases below reflect what has shipped and
-what comes next. **Production cutover to Arc Mainnet follows Arc's own launch** -
-Circle targets **Summer 2026** per the Arc whitepaper.
-
-| Phase | What it covers |
+| Quarter | Milestone |
 |---|---|
-| **Shipped** | Unified Balance (spend · Consolidate · gasless forwarder) · Trade (App Kit → Curve + CCTP V2) · Agent · **Portal** (check-in · Star Points · streaks · badges · leaderboard) · Dashboard metrics · cross-browser history sync |
-| **Now → Mainnet** | Security audit · Unified Balance & Agent UX hardening (intents, approvals, revoke) · route/quote optimization · WalletConnect / Reown for mobile |
-| **Arc Mainnet cutover** | Balance, Trade, Agent and Portal migrate to Arc Mainnet in lock-step; Circle Wallets embedded sign-in activates for non-crypto users |
-| **2026+** | **StableFX** - RFQ-driven USDC ⇄ EURC settlement on Arc `FxEscrow` · Treasury API preview |
-| **2027+** | Circle Nanopayments + streaming USDC · Agent SDK GA · Treasury API GA |
+| **2026 Q3** _(Now)_ | **Platform Optimization** - continue improving Trade execution and liquidity routing, enhance Unified Balance and cross-chain settlement, strengthen Auto-Replenish Agent reliability, and refine overall platform performance and user experience. |
+| **2026 Q4** | **Agent General Availability** - release the Auto-Replenish Agent as General Availability. Introduce mobile-friendly signing, execution notifications, and improved automation reliability. |
+| **2027 Q1** | **Multi-Asset Automation** - expand automation beyond USDC with EURC support, introduce cross-stable automation rules, and launch the first public version of the Operations Dashboard. |
+| **2027 Q2** | **Treasury Operations** - launch the Operations Dashboard with treasury workflows, payroll templates, portfolio analytics, reporting, and CSV export. |
+| **2027 Q3** | **Production & Ecosystem** - strengthen platform security with an independent security audit and bug bounty, expand developer integrations, improve platform reliability, and run early enterprise pilots for stablecoin automation. |
 
 See the live roadmap on the [homepage](https://oneliq.xyz/#roadmap).
 
