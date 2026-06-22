@@ -17,20 +17,22 @@ Oneliq is a **non-custodial stablecoin terminal** built on the [Arc Layer 1](htt
 
 | Surface | What it does | Powered by |
 |---|---|---|
-| **Unified Balance** | See USDC across 8 chains as one number. Spend cross-chain via a single EIP-712 signature. | [Circle Gateway](https://www.circle.com/gateway) |
-| **Trade** | Stablecoin swap on Arc (Uniswap V2) + CCTP bridge merged into one flow. Fast (~20s) or Standard (free) mode. | [Circle CCTP V2](https://www.circle.com/cross-chain-transfer-protocol) + [Circle App Kit](https://developers.circle.com/) |
+| **Unified Balance** | See USDC across 8 chains as one number. Spend cross-chain with a single EIP-712 signature, **Consolidate** scattered dust into one chain, and mint gasless on the destination via the Circle forwarder. | [Circle Gateway](https://www.circle.com/gateway) |
+| **Trade** | On-Arc stablecoin swap (USDC ⇄ EURC) routed through Circle App Kit into the Arc Curve StableSwap pool, with `OneliqRouter` (0.3% fee) recording every trade, plus a CCTP V2 bridge merged into one flow. Fast (~20s) or Standard (free) mode. | [Circle App Kit](https://developers.circle.com/) + [Circle CCTP V2](https://www.circle.com/cross-chain-transfer-protocol) |
 | **Agent** | Bounded autonomous USDC operations. Pre-sign EIP-712 intents with hard ceilings; software executes within those bounds. | [Circle Programmable Wallets](https://developers.circle.com/w3s/programmable-wallets) |
+| **Portal** | Daily on-chain check-in (`OneliqCheckIn`) with Star Points, streaks, badges, and a live leaderboard - the loyalty layer for everything above. | Arc L1 + on-chain check-in contract |
+| **Dashboard** | Operator console: live network metrics (total users, on-chain swap & check-in counters) verified directly from Arc. | Arc RPC + Cloudflare KV |
 
 ### Coming soon
 
 | Surface | When | Notes |
 |---|---|---|
-| **Balance + Agent + Trade** | Q2 2026 | Unified balance flow polish, Agent UX hardening (intents, approvals, revoke), and route/quote optimization. |
-| **Dashboard** | Q3 2026 | Public operator console with portfolio, balances, agents, and activity in one unified view. |
-| **Circle Wallets onboarding** | Q4 2026 | Embedded sign-in via Circle Programmable Wallets for non-crypto users, plus mobile onboarding support. |
-| **StableFX + Nanopayments + Agent SDK** | 2027+ | RFQ-driven stablecoin settlement, streaming USDC primitives, and Agent SDK general availability. |
+| **Arc Mainnet cutover** | On Arc Mainnet launch (Circle targets Summer 2026) | Unified Balance, Trade, Agent and Portal migrate to production in lock-step. |
+| **Circle Wallets onboarding** | After mainnet | Embedded sign-in via Circle Programmable Wallets for non-crypto users, plus mobile onboarding. |
+| **StableFX** | 2026+ | RFQ-driven USDC ⇄ EURC settlement on Arc `FxEscrow`. |
+| **Nanopayments + Agent SDK** | 2027+ | Streaming USDC primitives and Agent SDK general availability. |
 
-> All surfaces are built on **Arc Testnet** first. Production cutover follows **Arc Mainnet** (targeted Summer 2026 per Circle’s Arc whitepaper).
+> All surfaces are built on **Arc Testnet** first. Production cutover follows **Arc Mainnet** (targeted Summer 2026 per Circle's Arc whitepaper).
 
 You always retain custody. Oneliq never holds funds, and the agent backend executes only within EIP-712-signed bounds you can revoke at any time.
 
@@ -42,11 +44,11 @@ Every Circle product we use is integrated **natively** - no third-party bridges,
 
 | Circle product | Status | Where in code |
 |---|---|---|
-| **USDC** | Live | Native unit of account across every surface. Per-chain addresses in [`assets/arc-core.js`](assets/arc-core.js#L172-L233). |
-| **Circle Gateway** | Live (testnet) | EIP-712 `BurnIntent` signing + 8-chain `/v1/balances` aggregation. See [`assets/arc-gateway.js`](assets/arc-gateway.js#L27-L52) and [`functions/api/gateway-proxy/`](functions/api/gateway-proxy/). |
-| **CCTP V2** | Live (testnet) | `TokenMessengerV2.depositForBurn` + `MessageTransmitterV2.receiveMessage`, Fast and Standard modes. See [`assets/arc-core.js`](assets/arc-core.js#L39-L40) and [`trade.html`](trade.html#L1436-L1483). |
+| **USDC** | Live | Native unit of account across every surface. Per-chain addresses in [`assets/arc-core.js`](assets/arc-core.js). |
+| **Circle Gateway** | Live (testnet) | EIP-712 `BurnIntent` / `BurnIntentSet` signing + 8-chain `/v1/balances` aggregation, cross-chain spend, Consolidate, and gasless forwarder mint. See [`assets/arc-gateway.js`](assets/arc-gateway.js) and [`functions/api/gateway-proxy/`](functions/api/gateway-proxy/). |
+| **CCTP V2** | Live (testnet) | `TokenMessengerV2.depositForBurn` + `MessageTransmitterV2.receiveMessage`, Fast and Standard modes. See [`assets/arc-core.js`](assets/arc-core.js) and [`trade.html`](trade.html). |
+| **App Kit (Stablecoin Kit)** | Live (testnet) | In-Arc USDC/EURC swap routed via [`functions/api/circle-proxy/`](functions/api/circle-proxy/) (so the API key never reaches the browser) into the Arc Curve StableSwap pool, fronted by `OneliqRouter`. |
 | **Programmable Wallets** | Live (testnet) | Developer-Controlled Wallets API for the Agent backend - RSA-OAEP `entitySecretCiphertext`, per-chain wallet provisioning, USDC transfers. See [`functions/api/agent/_circle.js`](functions/api/agent/_circle.js). |
-| **App Kit (Stablecoin Kit)** | Live (testnet) | In-Arc swap routing proxied via [`functions/api/circle-proxy/`](functions/api/circle-proxy/) so the API key never reaches the browser. |
 | **Nanopayments** | Planned (2027+) | Streaming USDC primitives - Agent SDK foundation. |
 
 Supported chains for Unified Balance and CCTP V2: **Arc, Ethereum, Base, Arbitrum, Optimism, Polygon, Avalanche, Unichain** (all testnets today).
@@ -65,11 +67,13 @@ Supported chains for Unified Balance and CCTP V2: **Arc, Ethereum, Base, Arbitru
 - `functions/api/circle-proxy/` - proxies Circle App Kit (`api.circle.com`) so `KIT_KEY` stays out of the browser
 - `functions/api/agent/` - Agent CRUD endpoints backed by Cloudflare KV (`AGENT_KV`)
 - `functions/api/agent/_circle.js` - Circle Programmable Wallets integration (wallet provisioning, USDC transfers)
+- `functions/api/history/` - per-wallet, cross-browser Trade/Balance history (`AGENT_KV`)
+- `functions/auth/` - Portal: check-in, Star Points, streaks, badges, leaderboard (`PROFILE_KV`)
 - `workers/agent-cron/` - scheduled Cloudflare Worker that fires agent rules on cadence
 
 **Infra**
 - **Cloudflare Pages** - hosting + CDN + DDoS protection
-- **Cloudflare KV** - agent rule storage
+- **Cloudflare KV** - agent rules, per-wallet history, and Portal profiles
 - **Optional: IPFS + ENS** - decentralized backup (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md))
 
 First paint < 1s on 4G. No `node_modules` in production.
@@ -80,8 +84,8 @@ First paint < 1s on 4G. No `node_modules` in production.
 
 ```bash
 # Clone
-git clone https://github.com/nhutqui23091/arcswap.git
-cd arcswap
+git clone https://github.com/nhutqui23091/oneliq.git
+cd oneliq
 
 # Serve locally - any static server works
 python3 -m http.server 8080            # Python
@@ -91,7 +95,7 @@ php -S localhost:8080                  # PHP
 
 Open `http://localhost:8080` in a browser with MetaMask/Rabby installed. Grab testnet USDC from [faucet.circle.com](https://faucet.circle.com).
 
-For full backend behavior (Agent, Gateway proxy, App Kit proxy):
+For full backend behavior (Agent, Gateway proxy, App Kit proxy, Portal, history):
 
 ```bash
 # Requires Wrangler - Cloudflare's CLI
@@ -130,43 +134,44 @@ Verifies CSP, SRI, secrets hygiene, redirects, and host headers.
 ## Project structure
 
 ```
-arcswap/
+oneliq/
 ├── index.html              ← Homepage
 ├── balance.html            ← Unified Balance (Circle Gateway)         [LIVE]
-├── trade.html              ← Swap + CCTP V2 Bridge                    [LIVE]
+├── trade.html              ← Swap (App Kit → Curve) + CCTP V2 Bridge  [LIVE]
 ├── agent.html              ← Autonomous agents (EIP-712 + PW)         [LIVE]
-├── dashboard.html          ← Operator console                         [SOON]
+├── portal.html             ← Check-in, Star Points, leaderboard       [LIVE]
+├── dashboard.html          ← Operator console / network metrics       [LIVE]
+├── history.html            ← Cross-browser Trade/Balance history      [LIVE]
+├── docs.html, blog.html    ← Static docs + blog
 │
 ├── assets/
 │   ├── arc-core.js         ← Shared on-chain helpers (RPC, ABIs, USDC addresses, EIP-6963)
-│   ├── arc-gateway.js      ← Circle Gateway client (EIP-712 BurnIntent + /v1/balances)
-│   ├── arc-appkit.js       ← Circle App Kit client (in-Arc swap routing)
-│   ├── arc-ui.js, arc-ui.css ← Shared UI primitives
+│   ├── arc-gateway.js      ← Circle Gateway client (BurnIntent, spend, Consolidate, forwarder)
+│   ├── arc-ui.js, arc-ui.css ← Shared app shell (sidebar nav + UI primitives)
 │   └── social/             ← X avatar + cover SVGs
 │
-├── functions/api/
-│   ├── gateway-proxy/      ← Server-side proxy → Circle Gateway REST
-│   ├── circle-proxy/       ← Server-side proxy → Circle App Kit (KIT_KEY)
-│   └── agent/              ← Agent CRUD + Programmable Wallets backend
-│       ├── [[path]].js     ← Routes (create, list, pause, resume, run-now, executions)
-│       ├── _circle.js      ← Circle Developer-Controlled Wallets API integration
-│       └── _balance.js     ← USDC balance checks per chain
+├── functions/
+│   ├── api/gateway-proxy/  ← Server-side proxy → Circle Gateway REST
+│   ├── api/circle-proxy/   ← Server-side proxy → Circle App Kit (KIT_KEY)
+│   ├── api/agent/          ← Agent CRUD + Programmable Wallets backend
+│   │   ├── [[path]].js     ← Routes (create, list, pause, resume, run-now, executions)
+│   │   ├── _circle.js      ← Circle Developer-Controlled Wallets API integration
+│   │   └── _balance.js     ← USDC balance checks per chain
+│   ├── api/history/        ← Per-wallet Trade/Balance history (cross-browser sync)
+│   └── auth/               ← Portal: check-in, Star Points, streaks, badges, leaderboard
 │
 ├── workers/
 │   └── agent-cron/         ← Scheduled execution worker (Cloudflare Cron Trigger)
 │
-├── docs.html, blog.html, point.html, token.html, deploy.html  ← Static pages
-│
-├── _headers, _redirects    ← Cloudflare Pages security + clean URLs
-├── docs/                   ← Deployment + governance + incident-response runbooks
-├── scripts/                ← Pre-flight + health-check + IPFS deploy helpers
+├── contracts/             ← OneliqRouter + OneliqCheckIn sources
+├── _headers, _redirects   ← Cloudflare Pages security + clean URLs
+├── docs/                  ← Deployment + governance + incident-response runbooks
+├── scripts/               ← Pre-flight + health-check + IPFS deploy helpers
 ├── .well-known/security.txt
 ├── SECURITY.md, SECURITY_CHECKLIST.md
-├── SETUP-AGENT.md          ← One-time setup for the Agent backend (KV + Circle keys)
+├── SETUP-AGENT.md         ← One-time setup for the Agent backend (KV + Circle keys)
 └── .env.example
 ```
-
-> **Note:** Earlier surfaces (`vault.html`, `pool.html`, `swap.html`, `bridge.html`) remain in the repo for historical reference. They are not part of the current product and will be removed in a future cleanup pass.
 
 ---
 
@@ -186,20 +191,19 @@ Contact: `security@oneliq.xyz` (PGP key in `SECURITY.md`).
 
 ## Roadmap
 
-Oneliq builds on **Arc Testnet** today. The calendar quarters below reflect
-testnet engineering milestones we control. **Production cutover to Arc Mainnet
-follows Arc's own launch** - Circle targets **Summer 2026** per the Arc whitepaper.
+Oneliq runs on **Arc Testnet** today. The phases below reflect what has shipped and
+what comes next. **Production cutover to Arc Mainnet follows Arc's own launch** -
+Circle targets **Summer 2026** per the Arc whitepaper.
 
-| Quarter | What we ship (on Arc Testnet) |
+| Phase | What it covers |
 |---|---|
-| **Q2 2026** | Dashboard GA · Security audit kickoff · Unified Balance polish · agent UX hardening |
-| **Q3 2026** | Deeper Circle Wallets onboarding (Circle Programmable Wallets) · WalletConnect / Reown for mobile · activity points |
-| **Q4 2026** | **StableFX** build - RFQ-driven USDC ⇄ EURC settlement on Arc FxEscrow · Treasury API preview |
+| **Shipped** | Unified Balance (spend · Consolidate · gasless forwarder) · Trade (App Kit → Curve + CCTP V2) · Agent · **Portal** (check-in · Star Points · streaks · badges · leaderboard) · Dashboard metrics · cross-browser history sync |
+| **Now → Mainnet** | Security audit · Unified Balance & Agent UX hardening (intents, approvals, revoke) · route/quote optimization · WalletConnect / Reown for mobile |
+| **Arc Mainnet cutover** | Balance, Trade, Agent and Portal migrate to Arc Mainnet in lock-step; Circle Wallets embedded sign-in activates for non-crypto users |
+| **2026+** | **StableFX** - RFQ-driven USDC ⇄ EURC settlement on Arc `FxEscrow` · Treasury API preview |
 | **2027+** | Circle Nanopayments + streaming USDC · Agent SDK GA · Treasury API GA |
 
-> **Production cutover.** When Arc launches Mainnet (targeted Summer 2026), Unified Balance, Trade, and Agent migrate to Arc Mainnet production in lock-step, and Circle Wallets embedded sign-in activates for non-crypto users.
-
-See live roadmap on the [homepage](https://oneliq.xyz/#roadmap).
+See the live roadmap on the [homepage](https://oneliq.xyz/#roadmap).
 
 ---
 
@@ -207,7 +211,7 @@ See live roadmap on the [homepage](https://oneliq.xyz/#roadmap).
 
 Oneliq is **testnet-only** software. All assets are testnet tokens with no monetary value. Indicative yields and execution timings are not guarantees - actual results depend on Circle infrastructure, network conditions, and on-chain liquidity.
 
-We use third-party smart contracts (Circle Gateway, Circle CCTP, Uniswap V2 deployed by Arc Foundation) audited by their respective teams. Oneliq itself does not own or operate any of these contracts.
+We use third-party smart contracts (Circle Gateway, Circle CCTP, the Curve StableSwap pool deployed on Arc) audited by their respective teams. Oneliq itself does not own or operate any of these contracts.
 
 ---
 
