@@ -59,8 +59,10 @@ async function handleGet(request, env) {
   // Ensure this wallet has a short referral code (for /portal?ref=<code>).
   state = await ensureRefCode(kv, addr, state);
 
-  // Live on-chain tx count drives the "100 Transactions" badge progress bar.
-  const txCount = await getArcTxCount(addr);
+  // "100 Transactions" badge progress. Combine the Arc nonce (check-ins + on-Arc
+  // swaps) with off-chain / cross-chain Gateway actions (deposit on the source
+  // chain, spend & consolidate burn intents) that never bump the Arc nonce.
+  const txCount = await getArcTxCount(addr) + await getGatewayActionCount(env, addr);
 
   // Star Points — computed deterministically (see _stars.js). Denormalize the
   // total, the two profile-side facts it depends on (discord_done, said_gm),
@@ -218,7 +220,7 @@ async function applyCheckin(kv, env, context, request, addr, state, today, txHas
     badges.push('streak7');
   }
   if (!badges.includes('tx100')) {
-    const txCount = await getArcTxCount(addr);
+    const txCount = await getArcTxCount(addr) + await getGatewayActionCount(env, addr);
     if (txCount >= 100) badges.push('tx100');
   }
 
@@ -366,6 +368,29 @@ async function getArcTxCount(address) {
     console.warn('[gm] getArcTxCount:', e?.message);
   }
   return 0;
+}
+
+// Count off-chain / cross-chain Gateway actions from the per-wallet history mirror
+// (AGENT_KV history:<addr>). The Arc nonce can't see these: a DEPOSIT is a tx on the
+// SOURCE chain, and a SPEND / CONSOLIDATE is an off-chain burn intent whose mint is
+// usually submitted by Circle's gasless forwarder — so none of them bump the Arc
+// nonce. We count rows with kind 'bridge' (deposit) or 'balance' (spend/consolidate)
+// that didn't fail. 'trade' is intentionally excluded: on-Arc swaps already count via
+// the nonce, so counting them here too would double up. History merges by hash and is
+// capped at 100 rows, so each action is counted once.
+async function getGatewayActionCount(env, addr) {
+  try {
+    if (!env.AGENT_KV) return 0;
+    const rows = JSON.parse((await env.AGENT_KV.get(`history:${addr}`)) || '[]');
+    if (!Array.isArray(rows)) return 0;
+    return rows.filter(r =>
+      r && (r.kind === 'bridge' || r.kind === 'balance')
+        && r.status !== 'failed' && r.status !== 'error'
+    ).length;
+  } catch (e) {
+    console.warn('[gm] getGatewayActionCount:', e?.message);
+    return 0;
+  }
 }
 
 // Assign a short, URL-friendly referral code once and store a reverse lookup
