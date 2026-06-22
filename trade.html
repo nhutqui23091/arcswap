@@ -1551,10 +1551,20 @@ main.trade-wrap{position:relative;z-index:2;min-height:100vh;display:flex;flex-d
     const [dy] = await routerRead.quote(tInTok.address, tOutTok.address, dx);
     const minDy = dy - (dy * BigInt(state.slippageBps)) / 10000n;
     // Approve the Oneliq router (not the pool) once with max allowance so later
-    // swaps skip approval entirely (single tx).
-    const erc20 = new Contract(tInTok.address, ABIS.erc20, wallet.signer);
-    const cur = await erc20.allowance(wallet.address, ARC_ROUTER).catch(() => 0n);
-    if (cur < dx) {
+    // swaps skip approval entirely (single tx). Read the allowance from the
+    // reliable read-RPC, NOT the wallet's injected provider: the wallet RPC can
+    // flake for a beat, and the old `.catch(() => 0n)` then treated that as
+    // "no allowance" → a needless re-approval on every trade. Retry a few times
+    // and only fall through to approve when we positively know it's short (or
+    // the read genuinely failed — then approve to be safe).
+    const erc20read = new Contract(tInTok.address, ABIS.erc20, rpcProvider('arc'));
+    let cur = null;
+    for (let i = 0; i < 3 && cur === null; i++) {
+      cur = await erc20read.allowance(wallet.address, ARC_ROUTER).catch(() => null);
+      if (cur === null) await new Promise(r => setTimeout(r, 300));
+    }
+    if (cur === null || cur < dx) {
+      const erc20 = new Contract(tInTok.address, ABIS.erc20, wallet.signer);
       modal.set(stepId, 'active', `Approving ${tInSym} (one-time)…`);
       const atx = await erc20.approve(ARC_ROUTER, MAX_UINT256);
       await waitArcReceipt(atx.hash);
